@@ -133,22 +133,18 @@ struct DvMetadataTemplate<'a> {
 /// for every signing key (use="signing") then every encryption key
 /// (use="encryption"); the inline signature is filled by
 /// [`crypto::sign`](crate::saml::crypto::sign).
-pub fn build_dv_metadata(a: DvMetadataArgs<'_>) -> Result<String> {
-    let mut key_descriptors = Vec::with_capacity(a.signing_keys.len() + a.encryption_keys.len());
-    for (key_name, cert_base64) in a.signing_keys {
-        key_descriptors.push(KeyDescriptorView {
-            use_: "signing",
-            key_name,
-            cert_base64,
-        });
-    }
-    for (key_name, cert_base64) in a.encryption_keys {
-        key_descriptors.push(KeyDescriptorView {
-            use_: "encryption",
-            key_name,
-            cert_base64,
-        });
-    }
+pub fn build_dv_metadata<'a>(a: DvMetadataArgs<'a>) -> Result<String> {
+    let descriptors = |use_: &'a str, keys: &'a [(&'a str, &'a str)]| {
+        keys.iter()
+            .map(move |&(key_name, cert_base64)| KeyDescriptorView {
+                use_,
+                key_name,
+                cert_base64,
+            })
+    };
+    let key_descriptors: Vec<KeyDescriptorView<'a>> = descriptors("signing", a.signing_keys)
+        .chain(descriptors("encryption", a.encryption_keys))
+        .collect();
     Ok(DvMetadataTemplate {
         entity_id: a.entity_id,
         acs_url: a.acs_url,

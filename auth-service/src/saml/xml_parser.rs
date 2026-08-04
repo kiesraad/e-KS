@@ -158,72 +158,56 @@ pub fn descendants_by_tag(doc: &Document, id: NodeId, ns: &str, local_name: &str
     }
 }
 
-/// Like [`find_descendant`], but never descends into a subtree whose root element
-/// matches `(prune_ns, prune_local)`.
+/// A `(namespace-URI, local-name)` element tag, for the pruned lookups below.
+pub type Tag<'a> = (&'a str, &'a str);
+
+/// Like [`find_descendant`], but never descends into a subtree whose root
+/// element matches `prune`.
 ///
 /// Used by assertion validation to read claims from the outer RD Assertion while
 /// skipping the `<saml:Advice>` evidence subtree (the AD assertions), which
 /// carries its own Recipient / InResponseTo / scheme-specific LoA (eID §7.6.3).
-pub fn find_descendant_pruned(
-    doc: &Document,
-    id: NodeId,
-    ns: &str,
-    local_name: &str,
-    prune_ns: &str,
-    prune_local: &str,
-) -> Option<NodeId> {
-    descendants_by_tag_pruned(doc, id, ns, local_name, prune_ns, prune_local)
+pub fn find_descendant_pruned(doc: &Document, id: NodeId, tag: Tag, prune: Tag) -> Option<NodeId> {
+    descendants_by_tag_pruned(doc, id, tag, prune)
         .into_iter()
         .next()
 }
 
 /// Like [`descendants_by_tag`], but skips any subtree rooted at an element
-/// matching `(prune_ns, prune_local)`. See [`find_descendant_pruned`].
-pub fn descendants_by_tag_pruned(
-    doc: &Document,
-    id: NodeId,
-    ns: &str,
-    local_name: &str,
-    prune_ns: &str,
-    prune_local: &str,
-) -> Vec<NodeId> {
-    walk_pruned(doc, id, prune_ns, prune_local)
+/// matching `prune`. See [`find_descendant_pruned`].
+pub fn descendants_by_tag_pruned(doc: &Document, id: NodeId, tag: Tag, prune: Tag) -> Vec<NodeId> {
+    walk_pruned(doc, id, prune)
         .into_iter()
         .filter(|&n| {
             doc.node(n)
-                .is_some_and(|node| node_matches(node, ns, local_name))
+                .is_some_and(|node| node_matches(node, tag.0, tag.1))
         })
         .collect()
 }
 
 /// Pre-order list of descendant element ids under `id` (excluding `id` itself),
-/// skipping any subtree rooted at a `(prune_ns, prune_local)` element.
-fn walk_pruned(doc: &Document, id: NodeId, prune_ns: &str, prune_local: &str) -> Vec<NodeId> {
+/// skipping any subtree rooted at a `prune` element.
+fn walk_pruned(doc: &Document, id: NodeId, prune: Tag) -> Vec<NodeId> {
     let mut out = Vec::new();
     let Some(root) = doc.node(id) else {
         return out;
     };
     for child in root.children() {
-        collect_pruned(child, prune_ns, prune_local, &mut out);
+        collect_pruned(child, prune, &mut out);
     }
     out
 }
 
-fn collect_pruned(
-    node: roxmltree::Node<'_, '_>,
-    prune_ns: &str,
-    prune_local: &str,
-    out: &mut Vec<NodeId>,
-) {
+fn collect_pruned(node: roxmltree::Node<'_, '_>, prune: Tag, out: &mut Vec<NodeId>) {
     if !node.is_element() {
         return;
     }
-    if node_matches(node, prune_ns, prune_local) {
+    if node_matches(node, prune.0, prune.1) {
         return; // prune this subtree entirely
     }
     out.push(node.id());
     for child in node.children() {
-        collect_pruned(child, prune_ns, prune_local, out);
+        collect_pruned(child, prune, out);
     }
 }
 
@@ -329,11 +313,11 @@ mod tests {
         let doc = parse(&xml).unwrap();
         let root = doc.document_element();
         let issuer =
-            find_descendant_pruned(&doc, root, NS_SAML, "Issuer", NS_SAML, "Advice").unwrap();
+            find_descendant_pruned(&doc, root, (NS_SAML, "Issuer"), (NS_SAML, "Advice")).unwrap();
         assert_eq!(inner_text(&doc, issuer), "OUTER");
         // Only the outer Issuer is visible to the pruned descendant search.
         assert_eq!(
-            descendants_by_tag_pruned(&doc, root, NS_SAML, "Issuer", NS_SAML, "Advice").len(),
+            descendants_by_tag_pruned(&doc, root, (NS_SAML, "Issuer"), (NS_SAML, "Advice")).len(),
             1
         );
         // Without pruning, both are found.

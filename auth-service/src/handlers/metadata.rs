@@ -22,32 +22,7 @@ pub async fn handle_metadata(
     }
     debug!("[metadata] Cache miss; building signed metadata");
 
-    let dv = &auth_state.auth_config().dv;
-    let keys = auth_state.dv_keys();
-
-    debug!(
-        "[metadata] entity_id={}, acs_url={}, slo_url={}, service_name={}, \
-         service_uuid={}, signing_keys={}, encryption_keys={}, tls_signing_cert={}",
-        dv.entity_id,
-        dv.acs_url,
-        dv.slo_url,
-        dv.service_name,
-        dv.service_uuid,
-        keys.signing.len(),
-        keys.encryption.len(),
-        auth_state.metadata_tls_cert().is_some(),
-    );
-
-    match build_signed_dv_metadata(SignedDvMetadataArgs {
-        entity_id: &dv.entity_id,
-        acs_url: &dv.acs_url,
-        slo_url: &dv.slo_url,
-        service_name: &dv.service_name,
-        service_uuid: &dv.service_uuid,
-        signing_keys: &keys.signing,
-        tls_signing_cert: auth_state.metadata_tls_cert(),
-        encryption_keys: &keys.encryption,
-    }) {
+    match build_metadata(&auth_state) {
         Ok(xml) => {
             debug!(
                 "[metadata] Built signed metadata (xml_len={}); caching",
@@ -65,6 +40,37 @@ pub async fn handle_metadata(
                 .into_response()
         }
     }
+}
+
+/// Assemble the SP identity, endpoints and key material from the state and
+/// build the signed DV metadata (eID §8.3).
+fn build_metadata(auth_state: &AuthServiceState) -> crate::error::Result<String> {
+    let dv = &auth_state.auth_config().dv;
+    let keys = auth_state.dv_keys();
+
+    debug!(
+        "[metadata] entity_id={}, acs_url={}, slo_url={}, service_name={}, \
+         service_uuid={}, signing_keys={}, encryption_keys={}, tls_signing_cert={}",
+        dv.entity_id,
+        dv.acs_url,
+        dv.slo_url,
+        dv.service_name,
+        dv.service_uuid,
+        keys.signing.len(),
+        keys.encryption.len(),
+        auth_state.metadata_tls_cert().is_some(),
+    );
+
+    build_signed_dv_metadata(SignedDvMetadataArgs {
+        entity_id: &dv.entity_id,
+        acs_url: &dv.acs_url,
+        slo_url: &dv.slo_url,
+        service_name: &dv.service_name,
+        service_uuid: &dv.service_uuid,
+        signing_keys: &keys.signing,
+        tls_signing_cert: auth_state.metadata_tls_cert(),
+        encryption_keys: &keys.encryption,
+    })
 }
 
 fn xml_response(xml: String) -> Response {

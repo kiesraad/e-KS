@@ -59,6 +59,12 @@ fn check_encryption_algorithms(
     enc_id: NodeId,
     dv_entity_id: Option<&str>,
 ) -> Result<(), String> {
+    check_data_encryption(doc, enc_id)?;
+    check_key_transport(doc, &our_encrypted_keys(doc, enc_id, dv_entity_id)?)
+}
+
+// eID §9.3: the `EncryptedData` block cipher MUST be AES-256-CBC.
+fn check_data_encryption(doc: &Document, enc_id: NodeId) -> Result<(), String> {
     let enc_data = find_descendant(doc, enc_id, NS_XENC, "EncryptedData")
         .ok_or_else(|| "EncryptedID has no EncryptedData".to_string())?;
     let data_alg = find_child(doc, enc_data, NS_XENC, "EncryptionMethod")
@@ -69,15 +75,23 @@ fn check_encryption_algorithms(
             "disallowed data-encryption algorithm (eID §9.3 requires AES-256-CBC): {data_alg}"
         ));
     }
+    Ok(())
+}
 
+// eID §7.6.3.4: `@Recipient` identifies the intended recipient of each wrapped
+// key. When we know our own EntityID, consider only our keys; more than one may
+// carry it (§7.6.3.4: one per encryption cert during rollover). At least one
+// key must be ours.
+fn our_encrypted_keys(
+    doc: &Document,
+    enc_id: NodeId,
+    dv_entity_id: Option<&str>,
+) -> Result<Vec<NodeId>, String> {
     let enc_keys = descendants_by_tag(doc, enc_id, NS_XENC, "EncryptedKey");
     if enc_keys.is_empty() {
         return Err("EncryptedID has no EncryptedKey".to_string());
     }
 
-    // eID §7.6.3.4: `@Recipient` identifies the intended recipient of each
-    // wrapped key. When we know our own EntityID, consider only our keys; more
-    // than one may carry it (§7.6.3.4: one per encryption cert during rollover).
     let ours: Vec<NodeId> = match dv_entity_id {
         Some(dv) => enc_keys
             .iter()
@@ -95,8 +109,12 @@ fn check_encryption_algorithms(
             "no EncryptedKey addressed to this DV (eID §7.6.3.4 @Recipient); saw {recipients:?}"
         ));
     }
+    Ok(ours)
+}
 
-    for ek in ours {
+// eID §9.3: every `EncryptedKey` addressed to us MUST use RSA-OAEP transport.
+fn check_key_transport(doc: &Document, enc_keys: &[NodeId]) -> Result<(), String> {
+    for &ek in enc_keys {
         let key_alg = find_child(doc, ek, NS_XENC, "EncryptionMethod")
             .and_then(|n| doc.get_attribute(n, "Algorithm"))
             .ok_or_else(|| "EncryptedKey has no EncryptionMethod Algorithm".to_string())?;
@@ -130,19 +148,44 @@ pub fn decrypt_encrypted_id(
     // Extract the EncryptedID XML substring from the source document.
     // Namespace declarations are on the child elements, so the subtree is self-contained.
     let enc_id_xml = doc.node_source(enc_id)?;
+    let decrypted_xml = decrypt_ciphertext(enc_id_xml, private_keys)?;
+
+    // eID §7.6.3.4.4: "An <EncryptedID> MUST contain a SAML <NameID> after
+    // decryption". Require exactly that, matched by namespace, so plaintext that
+    // decrypts to some other element never becomes an identity.
+    let dec_doc = crate::saml::xml_parser::parse(&decrypted_xml).ok()?;
+    let Some(name_id_node) = decrypted_name_id_node(&dec_doc) else {
+        warn!("[decrypt] Decrypted EncryptedID does not contain a saml:NameID; rejecting");
+        return None;
+    };
+
+    let result = name_id_fields(&dec_doc, name_id_node);
+    // SECURITY: only log non-PII metadata; `value` is the decrypted PII
+    // (BSN / pseudonym) and MUST stay out of logs.
+    debug!(
+        "[decrypt] NameID extracted (format='{}', name_qualifier='{}', value_len={})",
+        result.format,
+        result.name_qualifier,
+        result.value.expose_secret().len()
+    );
+    Some(result)
+}
+
+/// Hand the self-contained EncryptedID XML to the crypto backend, trying each
+/// configured DV encryption key.
+///
+/// RSA key transport is crypto-bound to the keypair, not selected by `<KeyName>`
+/// (see `crypto::decrypt`): each key is tried in turn, so a blob wrapped to any
+/// configured key (e.g. a rotated cert) decrypts. The backend replaces
+/// `<EncryptedData>` with the decrypted plaintext in place, returning the
+/// EncryptedID element with the NameID inside.
+fn decrypt_ciphertext(enc_id_xml: &str, private_keys: &[(&str, &str)]) -> Option<String> {
     debug!(
         "[decrypt] Decrypting EncryptedID (xml_len={}, candidate_keys={})",
         enc_id_xml.len(),
         private_keys.len()
     );
-
-    // RSA key transport is crypto-bound to the keypair, not selected by <KeyName>
-    // (see `crypto::decrypt`): each DV encryption key is tried in turn, so a blob
-    // wrapped to any configured key (e.g. a rotated cert) decrypts.
-    //
-    // The backend replaces <EncryptedData> with the decrypted plaintext in
-    // place, returning the EncryptedID element with the NameID inside.
-    let decrypted_xml = match crypto::decrypt(enc_id_xml, private_keys) {
+    match crypto::decrypt(enc_id_xml, private_keys) {
         Ok(xml) => {
             // SECURITY: do not log the decrypted XML content; it contains the
             // plaintext NameID (PII per eID §7.6.3.4). Log only its length.
@@ -150,33 +193,30 @@ pub fn decrypt_encrypted_id(
                 "[decrypt] EncryptedID decryption OK (decrypted_xml_len={})",
                 xml.len()
             );
-            xml
+            Some(xml)
         }
         Err(e) => {
             warn!("[decrypt] EncryptedID decryption failed: {e}");
             // The encrypted ciphertext is safe to log: by definition it does
             // not reveal plaintext PII without the private key.
             debug!("[decrypt] EncryptedID XML: {enc_id_xml}");
-            return None;
+            None
         }
-    };
+    }
+}
 
-    // eID §7.6.3.4.4: "An <EncryptedID> MUST contain a SAML <NameID> after
-    // decryption". Require exactly that, matched by namespace, so plaintext that
-    // decrypts to some other element never becomes an identity.
-    let dec_doc = crate::saml::xml_parser::parse(&decrypted_xml).ok()?;
+/// The `saml:NameID` element of the decrypted plaintext, matched by namespace;
+/// the document element itself might be the NameID.
+fn decrypted_name_id_node(dec_doc: &Document) -> Option<NodeId> {
     let dec_root = dec_doc.document_element();
-    let name_id_node = find_descendant(&dec_doc, dec_root, NS_SAML, "NameID").or_else(|| {
-        // The document element itself might be the NameID.
-        (dec_doc.local_name(dec_root)? == "NameID").then_some(dec_root)
-    });
-    let Some(name_id_node) = name_id_node else {
-        warn!("[decrypt] Decrypted EncryptedID does not contain a saml:NameID; rejecting");
-        return None;
-    };
+    find_descendant(dec_doc, dec_root, NS_SAML, "NameID")
+        .or_else(|| (dec_doc.local_name(dec_root)? == "NameID").then_some(dec_root))
+}
 
-    let result = DecryptedNameId {
-        value: SecretString::from(inner_text(&dec_doc, name_id_node)),
+/// Lift the NameID text and its eID §7.6.3.4.4 attributes into owned fields.
+fn name_id_fields(dec_doc: &Document, name_id_node: NodeId) -> DecryptedNameId {
+    DecryptedNameId {
+        value: SecretString::from(inner_text(dec_doc, name_id_node)),
         format: dec_doc
             .get_attribute(name_id_node, "Format")
             .unwrap_or("")
@@ -191,16 +231,7 @@ pub fn decrypt_encrypted_id(
         sp_provided_id: dec_doc
             .get_attribute(name_id_node, "SPProvidedID")
             .map(str::to_string),
-    };
-    // SECURITY: only log non-PII metadata; `value` is the decrypted PII
-    // (BSN / pseudonym) and MUST stay out of logs.
-    debug!(
-        "[decrypt] NameID extracted (format='{}', name_qualifier='{}', value_len={})",
-        result.format,
-        result.name_qualifier,
-        result.value.expose_secret().len()
-    );
-    Some(result)
+    }
 }
 
 #[cfg(test)]

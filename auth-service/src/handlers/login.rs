@@ -3,7 +3,7 @@ use crate::{
     config::{AuthConfig, Environment},
     error::Result,
     keys::KeySet,
-    saml::messages::create_authn_request,
+    saml::messages::{AuthnRequestSpec, CreatedMessage, create_authn_request},
     state::{AuthFailure, AuthServiceState, AuthState},
 };
 use axum::{
@@ -31,8 +31,6 @@ where
     AuthServiceState: FromRef<S>,
 {
     debug!("[login] Handler entered");
-    let config = auth_state.auth_config();
-    let keys = auth_state.dv_keys();
     // No RD descriptor means we cannot build an AuthnRequest (no SSO endpoint to
     // POST to, eID §9.2). The RD was unreachable at startup and no background
     // refresh has succeeded yet; surface it as a transient outage rather than
@@ -44,7 +42,7 @@ where
             .await;
     };
 
-    match build_login_response(config, keys, &rd.sso_url, jar.clone(), &headers) {
+    match build_login_response(&auth_state, &rd.sso_url, jar.clone(), &headers) {
         Ok((request_id, response)) => {
             // Register the AuthnRequest ID for replay protection (eID §9.7)
             // before handing the browser the form that starts the flow.
@@ -65,12 +63,40 @@ where
 /// flow-binding cookie attached. Returns the AuthnRequest ID so the caller can
 /// register it as pending for replay protection (eID §9.7).
 fn build_login_response(
-    config: &AuthConfig,
-    keys: &KeySet,
+    auth_state: &AuthServiceState,
     sso_url: &str,
     jar: CookieJar,
     headers: &HeaderMap,
 ) -> Result<(String, Response)> {
+    let config = auth_state.auth_config();
+    let msg = signed_authn_request(config, auth_state.dv_keys(), sso_url)?;
+    info!(
+        "[login] AuthnRequest created: {}",
+        &msg.id[..20.min(msg.id.len())]
+    );
+
+    // Bind this SSO flow to the current browser (login-CSRF / forced-login
+    // defense): the matching ACS callback must present this cookie, whose
+    // value is checked against the assertion's InResponseTo. The cookie
+    // cannot be set on another browser cross-origin, so an attacker cannot
+    // make a victim's browser complete a flow the attacker started.
+    let jar = jar.add(crate::handlers::flow::flow_cookie(
+        &config.dv.acs_url,
+        &msg.id,
+        headers,
+    ));
+
+    debug!("[login] Returning HTTP-POST autosubmit form");
+    let resp = autosubmit_post_response(sso_url, &msg.xml, "SAMLRequest")?;
+    Ok((msg.id, (jar, resp).into_response()))
+}
+
+/// Create the signed AuthnRequest (eID §7.3) for the RD's SSO endpoint.
+fn signed_authn_request(
+    config: &AuthConfig,
+    keys: &KeySet,
+    sso_url: &str,
+) -> Result<CreatedMessage> {
     let preselected_ad_entity_id = config.preselected_ad_entity_id();
 
     // In the Test environment the IdP is the standalone TVS mock, which resolves
@@ -92,33 +118,14 @@ fn build_login_response(
         keys.signing.len(),
     );
 
-    let msg = create_authn_request(
-        &config.dv.entity_id,
-        &config.dv.service_uuid,
+    create_authn_request(&AuthnRequestSpec {
+        entity_id: &config.dv.entity_id,
+        service_uuid: &config.dv.service_uuid,
         sso_url,
-        keys.primary_signing(),
+        signing_key: keys.primary_signing(),
         preselected_ad_entity_id,
-        request_acs_url,
-    )?;
-    info!(
-        "[login] AuthnRequest created: {}",
-        &msg.id[..20.min(msg.id.len())]
-    );
-
-    // Bind this SSO flow to the current browser (login-CSRF / forced-login
-    // defense): the matching ACS callback must present this cookie, whose
-    // value is checked against the assertion's InResponseTo. The cookie
-    // cannot be set on another browser cross-origin, so an attacker cannot
-    // make a victim's browser complete a flow the attacker started.
-    let jar = jar.add(crate::handlers::flow::flow_cookie(
-        &config.dv.acs_url,
-        &msg.id,
-        headers,
-    ));
-
-    debug!("[login] Returning HTTP-POST autosubmit form");
-    let resp = autosubmit_post_response(sso_url, &msg.xml, "SAMLRequest")?;
-    Ok((msg.id, (jar, resp).into_response()))
+        acs_url: request_acs_url,
+    })
 }
 
 #[cfg(test)]

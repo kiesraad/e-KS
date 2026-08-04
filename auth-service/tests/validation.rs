@@ -16,8 +16,8 @@ use auth_service::{
         crypto::sign,
         loa::MINIMUM_LOA,
         validation::{
-            ValidateAssertionOpts, validate_artifact_response_at, validate_assertion_at,
-            validate_response_at,
+            ValidateArtifactResponseOpts, ValidateAssertionOpts, ValidateResponseOpts,
+            validate_artifact_response_at, validate_assertion_at, validate_response_at,
         },
         xml_parser::parse,
     },
@@ -485,9 +485,11 @@ fn signed_artifact_response_full_chain_succeeds() {
     let response_node = validate_artifact_response_at(
         &doc,
         art_node,
-        std::slice::from_ref(&rd_key),
-        "",
-        Some(RD_ENTITY_ID),
+        &ValidateArtifactResponseOpts {
+            trusted_keys: std::slice::from_ref(&rd_key),
+            expected_in_response_to: "",
+            expected_issuer: Some(RD_ENTITY_ID),
+        },
         &mut errors,
     )
     .expect("response extracted");
@@ -498,8 +500,16 @@ fn signed_artifact_response_full_chain_succeeds() {
 
     // Step 4: inner Response status is Success and carries an Assertion.
     let mut resp_errors = Vec::new();
-    let assertion_node = validate_response_at(&doc, response_node, None, None, &mut resp_errors)
-        .expect("assertion extracted");
+    let assertion_node = validate_response_at(
+        &doc,
+        response_node,
+        &ValidateResponseOpts {
+            expected_destination: None,
+            expected_issuer: None,
+        },
+        &mut resp_errors,
+    )
+    .expect("assertion extracted");
     assert!(
         resp_errors.is_empty(),
         "Response must be valid: {resp_errors:?}"
@@ -547,9 +557,11 @@ fn signed_artifact_response_issuer_mismatch_rejected() {
     validate_artifact_response_at(
         &doc,
         art_node,
-        std::slice::from_ref(&rd_key),
-        "",
-        Some("urn:test:not-the-rd"),
+        &ValidateArtifactResponseOpts {
+            trusted_keys: std::slice::from_ref(&rd_key),
+            expected_in_response_to: "",
+            expected_issuer: Some("urn:test:not-the-rd"),
+        },
         &mut errors,
     );
     assert!(

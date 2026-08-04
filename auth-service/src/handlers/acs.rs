@@ -17,8 +17,8 @@ use crate::{
         loa::MINIMUM_LOA,
         messages::{CreatedMessage, create_artifact_resolve},
         validation::{
-            Claims, ValidateAssertionOpts, validate_artifact_response_at, validate_assertion_at,
-            validate_response_at,
+            Claims, ValidateArtifactResponseOpts, ValidateAssertionOpts, ValidateResponseOpts,
+            validate_artifact_response_at, validate_assertion_at, validate_response_at,
         },
         xml_builder::wrap_in_soap_envelope,
         xml_parser::{Document, NodeId, parse},
@@ -63,43 +63,10 @@ where
         Err(failure) => return fail_redirect(failure, jar),
     };
 
-    // eID §7.6.3.5 rule 4 / §9.7: the Assertion must be a response to an
-    // AuthnRequest this DV actually issued, and the matched ID is consumed in
-    // the same atomic step so a replay of the same Assertion can never be
-    // accepted (the store is the application's, so this holds even when /login
-    // and this ACS callback are served by different instances). Fails closed: an
-    // absent, unknown, expired, already-consumed, or unverifiable InResponseTo
-    // is rejected.
-    let Some(in_response_to) = claims.in_response_to.clone() else {
-        warn!("[ACS] Assertion has no InResponseTo: cannot correlate to a pending AuthnRequest");
-        return fail_redirect(AuthFailure::Error, jar);
+    let jar = match confirm_pending_request(&state, &auth_state, &claims, jar, &headers).await {
+        Ok(jar) => jar,
+        Err(response) => return response,
     };
-
-    // Login-CSRF / forced-login defense: this ACS callback MUST come from the
-    // browser that started the flow. The cookie set by `/login` must be present
-    // and bound to this AuthnRequest ID (the assertion's InResponseTo) and the
-    // same User-Agent. The cookie is cleared (one-shot) regardless of the outcome.
-    let (flow_ok, jar) = crate::handlers::flow::verify_and_clear(
-        jar,
-        &auth_state.auth_config().dv.acs_url,
-        &in_response_to,
-        &headers,
-    );
-    if !flow_ok {
-        warn!(
-            "[ACS] SSO flow cookie missing or not bound to this AuthnRequest/User-Agent: \
-             rejecting (possible login CSRF / forced login)"
-        );
-        return fail_redirect(AuthFailure::Error, jar);
-    }
-
-    if !state.consume_if_pending(in_response_to).await {
-        warn!(
-            "[ACS] InResponseTo did not match an outstanding AuthnRequest \
-             (unknown, expired, or replayed): rejecting"
-        );
-        return fail_redirect(AuthFailure::Error, jar);
-    }
 
     // SECURITY: never log decrypted SubjectID values; they are PII (BSN /
     // pseudonym per eID §7.6.3.4). Log only non-PII metadata for tracing.
@@ -126,6 +93,56 @@ where
     state
         .on_authenticated(subject_id, claims.name_id, jar, &headers)
         .await
+}
+
+/// Require the validated assertion to answer an AuthnRequest this DV issued
+/// from this browser, or return the failure redirect.
+///
+/// eID §7.6.3.5 rule 4 / §9.7: the Assertion must be a response to an
+/// AuthnRequest this DV actually issued, and the matched ID is consumed in the
+/// same atomic step so a replay of the same Assertion can never be accepted
+/// (the store is the application's, so this holds even when /login and the ACS
+/// callback are served by different instances). Fails closed: an absent,
+/// unknown, expired, already-consumed, or unverifiable InResponseTo is
+/// rejected. The one-shot flow cookie is cleared on the returned jar either way.
+async fn confirm_pending_request<S: AuthState>(
+    state: &S,
+    auth_state: &AuthServiceState,
+    claims: &Claims,
+    jar: CookieJar,
+    headers: &HeaderMap,
+) -> Result<CookieJar, Response> {
+    let Some(in_response_to) = claims.in_response_to.clone() else {
+        warn!("[ACS] Assertion has no InResponseTo: cannot correlate to a pending AuthnRequest");
+        return Err(fail_redirect(AuthFailure::Error, jar));
+    };
+
+    // Login-CSRF / forced-login defense: this ACS callback MUST come from the
+    // browser that started the flow. The cookie set by `/login` must be present
+    // and bound to this AuthnRequest ID (the assertion's InResponseTo) and the
+    // same User-Agent. The cookie is cleared (one-shot) regardless of the outcome.
+    let (flow_ok, jar) = crate::handlers::flow::verify_and_clear(
+        jar,
+        &auth_state.auth_config().dv.acs_url,
+        &in_response_to,
+        headers,
+    );
+    if !flow_ok {
+        warn!(
+            "[ACS] SSO flow cookie missing or not bound to this AuthnRequest/User-Agent: \
+             rejecting (possible login CSRF / forced login)"
+        );
+        return Err(fail_redirect(AuthFailure::Error, jar));
+    }
+
+    if !state.consume_if_pending(in_response_to).await {
+        warn!(
+            "[ACS] InResponseTo did not match an outstanding AuthnRequest \
+             (unknown, expired, or replayed): rejecting"
+        );
+        return Err(fail_redirect(AuthFailure::Error, jar));
+    }
+    Ok(jar)
 }
 
 /// Query-clean landing for a failed SAML authentication: the redirect target of
@@ -203,25 +220,42 @@ fn harden_headers(headers: &mut HeaderMap) {
     );
 }
 
-/// Resolve the artifact into validated [`Claims`], or an [`AuthFailure`] the
-/// caller turns into a user-facing page. Owns the parsed SOAP document so the
-/// `NodeId`s threaded through the validation steps stay valid.
-async fn resolve_artifact_to_claims(
-    auth_state: &AuthServiceState,
-    params: &HashMap<String, String>,
-) -> Result<Claims, AuthFailure> {
+/// Pull the one-time-use artifact out of the ACS query string (eID §7.4).
+///
+/// The artifact is an opaque reference, so a short prefix is safe to log for
+/// correlation and is not itself sensitive PII.
+fn artifact_from_params(params: &HashMap<String, String>) -> Result<&String, AuthFailure> {
     let Some(artifact) = params.get("SAMLart") else {
         warn!("[ACS] Missing SAMLart query parameter");
         return Err(AuthFailure::Error);
     };
 
-    // The artifact is a one-time-use opaque reference (eID §7.4); a short
-    // prefix is safe for correlation and is not itself sensitive PII.
     info!(
         "[ACS] Artifact received: {}... (len={})",
         artifact.chars().take(20).collect::<String>(),
         artifact.len()
     );
+
+    Ok(artifact)
+}
+
+/// Parse the SOAP ArtifactResponse envelope exactly once; the whole
+/// ArtifactResponse -> Response -> Assertion chain is then navigated on this one
+/// tree, so inner elements keep the namespaces they inherit.
+fn parse_soap_envelope(soap: &str) -> Result<Document<'_>, AuthFailure> {
+    parse(soap).map_err(|e| {
+        error!("[ACS] Failed to parse SOAP ArtifactResponse: {e}");
+        AuthFailure::Error
+    })
+}
+
+/// Resolve the artifact into validated [`Claims`], or an [`AuthFailure`] the
+/// caller turns into a user-facing page.
+async fn resolve_artifact_to_claims(
+    auth_state: &AuthServiceState,
+    params: &HashMap<String, String>,
+) -> Result<Claims, AuthFailure> {
+    let artifact = artifact_from_params(params)?;
 
     let cfg = auth_state.auth_config();
     let dv_keys = auth_state.dv_keys();
@@ -253,33 +287,52 @@ async fn resolve_artifact_to_claims(
     //      namespaces from the ArtifactResponse and are never re-parsed as
     //      standalone fragments; signature verification uses the self-contained
     //      source bytes of the RD-signed ArtifactResponse element.
-    let doc = match parse(&soap_response) {
-        Ok(d) => d,
-        Err(e) => {
-            error!("[ACS] Failed to parse SOAP ArtifactResponse: {e}");
+    let doc = parse_soap_envelope(&soap_response)?;
+    let chain = ResponseChain {
+        doc: &doc,
+        auth_state,
+        rd: &rd,
+    };
+    chain.claims(&resolve.id)
+}
+
+/// The parsed SOAP document plus the trust context threaded through the
+/// ArtifactResponse -> Response -> Assertion validation chain (eID §7.6).
+struct ResponseChain<'a, 'input> {
+    doc: &'a Document<'input>,
+    auth_state: &'a AuthServiceState,
+    rd: &'a IdpMetadata,
+}
+
+impl ResponseChain<'_, '_> {
+    /// Validate the full chain and extract the [`Claims`]. `resolve_id` is the
+    /// `@ID` of the ArtifactResolve this response must answer.
+    fn claims(&self, resolve_id: &str) -> Result<Claims, AuthFailure> {
+        let root = self.doc.document_element();
+        let Some(art_node) = unwrap_soap(self.doc, root) else {
+            warn!(
+                "[ACS] Failed to unwrap SOAP envelope (root_element={:?})",
+                self.doc.local_name(root)
+            );
             return Err(AuthFailure::Error);
-        }
-    };
-    let root = doc.document_element();
-    let Some(art_node) = unwrap_soap(&doc, root) else {
-        warn!(
-            "[ACS] Failed to unwrap SOAP envelope (root_element={:?})",
-            doc.local_name(root)
-        );
-        return Err(AuthFailure::Error);
-    };
+        };
 
-    // 3. Validate ArtifactResponse (eID §7.6.1) using RD signing certs from metadata
-    let response_node = response_from_artifact_response(&doc, art_node, &rd, &resolve.id)?;
+        // 3. Validate ArtifactResponse (eID §7.6.1) using RD signing certs from metadata
+        let response_node = self.response_node(art_node, resolve_id)?;
 
-    // 4. Validate Response (eID §7.6.2): handle cancellation / IdP errors
-    let assertion_node = assertion_from_response(&doc, response_node, cfg, &rd)?;
+        // 4. Validate Response (eID §7.6.2): handle cancellation / IdP errors
+        let assertion_node = self.assertion_node(response_node)?;
 
-    // 5. Validate Assertion (eID §7.6.3, §7.6.3.5). The Assertion is authenticated
-    //    by the enveloping RD signature on the ArtifactResponse (verified in step
-    //    3); per §9.1 only signatures outside an Assertion/Advice are validated.
-    //    Binds the Assertion Issuer to the RD EntityID (`minvws/nl-rdo-max`).
-    let claims = claims_from_assertion(&doc, assertion_node, auth_state, cfg, &rd.entity_id)?;
+        // 5. Validate Assertion (eID §7.6.3, §7.6.3.5). The Assertion is
+        //    authenticated by the enveloping RD signature on the ArtifactResponse
+        //    (verified in step 3); per §9.1 only signatures outside an
+        //    Assertion/Advice are validated. Binds the Assertion Issuer to the
+        //    RD EntityID (`minvws/nl-rdo-max`).
+        let claims = self.assertion_claims(assertion_node)?;
+
+        self.check_matching_in_response_to(response_node, &claims)?;
+        Ok(claims)
+    }
 
     // eID §7.6.2: the Response @InResponseTo (cardinality 1) is the @ID of the
     // AuthnRequest, so it MUST equal the value the assertion's
@@ -287,15 +340,20 @@ async fn resolve_artifact_to_claims(
     // the one matched-and-consumed against the pending-request store in
     // `handle_acs`; requiring the Response to name the same request rejects a
     // response whose two InResponseTo values disagree (a spliced/mismatched pair).
-    let response_in_response_to = doc.get_attribute(response_node, "InResponseTo");
-    if response_in_response_to != claims.in_response_to.as_deref() {
-        warn!(
-            "[ACS] Response @InResponseTo does not match the assertion's InResponseTo: rejecting"
-        );
-        return Err(AuthFailure::Error);
+    fn check_matching_in_response_to(
+        &self,
+        response_node: NodeId,
+        claims: &Claims,
+    ) -> Result<(), AuthFailure> {
+        let response_in_response_to = self.doc.get_attribute(response_node, "InResponseTo");
+        if response_in_response_to != claims.in_response_to.as_deref() {
+            warn!(
+                "[ACS] Response @InResponseTo does not match the assertion's InResponseTo: rejecting"
+            );
+            return Err(AuthFailure::Error);
+        }
+        Ok(())
     }
-
-    Ok(claims)
 }
 
 fn build_artifact_resolve(
@@ -346,119 +404,111 @@ async fn send_artifact_resolve(
     }
 }
 
-fn response_from_artifact_response(
-    doc: &Document,
-    art_node: NodeId,
-    rd: &IdpMetadata,
-    expected_id: &str,
-) -> Result<NodeId, AuthFailure> {
-    debug!(
-        "[ACS] Step 3: validating ArtifactResponse against {} RD signing key(s), \
-         expected InResponseTo={}",
-        rd.signing_keys.len(),
-        expected_id
-    );
-    let mut errors = Vec::new();
-    let response = validate_artifact_response_at(
-        doc,
-        art_node,
-        &rd.signing_keys,
-        expected_id,
-        // eID §7.6.1: bind the ArtifactResponse Issuer to the RD EntityID.
-        Some(&rd.entity_id),
-        &mut errors,
-    );
-    if !errors.is_empty() {
-        error!("[ACS] ArtifactResponse validation failed: {errors:?}");
-        return Err(AuthFailure::Error);
-    }
-    debug!("[ACS] Step 3: ArtifactResponse OK");
-    response.ok_or_else(|| {
-        warn!("[ACS] No Response in ArtifactResponse");
-        AuthFailure::Error
-    })
-}
-
-fn assertion_from_response(
-    doc: &Document,
-    response_node: NodeId,
-    cfg: &AuthConfig,
-    rd: &IdpMetadata,
-) -> Result<NodeId, AuthFailure> {
-    debug!("[ACS] Step 4: validating inner Response status");
-    let mut errors = Vec::new();
-    let assertion = validate_response_at(
-        doc,
-        response_node,
-        // eID §7.6.2: bind the Response to this DV's ACS and the RD as issuer,
-        // mirroring the assertion-level Recipient/Issuer checks (§7.6.3.5 r1-2).
-        Some(&cfg.dv.acs_url),
-        Some(&rd.entity_id),
-        &mut errors,
-    );
-
-    if !errors.is_empty() {
-        let errors_str = errors.join("; ");
-        let is_authn_failed = errors_str.contains("AuthnFailed");
-        let is_cancelled = errors_str.contains("Authentication cancelled");
-
-        // TVS "Checklist Testen" v2.1 T3: the user cancelled.
-        if is_authn_failed || is_cancelled {
-            warn!("[ACS] Authentication cancelled by user");
-            return Err(AuthFailure::Cancelled);
+impl ResponseChain<'_, '_> {
+    fn response_node(&self, art_node: NodeId, expected_id: &str) -> Result<NodeId, AuthFailure> {
+        debug!(
+            "[ACS] Step 3: validating ArtifactResponse against {} RD signing key(s), \
+             expected InResponseTo={}",
+            self.rd.signing_keys.len(),
+            expected_id
+        );
+        let mut errors = Vec::new();
+        let response = validate_artifact_response_at(
+            self.doc,
+            art_node,
+            &ValidateArtifactResponseOpts {
+                trusted_keys: &self.rd.signing_keys,
+                expected_in_response_to: expected_id,
+                // eID §7.6.1: bind the ArtifactResponse Issuer to the RD EntityID.
+                expected_issuer: Some(&self.rd.entity_id),
+            },
+            &mut errors,
+        );
+        if !errors.is_empty() {
+            error!("[ACS] ArtifactResponse validation failed: {errors:?}");
+            return Err(AuthFailure::Error);
         }
-
-        // TVS "Checklist Testen" v2.1 L10: RD/DigiD error status.
-        warn!("[ACS] Authentication failed: {errors_str}");
-        return Err(AuthFailure::Error);
+        debug!("[ACS] Step 3: ArtifactResponse OK");
+        response.ok_or_else(|| {
+            warn!("[ACS] No Response in ArtifactResponse");
+            AuthFailure::Error
+        })
     }
-    debug!("[ACS] Step 4: Response status Success");
 
-    assertion.ok_or_else(|| {
-        warn!("[ACS] No Assertion element extracted from successful Response");
-        AuthFailure::Error
-    })
-}
+    fn assertion_node(&self, response_node: NodeId) -> Result<NodeId, AuthFailure> {
+        debug!("[ACS] Step 4: validating inner Response status");
+        let mut errors = Vec::new();
+        let assertion = validate_response_at(
+            self.doc,
+            response_node,
+            // eID §7.6.2: bind the Response to this DV's ACS and the RD as issuer,
+            // mirroring the assertion-level Recipient/Issuer checks (§7.6.3.5 r1-2).
+            &ValidateResponseOpts {
+                expected_destination: Some(&self.auth_state.auth_config().dv.acs_url),
+                expected_issuer: Some(&self.rd.entity_id),
+            },
+            &mut errors,
+        );
 
-fn claims_from_assertion(
-    doc: &Document,
-    assertion_node: NodeId,
-    auth_state: &AuthServiceState,
-    cfg: &AuthConfig,
-    rd_entity_id: &str,
-) -> Result<Claims, AuthFailure> {
-    debug!("[ACS] Step 5: validating Assertion");
+        if !errors.is_empty() {
+            let errors_str = errors.join("; ");
+            let is_authn_failed = errors_str.contains("AuthnFailed");
+            let is_cancelled = errors_str.contains("Authentication cancelled");
 
-    let dv_keys = auth_state.dv_keys();
-    let priv_keys: Vec<(&str, &str)> = dv_keys
-        .encryption
-        .iter()
-        .map(|k| (k.key_pem.expose_secret(), k.key_name.as_str()))
-        .collect();
+            // TVS "Checklist Testen" v2.1 T3: the user cancelled.
+            if is_authn_failed || is_cancelled {
+                warn!("[ACS] Authentication cancelled by user");
+                return Err(AuthFailure::Cancelled);
+            }
 
-    let mut errors = Vec::new();
-    let claims = validate_assertion_at(
-        doc,
-        assertion_node,
-        &ValidateAssertionOpts {
-            dv_entity_id: &cfg.dv.entity_id,
-            expected_recipient: &cfg.dv.acs_url,
-            // eID §9.1: the Assertion is authenticated by the enveloping RD
-            // signature on the ArtifactResponse (verified in step 3); here we
-            // only bind the Assertion Issuer to the RD EntityID (`minvws/nl-rdo-max`).
-            expected_issuer: Some(rd_entity_id),
-            private_keys: &priv_keys,
-            minimum_loa: Some(MINIMUM_LOA),
-            // eID §7.6.3.4: bind to the registered service.
-            expected_service_uuid: Some(&cfg.dv.service_uuid),
-        },
-        &mut errors,
-    );
+            // TVS "Checklist Testen" v2.1 L10: RD/DigiD error status.
+            warn!("[ACS] Authentication failed: {errors_str}");
+            return Err(AuthFailure::Error);
+        }
+        debug!("[ACS] Step 4: Response status Success");
 
-    claims.ok_or_else(|| {
-        error!("[ACS] Assertion validation failed: {errors:?}");
-        AuthFailure::Error
-    })
+        assertion.ok_or_else(|| {
+            warn!("[ACS] No Assertion element extracted from successful Response");
+            AuthFailure::Error
+        })
+    }
+
+    fn assertion_claims(&self, assertion_node: NodeId) -> Result<Claims, AuthFailure> {
+        debug!("[ACS] Step 5: validating Assertion");
+
+        let cfg = self.auth_state.auth_config();
+        let priv_keys: Vec<(&str, &str)> = self
+            .auth_state
+            .dv_keys()
+            .encryption
+            .iter()
+            .map(|k| (k.key_pem.expose_secret(), k.key_name.as_str()))
+            .collect();
+
+        let mut errors = Vec::new();
+        let claims = validate_assertion_at(
+            self.doc,
+            assertion_node,
+            &ValidateAssertionOpts {
+                dv_entity_id: &cfg.dv.entity_id,
+                expected_recipient: &cfg.dv.acs_url,
+                // eID §9.1: the Assertion is authenticated by the enveloping RD
+                // signature on the ArtifactResponse (verified in step 3); here we
+                // only bind the Assertion Issuer to the RD EntityID (`minvws/nl-rdo-max`).
+                expected_issuer: Some(&self.rd.entity_id),
+                private_keys: &priv_keys,
+                minimum_loa: Some(MINIMUM_LOA),
+                // eID §7.6.3.4: bind to the registered service.
+                expected_service_uuid: Some(&cfg.dv.service_uuid),
+            },
+            &mut errors,
+        );
+
+        claims.ok_or_else(|| {
+            error!("[ACS] Assertion validation failed: {errors:?}");
+            AuthFailure::Error
+        })
+    }
 }
 
 #[cfg(test)]

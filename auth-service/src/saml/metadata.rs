@@ -28,45 +28,21 @@ pub struct SignedDvMetadataArgs<'a> {
 }
 
 pub fn build_signed_dv_metadata(args: SignedDvMetadataArgs) -> Result<String> {
-    let SignedDvMetadataArgs {
-        entity_id,
-        acs_url,
-        slo_url,
-        service_name,
-        service_uuid,
-        signing_keys,
-        tls_signing_cert,
-        encryption_keys,
-    } = args;
-
-    let signing_key = signing_keys
+    let signing_key = args
+        .signing_keys
         .first()
         .ok_or_else(|| AuthError::Config("no DV signing key to sign metadata".to_string()))?;
 
     let metadata_id = generate_id();
-
-    // Drop the TLS cert when it is already one of the signing certs (a combined
-    // signing+TLS certificate) so the metadata never carries a duplicate
-    // KeyDescriptor.
-    let tls_extra =
-        tls_signing_cert.filter(|tls| signing_keys.iter().all(|k| k.key_name != tls.key_name));
-
-    let sk: Vec<(&str, &str)> = signing_keys
-        .iter()
-        .chain(tls_extra)
-        .map(|k| (k.key_name.as_str(), k.cert_base64.as_str()))
-        .collect();
-    let ek: Vec<(&str, &str)> = encryption_keys
-        .iter()
-        .map(|k| (k.key_name.as_str(), k.cert_base64.as_str()))
-        .collect();
+    let sk = published_signing_keys(args.signing_keys, args.tls_signing_cert);
+    let ek = key_refs(args.encryption_keys.iter());
 
     let xml = build_dv_metadata(DvMetadataArgs {
-        entity_id,
-        acs_url,
-        slo_url,
-        service_name,
-        service_uuid,
+        entity_id: args.entity_id,
+        acs_url: args.acs_url,
+        slo_url: args.slo_url,
+        service_name: args.service_name,
+        service_uuid: args.service_uuid,
         metadata_id: &metadata_id,
         signing_cert_base64: &signing_key.cert_base64,
         signing_keys: &sk,
@@ -74,6 +50,25 @@ pub fn build_signed_dv_metadata(args: SignedDvMetadataArgs) -> Result<String> {
     })?;
 
     sign(&xml, signing_key.key_pem.expose_secret())
+}
+
+/// The `use="signing"` keys to publish: every SAML signing key plus the mTLS
+/// client cert (eID §8.3), dropping the TLS cert when it is already one of the
+/// signing certs (a combined signing+TLS certificate) so the metadata never
+/// carries a duplicate KeyDescriptor.
+fn published_signing_keys<'a>(
+    signing_keys: &'a [KeyPair],
+    tls_signing_cert: Option<&'a KeyPair>,
+) -> Vec<(&'a str, &'a str)> {
+    let tls_extra =
+        tls_signing_cert.filter(|tls| signing_keys.iter().all(|k| k.key_name != tls.key_name));
+    key_refs(signing_keys.iter().chain(tls_extra))
+}
+
+/// `(key_name, cert_base64)` template references for a list of keys.
+fn key_refs<'a>(keys: impl Iterator<Item = &'a KeyPair>) -> Vec<(&'a str, &'a str)> {
+    keys.map(|k| (k.key_name.as_str(), k.cert_base64.as_str()))
+        .collect()
 }
 
 #[cfg(test)]

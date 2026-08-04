@@ -12,8 +12,8 @@ use auth_service::{
         constants::{NS_SAML, NS_SAMLP, NS_SOAP, STATUS_SUCCESS, SUBJECT_CONFIRMATION_BEARER},
         loa::MINIMUM_LOA,
         validation::{
-            Claims, ValidateAssertionOpts, validate_artifact_response_at, validate_assertion_at,
-            validate_response_at,
+            Claims, ValidateArtifactResponseOpts, ValidateAssertionOpts, ValidateResponseOpts,
+            validate_artifact_response_at, validate_assertion_at, validate_response_at,
         },
         xml_parser::parse,
     },
@@ -113,9 +113,11 @@ pub fn run_chain(soap: &str, rd_key: &KeyPair) -> ChainResult {
     let response_node = validate_artifact_response_at(
         &doc,
         art_node,
-        std::slice::from_ref(rd_key),
-        "",
-        Some(RD),
+        &ValidateArtifactResponseOpts {
+            trusted_keys: std::slice::from_ref(rd_key),
+            expected_in_response_to: "",
+            expected_issuer: Some(RD),
+        },
         &mut errors,
     );
     if !errors.is_empty() {
@@ -125,8 +127,15 @@ pub fn run_chain(soap: &str, rd_key: &KeyPair) -> ChainResult {
         return rejected(vec!["no Response extracted".to_string()]);
     };
 
-    let assertion_node =
-        validate_response_at(&doc, response_node, Some(ACS), Some(RD), &mut errors);
+    let assertion_node = validate_response_at(
+        &doc,
+        response_node,
+        &ValidateResponseOpts {
+            expected_destination: Some(ACS),
+            expected_issuer: Some(RD),
+        },
+        &mut errors,
+    );
     if !errors.is_empty() {
         return rejected(errors);
     }
@@ -183,7 +192,15 @@ pub fn validate_response(response_xml: &str) -> ResponseResult {
     };
     let root = doc.document_element();
     let mut errors = Vec::new();
-    let assertion = validate_response_at(&doc, root, None, None, &mut errors);
+    let assertion = validate_response_at(
+        &doc,
+        root,
+        &ValidateResponseOpts {
+            expected_destination: None,
+            expected_issuer: None,
+        },
+        &mut errors,
+    );
     ResponseResult {
         valid: errors.is_empty(),
         assertion_xml: assertion.and_then(|n| doc.node_source(n).map(str::to_string)),
@@ -227,11 +244,13 @@ pub fn validate_artifact_response(
     let response = validate_artifact_response_at(
         &doc,
         art_node,
-        trusted_keys,
-        expected_in_response_to,
-        // The string wrapper focuses on the other checks; Issuer binding has its
-        // own coverage (run_chain and the dedicated integration tests).
-        None,
+        &ValidateArtifactResponseOpts {
+            trusted_keys,
+            expected_in_response_to,
+            // The string wrapper focuses on the other checks; Issuer binding has
+            // its own coverage (run_chain and the dedicated integration tests).
+            expected_issuer: None,
+        },
         &mut errors,
     );
     ArtifactResponseResult {

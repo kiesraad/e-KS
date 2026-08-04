@@ -20,33 +20,39 @@ pub struct CreatedMessage {
     pub xml: String,
 }
 
-pub fn create_authn_request(
-    entity_id: &str,
-    service_uuid: &str,
-    sso_url: &str,
-    signing_key: &KeyPair,
-    preselected_ad_entity_id: Option<&str>,
-    acs_url: Option<&str>,
-) -> Result<CreatedMessage> {
+/// Inputs to [`create_authn_request`]: the DV identity, the RD SSO endpoint the
+/// request is destined for, and the signing key.
+pub struct AuthnRequestSpec<'a> {
+    pub entity_id: &'a str,
+    pub service_uuid: &'a str,
+    pub sso_url: &'a str,
+    pub signing_key: &'a KeyPair,
+    /// AD to pre-select via `Scoping/IDPList` (eID §7.3); `None` sends no Scoping.
+    pub preselected_ad_entity_id: Option<&'a str>,
+    /// Explicit ACS URL, Test-environment only (see `AuthnRequestArgs::acs_url`).
+    pub acs_url: Option<&'a str>,
+}
+
+pub fn create_authn_request(spec: &AuthnRequestSpec<'_>) -> Result<CreatedMessage> {
     let id = generate_id();
     let issue_instant = now_utc();
 
     let xml = build_authn_request(AuthnRequestArgs {
         id: &id,
         issue_instant: &issue_instant,
-        destination: sso_url,
-        issuer: entity_id,
-        acs_url,
-        intended_audience: entity_id,
-        service_uuid,
+        destination: spec.sso_url,
+        issuer: spec.entity_id,
+        acs_url: spec.acs_url,
+        intended_audience: spec.entity_id,
+        service_uuid: spec.service_uuid,
         // eID §7.6.3.2 / TVS T6: request the DV's minimum LoA so the RD never
         // authenticates below it; the response is still re-checked on arrival.
         requested_loa_uri: Some(MINIMUM_LOA.as_request_uri()),
-        preselected_ad_entity_id,
-        signing_cert_base64: &signing_key.cert_base64,
+        preselected_ad_entity_id: spec.preselected_ad_entity_id,
+        signing_cert_base64: &spec.signing_key.cert_base64,
     })?;
 
-    let signed = sign(&xml, signing_key.key_pem.expose_secret())?;
+    let signed = sign(&xml, spec.signing_key.key_pem.expose_secret())?;
 
     Ok(CreatedMessage { id, xml: signed })
 }

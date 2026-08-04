@@ -1,5 +1,7 @@
 use std::{env, path::PathBuf};
 
+mod env_reader;
+
 use axum_extra::routing::TypedPath;
 
 use crate::{
@@ -306,58 +308,30 @@ impl AuthConfig {
         Self::from_env_with(|name| env::var(name))
     }
 
-    fn from_env_with<F>(mut lookup: F) -> Result<Self, AuthError>
+    fn from_env_with<F>(lookup: F) -> Result<Self, AuthError>
     where
         F: FnMut(&str) -> Result<String, env::VarError>,
     {
-        // `TVS_ENV` selects the environment; every environment-specific value
-        // (TVS RD endpoint, DV EntityID/ServiceUUID, back-channel trust) derives
-        // from it. Required outside `tvs-mock` builds, so a real deployment must
-        // choose deliberately rather than silently using the test mock.
-        let environment: Environment = required("TVS_ENV", &mut lookup)?
-            .parse()
-            .map_err(AuthError::Config)?;
+        let mut env = env_reader::EnvReader::new(lookup);
+        let environment = env.environment()?;
+        let certs_dir = env.certs_dir()?;
+        let preselected_ad = env.preselected_ad()?;
+        let base_url = env.base_url(environment)?;
+        Ok(Self::derive(
+            environment,
+            certs_dir,
+            preselected_ad,
+            &base_url,
+        ))
+    }
 
-        // `tvs-mock` pins the committed test CA and embeds test keys, so it is only
-        // valid against the TVS mock; refuse a real TVS_ENV with the feature on.
-        #[cfg(feature = "tvs-mock")]
-        if environment != Environment::Test {
-            return Err(AuthError::Config(format!(
-                "the `tvs-mock` feature is compiled in but TVS_ENV={environment:?} is a real \
-                 TVS environment; tvs-mock embeds test keys and pins the test CA, so it must \
-                 only run against the TVS mock (TVS_ENV=test)"
-            )));
-        }
-
-        let certs_dir = match lookup("CERTS_DIR") {
-            Ok(value) => PathBuf::from(value),
-            // `tvs-mock` extracts the embedded bundle (works on a deployed host);
-            // otherwise `CERTS_DIR` is required.
-            #[cfg(feature = "tvs-mock")]
-            Err(_) => crate::tvs_mock::certs_dir()?,
-            #[cfg(not(feature = "tvs-mock"))]
-            Err(_) => return Err(missing("CERTS_DIR")),
-        };
-
-        // PRESELECTED_AD chooses which AD to pre-select in the AuthnRequest
-        // Scoping (eID §7.3). Unset or empty defaults to `Select` (no Scoping).
-        let preselected_ad: PreselectedAd = match lookup("PRESELECTED_AD") {
-            Ok(value) if !value.trim().is_empty() => value.parse().map_err(AuthError::Config)?,
-            _ => PreselectedAd::default(),
-        };
-
-        let base_url = required("BASE_URL", &mut lookup)?;
-
-        // A non-https BASE_URL downgrades the __Host- flow cookie (see
-        // handlers::flow); require https for real environments.
-        if environment != Environment::Test && !base_url.starts_with("https://") {
-            return Err(AuthError::Config(format!(
-                "BASE_URL must be https for TVS_ENV={environment:?} (got {base_url:?}); a \
-                 non-https origin downgrades the __Host- SSO flow cookie"
-            )));
-        }
-
-        // ── Everything else derives from {environment, certs_dir, base_url} ──
+    /// Everything else derives from `{environment, certs_dir, base_url}`.
+    fn derive(
+        environment: Environment,
+        certs_dir: PathBuf,
+        preselected_ad: PreselectedAd,
+        base_url: &str,
+    ) -> Self {
         let dv = DvConfig {
             entity_id: environment.dv_entity_id().to_string(),
             service_uuid: environment.dv_service_uuid().to_string(),
@@ -378,7 +352,7 @@ impl AuthConfig {
 
         let tls = tls_paths(&certs_dir);
 
-        Ok(AuthConfig {
+        AuthConfig {
             environment,
             certs_dir,
             tls,
@@ -388,29 +362,8 @@ impl AuthConfig {
             // Defaults to `/`; the embedding application overrides this with its
             // own logout-confirmation page after building the config.
             post_logout_redirect: String::new(),
-        })
+        }
     }
-}
-
-/// A missing-required-variable [`AuthError::Config`].
-fn missing(name: &str) -> AuthError {
-    AuthError::Config(format!("missing environment variable: {name}"))
-}
-
-/// Read an env var, falling back to the `tvs-mock` default when the variable is
-/// absent and that feature is enabled, or erroring otherwise.
-fn required<F>(name: &'static str, lookup: &mut F) -> Result<String, AuthError>
-where
-    F: FnMut(&str) -> Result<String, env::VarError>,
-{
-    if let Ok(value) = lookup(name) {
-        return Ok(value);
-    }
-    #[cfg(feature = "tvs-mock")]
-    if let Some(value) = crate::tvs_mock::default_for(name) {
-        return Ok(value);
-    }
-    Err(missing(name))
 }
 
 #[cfg(test)]

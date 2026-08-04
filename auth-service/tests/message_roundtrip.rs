@@ -5,7 +5,9 @@
 //! structural (not byte-exact).
 
 use auth_service::saml::{
-    messages::{create_artifact_resolve, create_authn_request, create_logout_request},
+    messages::{
+        AuthnRequestSpec, create_artifact_resolve, create_authn_request, create_logout_request,
+    },
     verification::verify_xml_signature,
 };
 
@@ -15,14 +17,14 @@ use common::load_key;
 #[test]
 fn authn_request_builds_signs_and_verifies() {
     let key = load_key("dv-signing-1");
-    let msg = create_authn_request(
-        "urn:test:dv",
-        "f847dc11-ac24-47b2-84a8-a057440ce56d",
-        "https://rd.example.com/sso",
-        &key,
-        None,
-        None,
-    )
+    let msg = create_authn_request(&AuthnRequestSpec {
+        entity_id: "urn:test:dv",
+        service_uuid: "f847dc11-ac24-47b2-84a8-a057440ce56d",
+        sso_url: "https://rd.example.com/sso",
+        signing_key: &key,
+        preselected_ad_entity_id: None,
+        acs_url: None,
+    })
     .expect("AuthnRequest built");
 
     // Structural assertions.
@@ -49,14 +51,14 @@ fn authn_request_builds_signs_and_verifies() {
 fn authn_request_with_preselect_emits_scoping_and_verifies() {
     let key = load_key("dv-signing-1");
     let ad = "urn:nl-eid-gdi:1.0:AD:00000004166909913000:entities:9002";
-    let msg = create_authn_request(
-        "urn:test:dv",
-        "uuid-1",
-        "https://rd.example.com/sso",
-        &key,
-        Some(ad),
-        None,
-    )
+    let msg = create_authn_request(&AuthnRequestSpec {
+        entity_id: "urn:test:dv",
+        service_uuid: "uuid-1",
+        sso_url: "https://rd.example.com/sso",
+        signing_key: &key,
+        preselected_ad_entity_id: Some(ad),
+        acs_url: None,
+    })
     .expect("AuthnRequest built");
 
     assert!(msg.xml.contains("<samlp:Scoping>"));
@@ -124,14 +126,14 @@ fn logout_request_builds_signs_and_verifies() {
 fn message_signed_by_one_key_rejected_by_another() {
     let signer = load_key("dv-signing-1");
     let other = load_key("rd-signing-1");
-    let msg = create_authn_request(
-        "urn:test:dv",
-        "uuid-1",
-        "https://rd.example.com/sso",
-        &signer,
-        None,
-        None,
-    )
+    let msg = create_authn_request(&AuthnRequestSpec {
+        entity_id: "urn:test:dv",
+        service_uuid: "uuid-1",
+        sso_url: "https://rd.example.com/sso",
+        signing_key: &signer,
+        preselected_ad_entity_id: None,
+        acs_url: None,
+    })
     .expect("built");
     let result = verify_xml_signature(&msg.xml, std::slice::from_ref(&other));
     assert!(
@@ -145,14 +147,14 @@ fn message_signed_by_one_key_rejected_by_another() {
 #[test]
 fn authn_request_with_acs_url_signs_and_verifies() {
     let key = load_key("dv-signing-1");
-    let msg = create_authn_request(
-        "urn:test:dv",
-        "uuid-1",
-        "https://rd.example.com/sso",
-        &key,
-        None,
-        Some("https://pr-7.preview.example.test/saml/sp/acs"),
-    )
+    let msg = create_authn_request(&AuthnRequestSpec {
+        entity_id: "urn:test:dv",
+        service_uuid: "uuid-1",
+        sso_url: "https://rd.example.com/sso",
+        signing_key: &key,
+        preselected_ad_entity_id: None,
+        acs_url: Some("https://pr-7.preview.example.test/saml/sp/acs"),
+    })
     .expect("AuthnRequest built");
 
     assert!(

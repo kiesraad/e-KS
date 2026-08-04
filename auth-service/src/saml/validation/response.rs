@@ -1,14 +1,19 @@
 //! Inner Response validation (eID §7.6.2).
 
-use super::helpers::{
-    check_instant_within, check_issuer, check_status_success, check_version, child_element,
-};
+use super::helpers::{Validator, child_element};
 use crate::saml::{
     constants::*,
     xml_parser::{Document, NodeId, children_by_tag, find_descendant},
 };
-use chrono::{Duration, Utc};
 use tracing::debug;
+
+/// Expectations for [`validate_response_at`]: the recipient ACS the Response
+/// `@Destination` MUST name and the pinned RD EntityID its `Issuer` MUST carry
+/// (eID §7.6.2). `None` skips the respective check (tests).
+pub struct ValidateResponseOpts<'a> {
+    pub expected_destination: Option<&'a str>,
+    pub expected_issuer: Option<&'a str>,
+}
 
 /// Validate the Response element `response` within the already-parsed document
 /// `doc` (eID §7.6.2) and return the inner Assertion node.
@@ -20,23 +25,19 @@ use tracing::debug;
 pub fn validate_response_at(
     doc: &Document,
     response: NodeId,
-    expected_destination: Option<&str>,
-    expected_issuer: Option<&str>,
+    opts: &ValidateResponseOpts<'_>,
     errors: &mut Vec<String>,
 ) -> Option<NodeId> {
-    check_version(doc, response, "Response", errors);
+    let mut v = Validator::new(doc, errors);
+    v.check_version(response, "Response");
 
     // Bound how stale the Response envelope may be (it carries no Conditions).
-    check_instant_within(
+    v.check_freshness(
         doc.get_attribute(response, "IssueInstant"),
-        Utc::now(),
-        Duration::seconds(CLOCK_SKEW_SECONDS),
-        Duration::seconds(MESSAGE_FRESHNESS_SECONDS),
         "Response @IssueInstant",
-        errors,
     );
 
-    let status_code = check_status_success(doc, response, "Response", errors);
+    let status_code = v.check_status_success(response, "Response");
     debug!(
         "[validate] Response status_code={:?}",
         status_code.as_deref()
@@ -46,55 +47,16 @@ pub fn validate_response_at(
     // in plaintext inside the RD-signed ArtifactResponse; only the SubjectIDs are
     // encrypted, per §7.6.3.4).
     if find_descendant(doc, response, NS_SAML, "EncryptedAssertion").is_some() {
-        errors
-            .push("Response contains an EncryptedAssertion, which eID §7.6.2 forbids".to_string());
+        v.error("Response contains an EncryptedAssertion, which eID §7.6.2 forbids".to_string());
     }
 
-    // eID §7.6.2: @Destination MUST match the recipient ACS the artifact was
-    // delivered to. Mirrors the assertion-level Recipient binding (§7.6.3.5 r2).
-    if let Some(expected) = expected_destination {
-        let destination = doc.get_attribute(response, "Destination").unwrap_or("");
-        debug!("[validate] Response Destination='{destination}' (expected='{expected}')");
-        if destination != expected {
-            errors.push(format!(
-                "Response Destination mismatch: expected {expected}, got {destination}"
-            ));
-        }
-    }
+    v.check_destination(response, opts.expected_destination);
 
     // eID §7.6.2: Issuer MUST be the RD EntityID. Mirrors the assertion-level
     // Issuer binding (§7.6.3.5 r1).
-    check_issuer(doc, response, expected_issuer, "Response", errors);
+    v.check_issuer(response, opts.expected_issuer, "Response");
 
-    // Extract the Assertion from the PARSED tree (comment-safe, anti-XSW; see
-    // `child_element`).
-    let assertion = child_element(doc, response, NS_SAML, "Assertion");
-    debug!(
-        "[validate] Extracted Assertion: present={}",
-        assertion.is_some()
-    );
-
-    // eID §7.6.2 (Assertion cardinality 0..1, conditional): MUST be present when
-    // the status is Success and MUST NOT be included otherwise.
-    let is_success = status_code.as_deref() == Some(STATUS_SUCCESS);
-    if assertion.is_none() && is_success {
-        errors.push("No Assertion found in successful Response".to_string());
-    }
-    if assertion.is_some() && !is_success {
-        errors.push(
-            "Response carries an Assertion without a Success status, which eID §7.6.2 forbids"
-                .to_string(),
-        );
-    }
-    // More than one Assertion is ambiguous (cardinality 0..1) and we consume only
-    // the first, so reject rather than silently pick one.
-    let assertion_count = children_by_tag(doc, response, NS_SAML, "Assertion").len();
-    if assertion_count > 1 {
-        errors.push(format!(
-            "Response carries {assertion_count} Assertion elements (at most one is allowed)"
-        ));
-    }
-
+    let assertion = v.extract_assertion(response, status_code.as_deref());
     debug!(
         "[validate] Response done: valid={}, errors={}",
         errors.is_empty(),
@@ -103,10 +65,63 @@ pub fn validate_response_at(
     assertion
 }
 
+/// The Response-level checks (eID §7.6.2), as methods on the shared [`Validator`].
+impl Validator<'_, '_> {
+    // eID §7.6.2: @Destination MUST match the recipient ACS the artifact was
+    // delivered to. Mirrors the assertion-level Recipient binding (§7.6.3.5 r2).
+    fn check_destination(&mut self, response: NodeId, expected: Option<&str>) {
+        let Some(expected) = expected else {
+            return;
+        };
+        let destination = self
+            .doc
+            .get_attribute(response, "Destination")
+            .unwrap_or("");
+        debug!("[validate] Response Destination='{destination}' (expected='{expected}')");
+        if destination != expected {
+            self.error(format!(
+                "Response Destination mismatch: expected {expected}, got {destination}"
+            ));
+        }
+    }
+
+    // eID §7.6.2 (Assertion cardinality 0..1, conditional): the Assertion MUST be
+    // present when the status is Success and MUST NOT be included otherwise; more
+    // than one is ambiguous and rejected rather than silently picking the first.
+    fn extract_assertion(&mut self, response: NodeId, status_code: Option<&str>) -> Option<NodeId> {
+        // Extract the Assertion from the PARSED tree (comment-safe, anti-XSW; see
+        // `child_element`).
+        let assertion = child_element(self.doc, response, NS_SAML, "Assertion");
+        debug!(
+            "[validate] Extracted Assertion: present={}",
+            assertion.is_some()
+        );
+
+        let is_success = status_code == Some(STATUS_SUCCESS);
+        if assertion.is_none() && is_success {
+            self.error("No Assertion found in successful Response".to_string());
+        }
+        if assertion.is_some() && !is_success {
+            self.error(
+                "Response carries an Assertion without a Success status, which eID §7.6.2 forbids"
+                    .to_string(),
+            );
+        }
+        let assertion_count = children_by_tag(self.doc, response, NS_SAML, "Assertion").len();
+        if assertion_count > 1 {
+            self.error(format!(
+                "Response carries {assertion_count} Assertion elements (at most one is allowed)"
+            ));
+        }
+        assertion
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::saml::xml_parser::parse;
+    use chrono::Utc;
 
     /// A SAML timestamp `offset` from now, for the mandatory `@IssueInstant`.
     fn ts(offset: chrono::Duration) -> String {
@@ -125,7 +140,11 @@ mod tests {
         let doc = parse(xml).expect("test XML parses");
         let root = doc.document_element();
         let mut errors = Vec::new();
-        let assertion = validate_response_at(&doc, root, dest, issuer, &mut errors);
+        let opts = ValidateResponseOpts {
+            expected_destination: dest,
+            expected_issuer: issuer,
+        };
+        let assertion = validate_response_at(&doc, root, &opts, &mut errors);
         let assertion_xml = assertion.and_then(|n| doc.node_source(n).map(str::to_string));
         (errors.is_empty(), errors, assertion_xml)
     }

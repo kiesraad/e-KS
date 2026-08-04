@@ -63,17 +63,10 @@ pub fn extract_idp_keys(doc: &Document, root: NodeId) -> IdpKeys {
     let mut encryption = Vec::new();
 
     for kd in descendants_by_tag(doc, root, NS_MD, "KeyDescriptor") {
-        let use_attr = doc.get_attribute(kd, "use");
-
-        let cert_node = match find_descendant(doc, kd, NS_DSIG, "X509Certificate") {
-            Some(n) => n,
-            None => continue,
+        let Some(kp) = descriptor_key_pair(doc, kd) else {
+            continue;
         };
-
-        let cert_pem = pem_from_cert_base64(&inner_text(doc, cert_node));
-        let kp = KeyPair::from_pem(cert_pem, SecretString::from(String::new()));
-
-        match use_attr {
+        match doc.get_attribute(kd, "use") {
             Some("signing") => signing.push(kp),
             Some("encryption") => encryption.push(kp),
             _ => {
@@ -88,6 +81,17 @@ pub fn extract_idp_keys(doc: &Document, root: NodeId) -> IdpKeys {
         signing,
         encryption,
     }
+}
+
+/// The public-only [`KeyPair`] of a `KeyDescriptor`'s `X509Certificate`, or
+/// `None` for a KeyName-only descriptor.
+fn descriptor_key_pair(doc: &Document, kd: NodeId) -> Option<KeyPair> {
+    let cert_node = find_descendant(doc, kd, NS_DSIG, "X509Certificate")?;
+    let cert_pem = pem_from_cert_base64(&inner_text(doc, cert_node));
+    Some(KeyPair::from_pem(
+        cert_pem,
+        SecretString::from(String::new()),
+    ))
 }
 
 fn endpoint_location(doc: &Document, root: NodeId, tag: &str, binding: &str) -> Option<String> {
@@ -110,22 +114,24 @@ fn endpoint_location(doc: &Document, root: NodeId, tag: &str, binding: &str) -> 
 /// attribute, inject a CSP directive, or smuggle a request. A well-formed URL
 /// never contains these characters unescaped.
 fn validate_endpoint_url(url: &str, what: &str) -> Result<()> {
-    if let Some(rest) = url.strip_prefix("https://") {
-        if rest.is_empty() {
-            return Err(AuthError::Config(format!(
-                "metadata {what} endpoint has no host: {url}"
-            )));
-        }
-    } else {
+    // Quote/angle/backtick/semicolon/backslash characters could break out of an
+    // HTML attribute, inject a CSP directive, or smuggle a request target.
+    const ILLEGAL_CHARS: &str = "\"'<>`;\\";
+
+    let Some(host) = url.strip_prefix("https://") else {
         return Err(AuthError::Config(format!(
             "metadata {what} endpoint is not an https URL: {url}"
         )));
+    };
+    if host.is_empty() {
+        return Err(AuthError::Config(format!(
+            "metadata {what} endpoint has no host: {url}"
+        )));
     }
-    if let Some(bad) = url.chars().find(|&c| {
-        c.is_whitespace()
-            || c.is_control()
-            || matches!(c, '"' | '\'' | '<' | '>' | '`' | ';' | '\\')
-    }) {
+    if let Some(bad) = url
+        .chars()
+        .find(|&c| c.is_whitespace() || c.is_control() || ILLEGAL_CHARS.contains(c))
+    {
         return Err(AuthError::Config(format!(
             "metadata {what} endpoint contains an illegal character {bad:?}: {url}"
         )));
@@ -242,59 +248,56 @@ fn subject_oin(leaf_der: &[u8]) -> Option<String> {
 /// intentionally NOT pinned (they rotate); trust derives from the chain + OIN.
 fn cert_is_trusted(cert_pem: &str, trust: &RdTrust) -> Result<()> {
     let leaf_der = pem_to_der(cert_pem)?;
+    check_rd_oin(&leaf_der, trust)?;
+    check_chains_to_pinned_root(&leaf_der, trust)
+}
 
-    // eID §9.1: the certificate MUST contain the participant (RD) OIN, so a
-    // different PKIoverheid participant's cert cannot impersonate the RD.
-    match subject_oin(&leaf_der) {
-        Some(oin) if oin == trust.expected_oin => {}
-        Some(oin) => {
-            return Err(AuthError::Crypto(format!(
-                "RD signing cert OIN {oin} does not match expected {}",
-                trust.expected_oin
-            )));
-        }
-        None => {
-            return Err(AuthError::Crypto(
-                "RD signing cert has no subject serialNumber (OIN)".into(),
-            ));
-        }
+/// eID §9.1: the certificate MUST contain the participant (RD) OIN, so a
+/// different PKIoverheid participant's cert cannot impersonate the RD.
+fn check_rd_oin(leaf_der: &[u8], trust: &RdTrust) -> Result<()> {
+    match subject_oin(leaf_der) {
+        Some(oin) if oin == trust.expected_oin => Ok(()),
+        Some(oin) => Err(AuthError::Crypto(format!(
+            "RD signing cert OIN {oin} does not match expected {}",
+            trust.expected_oin
+        ))),
+        None => Err(AuthError::Crypto(
+            "RD signing cert has no subject serialNumber (OIN)".into(),
+        )),
     }
+}
 
-    // eID §9.2: the certificate MUST chain to a pinned PKIoverheid root. The RD
-    // metadata ships only the leaf, so the intermediates are supplied from pki.
-    let root_ders: Vec<Vec<u8>> = trust
-        .roots
-        .iter()
-        .map(|pem| pem_bytes_to_der(pem))
-        .collect::<Result<_>>()?;
-    let intermediate_ders: Vec<Vec<u8>> = trust
-        .intermediates
-        .iter()
-        .map(|pem| pem_bytes_to_der(pem))
-        .collect::<Result<_>>()?;
+/// eID §9.2: the certificate MUST chain to a pinned PKIoverheid root. The RD
+/// metadata ships only the leaf, so the intermediates are supplied from pki.
+fn check_chains_to_pinned_root(leaf_der: &[u8], trust: &RdTrust) -> Result<()> {
+    let root_ders = pem_list_to_der(trust.roots)?;
+    let intermediate_ders = pem_list_to_der(trust.intermediates)?;
 
-    let root_certs: Vec<CertificateDer> = root_ders
-        .iter()
-        .map(|d| CertificateDer::from(d.as_slice()))
-        .collect();
+    let root_certs = certificates(&root_ders);
     let anchors: Vec<rustls_pki_types::TrustAnchor> = root_certs
         .iter()
         .map(webpki::anchor_from_trusted_cert)
         .collect::<std::result::Result<_, _>>()
         .map_err(|e| AuthError::Crypto(format!("invalid pinned PKIoverheid root: {e}")))?;
-    let intermediates: Vec<CertificateDer> = intermediate_ders
-        .iter()
-        .map(|d| CertificateDer::from(d.as_slice()))
-        .collect();
+    let intermediates = certificates(&intermediate_ders);
 
-    let leaf = CertificateDer::from(leaf_der.as_slice());
+    verify_cert_chain(leaf_der, &anchors, &intermediates)
+}
+
+/// Run the webpki path validation of `leaf_der` against the pinned anchors.
+fn verify_cert_chain(
+    leaf_der: &[u8],
+    anchors: &[rustls_pki_types::TrustAnchor],
+    intermediates: &[CertificateDer],
+) -> Result<()> {
+    let leaf = CertificateDer::from(leaf_der);
     let end_entity = webpki::EndEntityCert::try_from(&leaf)
         .map_err(|e| AuthError::Crypto(format!("invalid RD signing cert: {e}")))?;
     end_entity
         .verify_for_usage(
             webpki::ALL_VERIFICATION_ALGS,
-            &anchors,
-            &intermediates,
+            anchors,
+            intermediates,
             UnixTime::now(),
             // `server_auth()` is `required_if_present(serverAuth)`: it accepts the
             // production leaf (which carries serverAuth) and the mock leaf (no EKU).
@@ -308,6 +311,16 @@ fn cert_is_trusted(cert_pem: &str, trust: &RdTrust) -> Result<()> {
             ))
         })?;
     Ok(())
+}
+
+fn pem_list_to_der(pems: &[&[u8]]) -> Result<Vec<Vec<u8>>> {
+    pems.iter().map(|pem| pem_bytes_to_der(pem)).collect()
+}
+
+fn certificates(ders: &[Vec<u8>]) -> Vec<CertificateDer<'_>> {
+    ders.iter()
+        .map(|d| CertificateDer::from(d.as_slice()))
+        .collect()
 }
 
 /// Parse metadata XML and extract entity ID, endpoints, and keys, after pinning
@@ -327,34 +340,9 @@ pub fn parse_idp_metadata(xml: &str, trust: &RdTrust) -> Result<IdpMetadata> {
     let doc = crate::saml::xml_parser::parse(xml)?;
     let root = doc.document_element();
 
-    let entity_id = doc
-        .get_attribute(root, "entityID")
-        .ok_or_else(|| AuthError::Xml("metadata: missing entityID".into()))?
-        .to_owned();
-    debug!("[metadata] entityID={entity_id}");
-
-    // eID §9.2 / §10.2: pin the RD identity. The expected EntityID is a configured
-    // constant, not a value taken from this (only self-signature-checked) document.
-    if entity_id != trust.expected_entity_id {
-        return Err(AuthError::Crypto(format!(
-            "metadata entityID {entity_id} does not match the pinned RD EntityID {}",
-            trust.expected_entity_id
-        )));
-    }
-
+    let entity_id = pinned_entity_id(&doc, root, trust)?;
     check_metadata_expiry(&doc, root)?;
-
-    let signing_keys = pinned_signing_keys(extract_idp_keys(&doc, root), trust)?;
-    debug!("[metadata] Trusted signing keys: {}", signing_keys.len());
-
-    let sig_result = verify_xml_signature(xml, &signing_keys);
-    if !sig_result.is_valid() {
-        return Err(AuthError::Crypto(format!(
-            "metadata signature verification failed: {}",
-            sig_result.errors.join("; ")
-        )));
-    }
-    debug!("[metadata] Metadata signature verified against a pinned RD signing cert");
+    let signing_keys = verified_signing_keys(xml, &doc, root, trust)?;
 
     let (sso_url, ars_url, slo_url) = resolve_endpoints(&doc, root)?;
     debug!("[metadata] Endpoints resolved: sso={sso_url}, ars={ars_url}, slo={slo_url}");
@@ -372,6 +360,45 @@ pub fn parse_idp_metadata(xml: &str, trust: &RdTrust) -> Result<IdpMetadata> {
         signing_keys,
         cache_duration,
     })
+}
+
+/// eID §9.2 / §10.2: pin the RD identity. The expected EntityID is a configured
+/// constant, not a value taken from this (only self-signature-checked) document.
+fn pinned_entity_id(doc: &Document, root: NodeId, trust: &RdTrust) -> Result<String> {
+    let entity_id = doc
+        .get_attribute(root, "entityID")
+        .ok_or_else(|| AuthError::Xml("metadata: missing entityID".into()))?
+        .to_owned();
+    debug!("[metadata] entityID={entity_id}");
+    if entity_id != trust.expected_entity_id {
+        return Err(AuthError::Crypto(format!(
+            "metadata entityID {entity_id} does not match the pinned RD EntityID {}",
+            trust.expected_entity_id
+        )));
+    }
+    Ok(entity_id)
+}
+
+/// The signing certs that pass the pinned-trust filter (OIN + chain), after
+/// verifying the metadata's enveloping signature against exactly those certs.
+fn verified_signing_keys(
+    xml: &str,
+    doc: &Document,
+    root: NodeId,
+    trust: &RdTrust,
+) -> Result<Vec<KeyPair>> {
+    let signing_keys = pinned_signing_keys(extract_idp_keys(doc, root), trust)?;
+    debug!("[metadata] Trusted signing keys: {}", signing_keys.len());
+
+    let sig_result = verify_xml_signature(xml, &signing_keys);
+    if !sig_result.is_valid() {
+        return Err(AuthError::Crypto(format!(
+            "metadata signature verification failed: {}",
+            sig_result.errors.join("; ")
+        )));
+    }
+    debug!("[metadata] Metadata signature verified against a pinned RD signing cert");
+    Ok(signing_keys)
 }
 
 /// eID §8.2/§8.5: do not use metadata past its hard expiry. If `validUntil` is
