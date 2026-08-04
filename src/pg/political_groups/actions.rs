@@ -1,8 +1,8 @@
 //! Store-backed operations for [`PoliticalGroup`].
 
 use crate::{
-    AppError, PgEvent, PgStore, QueryParamState, list_designation::ListDesignation,
-    political_groups::PoliticalGroup,
+    AppError, PgEvent, PgStore, QueryParamState,
+    structs::{list_designation::ListDesignation, political_groups::PoliticalGroup},
 };
 use axum_extra::routing::TypedPath;
 

@@ -1,4 +1,4 @@
-use crate::common::FormAction;
+use crate::structs::common::FormAction;
 
 #[derive(Debug, Default, Clone)]
 pub struct CandidatePosition {

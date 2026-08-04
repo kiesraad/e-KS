@@ -14,7 +14,6 @@ mod slugify_teletex;
 mod storage_url;
 
 pub mod bag;
-pub mod id_newtype;
 pub mod locality_aliases;
 pub mod no_cache_headers;
 pub mod pagination;
@@ -22,9 +21,6 @@ pub mod transparent_string;
 
 #[cfg(feature = "livereload")]
 pub mod livereload;
-
-#[cfg(test)]
-pub mod test_utils;
 
 pub use abbreviate_str::abbreviate_str;
 #[cfg(feature = "dev-features")]

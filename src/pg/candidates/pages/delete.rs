@@ -5,11 +5,12 @@ use axum::{
 };
 
 use crate::{
-    AppError, AppResponse, Context, HtmlTemplate, Overlay, PgStore, QueryParamState,
-    candidate_lists::{CandidateList, FullCandidateList},
-    candidates::Candidate,
-    common::{HasSeverity, Problematic},
-    filters,
+    AppError, AppResponse, Context, HtmlTemplate, Overlay, PgStore, QueryParamState, filters,
+    structs::{
+        candidate_lists::{CandidateList, FullCandidateList},
+        candidates::Candidate,
+        common::{HasSeverity, Problematic},
+    },
 };
 
 use super::CandidateListDeletePersonPath;
@@ -62,8 +63,10 @@ mod tests {
     use super::*;
     use crate::{
         PgStore, QueryParamState,
-        candidate_lists::{CandidateListId, FullCandidateList},
-        persons::PersonId,
+        structs::{
+            candidate_lists::{CandidateListId, FullCandidateList},
+            persons::PersonId,
+        },
         test_utils::{
             response_body_string, sample_candidate_list, sample_person,
             sample_person_with_last_name,

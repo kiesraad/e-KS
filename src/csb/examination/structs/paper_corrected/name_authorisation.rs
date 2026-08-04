@@ -1,5 +1,5 @@
 use super::PaperCorrected;
-use crate::{CsbStore, csb::WithCorrections};
+use crate::{CsbStore, projection::WithCorrections};
 
 /// A name authorisation with its rows diffed against the corrections.
 pub struct PaperCorrectedNameAuthorisation {
@@ -51,7 +51,8 @@ pub fn paper_corrected_name_authorisations(
 mod tests {
     use super::*;
     use crate::{
-        CsbStore, name_authorisations::NameAuthorisationId, test_utils::sample_name_authorisation,
+        CsbStore, structs::name_authorisations::NameAuthorisationId,
+        test_utils::sample_name_authorisation,
     };
 
     #[test]

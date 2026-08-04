@@ -117,7 +117,7 @@ mod tests {
     use super::*;
     use crate::{
         AppError, Context, PgStore,
-        persons::PersonId,
+        structs::persons::PersonId,
         test_utils::{response_body_string, sample_person},
     };
     use axum::{http::StatusCode, response::IntoResponse};
@@ -156,7 +156,7 @@ mod tests {
         let person_name = person.name.display();
         person.create(&store).await?;
 
-        let list_id = crate::candidate_lists::CandidateListId::new();
+        let list_id = crate::structs::candidate_lists::CandidateListId::new();
         let list = sample_candidate_list(list_id);
         list.create(&store).await?;
 

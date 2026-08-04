@@ -1,6 +1,7 @@
 mod csrf;
 mod file_form;
 mod form_data;
+mod id_newtype;
 mod merge_errors;
 mod string_validators;
 mod validation_error;

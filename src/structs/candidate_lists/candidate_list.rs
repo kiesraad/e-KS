@@ -1,6 +1,8 @@
 use crate::{
-    ElectionConfig, ElectoralDistrict, common::UtcDateTime, core::AnyLocale, id_newtype,
-    persons::PersonId,
+    ElectionConfig, ElectoralDistrict,
+    core::AnyLocale,
+    id_newtype,
+    structs::{common::UtcDateTime, persons::PersonId},
 };
 use serde::{Deserialize, Serialize};
 
@@ -49,8 +51,10 @@ mod tests {
     use super::*;
     use crate::{
         AppError, MAX_CANDIDATES, PgStore,
-        candidate_lists::{CandidateListSummary, FullCandidateList},
-        persons::PersonId,
+        structs::{
+            candidate_lists::{CandidateListSummary, FullCandidateList},
+            persons::PersonId,
+        },
         test_utils::{sample_candidate_list, sample_person, sample_person_with_last_name},
     };
     use std::collections::BTreeSet;
@@ -486,7 +490,7 @@ mod tests {
             .await
             .unwrap_err();
 
-        assert!(matches!(err, AppError::TooManyCandidates));
+        assert!(matches!(err, AppError::TooManyCandidates { .. }));
         assert_eq!(
             store.get_candidate_list(list_id)?.candidates.len(),
             MAX_CANDIDATES
@@ -512,7 +516,7 @@ mod tests {
 
         let err = list.update_order(&store, &person_ids).await.unwrap_err();
 
-        assert!(matches!(err, AppError::TooManyCandidates));
+        assert!(matches!(err, AppError::TooManyCandidates { .. }));
         assert!(store.get_candidate_list(list_id)?.candidates.is_empty());
 
         Ok(())

@@ -5,15 +5,15 @@ use axum_extra::routing::TypedPath;
 use crate::{
     CsbStore, Locale, QueryParamState,
     constants::DEFAULT_DATE_FORMAT,
-    csb::{
-        WithCorrections,
-        examination::{
-            extractors::CsbPoliticalGroup,
-            structs::{CandidateCorrectionField, PaperCorrected},
-        },
+    csb::examination::{
+        extractors::CsbPoliticalGroup,
+        structs::{CandidateCorrectionField, PaperCorrected},
     },
-    persons::{Person, PersonId},
-    structs::csb::PersonCorrection,
+    projection::WithCorrections,
+    structs::{
+        csb::PersonCorrection,
+        persons::{Person, PersonId},
+    },
     trans,
 };
 
@@ -175,8 +175,10 @@ mod tests {
     use crate::{
         AppError,
         CsbEvent::{self},
-        common::{DisplayName, Initials, LastName, PlaceOfResidence},
-        structs::csb::Correction,
+        structs::{
+            common::{DisplayName, Initials, LastName, PlaceOfResidence},
+            csb::Correction,
+        },
         test_utils::{sample_person, sample_person_with},
     };
 

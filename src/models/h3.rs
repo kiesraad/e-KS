@@ -11,7 +11,7 @@ use super::{
     layout::h_document,
     markdown::{filters, model_template},
 };
-use crate::{AppError, core::ModelLocale, list_designation::ListDesignation};
+use crate::{AppError, core::ModelLocale, structs::list_designation::ListDesignation};
 
 #[derive(Debug)]
 pub struct H3 {

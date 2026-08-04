@@ -1,12 +1,14 @@
+use crate::structs::list_designation::ListDesignation;
 use axum_extra::routing::TypedPath;
 
 use crate::{
     AppError, PgStore, QueryParamState,
-    common::{HasSeverity, Problematic, Severity},
-    list_submitters::ListSubmitter,
-    name_authorisations::NameAuthorisation,
-    pg::list_designation::ListDesignation,
-    political_groups::PoliticalGroup,
+    structs::{
+        common::{HasSeverity, Problematic, Severity},
+        list_submitters::ListSubmitter,
+        name_authorisations::NameAuthorisation,
+        political_groups::PoliticalGroup,
+    },
 };
 
 #[derive(Clone, Debug)]
@@ -137,7 +139,7 @@ impl PoliticalGroupSteps {
 mod tests {
     use super::*;
     use crate::{
-        AppError, PgStore, name_authorisations::NameAuthorisationId,
+        AppError, PgStore, structs::name_authorisations::NameAuthorisationId,
         test_utils::sample_name_authorisation,
     };
 

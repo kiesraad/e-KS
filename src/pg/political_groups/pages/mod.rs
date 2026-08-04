@@ -1,11 +1,11 @@
 use axum::Router;
 use axum_extra::routing::RouterExt;
 
-use crate::AppState;
+use crate::AppRequestState;
 
 mod update;
 
-pub fn router() -> Router<AppState> {
+pub fn router<S: AppRequestState>() -> Router<S> {
     Router::new()
         .typed_get(update::update_political_group)
         .typed_post(update::update_political_group_submit)
@@ -14,7 +14,7 @@ pub fn router() -> Router<AppState> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::political_groups::PoliticalGroup;
+    use crate::structs::political_groups::PoliticalGroup;
 
     #[test]
     fn political_group_update_path_matches_expected_route() {
@@ -26,6 +26,6 @@ mod tests {
 
     #[test]
     fn political_group_router_builds() {
-        let _router = router();
+        let _router = router::<crate::AppState>();
     }
 }

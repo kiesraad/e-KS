@@ -35,9 +35,9 @@ pub async fn overview(
 ) -> Result<Response, AppError> {
     let political_group = CsbPoliticalGroup::new_from_csb_store(&store);
 
-    let imported_lists = store.get_candidate_lists(crate::csb::WithCorrections::None);
+    let imported_lists = store.get_candidate_lists(crate::projection::WithCorrections::None);
     let candidate_lists = store
-        .get_candidate_lists(crate::csb::WithCorrections::All)
+        .get_candidate_lists(crate::projection::WithCorrections::All)
         .into_iter()
         .map(|list| {
             // TODO: This is a placeholder value, the real value should be calculated based on the candidate list data.

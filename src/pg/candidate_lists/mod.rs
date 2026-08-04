@@ -3,15 +3,18 @@
 //! Scope: forms, extractors, pages, and structs that manage candidate lists,
 //! their ordering, submitters, and related list summaries.
 mod actions;
+mod candidate_record;
 mod extractors;
 mod forms;
 pub(crate) mod importer;
 mod pages;
 mod paths;
 
-pub use crate::structs::candidate_lists::{
-    CandidateList, CandidateListId, CandidateListSummary, FullCandidateList,
-};
+pub use candidate_record::CandidateRecord;
+pub(crate) use candidate_record::{CSV_HEADERS, CandidateRecordCsv};
 pub use forms::{CandidateListCreateForm, CandidateListForm};
 pub use pages::router;
-pub use paths::{CandidateListsPath, ViewCandidateListPath};
+pub use paths::ViewCandidateListPath;
+// Only the guard test in this section reads this; see `view::context`.
+#[cfg(test)]
+pub use paths::CandidateListsPath;

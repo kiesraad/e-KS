@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     OptionAsStrExt,
-    common::{InfoProblems, PotentialProblems, Problematic, Problems, Severity},
+    structs::common::{InfoProblems, PotentialProblems, Problematic, Problems, Severity},
 };
 
 use super::{FirstName, Initials, LastName, LastNamePrefix};

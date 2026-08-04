@@ -1,9 +1,9 @@
 use crate::{
-    common::{
+    id_newtype,
+    structs::common::{
         Address, FullName, InternationalAddress, InternationalPostalCode, PostalCode, Problematic,
         Problems, Severity,
     },
-    id_newtype,
 };
 use serde::{Deserialize, Serialize};
 
@@ -134,8 +134,10 @@ impl ListSubmitter {
     }
 }
 
-fn try_into_dutch_address(address: &InternationalAddress) -> Option<crate::common::DutchAddress> {
-    Some(crate::common::DutchAddress {
+fn try_into_dutch_address(
+    address: &InternationalAddress,
+) -> Option<crate::structs::common::DutchAddress> {
+    Some(crate::structs::common::DutchAddress {
         street_name: address.street_name.clone(),
         house_number: address.house_number.clone(),
         house_number_addition: address.house_number_addition.clone(),
@@ -152,7 +154,7 @@ fn try_into_dutch_address(address: &InternationalAddress) -> Option<crate::commo
 
 #[cfg(test)]
 mod tests {
-    use crate::common::{EmptyAddressProblems, PotentialProblems};
+    use crate::structs::common::{EmptyAddressProblems, PotentialProblems};
 
     use super::*;
 
@@ -163,7 +165,7 @@ mod tests {
                 last_name_prefix: Some("van".parse().unwrap()),
                 ..Default::default()
             },
-            address: Address::Dutch(crate::common::DutchAddress::default()),
+            address: Address::Dutch(crate::structs::common::DutchAddress::default()),
             is_substitute,
         }
     }

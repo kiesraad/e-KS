@@ -2,13 +2,15 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     ElectionConfig,
-    common::{
-        DutchAddress, FullName, Gender, HasSeverity, PotentialProblems, Problematic, Problems,
-        Severity, UtcDateTime, WithProblems,
-    },
     core::{AnyLocale, Locale},
     id_newtype,
-    persons::PersonalData,
+    structs::{
+        common::{
+            DutchAddress, FullName, Gender, HasSeverity, PotentialProblems, Problematic, Problems,
+            Severity, UtcDateTime, WithProblems,
+        },
+        persons::PersonalData,
+    },
     trans,
 };
 
@@ -146,9 +148,11 @@ mod tests {
     use super::*;
     use crate::{
         AppError, PgStore,
-        common::{BsnOrNoneConfirmed, CountryCode, EmptyAddressProblems},
         pagination::SortDirection,
-        persons::PersonSort,
+        structs::{
+            common::{BsnOrNoneConfirmed, CountryCode, EmptyAddressProblems},
+            persons::PersonSort,
+        },
         test_utils::{
             parse_country_code, parse_last_name_prefix, sample_person, sample_person_with,
             sample_person_with_last_name,

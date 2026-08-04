@@ -1,7 +1,7 @@
 use axum::{Router, extract::DefaultBodyLimit};
 use axum_extra::routing::RouterExt;
 
-use crate::AppState;
+use crate::AppRequestState;
 
 use super::paths::*;
 
@@ -14,7 +14,7 @@ mod reorder;
 mod update;
 mod view;
 
-pub fn router() -> Router<AppState> {
+pub fn router<S: AppRequestState>() -> Router<S> {
     Router::new()
         // manage lists
         .typed_get(list::list_candidate_lists)
@@ -42,7 +42,7 @@ pub fn router() -> Router<AppState> {
 mod tests {
     use super::*;
     use crate::{
-        candidate_lists::{CandidateList, CandidateListId},
+        structs::candidate_lists::{CandidateList, CandidateListId},
         test_utils::sample_candidate_list,
     };
 
@@ -99,6 +99,6 @@ mod tests {
 
     #[test]
     fn candidate_list_router_builds() {
-        let _router = router();
+        let _router = router::<crate::AppState>();
     }
 }

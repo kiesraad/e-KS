@@ -12,7 +12,7 @@ use super::{
 use crate::{
     AppError,
     core::{ElectionType, ModelLocale},
-    list_designation::ListDesignation,
+    structs::list_designation::ListDesignation,
 };
 
 #[derive(Debug)]

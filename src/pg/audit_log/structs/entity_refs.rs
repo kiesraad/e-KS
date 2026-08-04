@@ -2,9 +2,10 @@
 //! `EntityRef`s the template can render as abbreviated clickable links plus a
 //! human-readable description.
 
-use crate::{PgStoreData, candidate_lists::CandidateListId, persons::PersonId};
-
-pub use crate::structs::audit_log::EntityRef;
+use crate::{
+    PgStoreData,
+    structs::{audit_log::EntityRef, candidate_lists::CandidateListId, persons::PersonId},
+};
 
 /// Entity types that can appear as ID references inside diff values.
 enum EntityKind {

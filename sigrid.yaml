@@ -12,9 +12,12 @@ languages:
     test:
       include:
         - ".*_tests?[.]rs"
+        - ".*/tests[.]rs"
+        - ".*/test_support/.*"
         - ".*/test_utils[.]rs"
 
 exclude:
+  - ".*/frontend/styles/variables[.]css"
   - ".*[.]md"
   - ".*/deploy/.*"
   - ".*/development/.*"

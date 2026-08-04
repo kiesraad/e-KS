@@ -1,3 +1,7 @@
+use crate::structs::common::{
+    BsnOrNoneConfirmed, CountryCode, DateOfBirth, Gender, Initials, LastName, LastNamePrefix,
+    PlaceOfResidence,
+};
 use std::str::FromStr;
 
 use serde::{Deserialize, Serialize};
@@ -5,13 +9,10 @@ use validate::Validate;
 
 use crate::{
     ElectionConfig, OptionStringExt, PgStore,
-    common::{
-        BsnOrNoneConfirmed, CountryCode, DateOfBirth, FullNameForm, Gender, Initials, LastName,
-        LastNamePrefix, PlaceOfResidence,
-    },
+    common::FullNameForm,
     constants::DEFAULT_DATE_FORMAT,
     form::{FieldErrors, FormData, MergeErrors, ValidationError},
-    persons::{Person, PersonalData},
+    structs::persons::{Person, PersonalData},
 };
 
 #[derive(Default, Serialize, Deserialize, Clone, Debug, Validate)]
@@ -176,9 +177,11 @@ mod tests {
     use super::*;
     use crate::{
         OptionAsStrExt,
-        common::{DutchAddress, UtcDateTime},
         form::ValidationError,
-        persons::PersonId,
+        structs::{
+            common::{DutchAddress, UtcDateTime},
+            persons::PersonId,
+        },
         test_utils::{self, parse_country_code, sample_person_with},
     };
 

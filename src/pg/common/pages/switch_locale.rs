@@ -1,4 +1,4 @@
-use crate::{AppState, Locale, Session, common::SwitchLanguagePath};
+use crate::{AppRequestState, Locale, Session, common::SwitchLanguagePath};
 use axum::{extract::State, response::Redirect};
 use axum_extra::{TypedHeader, extract::Form, headers};
 use serde::Deserialize;
@@ -8,15 +8,15 @@ pub struct LanguageSwitch {
     lang: Locale,
 }
 
-pub async fn switch_language(
+pub async fn switch_language<S: AppRequestState>(
     _: SwitchLanguagePath,
     TypedHeader(referer): TypedHeader<headers::Referer>,
-    State(state): State<AppState>,
+    State(state): State<S>,
     mut session: Session,
     Form(form): Form<LanguageSwitch>,
 ) -> Redirect {
     session.locale = form.lang;
-    state.sessions.insert(session).await;
+    state.sessions().insert(session).await;
 
     Redirect::to(&referer.to_string())
 }
@@ -40,7 +40,7 @@ mod tests {
     async fn switch_language_updates_session_and_redirects() {
         let state = AppState::new_for_tests().await;
         let app = Router::new()
-            .typed_post(switch_language)
+            .typed_post(switch_language::<crate::AppState>)
             .layer(middleware::from_fn_with_state(
                 state.clone(),
                 crate::session_middleware,
@@ -50,7 +50,7 @@ mod tests {
         let session = crate::Session::new_test();
         let token = session.token_string();
         let csrf = session.csrf_token().clone();
-        state.sessions.insert(session).await;
+        state.sessions().insert(session).await;
 
         let request = Request::builder()
             .method("POST")

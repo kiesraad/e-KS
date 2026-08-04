@@ -1,11 +1,7 @@
-use axum::{
-    extract::{FromRef, FromRequestParts},
-    http::request::Parts,
-};
+use axum::{extract::FromRequestParts, http::request::Parts};
 
 use crate::{
-    AppError, CsbStore, CsbStoreData, StreamId,
-    store::StoreRegistry,
+    AppError, AppRequestState, CsbStore, StreamId,
     structs::{common::FullName, political_groups::PoliticalGroup},
 };
 
@@ -21,12 +17,13 @@ pub struct CsbPoliticalGroup {
 impl CsbPoliticalGroup {
     pub fn new_from_csb_store(store: &CsbStore) -> Self {
         CsbPoliticalGroup {
-            political_group: store.get_political_group(crate::csb::WithCorrections::All),
+            political_group: store.get_political_group(crate::projection::WithCorrections::All),
             stream_id: store.stream_id,
             is_examination_finished: store.is_examination_finished(),
             restoration_count: store.get_restoration_count(),
             omission_count: store.get_omission_count(),
-            first_candidate_name: store.get_first_candidate_name(crate::csb::WithCorrections::All),
+            first_candidate_name: store
+                .get_first_candidate_name(crate::projection::WithCorrections::All),
         }
     }
 
@@ -39,15 +36,11 @@ impl CsbPoliticalGroup {
 /// Extracts all imported political groups visible to the CSB scope.
 pub struct CsbPoliticalGroups(pub Vec<CsbPoliticalGroup>);
 
-impl<S> FromRequestParts<S> for CsbPoliticalGroups
-where
-    S: Send + Sync,
-    StoreRegistry<CsbStoreData>: FromRef<S>,
-{
+impl<S: AppRequestState> FromRequestParts<S> for CsbPoliticalGroups {
     type Rejection = AppError;
 
     async fn from_request_parts(_parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
-        let registry = StoreRegistry::<CsbStoreData>::from_ref(state);
+        let registry = state.csb_store_registry();
 
         let mut political_groups = Vec::new();
         for store in registry.stores_by_scope().await? {

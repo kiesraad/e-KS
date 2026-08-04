@@ -3,15 +3,15 @@ use axum_extra::routing::TypedPath;
 
 use crate::{
     AppError, Context, CsbStore, ElectoralDistrict, Locale, Overlay,
-    candidate_lists::CandidateListId,
-    csb::{
-        WithCorrections,
-        examination::{OmissionForm, pages::CsbDeleteOmissionPath},
-    },
+    csb::examination::{OmissionForm, pages::CsbDeleteOmissionPath},
     filters,
     form::FormData,
-    persons::PersonId,
-    structs::csb::{Omission, OmissionPlaceholders, OmissionType},
+    projection::WithCorrections,
+    structs::{
+        candidate_lists::CandidateListId,
+        csb::{Omission, OmissionPlaceholders, OmissionType},
+        persons::PersonId,
+    },
 };
 
 use super::OmissionTarget;

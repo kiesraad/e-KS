@@ -8,7 +8,7 @@ use std::path::PathBuf;
 
 use crate::{ElectionConfig, StreamId, crypto::EventCipher};
 
-use super::{StoreData, StoreEvent, memory::MemoryStore};
+use super::{EventHash, StoreData, StoreEvent, memory::MemoryStore};
 
 /// Event-sourced store handle for a single (stream, election) pair.
 pub struct Store<D> {
@@ -103,7 +103,7 @@ where
         event_id: usize,
         payload: D::Event,
         created_at: DateTime<Utc>,
-        hash: [u8; 32],
+        hash: EventHash,
     ) {
         self.apply_event(StoreEvent {
             event_id,
@@ -120,7 +120,7 @@ where
 
     /// Chain hash of the last applied event, or
     /// [`GENESIS_HASH`](crate::store::GENESIS_HASH) if none.
-    pub fn current_event_hash(&self) -> [u8; 32] {
+    pub fn current_event_hash(&self) -> EventHash {
         self.data.read().last_event_hash()
     }
 }

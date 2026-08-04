@@ -1,3 +1,4 @@
+use crate::structs::persons::Person;
 use askama::Template;
 use axum::{
     extract::Query,
@@ -5,11 +6,10 @@ use axum::{
 };
 
 use crate::{
-    AppError, AppResponse, Context, Form, HtmlTemplate, Overlay, PgStore, QueryParamState,
-    common::{HasSeverity, Problematic},
-    filters,
+    AppError, AppResponse, Context, Form, HtmlTemplate, Overlay, PgStore, QueryParamState, filters,
     form::FormData,
-    persons::{AddressForm, Person, pages::UpdatePersonAddressPath},
+    persons::{AddressForm, pages::UpdatePersonAddressPath},
+    structs::common::{HasSeverity, Problematic},
 };
 
 #[derive(Template)]
@@ -74,7 +74,7 @@ mod tests {
     use crate::{
         AppError, Context, Form, PgStore, QueryParamState,
         common::DutchAddressForm,
-        persons::PersonId,
+        structs::persons::PersonId,
         test_utils::{response_body_string, sample_address_form, sample_person},
     };
     use axum::{

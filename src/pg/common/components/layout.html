@@ -29,7 +29,7 @@
             <a href="{{ "general_information_path"|str_value }}">{{ "common.general_information"|trans }}</a>
           </li>
           <li>
-            <a href="{{ crate::candidate_lists::CandidateList::list_path() }}">
+            <a href="{{ crate::structs::candidate_lists::CandidateList::list_path() }}">
               {% if "multiple_candidate_lists"|value_true %}
                 {{ "candidate_list.title_plural"|trans }}
               {% else %}

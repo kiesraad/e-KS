@@ -1,6 +1,6 @@
 use serde::Deserialize;
 
-use crate::candidate_lists::CandidateListId;
+use crate::structs::candidate_lists::CandidateListId;
 
 mod candidate_list;
 mod full_candidate_list;

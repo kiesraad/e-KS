@@ -2,8 +2,8 @@ use axum::extract::Path;
 use serde::Deserialize;
 
 use crate::{
-    list_submitters::{ListSubmitter, ListSubmitterId},
     pg::request_extractor,
+    structs::list_submitters::{ListSubmitter, ListSubmitterId},
 };
 
 #[derive(Deserialize)]

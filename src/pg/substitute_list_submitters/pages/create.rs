@@ -1,3 +1,4 @@
+use crate::structs::list_submitters::ListSubmitter;
 use askama::Template;
 use axum::{
     extract::Query,
@@ -7,9 +8,7 @@ use axum::{
 use super::SubstituteSubmitterCreatePath;
 use crate::{
     AppError, Context, Form, HtmlTemplate, Overlay, PgStore, QueryParamState, filters,
-    form::FormData,
-    list_submitters::{ListSubmitter, ListSubmitterForm},
-    redirect_success,
+    form::FormData, list_submitters::ListSubmitterForm, redirect_success,
 };
 
 #[derive(Template)]

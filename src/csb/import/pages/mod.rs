@@ -1,17 +1,17 @@
 use axum::Router;
 use axum_extra::routing::RouterExt;
 
-use crate::AppState;
+use crate::AppRequestState;
 
 pub(crate) use super::paths::{CsbCreateEmptyPath, CsbImportPath};
 
 mod import;
 
-pub fn router() -> Router<AppState> {
+pub fn router<S: AppRequestState>() -> Router<S> {
     Router::new()
         .typed_get(import::import)
-        .typed_post(import::import_submit)
-        .typed_post(import::create_empty)
+        .typed_post(import::import_submit::<S>)
+        .typed_post(import::create_empty::<S>)
 }
 
 #[cfg(test)]
@@ -25,6 +25,6 @@ mod tests {
 
     #[test]
     fn csb_import_router_builds() {
-        let _router = router();
+        let _router = router::<crate::AppState>();
     }
 }

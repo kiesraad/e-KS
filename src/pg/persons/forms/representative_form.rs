@@ -3,7 +3,7 @@ use validate::Validate;
 
 use crate::{
     common::{DutchAddressForm, FullNameForm},
-    persons::Representative,
+    structs::persons::Representative,
 };
 
 #[derive(Default, Serialize, Deserialize, Clone, Debug, Validate)]

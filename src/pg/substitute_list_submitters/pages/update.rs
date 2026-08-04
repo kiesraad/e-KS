@@ -1,3 +1,4 @@
+use crate::structs::list_submitters::{ListSubmitter, ListSubmitterData};
 use askama::Template;
 use axum::{
     extract::Query,
@@ -5,11 +6,10 @@ use axum::{
 };
 
 use crate::{
-    AppError, Context, Form, HtmlTemplate, Overlay, PgStore, QueryParamState,
-    common::{HasSeverity, Problematic},
-    filters,
+    AppError, Context, Form, HtmlTemplate, Overlay, PgStore, QueryParamState, filters,
     form::FormData,
-    list_submitters::{ListSubmitter, ListSubmitterData, ListSubmitterForm},
+    list_submitters::ListSubmitterForm,
+    structs::common::{HasSeverity, Problematic},
 };
 
 use super::SubstituteSubmitterUpdatePath;
@@ -74,7 +74,7 @@ mod tests {
     use super::*;
     use crate::{
         QueryParamState,
-        list_submitters::ListSubmitterId,
+        structs::list_submitters::ListSubmitterId,
         test_utils::{sample_list_submitter, sample_list_submitter_form},
     };
     use axum::{

@@ -10,7 +10,7 @@ pub struct LoginStartPath;
 
 #[derive(TypedPath)]
 #[typed_path("/", rejection(AppError))]
-pub struct IndexPath;
+pub struct PgIndexPath;
 
 #[derive(TypedPath)]
 #[typed_path("/language", rejection(AppError))]

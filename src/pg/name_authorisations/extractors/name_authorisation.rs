@@ -2,8 +2,8 @@ use axum::extract::Path;
 use serde::Deserialize;
 
 use crate::{
-    name_authorisations::{NameAuthorisation, NameAuthorisationId},
     pg::request_extractor,
+    structs::name_authorisations::{NameAuthorisation, NameAuthorisationId},
 };
 
 #[derive(Deserialize)]

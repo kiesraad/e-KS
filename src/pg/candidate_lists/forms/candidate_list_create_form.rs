@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use validate::Validate;
 
-use crate::candidate_lists::CandidateList;
+use crate::structs::candidate_lists::CandidateList;
 
 #[derive(Default, Serialize, Deserialize, Clone, Debug, Validate)]
 #[validate(target = "CandidateList")]

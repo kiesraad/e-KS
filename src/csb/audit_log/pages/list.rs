@@ -5,7 +5,8 @@ use axum::{
 };
 
 use crate::{
-    AppError, AppState, Context, CsbContext, CsbMainStore, Event, HtmlTemplate, Locale, StreamId,
+    AppError, AppRequestState, Context, CsbContext, CsbMainStore, Event, HtmlTemplate, Locale,
+    StreamId,
     csb::audit_log::{pages::CsbAuditLogPath, structs::CsbAuditLogEntry},
     filters,
     pagination::Pagination,
@@ -117,16 +118,16 @@ fn filter_events<'a, E: Event + 'a>(
         .filter(move |e| search.is_none_or(|q| e.matches_search(q)))
 }
 
-pub async fn csb_audit_log(
+pub async fn csb_audit_log<S: AppRequestState>(
     _: CsbAuditLogPath,
     context: CsbContext,
     main_store: CsbMainStore,
-    State(state): State<AppState>,
+    State(state): State<S>,
     pagination: Pagination,
     Query(filter): Query<CsbAuditLogFilter>,
 ) -> Result<impl IntoResponse, AppError> {
     let locale = context.session.locale;
-    let import_stores = state.csb_store_registry.stores_by_scope().await?;
+    let import_stores = state.csb_store_registry().stores_by_scope().await?;
 
     // Build a short label for each import stream from its import event
     let import_stream_labels: Vec<(StreamId, String)> = import_stores
@@ -134,7 +135,7 @@ pub async fn csb_audit_log(
         .map(|store| {
             (
                 store.stream_id,
-                store.get_display_name(crate::csb::WithCorrections::All),
+                store.get_display_name(crate::projection::WithCorrections::All),
             )
         })
         .collect();
@@ -153,7 +154,7 @@ pub async fn csb_audit_log(
         filter_events(
             store.data.read().events.iter(),
             store.stream_id,
-            store.get_display_name(crate::csb::WithCorrections::All),
+            store.get_display_name(crate::projection::WithCorrections::All),
             locale,
             active_event_type,
             active_search,
@@ -208,6 +209,7 @@ pub async fn csb_audit_log(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::projection::CSB_MAIN_STREAM_ID;
     use axum::{
         extract::{Query, State},
         http::StatusCode,
@@ -217,7 +219,7 @@ mod tests {
     use crate::{
         AppError, AppState, CsbContext, CsbEvent, CsbMainEvent, CsbMainStore, ElectionConfig,
         StreamId,
-        csb::{CSB_MAIN_STREAM_ID, audit_log::pages::CsbAuditLogPath},
+        csb::audit_log::pages::CsbAuditLogPath,
         pagination::Pagination,
         structs::csb::{Omission, OmissionCategory},
         test_utils::response_body_string,

@@ -1,11 +1,13 @@
 use crate::{
     AppError, Locale, MAX_CANDIDATES, PgEvent, PgStore,
-    candidate_lists::CandidateList,
-    common::{Bsn, BsnOrNoneConfirmed},
+    candidate_lists::{CSV_HEADERS, CandidateRecord, CandidateRecordCsv},
     core::{Csv, CsvError},
     form::FieldErrors,
-    persons::{Person, PersonId},
-    structs::candidate_lists::{CSV_HEADERS, CandidateRecord, CandidateRecordCsv},
+    structs::{
+        candidate_lists::CandidateList,
+        common::{Bsn, BsnOrNoneConfirmed},
+        persons::{Person, PersonId},
+    },
     trans,
 };
 
@@ -266,8 +268,7 @@ mod tests {
     use super::*;
 
     use crate::{
-        candidate_lists::CandidateListId,
-        persons::PersonId,
+        structs::{candidate_lists::CandidateListId, persons::PersonId},
         test_utils::{sample_candidate_list, sample_person, sample_person_with},
     };
 

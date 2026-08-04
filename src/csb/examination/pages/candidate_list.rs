@@ -3,12 +3,14 @@ use axum::response::{IntoResponse, Response};
 
 use crate::{
     AnyLocale, AppError, Context, CsbContext, CsbStore, ElectoralDistrict, HtmlTemplate,
-    candidate_lists::{CandidateList, CandidateListId},
     csb::examination::{
         extractors::CsbPoliticalGroup, pages::CsbCandidateListPath, structs::CsbCandidate,
     },
     filters,
-    structs::csb::Omission,
+    structs::{
+        candidate_lists::{CandidateList, CandidateListId},
+        csb::Omission,
+    },
 };
 
 #[derive(Template)]
@@ -27,11 +29,11 @@ pub async fn overview(
     store: CsbStore,
 ) -> Result<Response, AppError> {
     let political_group = CsbPoliticalGroup::new_from_csb_store(&store);
-    let corrected_list = store.get_candidate_list(list_id, crate::csb::WithCorrections::All);
+    let corrected_list = store.get_candidate_list(list_id, crate::projection::WithCorrections::All);
     // For paper-added lists there is no imported side; use an empty-candidate
     // placeholder so all candidates render as paper-corrected additions.
     let imported_list = store
-        .get_candidate_list(list_id, crate::csb::WithCorrections::None)
+        .get_candidate_list(list_id, crate::projection::WithCorrections::None)
         .or_else(|| {
             corrected_list.as_ref().map(|corrected| CandidateList {
                 candidates: Vec::new(),
@@ -72,8 +74,7 @@ mod tests {
     use axum::http::StatusCode;
 
     use crate::{
-        persons::PersonId,
-        structs::csb::OmissionCategory,
+        structs::{csb::OmissionCategory, persons::PersonId},
         test_utils::{response_body_string, sample_candidate_list, sample_person},
     };
 

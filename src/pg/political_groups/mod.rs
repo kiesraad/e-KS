@@ -6,7 +6,6 @@ mod pages;
 mod paths;
 mod steps;
 
-pub use crate::structs::political_groups::PoliticalGroup;
 pub use forms::PoliticalGroupForm;
 pub use pages::router;
 pub use paths::PoliticalGroupUpdatePath;

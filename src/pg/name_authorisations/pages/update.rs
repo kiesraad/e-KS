@@ -1,3 +1,4 @@
+use crate::structs::name_authorisations::NameAuthorisation;
 use askama::Template;
 use axum::{
     extract::Query,
@@ -5,11 +6,10 @@ use axum::{
 };
 
 use crate::{
-    AppError, Context, Form, HtmlTemplate, Overlay, PgStore, QueryParamState,
-    common::{HasSeverity, Problematic},
-    filters,
+    AppError, Context, Form, HtmlTemplate, Overlay, PgStore, QueryParamState, filters,
     form::FormData,
-    name_authorisations::{NameAuthorisation, NameAuthorisationForm},
+    name_authorisations::NameAuthorisationForm,
+    structs::common::{HasSeverity, Problematic},
 };
 
 use super::NameAuthorisationUpdatePath;
@@ -70,7 +70,7 @@ mod tests {
     use super::*;
     use crate::{
         AppError, Context, Form, PgStore, QueryParamState,
-        name_authorisations::NameAuthorisationId,
+        structs::name_authorisations::NameAuthorisationId,
         test_utils::{
             response_body_string, sample_name_authorisation, sample_name_authorisation_form,
         },

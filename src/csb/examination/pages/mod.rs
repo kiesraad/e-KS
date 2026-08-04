@@ -1,7 +1,7 @@
 use axum::Router;
 use axum_extra::routing::RouterExt;
 
-use crate::AppState;
+use crate::AppRequestState;
 
 use super::paths::*;
 
@@ -16,15 +16,15 @@ mod overview;
 mod paper_corrections;
 mod political_group;
 
-pub fn router() -> Router<AppState> {
+pub fn router<S: AppRequestState>() -> Router<S> {
     Router::new()
         .typed_get(overview::overview)
-        .typed_get(i4::gen_i4)
+        .typed_get(i4::gen_i4::<S>)
         .typed_get(political_group::overview)
         .typed_post(political_group::toggle_examination_finish)
         .typed_get(general_information::overview)
-        .typed_post(paper_corrections::start_paper_corrections)
-        .typed_post(paper_corrections::stop_paper_corrections)
+        .typed_post(paper_corrections::start_paper_corrections::<S>)
+        .typed_post(paper_corrections::stop_paper_corrections::<S>)
         .typed_get(candidate_list::overview)
         .typed_get(candidate::overview)
         .typed_get(omission::add_omission)

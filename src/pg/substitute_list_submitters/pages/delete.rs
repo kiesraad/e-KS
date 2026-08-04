@@ -5,10 +5,11 @@ use axum::{
 };
 
 use crate::{
-    AppError, AppResponse, Context, HtmlTemplate, Overlay, PgStore, QueryParamState,
-    common::{HasSeverity, Problematic},
-    filters,
-    list_submitters::ListSubmitter,
+    AppError, AppResponse, Context, HtmlTemplate, Overlay, PgStore, QueryParamState, filters,
+    structs::{
+        common::{HasSeverity, Problematic},
+        list_submitters::ListSubmitter,
+    },
 };
 
 use super::SubstituteSubmitterDeletePath;
@@ -57,7 +58,7 @@ mod tests {
 
     use crate::{
         AppError, Context, PgStore,
-        list_submitters::ListSubmitterId,
+        structs::list_submitters::ListSubmitterId,
         test_utils::{response_body_string, sample_list_submitter},
     };
 

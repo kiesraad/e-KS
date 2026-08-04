@@ -1,14 +1,15 @@
-use crate::pg::list_designation::ListDesignation;
+use crate::structs::{list_designation::ListDesignation, political_groups::PoliticalGroup};
 use askama::Template;
 use axum::{extract::Query, response::IntoResponse};
 
 use crate::{
-    AppError, Context, HtmlTemplate, PgStore, QueryParamState,
-    common::{HasSeverity, Problematic},
-    filters,
-    list_submitters::ListSubmitter,
-    name_authorisations::NameAuthorisation,
-    political_groups::{PoliticalGroup, PoliticalGroupSteps},
+    AppError, Context, HtmlTemplate, PgStore, QueryParamState, filters,
+    political_groups::PoliticalGroupSteps,
+    structs::{
+        common::{HasSeverity, Problematic},
+        list_submitters::ListSubmitter,
+        name_authorisations::NameAuthorisation,
+    },
 };
 
 use super::ListSubmitterViewPath;
@@ -45,7 +46,7 @@ mod tests {
     use super::*;
     use crate::{
         AppError, Context, PgStore, QueryParamState,
-        list_submitters::ListSubmitterId,
+        structs::list_submitters::ListSubmitterId,
         test_utils::{response_body_string, sample_list_submitter},
     };
     use axum::{extract::Query, http::StatusCode, response::IntoResponse};

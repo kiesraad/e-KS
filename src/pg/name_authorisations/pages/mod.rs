@@ -3,8 +3,8 @@ use axum_extra::routing::{RouterExt, TypedPath};
 use serde::Deserialize;
 
 use crate::{
-    AppError, AppState,
-    name_authorisations::{NameAuthorisation, NameAuthorisationId},
+    AppError, AppRequestState,
+    structs::name_authorisations::{NameAuthorisation, NameAuthorisationId},
 };
 
 mod create;
@@ -60,7 +60,7 @@ impl NameAuthorisation {
     }
 }
 
-pub fn router() -> Router<AppState> {
+pub fn router<S: AppRequestState>() -> Router<S> {
     Router::new()
         .typed_get(view::list_name_authorisations)
         .typed_get(create::create_name_authorisation)
@@ -74,7 +74,9 @@ pub fn router() -> Router<AppState> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{name_authorisations::NameAuthorisationId, test_utils::sample_name_authorisation};
+    use crate::{
+        structs::name_authorisations::NameAuthorisationId, test_utils::sample_name_authorisation,
+    };
 
     #[test]
     fn name_authorisation_paths_match_expected_routes() {
@@ -100,6 +102,6 @@ mod tests {
 
     #[test]
     fn name_authorisation_router_builds() {
-        let _router = router();
+        let _router = router::<crate::AppState>();
     }
 }
