@@ -116,7 +116,7 @@ impl From<CandidateRecordCsv> for CandidateRecord {
                 date_of_birth: csv.geboortedatum,
                 bsn: bsn_from_csv(&csv.bsn),
                 place_of_residence: csv.woonplaats,
-                country: csv.landcode,
+                country: country_from_csv(csv.landcode),
             },
             address: DutchAddressForm {
                 locality: csv.correspondentie_plaats,
@@ -203,6 +203,15 @@ impl From<Person> for CandidateRecordCsv {
 impl From<Person> for CandidateRecord {
     fn from(person: Person) -> Self {
         Self::from(CandidateRecordCsv::from(person))
+    }
+}
+
+/// An empty `landcode` column defaults to NL, matching the personal details form.
+fn country_from_csv(landcode: String) -> String {
+    if landcode.trim().is_empty() {
+        "NL".to_string()
+    } else {
+        landcode
     }
 }
 
@@ -296,6 +305,28 @@ mod tests {
             Some("Rotterdam".to_string())
         );
         assert_eq!(person.representative, None);
+    }
+
+    #[test]
+    fn empty_landcode_defaults_to_nl() {
+        let record = CandidateRecord::from(CandidateRecordCsv {
+            voorletters: "J.".to_string(),
+            roepnaam: "Jan".to_string(),
+            achternaam: "Berg".to_string(),
+            woonplaats: "Amsterdam".to_string(),
+            landcode: "  ".to_string(),
+            bsn: NO_BSN.to_string(),
+            geboortedatum: "20-10-2000".to_string(),
+            geslacht: "m".to_string(),
+            ..Default::default()
+        });
+
+        let person = record.validate_create().unwrap();
+
+        assert_eq!(
+            person.personal_data.country.as_ref().map(|v| v.to_string()),
+            Some("NL".to_string())
+        );
     }
 
     #[test]
