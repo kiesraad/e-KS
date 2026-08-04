@@ -8,6 +8,7 @@ export class FinalisePage {
   readonly linkBSN: Locator;
   readonly linkTooManyCandidates: Locator;
   readonly linkIncorrectDate: Locator;
+  readonly linkCandidateList: Locator;
 
   constructor(protected readonly page: Page) {
     this.linkDownloadNl = this.page.getByRole("link", {
@@ -30,6 +31,9 @@ export class FinalisePage {
     });
     this.linkIncorrectDate = this.page.getByRole("link", {
       name: "Geboortedatum lijkt onjuist",
+    });
+    this.linkCandidateList = this.page.getByRole("link", {
+      name: "Kandidatenlijst",
     });
   }
 }
