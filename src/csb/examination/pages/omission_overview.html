@@ -34,7 +34,7 @@
               </div>
               <button type="submit"
                       class="button xs tertiary-destructive"
-                      formaction="{{ view.remove_url }}"
+                      formaction="{{ overlay.forward(view.remove_url(omission_target) ) }}"
                       formnovalidate>{{ "action.remove"|trans }}</button>
             </div>
           </li>

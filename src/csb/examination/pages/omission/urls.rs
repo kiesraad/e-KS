@@ -35,61 +35,69 @@ pub(super) fn return_path(target: &OmissionTarget, political_group: &CsbPolitica
     }
 }
 
-/// Query string for links within the dialog: the list context plus the
-/// `overlay=true` marker that suppresses the overlay open animation.
+/// Query string for links within the dialog: the list context. The overlay
+/// marker and `redirect_to` are appended by `Overlay::forward` where the
+/// templates render these links.
 #[derive(serde::Serialize)]
 struct DialogQuery {
     #[serde(skip_serializing_if = "Option::is_none")]
     list: Option<CandidateListId>,
-    overlay: bool,
 }
 
-/// Append the list context and the overlay marker as a query string. These
-/// URLs are only linked from within the already-open dialog (the sidebar tabs
-/// and the remove buttons), so the target should not replay the animation.
-fn with_context(path: impl TypedPath, list: Option<CandidateListId>) -> String {
-    path.with_query_params(DialogQuery {
-        list,
-        overlay: true,
-    })
-    .to_string()
+/// Append the list context as a query string.
+fn with_context(path: impl TypedPath, list: Option<CandidateListId>) -> impl TypedPath {
+    path.with_query_params(DialogQuery { list })
 }
 
-/// The URL of the add-omission form for this entity, keeping the list context
-/// (the sidebar links here from the overview page).
-pub(super) fn add_url(target: &OmissionTarget) -> String {
-    with_context(
-        CsbAddOmissionPath {
-            stream_id: target.stream_id,
-            omission_type: target.omission_type,
-            reference: target.reference,
-        },
-        target.list,
-    )
+impl OmissionTarget {
+    /// The URL of the add-omission form for this entity, keeping the list context
+    /// (the sidebar links here from the overview page).
+    pub(super) fn add_url(&self) -> impl TypedPath {
+        with_context(
+            CsbAddOmissionPath {
+                stream_id: self.stream_id,
+                omission_type: self.omission_type,
+                reference: self.reference,
+            },
+            self.list,
+        )
+    }
+
+    /// The URL of the overview page for this entity, keeping the list context
+    /// (the sidebar links here from the add form).
+    pub(super) fn overview_url(&self) -> impl TypedPath + use<> {
+        with_context(
+            CsbOmissionOverviewPath {
+                stream_id: self.stream_id,
+                omission_type: self.omission_type,
+                reference: self.reference,
+            },
+            self.list,
+        )
+    }
 }
 
-/// The URL of the overview page for this entity, keeping the list context
-/// (the sidebar links here from the add form).
-pub(super) fn overview_url(target: &OmissionTarget) -> String {
-    with_context(
-        CsbOmissionOverviewPath {
-            stream_id: target.stream_id,
-            omission_type: target.omission_type,
-            reference: target.reference,
-        },
-        target.list,
-    )
-}
-
-/// Fallback overview URL to return to after removing an omission, derived from
-/// its category. Used only when the request carries no explicit `redirect_to`.
-pub(super) fn overview_url_for(category: &OmissionCategory, stream_id: StreamId) -> String {
+/// The overview URL to return to after removing an omission, derived from its
+/// category so the redirect lands on the overview the omission was listed on.
+pub(super) fn overview_url_for(category: &OmissionCategory, stream_id: StreamId) -> impl TypedPath {
     let target = match category {
         OmissionCategory::Candidate { person, lists } => OmissionTarget {
             stream_id,
             omission_type: OmissionType::Candidate,
             reference: (*person).into(),
             list: lists.first().copied(),
+        },
+        OmissionCategory::CandidateList(lists) if !lists.is_empty() => OmissionTarget {
+            stream_id,
+            omission_type: OmissionType::CandidateList,
+            reference: lists[0].into(),
+            list: None,
+        },
+        OmissionCategory::DeclarationsOfSupport(_) => OmissionTarget {
+            stream_id,
+            omission_type: OmissionType::DeclarationsOfSupport,
+            reference: stream_id.into(),
+            list: None,
         },
         _ => OmissionTarget {
             stream_id,
@@ -98,5 +106,5 @@ pub(super) fn overview_url_for(category: &OmissionCategory, stream_id: StreamId)
             list: None,
         },
     };
-    overview_url(&target)
+    target.overview_url()
 }

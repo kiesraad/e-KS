@@ -1,7 +1,8 @@
 use axum::{
     extract::Query,
-    response::{IntoResponse, Response},
+    response::{IntoResponse, Redirect, Response},
 };
+use axum_extra::routing::TypedPath;
 use uuid::Uuid;
 
 use crate::{
@@ -27,7 +28,7 @@ use crate::{
 mod urls;
 mod views;
 
-use urls::{add_url, overview_url, overview_url_for, return_path};
+use urls::{overview_url_for, return_path};
 use views::{CsbAddOmissionTemplate, CsbOmissionOverviewTemplate, omission_views, preset_views};
 
 /// The entity an omission dialog operates on, together with the list context
@@ -89,8 +90,7 @@ impl OmissionTarget {
                 overlay: Overlay::new(query),
                 close_action: return_path(self, &political_group),
                 presets: preset_views(self, store),
-                add_tab_url: add_url(self),
-                overview_tab_url: overview_url(self),
+                omission_target: self.to_owned(),
                 available_districts,
                 available_candidate_lists,
                 title_suffix: self.generate_title_suffix(store, context.session.locale)?,
@@ -159,18 +159,16 @@ pub async fn overview(
     Query(query): Query<QueryParamState>,
     Query(list_query): Query<OmissionListQuery>,
 ) -> Result<Response, AppError> {
-    let target = OmissionTarget::from_overview_path(path, list_query);
+    let omission_target = OmissionTarget::from_overview_path(path, list_query);
     let political_group = CsbPoliticalGroup::new_from_csb_store(&store);
-    let overview_tab_url = overview_url(&target);
 
     Ok(HtmlTemplate(
         CsbOmissionOverviewTemplate {
             overlay: Overlay::new(&query),
-            close_action: return_path(&target, &political_group),
-            omissions: omission_views(&target, &store, &overview_tab_url)?,
-            add_tab_url: add_url(&target),
-            overview_tab_url,
-            title_suffix: target.generate_title_suffix(&store, context.session.locale)?,
+            close_action: return_path(&omission_target, &political_group),
+            omissions: omission_views(&omission_target, &store)?,
+            title_suffix: omission_target.generate_title_suffix(&store, context.session.locale)?,
+            omission_target,
         },
         context,
     )
@@ -268,9 +266,9 @@ pub async fn add_omission_submit(
     }
 }
 
-/// Remove a single omission and return to the overview it was removed from (the
-/// `redirect_to` carried by the button, falling back to the overview derived
-/// from the omission's category).
+/// Remove a single omission and return to the overview it was listed on,
+/// keeping the dialog's `redirect_to` (where the close button returns to) and
+/// the overlay marker across the redirect.
 pub async fn delete_omission(
     path: CsbDeleteOmissionPath,
     _context: CsbContext,
@@ -282,10 +280,16 @@ pub async fn delete_omission(
         omission_id,
     } = path;
     let omission = store.get_omission(omission_id)?;
-    let fallback = overview_url_for(&omission.category, stream_id);
+    let overview = overview_url_for(&omission.category, stream_id);
     omission.delete(&store).await?;
-
-    Ok(query.redirect_or(fallback))
+    Ok(Redirect::to(
+        &overview
+            .with_query_params(QueryParamState::overlay(
+                query.redirect_url().map(str::to_owned),
+            ))
+            .to_string(),
+    )
+    .into_response())
 }
 
 #[cfg(test)]
@@ -639,7 +643,8 @@ mod tests {
         assert_eq!(response.status(), StatusCode::SEE_OTHER);
         // The omission is gone...
         assert!(store.get_candidate_list_omissions(list).unwrap().is_empty());
-        // ...and without an explicit redirect we fall back to the political group overview
+        // ...and we return to the overview it was listed on, without replaying
+        // the overlay open animation
         let location = response
             .headers()
             .get("Location")
@@ -647,12 +652,13 @@ mod tests {
             .to_str()
             .unwrap();
         assert!(location.contains(&format!(
-            "/csb/examination/{stream_id}/omission/political-group/{stream_id}/overview"
+            "/csb/examination/{stream_id}/omission/candidate-list/{list}/overview"
         )));
+        assert!(location.contains("overlay=true"));
     }
 
     #[tokio::test]
-    async fn delete_omission_honours_the_redirect_to() {
+    async fn delete_omission_preserves_the_redirect_to() {
         let store = CsbStore::new_for_test();
         let stream_id = store.stream_id;
 
@@ -686,7 +692,8 @@ mod tests {
             .unwrap()
             .to_str()
             .unwrap();
-        assert!(location.starts_with("/back/here"));
+        assert!(location.contains("redirect_to=%2Fback%2Fhere"));
+        assert!(location.contains("overlay=true"));
     }
 
     #[tokio::test]
