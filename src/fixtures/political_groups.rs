@@ -1,6 +1,6 @@
 use crate::{
     AppError, PgStore,
-    common::{Address, DutchAddress, FullName},
+    common::{Address, DisplayName, DutchAddress, FullName},
     list_designation::ListDesignation,
     list_submitters::{ListSubmitter, ListSubmitterId},
     name_authorisations::{NameAuthorisation, NameAuthorisationId},
@@ -8,7 +8,7 @@ use crate::{
 };
 use uuid::Uuid;
 
-pub async fn load(store: &PgStore) -> Result<(), AppError> {
+pub async fn load(store: &PgStore, display_name: Option<DisplayName>) -> Result<(), AppError> {
     let agent_id: NameAuthorisationId =
         Uuid::new_v5(&Uuid::NAMESPACE_OID, b"fixture_authorised_agent").into();
 
@@ -21,7 +21,9 @@ pub async fn load(store: &PgStore) -> Result<(), AppError> {
         Uuid::new_v5(&Uuid::NAMESPACE_OID, b"fixture_substitute_submitter_2").into();
 
     let political_group = PoliticalGroup {
-        display_name: Some("Kiesraad Demo".parse().expect("display name")),
+        display_name: Some(
+            display_name.unwrap_or_else(|| "Kiesraad Demo".parse().expect("display name")),
+        ),
         list_designation: Some(ListDesignation::Standalone),
         previous_election_results: None,
     };
@@ -115,7 +117,7 @@ mod tests {
     #[tokio::test]
     async fn test_load() {
         let store = PgStore::new_for_test();
-        load(&store).await.unwrap();
+        load(&store, None).await.unwrap();
 
         let list_submitter = store.get_list_submitter();
         assert!(list_submitter.get_problems(()).is_all_good());
