@@ -227,7 +227,8 @@ fn is_test_code(path: &FilePath) -> bool {
     let Some(name) = path.file_name().and_then(|name| name.to_str()) else {
         return false;
     };
-    name == "test_utils.rs" || name.ends_with("_test.rs") || name.ends_with("_tests.rs")
+    
+    name.contains("test")
 }
 
 /// One referenced item, counted once per file that references it.
