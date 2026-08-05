@@ -39,7 +39,7 @@ serde-saphyr = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 eks = { path = "..", default-features = false }
-eks-locales = { path = "../tooling" }
+eks-locales = { path = "../tools/locales" }
 
 [lints]
 workspace = true

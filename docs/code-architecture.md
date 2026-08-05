@@ -113,7 +113,7 @@ Each configuration carries:
 ### Crates
 
 e-KS is a Cargo workspace: a single Rust binary (`eks`, the root crate) plus
-the member crates `validate`, `auth-service`, `development` and `tooling`,
+the member crates `validate`, `auth-service`, `development` and `tools/locales`,
 sharing one `Cargo.lock` and a workspace-level dependency list.
 
 - **`eks`** (root, `Cargo.toml` + `src/`): the application itself: an Axum web
@@ -134,7 +134,7 @@ sharing one `Cargo.lock` and a workspace-level dependency list.
   that brings up Docker dependencies and runs the app, the `setup` binary,
   `update_locales`, and `pdf_diff` (used by CI to to visualize PDF document
   differences).
-- **`tooling/`** (`eks-locales`): shared locale tooling, used by the `eks`
+-- **`tools/locales/`** (`eks-locales`): shared locale tooling, used by the `eks`
   build script (locale codegen), the `eks` test suite (used-key scanning) and
   the `update_locales` binary.
 
