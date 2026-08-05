@@ -17,6 +17,8 @@ use crate::{
 };
 
 /// Translated label describing what the event did.
+// A flat translation table; the `trans!` expansions inflate the metric.
+#[expect(clippy::cognitive_complexity)]
 fn event_description(event: &PgEvent, locale: Locale) -> String {
     match event {
         PgEvent::UpdatePoliticalGroup(_) => {

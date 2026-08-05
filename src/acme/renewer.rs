@@ -180,6 +180,27 @@ async fn complete_order(
     store: &AcmeStore,
     tokens: &mut Vec<String>,
 ) -> Result<(), AppError> {
+    answer_http_challenges(order, store, tokens).await?;
+
+    let status = order.poll_ready(&RetryPolicy::default()).await?;
+    if status != OrderStatus::Ready {
+        return Err(order_failure(order, status).await);
+    }
+
+    let key_pem = order.finalize().await?;
+    let cert_pem = order.poll_certificate(&RetryPolicy::default()).await?;
+
+    install_certificate(acme, tls, rustls_config, &key_pem, &cert_pem).await
+}
+
+/// Answers every pending authorization on the order with an http-01 challenge.
+///
+/// Each challenge token is recorded in `tokens` so the caller can clean up.
+async fn answer_http_challenges(
+    order: &mut Order,
+    store: &AcmeStore,
+    tokens: &mut Vec<String>,
+) -> Result<(), AppError> {
     let mut authorizations = order.authorizations();
     while let Some(result) = authorizations.next().await {
         let mut authz = result?;
@@ -208,14 +229,18 @@ async fn complete_order(
         challenge.set_ready().await?;
     }
 
-    let status = order.poll_ready(&RetryPolicy::default()).await?;
-    if status != OrderStatus::Ready {
-        return Err(order_failure(order, status).await);
-    }
+    Ok(())
+}
 
-    let key_pem = order.finalize().await?;
-    let cert_pem = order.poll_certificate(&RetryPolicy::default()).await?;
-
+/// Installs the issued certificate on the running server and persists it
+/// best-effort.
+async fn install_certificate(
+    acme: &AcmeConfig,
+    tls: &TlsConfig,
+    rustls_config: &RustlsConfig,
+    key_pem: &str,
+    cert_pem: &str,
+) -> Result<(), AppError> {
     // Same pinned builder as startup: a broken pair can never be installed.
     let new_config = server::server_config_from_pem(cert_pem.as_bytes(), key_pem.as_bytes())?;
 

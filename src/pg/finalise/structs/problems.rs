@@ -132,61 +132,78 @@ impl AllProblems {
             }
         };
 
+        let list_submitter =
+            Self::find_list_submitter_problems(store, &mut general, &mut info_problems);
+        let substitute_submitters =
+            Self::find_substitute_submitter_problems(store, &mut info_problems);
+
+        (
+            GeneralProblems {
+                general,
+                name_authorisations,
+                list_submitter,
+                substitute_submitters,
+            },
+            info_problems,
+        )
+    }
+
+    /// Problems of the list submitter; a missing submitter is pushed onto
+    /// `general` and info problems onto `info_problems`.
+    fn find_list_submitter_problems(
+        store: &PgStore,
+        general: &mut Vec<PotentialProblems>,
+        info_problems: &mut Vec<EntityInfoProblems>,
+    ) -> Option<EntityProblems<ListSubmitter>> {
         let list_submitter = store.get_list_submitter();
         if list_submitter.is_empty() {
             general.push(PotentialProblems::NoListSubmitter);
         }
 
-        let all_list_submitter_problems = list_submitter.get_problems(());
-        let list_submitter_problems = if !all_list_submitter_problems.potential_problems.is_empty()
-        {
-            Some(EntityProblems {
-                entity: list_submitter.clone(),
-                problems: all_list_submitter_problems.potential_problems,
-            })
-        } else {
-            None
-        };
+        let problems = list_submitter.get_problems(());
         info_problems.extend(
-            all_list_submitter_problems
+            problems
                 .info_problems
                 .into_iter()
-                .map(|problem| EntityInfoProblems::Submitter { problem })
-                .collect::<Vec<_>>(),
+                .map(|problem| EntityInfoProblems::Submitter { problem }),
         );
 
+        if problems.potential_problems.is_empty() {
+            return None;
+        }
+        Some(EntityProblems {
+            entity: list_submitter,
+            problems: problems.potential_problems,
+        })
+    }
+
+    /// Problems per substitute submitter; info problems are pushed onto
+    /// `info_problems`, including one when there is no substitute at all.
+    fn find_substitute_submitter_problems(
+        store: &PgStore,
+        info_problems: &mut Vec<EntityInfoProblems>,
+    ) -> Vec<EntityProblems<ListSubmitter>> {
         let submitters = store.get_substitute_submitters();
         if submitters.is_empty() {
             info_problems.push(EntityInfoProblems::AnyProblem(
                 InfoProblems::NoSubstituteSubmitter,
             ));
         }
+
         let mut substitute_submitters = Vec::new();
         for ss in submitters {
             let (ss_problems, infos) = EntityProblems::new(ss.clone());
             if !ss_problems.problems.is_empty() {
                 substitute_submitters.push(ss_problems)
             }
-            info_problems.extend(
-                infos
-                    .into_iter()
-                    .map(|problem| EntityInfoProblems::SubstituteSubmitter {
-                        submitter: ss.clone(),
-                        problem,
-                    })
-                    .collect::<Vec<_>>(),
-            );
+            info_problems.extend(infos.into_iter().map(|problem| {
+                EntityInfoProblems::SubstituteSubmitter {
+                    submitter: ss.clone(),
+                    problem,
+                }
+            }));
         }
-
-        (
-            GeneralProblems {
-                general,
-                name_authorisations,
-                list_submitter: list_submitter_problems,
-                substitute_submitters,
-            },
-            info_problems,
-        )
+        substitute_submitters
     }
 
     fn find_name_authorisation_problems(

@@ -8,6 +8,22 @@ use crate::{
     },
 };
 
+/// A date from constant values; invalid dates fail to compile in `const` blocks.
+const fn date(year: i32, month: u32, day: u32) -> NaiveDate {
+    match NaiveDate::from_ymd_opt(year, month, day) {
+        Some(date) => date,
+        None => panic!("invalid constant date"),
+    }
+}
+
+/// A date and time from constant values; invalid values fail to compile in `const` blocks.
+const fn datetime(year: i32, month: u32, day: u32, hour: u32, minute: u32) -> NaiveDateTime {
+    match NaiveTime::from_hms_opt(hour, minute, 0) {
+        Some(time) => NaiveDateTime::new(date(year, month, day), time),
+        None => panic!("invalid constant time"),
+    }
+}
+
 super::define_elections! {
     EK27 {
         election_type: ElectionType::Ek,
@@ -19,21 +35,18 @@ super::define_elections! {
         electoral_districts: ElectoralDistrict::ek27(),
         nineteen_or_more_seats: true,
         frisian_export_allowed: false,
-        eligible_date_of_birth: NaiveDate::from_ymd_opt(2014, 4, 20).unwrap(), // TODO: determine definitive date
-        nomination_day_date: NaiveDate::from_ymd_opt(2027, 4, 20).unwrap(),
+        eligible_date_of_birth: const { date(2014, 4, 20) }, // TODO: determine definitive date
+        nomination_day_date: const { date(2027, 4, 20) },
         // Estimated from EK 2023 planning (official 2027 planning not yet published)
-        document_review_date: NaiveDate::from_ymd_opt(2027, 4, 25).unwrap(),
-        omission_period_end_date: NaiveDate::from_ymd_opt(2027, 4, 29).unwrap(),
+        document_review_date: const { date(2027, 4, 25) },
+        omission_period_end_date: const { date(2027, 4, 29) },
         public_session: PublicSession {
             location: "'s-Gravenhage",
-            datetime: NaiveDateTime::new(
-                NaiveDate::from_ymd_opt(2027, 5, 3).unwrap(),
-                NaiveTime::from_hms_opt(17, 0, 0).unwrap(),
-            ),
+            datetime: const { datetime(2027, 5, 3, 17, 0) },
             chair: "",
             members: &["", "", "", "", ""],
         },
-        election_date: NaiveDate::from_ymd_opt(2027, 5, 24).unwrap()
+        election_date: const { date(2027, 5, 24) }
     },
 
     PS27(province: Province) {
@@ -59,20 +72,17 @@ super::define_elections! {
         },
         nineteen_or_more_seats: true, // for this election, all provinces have >= 19 seats
         frisian_export_allowed: matches!(province, Province::FR),
-        eligible_date_of_birth: NaiveDate::from_ymd_opt(2014, 2, 1).unwrap(), // TODO: determine definitive date
-        nomination_day_date: NaiveDate::from_ymd_opt(2027, 2, 1).unwrap(),
-        document_review_date: NaiveDate::from_ymd_opt(2027, 2, 2).unwrap(),
-        omission_period_end_date: NaiveDate::from_ymd_opt(2027, 2, 4).unwrap(),
+        eligible_date_of_birth: const { date(2014, 2, 1) }, // TODO: determine definitive date
+        nomination_day_date: const { date(2027, 2, 1) },
+        document_review_date: const { date(2027, 2, 2) },
+        omission_period_end_date: const { date(2027, 2, 4) },
         public_session: PublicSession {
             location: "'s-Gravenhage",
-            datetime: NaiveDateTime::new(
-                NaiveDate::from_ymd_opt(2027, 2, 5).unwrap(),
-                NaiveTime::from_hms_opt(17, 0, 0).unwrap(),
-            ),
+            datetime: const { datetime(2027, 2, 5, 17, 0) },
             chair: "",
             members: &["", "", "", "", ""],
         },
-        election_date: NaiveDate::from_ymd_opt(2027, 3, 17).unwrap()
+        election_date: const { date(2027, 3, 17) }
     },
 
     WS27(water_council: WaterCouncil) {
@@ -107,20 +117,17 @@ super::define_elections! {
         },
         nineteen_or_more_seats: true, // for this election, all councils have >= 19 seats
         frisian_export_allowed: matches!(water_council, WaterCouncil::Fryslan),
-        eligible_date_of_birth: NaiveDate::from_ymd_opt(2014, 2, 1).unwrap(), // TODO: determine definitive date
-        nomination_day_date: NaiveDate::from_ymd_opt(2027, 2, 1).unwrap(),
-        document_review_date: NaiveDate::from_ymd_opt(2027, 2, 2).unwrap(),
-        omission_period_end_date: NaiveDate::from_ymd_opt(2027, 2, 4).unwrap(),
+        eligible_date_of_birth: const { date(2014, 2, 1) }, // TODO: determine definitive date
+        nomination_day_date: const { date(2027, 2, 1) },
+        document_review_date: const { date(2027, 2, 2) },
+        omission_period_end_date: const { date(2027, 2, 4) },
         public_session: PublicSession {
             location: "'s-Gravenhage",
-            datetime: NaiveDateTime::new(
-                NaiveDate::from_ymd_opt(2027, 2, 5).unwrap(),
-                NaiveTime::from_hms_opt(17, 0, 0).unwrap(),
-            ),
+            datetime: const { datetime(2027, 2, 5, 17, 0) },
             chair: "",
             members: &["", "", "", "", ""],
         },
-        election_date: NaiveDate::from_ymd_opt(2027, 3, 17).unwrap()
+        election_date: const { date(2027, 3, 17) }
     }
 }
 

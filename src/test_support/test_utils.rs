@@ -328,6 +328,40 @@ pub async fn setup_documents_test_state(
     ))
 }
 
+/// Asserts the zip attachment and no-cache headers on a documents response.
+pub fn assert_zip_response_headers(headers: &axum::http::HeaderMap) {
+    use axum::http::header;
+
+    assert_eq!(
+        headers
+            .get(header::CONTENT_TYPE)
+            .expect("content type header"),
+        "application/zip"
+    );
+    assert!(
+        regex::Regex::new("attachment; filename=\"kiesraad-demo-ek27-v\\d+\\.zip\"")
+            .expect("valid filename regex")
+            .is_match(
+                headers
+                    .get(header::CONTENT_DISPOSITION)
+                    .expect("content disposition header")
+                    .to_str()
+                    .expect("ascii header")
+            )
+    );
+    assert_eq!(
+        headers
+            .get(header::CACHE_CONTROL)
+            .expect("cache control header"),
+        "no-store, no-cache, must-revalidate, max-age=0"
+    );
+    assert_eq!(
+        headers.get(header::PRAGMA).expect("pragma header"),
+        "no-cache"
+    );
+    assert_eq!(headers.get(header::EXPIRES).expect("expires header"), "0");
+}
+
 pub async fn zip_entry_names(response: axum::response::Response) -> Vec<String> {
     use async_zip::base::read::mem::ZipFileReader;
 

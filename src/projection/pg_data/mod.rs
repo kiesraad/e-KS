@@ -345,15 +345,15 @@ mod tests {
     };
     use chrono::{Duration, Utc};
 
-    #[test]
-    fn apply_update_person_address_and_representative() {
+    /// A `PgStoreData` containing a single sample person.
+    fn data_with_person(person_id: PersonId) -> PgStoreData {
         let mut data = PgStoreData::default();
-        let person_id = PersonId::new();
-        let person = sample_person(person_id);
-        data.persons.insert(person_id, person);
+        data.persons.insert(person_id, sample_person(person_id));
+        data
+    }
 
-        let address_event_time = Utc::now() - Duration::seconds(20);
-        let new_address = DutchAddress {
+    fn sample_address() -> DutchAddress {
+        DutchAddress {
             locality: Some("Utrecht".parse::<Locality>().expect("locality")),
             postal_code: Some("3511 AA".parse::<PostalCode>().expect("postal code")),
             house_number: Some("12".parse::<HouseNumber>().expect("house number")),
@@ -363,31 +363,11 @@ mod tests {
             ),
             street_name: Some("Oudegracht".parse::<StreetName>().expect("street name")),
             known_in_bag: Some(true),
-        };
+        }
+    }
 
-        let original_representative = data
-            .persons
-            .get(&person_id)
-            .expect("person exists")
-            .representative
-            .clone();
-
-        data.apply(StoreEvent::new_at(
-            1,
-            PgEvent::UpdatePersonAddress {
-                person_id,
-                address: new_address.clone(),
-            },
-            address_event_time,
-        ));
-
-        let updated = data.persons.get(&person_id).expect("person exists");
-        assert_eq!(updated.address.postal_code, new_address.postal_code);
-        assert_eq!(updated.updated_at, UtcDateTime::from(address_event_time));
-        assert_eq!(updated.representative, original_representative);
-
-        let rep_event_time = Utc::now() - Duration::seconds(10);
-        let representative = Representative {
+    fn sample_representative() -> Representative {
+        Representative {
             name: FullName {
                 first_name: None,
                 last_name: "Bakker".parse::<LastName>().expect("last name"),
@@ -402,33 +382,62 @@ mod tests {
                 street_name: Some("Coolsingel".parse::<StreetName>().expect("street name")),
                 known_in_bag: Some(true),
             },
-        };
+        }
+    }
 
+    #[test]
+    fn apply_update_person_address_keeps_representative() {
+        let person_id = PersonId::new();
+        let mut data = data_with_person(person_id);
+        let new_address = sample_address();
+
+        let original_representative = data
+            .persons
+            .get(&person_id)
+            .expect("person exists")
+            .representative
+            .clone();
+
+        let event_time = Utc::now() - Duration::seconds(20);
         data.apply(StoreEvent::new_at(
-            2,
+            1,
+            PgEvent::UpdatePersonAddress {
+                person_id,
+                address: new_address.clone(),
+            },
+            event_time,
+        ));
+
+        let updated = data.persons.get(&person_id).expect("person exists");
+        assert_eq!(updated.address.postal_code, new_address.postal_code);
+        assert_eq!(updated.updated_at, UtcDateTime::from(event_time));
+        assert_eq!(updated.representative, original_representative);
+    }
+
+    #[test]
+    fn apply_update_person_representative() {
+        let person_id = PersonId::new();
+        let mut data = data_with_person(person_id);
+        let representative = sample_representative();
+
+        let event_time = Utc::now() - Duration::seconds(10);
+        data.apply(StoreEvent::new_at(
+            1,
             PgEvent::UpdatePersonRepresentative {
                 person_id,
                 representative: Some(representative.clone()),
             },
-            rep_event_time,
+            event_time,
         ));
 
         let updated = data.persons.get(&person_id).expect("person exists");
+        let updated_representative = updated.representative.as_ref().expect("representative");
+        assert_eq!(updated_representative.name.last_name.to_string(), "Bakker");
         assert_eq!(
-            updated
-                .representative
-                .as_ref()
-                .unwrap()
-                .name
-                .last_name
-                .to_string(),
-            "Bakker"
-        );
-        assert_eq!(
-            updated.representative.as_ref().unwrap().address.street_name,
+            updated_representative.address.street_name,
             representative.address.street_name
         );
-        assert_eq!(updated.updated_at, UtcDateTime::from(rep_event_time));
+        assert_eq!(updated.updated_at, UtcDateTime::from(event_time));
     }
 
     #[test]

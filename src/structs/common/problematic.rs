@@ -129,19 +129,42 @@ pub enum EmptyAddressProblems {
     Country,
 }
 
+/// Singular or plural message for a count of surplus candidates.
+fn too_many_candidates(count: usize, locale: &Locale) -> String {
+    if count == 1 {
+        trans!("problems.too_many_candidates_one", *locale)
+    } else {
+        trans!("problems.too_many_candidates", *locale, count)
+    }
+}
+
+/// Singular or plural message for a count of surplus authorized names.
+fn too_many_authorized_names(count: usize, locale: &Locale) -> String {
+    if count == 1 {
+        trans!("problems.too_many_authorized_names_one", *locale)
+    } else {
+        trans!("problems.too_many_authorized_names", *locale, count)
+    }
+}
+
+/// Singular or plural message for a count of missing authorized names.
+fn too_few_authorized_names(count: usize, locale: &Locale) -> String {
+    if count == 1 {
+        trans!("problems.too_few_authorized_names_one", *locale)
+    } else {
+        trans!("problems.too_few_authorized_names", *locale, count)
+    }
+}
+
 impl PotentialProblems {
+    // A flat translation table; the `trans!` expansions inflate the metric.
+    #[expect(clippy::cognitive_complexity)]
     pub fn translate(&self, locale: &Locale) -> String {
         match self {
             // candidate list
             PotentialProblems::NoCandidateList => trans!("problems.no_candidate_list", *locale),
             PotentialProblems::NoCandidates => trans!("problems.no_candidates", *locale),
-            PotentialProblems::TooManyCandidates { count } => {
-                if *count == 1 {
-                    trans!("problems.too_many_candidates_one", *locale)
-                } else {
-                    trans!("problems.too_many_candidates", *locale, count)
-                }
-            }
+            PotentialProblems::TooManyCandidates { count } => too_many_candidates(*count, locale),
             PotentialProblems::DuplicateDistricts => {
                 trans!("problems.duplicate_districts", *locale)
             }
@@ -153,18 +176,10 @@ impl PotentialProblems {
             PotentialProblems::NoListSubmitter => trans!("problems.no_list_submitter", *locale),
             PotentialProblems::NoAuthorisedAgent => trans!("problems.no_authorised_agent", *locale),
             PotentialProblems::TooManyAuthorizedNames { count } => {
-                if *count == 1 {
-                    trans!("problems.too_many_authorized_names_one", *locale)
-                } else {
-                    trans!("problems.too_many_authorized_names", *locale, count)
-                }
+                too_many_authorized_names(*count, locale)
             }
             PotentialProblems::TooFewAuthorizedNames { count } => {
-                if *count == 1 {
-                    trans!("problems.too_few_authorized_names_one", *locale)
-                } else {
-                    trans!("problems.too_few_authorized_names", *locale, count)
-                }
+                too_few_authorized_names(*count, locale)
             }
 
             // representative wrapper
@@ -259,6 +274,65 @@ pub enum InfoProblems {
     IncompleteAddress { problems: Vec<EmptyAddressProblems> },
 }
 
+/// Singular or plural message for a count of candidates with a first name.
+fn few_with_first_name(count: usize, total: usize, locale: &Locale) -> String {
+    if count == 1 {
+        trans!(
+            "problems.few_candidates_with_first_name_one",
+            *locale,
+            total
+        )
+    } else {
+        trans!(
+            "problems.few_candidates_with_first_name",
+            *locale,
+            count,
+            total
+        )
+    }
+}
+
+/// Singular or plural message for a count of candidates without a first name.
+fn few_without_first_name(count: usize, total: usize, locale: &Locale) -> String {
+    if count == 1 {
+        trans!(
+            "problems.few_candidates_without_first_name_one",
+            *locale,
+            total
+        )
+    } else {
+        trans!(
+            "problems.few_candidates_without_first_name",
+            *locale,
+            count,
+            total
+        )
+    }
+}
+
+/// Singular or plural message for a count of candidates with a gender.
+fn few_with_gender(count: usize, total: usize, locale: &Locale) -> String {
+    if count == 1 {
+        trans!("problems.few_candidates_with_gender_one", *locale, total)
+    } else {
+        trans!("problems.few_candidates_with_gender", *locale, count, total)
+    }
+}
+
+/// Singular or plural message for a count of candidates without a gender.
+fn few_without_gender(count: usize, total: usize, locale: &Locale) -> String {
+    if count == 1 {
+        trans!("problems.few_candidates_without_gender_one", *locale, total)
+    } else {
+        trans!(
+            "problems.few_candidates_without_gender",
+            *locale,
+            count,
+            total
+        )
+    }
+}
+
 impl InfoProblems {
     pub fn translate(&self, locale: &Locale) -> String {
         match self {
@@ -278,56 +352,17 @@ impl InfoProblems {
             InfoProblems::NoPreviousElectionResults => {
                 trans!("problems.no_previous_election_results", *locale)
             }
-            InfoProblems::FewCandidatesWithFirstName { count, total, .. } => {
-                if *count == 1 {
-                    trans!(
-                        "problems.few_candidates_with_first_name_one",
-                        *locale,
-                        total
-                    )
-                } else {
-                    trans!(
-                        "problems.few_candidates_with_first_name",
-                        *locale,
-                        count,
-                        total
-                    )
-                }
+            InfoProblems::FewCandidatesWithFirstName { count, total } => {
+                few_with_first_name(*count, *total, locale)
             }
-            InfoProblems::FewCandidatesWithoutFirstName { count, total, .. } => {
-                if *count == 1 {
-                    trans!(
-                        "problems.few_candidates_without_first_name_one",
-                        *locale,
-                        total
-                    )
-                } else {
-                    trans!(
-                        "problems.few_candidates_without_first_name",
-                        *locale,
-                        count,
-                        total
-                    )
-                }
+            InfoProblems::FewCandidatesWithoutFirstName { count, total } => {
+                few_without_first_name(*count, *total, locale)
             }
-            InfoProblems::FewCandidatesWithGender { count, total, .. } => {
-                if *count == 1 {
-                    trans!("problems.few_candidates_with_gender_one", *locale, total)
-                } else {
-                    trans!("problems.few_candidates_with_gender", *locale, count, total)
-                }
+            InfoProblems::FewCandidatesWithGender { count, total } => {
+                few_with_gender(*count, *total, locale)
             }
-            InfoProblems::FewCandidatesWithoutGender { count, total, .. } => {
-                if *count == 1 {
-                    trans!("problems.few_candidates_without_gender_one", *locale, total)
-                } else {
-                    trans!(
-                        "problems.few_candidates_without_gender",
-                        *locale,
-                        count,
-                        total
-                    )
-                }
+            InfoProblems::FewCandidatesWithoutGender { count, total } => {
+                few_without_gender(*count, *total, locale)
             }
             InfoProblems::IncompleteAddress { .. } => {
                 trans!("problems.incomplete_address", *locale)

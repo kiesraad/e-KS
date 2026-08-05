@@ -73,74 +73,22 @@ async fn perform_dev_login(
         .transpose()
         .map_err(|_| AppError::UserError("invalid political group name".to_string()))?;
 
-    let id_code: SecretString = query
-        .bsn
-        .as_deref()
-        .filter(|s| !s.is_empty())
-        .map(SecretString::from)
-        .unwrap_or_else(random_bsn);
+    let stream_id = derive_dev_stream_id(&state, query.bsn.as_deref());
 
-    // The stream id is derived from the BSN only, not the scope. In real use a
-    // person has a single role, so a BSN maps to one scope. These dev endpoints
-    // don't enforce that: logging in with the *same* BSN as both a political
-    // group and the committee would point both an app store and a CSB store at
-    // the same `(stream_id, election)` partition (one cipher, two event types),
-    // which fails to decode. Accepted as a dev-only limitation; use distinct
-    // BSNs for the two roles.
-    let stream_id = state.id_deriver.derive_stream_id(&id_code);
-    drop(id_code);
-
-    let locale = Locale::from_headers(&headers);
-    let mut session = Session::new_with_locale(locale);
+    let mut session = Session::new_with_locale(Locale::from_headers(&headers));
     session.set_stream_id(stream_id);
     session.set_scope(scope);
     session.set_user_agent_hash(user_agent_hash(&headers));
     session.saml_name_id = DEV_LOGIN_NAME_ID.to_string();
 
-    let load_fixtures = query.fixtures.unwrap_or(false);
-    let mut last_event_hash = None;
-
-    let redirect_to = match scope {
+    let (redirect_to, last_event_hash) = match scope {
         Scope::CentralElectoralCommittee => {
-            // All committee members share a single stream
-            // The session's own stream_id is not used for CSB state (other than for logging)
-            let election = ElectionConfig::EK27;
-            let store = state.csb_main_store(election).await?;
-            store
-                .update(CsbMainEvent::DeveloperLogin { stream_id })
-                .await?;
-            session.set_current_election(election);
-
-            #[cfg(feature = "fixtures")]
-            if load_fixtures {
-                crate::csb::import::fixture::import_csb_fixture(&state, election).await?;
-            }
-
-            CsbIndexPath {}.to_string()
+            let path = csb_dev_login(&state, &mut session, stream_id, &query).await?;
+            (path, None)
         }
         Scope::ImportedByCsb => return Err(AppError::Unauthorised),
         Scope::PoliticalGroup => {
-            if query.select_election.unwrap_or(false) {
-                SelectElectionPath.to_string()
-            } else {
-                let election = ElectionConfig::EK27;
-                let (store, was_new) =
-                    ensure_dev_store(&state, stream_id, load_fixtures, fixture_name, election)
-                        .await?;
-
-                if was_new {
-                    store.update(PgEvent::DeveloperLogin { stream_id }).await?;
-                }
-                last_event_hash = store
-                    .data
-                    .read()
-                    .events
-                    .last()
-                    .map(|e| format_hash(&e.hash, false));
-
-                session.set_current_election(election);
-                PgIndexPath.to_string()
-            }
+            pg_dev_login(&state, &mut session, stream_id, &query, fixture_name).await?
         }
     };
 
@@ -160,6 +108,83 @@ async fn perform_dev_login(
     }
 
     Ok(response)
+}
+
+/// Derives the dev stream id from the requested BSN, or a random BSN if none
+/// was given.
+///
+/// The stream id is derived from the BSN only, not the scope. In real use a
+/// person has a single role, so a BSN maps to one scope. These dev endpoints
+/// don't enforce that: logging in with the *same* BSN as both a political
+/// group and the committee would point both an app store and a CSB store at
+/// the same `(stream_id, election)` partition (one cipher, two event types),
+/// which fails to decode. Accepted as a dev-only limitation; use distinct
+/// BSNs for the two roles.
+fn derive_dev_stream_id(state: &AppState, bsn: Option<&str>) -> StreamId {
+    let id_code: SecretString = bsn
+        .filter(|s| !s.is_empty())
+        .map(SecretString::from)
+        .unwrap_or_else(random_bsn);
+    state.id_deriver.derive_stream_id(&id_code)
+}
+
+/// Logs the login on the shared committee main stream, optionally imports the
+/// CSB fixture, and returns the redirect path.
+async fn csb_dev_login(
+    state: &AppState,
+    session: &mut Session,
+    stream_id: StreamId,
+    query: &DevLoginQuery,
+) -> Result<String, AppError> {
+    // All committee members share a single stream
+    // The session's own stream_id is not used for CSB state (other than for logging)
+    let election = ElectionConfig::EK27;
+    let store = state.csb_main_store(election).await?;
+    store
+        .update(CsbMainEvent::DeveloperLogin { stream_id })
+        .await?;
+    session.set_current_election(election);
+
+    #[cfg(feature = "fixtures")]
+    if query.fixtures.unwrap_or(false) {
+        crate::csb::import::fixture::import_csb_fixture(state, election).await?;
+    }
+    #[cfg(not(feature = "fixtures"))]
+    let _ = query;
+
+    Ok(CsbIndexPath {}.to_string())
+}
+
+/// Sets up the political group's own stream and returns the redirect path plus
+/// the chain hash of the stream's last event (for end-to-end tests).
+async fn pg_dev_login(
+    state: &AppState,
+    session: &mut Session,
+    stream_id: StreamId,
+    query: &DevLoginQuery,
+    fixture_name: Option<DisplayName>,
+) -> Result<(String, Option<String>), AppError> {
+    if query.select_election.unwrap_or(false) {
+        return Ok((SelectElectionPath.to_string(), None));
+    }
+
+    let election = ElectionConfig::EK27;
+    let load_fixtures = query.fixtures.unwrap_or(false);
+    let (store, was_new) =
+        ensure_dev_store(state, stream_id, load_fixtures, fixture_name, election).await?;
+
+    if was_new {
+        store.update(PgEvent::DeveloperLogin { stream_id }).await?;
+    }
+    let last_event_hash = store
+        .data
+        .read()
+        .events
+        .last()
+        .map(|e| format_hash(&e.hash, false));
+
+    session.set_current_election(election);
+    Ok((PgIndexPath.to_string(), last_event_hash))
 }
 
 async fn ensure_dev_store(
@@ -229,7 +254,7 @@ mod tests {
         Request::builder()
             .uri(format!("/dev/login?bsn={TEST_ID_CODE}&{query}"))
             .body(Body::empty())
-            .unwrap()
+            .expect("valid request")
     }
 
     /// The session cookie's `name=value` pair.
@@ -284,7 +309,7 @@ mod tests {
                 .uri(path)
                 .header(header::COOKIE, cookie_value(&login))
                 .body(Body::empty())
-                .unwrap(),
+                .expect("valid request"),
         )
         .await
         .expect("response")
@@ -471,7 +496,7 @@ mod tests {
         Request::builder()
             .uri(format!("/dev/login?csb=true&bsn={TEST_ID_CODE}&{query}"))
             .body(Body::empty())
-            .unwrap()
+            .expect("valid request")
     }
 
     #[cfg(feature = "fixtures")]

@@ -64,54 +64,63 @@ impl PersonRecord {
 
         Ok(Person {
             id: uuid.into(),
-            name: FullName {
-                first_name: self
-                    .voornamen
-                    .split_whitespace()
-                    .next()
-                    .map(|s| Self::parse_value::<FirstName>(s, "first name"))
-                    .transpose()?,
-                last_name: Self::parse_value::<LastName>(&self.geslachtsnaam, "last name")?,
-                last_name_prefix: None,
-                initials: Self::parse_value::<Initials>(&initials, "initials")?,
-            },
-            personal_data: PersonalData {
-                gender: match self.geslacht.as_str() {
-                    "M" => Some(Gender::Male),
-                    "V" => Some(Gender::Female),
-                    _ => None,
-                },
-                date_of_birth: NaiveDate::parse_from_str(&self.geboortedatum, "%Y%m%d")
-                    .ok()
-                    .map(DateOfBirth::from),
-                bsn: Self::parse_value::<BsnOrNoneConfirmed>(&self.burgerservicenummer, "bsn").ok(),
-                place_of_residence: locality
-                    .as_deref()
-                    .map(|value| Self::parse_value::<PlaceOfResidence>(value, "place of residence"))
-                    .transpose()?,
-                country: Some(Self::parse_value::<CountryCode>("NL", "country code")?),
-            },
-            address: DutchAddress {
-                locality,
-                postal_code: Some(self.postcode.parse::<PostalCode>().map_err(|_| {
-                    AppError::ServerError(io::Error::new(
-                        io::ErrorKind::InvalidData,
-                        "Failed to parse postal code",
-                    ))
-                })?),
-                house_number: Some(Self::parse_value::<HouseNumber>(
-                    &self.huisnummer,
-                    "house number",
-                )?),
-                house_number_addition: None,
-                street_name: Some(Self::parse_value::<StreetName>(
-                    &self.straat,
-                    "street name",
-                )?),
-                known_in_bag: None,
-            },
+            name: self.full_name(&initials)?,
+            personal_data: self.personal_data(locality.as_deref())?,
+            address: self.address(locality)?,
             representative: Default::default(),
             ..Default::default()
+        })
+    }
+
+    fn full_name(&self, initials: &str) -> Result<FullName, AppError> {
+        Ok(FullName {
+            first_name: self
+                .voornamen
+                .split_whitespace()
+                .next()
+                .map(|s| Self::parse_value::<FirstName>(s, "first name"))
+                .transpose()?,
+            last_name: Self::parse_value::<LastName>(&self.geslachtsnaam, "last name")?,
+            last_name_prefix: None,
+            initials: Self::parse_value::<Initials>(initials, "initials")?,
+        })
+    }
+
+    fn personal_data(&self, locality: Option<&String>) -> Result<PersonalData, AppError> {
+        Ok(PersonalData {
+            gender: match self.geslacht.as_str() {
+                "M" => Some(Gender::Male),
+                "V" => Some(Gender::Female),
+                _ => None,
+            },
+            date_of_birth: NaiveDate::parse_from_str(&self.geboortedatum, "%Y%m%d")
+                .ok()
+                .map(DateOfBirth::from),
+            bsn: Self::parse_value::<BsnOrNoneConfirmed>(&self.burgerservicenummer, "bsn").ok(),
+            place_of_residence: locality
+                .map(|value| Self::parse_value::<PlaceOfResidence>(value, "place of residence"))
+                .transpose()?,
+            country: Some(Self::parse_value::<CountryCode>("NL", "country code")?),
+        })
+    }
+
+    fn address(&self, locality: Option<Locality>) -> Result<DutchAddress, AppError> {
+        Ok(DutchAddress {
+            locality,
+            postal_code: Some(Self::parse_value::<PostalCode>(
+                &self.postcode,
+                "postal code",
+            )?),
+            house_number: Some(Self::parse_value::<HouseNumber>(
+                &self.huisnummer,
+                "house number",
+            )?),
+            house_number_addition: None,
+            street_name: Some(Self::parse_value::<StreetName>(
+                &self.straat,
+                "street name",
+            )?),
+            known_in_bag: None,
         })
     }
 }

@@ -10,6 +10,17 @@ edition = "2024"
 license = "EUPL-1.2"
 publish = false
 
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.rustdoc]
+private_intra_doc_links = "allow"
+
+[workspace.lints.clippy]
+unwrap_used = "warn"
+cognitive_complexity = "warn"
+too_many_lines = "warn"
+
 # Single source of truth for third-party dependency versions and their base
 # feature set. Member crates opt in with `<dep> = { workspace = true }` and may
 # add extra features or mark the dependency optional. Path and git dependencies
@@ -187,14 +198,8 @@ tracing-test = { workspace = true }
 tokio = { workspace = true, features = ["test-util"] }
 reqwest = { workspace = true, features = ["rustls"] }
 
-[lints.rust]
-unsafe_code = "forbid"
-
-[lints.rustdoc]
-# Most items are deliberately crate-private (the public API is only what the
-# binary needs), while docs are built with `--document-private-items`, so
-# doc links from public docs to internal items resolve fine.
-private_intra_doc_links = "allow"
+[lints]
+workspace = true
 
 # https://askama.readthedocs.io/en/stable/performance.html#slow-debug-recompilations
 [profile.dev.package.askama_derive]

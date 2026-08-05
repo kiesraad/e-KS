@@ -13,5 +13,5 @@ regex = { workspace = true }
 [dev-dependencies]
 uuid = { workspace = true }
 
-[lints.rust]
-unsafe_code = "forbid"
+[lints]
+workspace = true

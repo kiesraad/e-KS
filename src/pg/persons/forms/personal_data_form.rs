@@ -185,8 +185,16 @@ mod tests {
         test_utils::{self, parse_country_code, sample_person_with},
     };
 
-    #[test]
-    fn personal_data_form_updates_existing_person_when_valid() {
+    /// The `Display` rendering of an optional field.
+    fn disp<T: std::ops::Deref>(value: &Option<T>) -> Option<String>
+    where
+        T::Target: std::fmt::Display,
+    {
+        value.as_deref().map(|v| v.to_string())
+    }
+
+    /// A person with known personal data and a Dutch address.
+    fn current_person() -> Person {
         let mut current =
             sample_person_with(PersonId::new(), Some("Evert"), "Klaas Smit", None, "E.D.");
         current.personal_data.gender = Some(Gender::Female);
@@ -202,8 +210,13 @@ mod tests {
             known_in_bag: Some(true),
         };
         current.updated_at = UtcDateTime::default();
+        current
+    }
 
-        let form = PersonalDataForm {
+    /// A valid form for [`current_person`], with whitespace to be trimmed and
+    /// a name prefix and male gender to be applied.
+    fn valid_update_form() -> PersonalDataForm {
+        PersonalDataForm {
             name: FullNameForm {
                 first_name: " Evert ".to_string(),
                 last_name: "  Klaas Smit ".to_string(),
@@ -217,7 +230,13 @@ mod tests {
                 place_of_residence: "Waterdam".to_string(),
                 country: " nl ".to_string(),
             },
-        };
+        }
+    }
+
+    #[test]
+    fn personal_data_form_updates_existing_person_when_valid() {
+        let current = current_person();
+        let form = valid_update_form();
 
         let updated = form.validate_update(&current).unwrap();
 
@@ -225,17 +244,10 @@ mod tests {
         assert_eq!(updated.personal_data.gender, Some(Gender::Male));
         assert_eq!(updated.name.last_name.to_string(), "Klaas Smit");
         assert_eq!(
-            updated
-                .name
-                .last_name_prefix
-                .as_deref()
-                .map(|v| v.to_string()),
-            Some("van de".to_string())
+            disp(&updated.name.last_name_prefix).as_deref(),
+            Some("van de")
         );
-        assert_eq!(
-            updated.name.first_name.as_deref().map(|v| v.to_string()),
-            Some("Evert".to_string())
-        );
+        assert_eq!(disp(&updated.name.first_name).as_deref(), Some("Evert"));
         assert_eq!(updated.name.initials.to_string(), "E.D.");
         assert_eq!(
             updated
@@ -245,52 +257,26 @@ mod tests {
             Some("01-02-2020".to_string())
         );
         assert_eq!(
-            updated
-                .personal_data
-                .place_of_residence
-                .as_deref()
-                .map(|v| v.to_string()),
-            Some("Waterdam".to_string())
+            disp(&updated.personal_data.place_of_residence).as_deref(),
+            Some("Waterdam")
         );
+        assert_eq!(disp(&updated.personal_data.country).as_deref(), Some("NL"));
         assert_eq!(
-            updated
-                .personal_data
-                .country
-                .as_deref()
-                .map(|v| v.to_string()),
-            Some("NL".to_string())
-        );
-        assert_eq!(
-            updated.address.locality.as_deref().map(|v| v.to_string()),
-            Some("Heemdamseburg".to_string())
+            disp(&updated.address.locality).as_deref(),
+            Some("Heemdamseburg")
         );
         assert_eq!(
             updated.address.postal_code.unwrap(),
             "1234AB".parse().unwrap()
         );
+        assert_eq!(disp(&updated.address.house_number).as_deref(), Some("10"));
         assert_eq!(
-            updated
-                .address
-                .house_number
-                .as_deref()
-                .map(|v| v.to_string()),
-            Some("10".to_string())
+            disp(&updated.address.house_number_addition).as_deref(),
+            Some("B")
         );
         assert_eq!(
-            updated
-                .address
-                .house_number_addition
-                .as_deref()
-                .map(|v| v.to_string()),
-            Some("B".to_string())
-        );
-        assert_eq!(
-            updated
-                .address
-                .street_name
-                .as_deref()
-                .map(|v| v.to_string()),
-            Some("Spoorstraat".to_string())
+            disp(&updated.address.street_name).as_deref(),
+            Some("Spoorstraat")
         );
         assert!(updated.updated_at >= current.updated_at);
     }

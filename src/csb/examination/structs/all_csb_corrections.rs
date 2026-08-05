@@ -245,63 +245,72 @@ mod tests {
         assert_eq!(corrections.general.len(), 0);
         assert_eq!(corrections.candidates.len(), 2);
 
-        let p1_corrections = corrections
-            .candidates
-            .iter()
-            .find(|c| c.person.id == p_id1)
-            .unwrap();
-        let p2_corrections = corrections
-            .candidates
-            .iter()
-            .find(|c| c.person.id == p_id2)
-            .unwrap();
+        let p1_corrections = corrections_for(&corrections, p_id1);
+        let p2_corrections = corrections_for(&corrections, p_id2);
 
         assert_eq!(p1_corrections.corrections.len(), 2);
         assert_eq!(p2_corrections.corrections.len(), 1);
 
-        let p1_c1 = p1_corrections
-            .corrections
-            .iter()
-            .find(|c| c.corrected.csb_corrected == Some("A.B.".to_string()))
-            .unwrap();
-        assert_eq!(
-            p1_c1.edit_path,
-            format!(
-                "/csb/examination/{}/correction/person/{}/initials?&redirect_to=%2Fcsb%2Fexamination%2F{}%2Fomissions",
-                store.stream_id, p_id1, store.stream_id
-            )
+        assert_correction(
+            &store,
+            p1_corrections,
+            p_id1,
+            "A.B.",
+            "initials",
+            "Voorletters",
         );
-        assert_eq!(p1_c1.label, "Voorletters".to_string());
-
-        let p1_c2 = p1_corrections
-            .corrections
-            .iter()
-            .find(|c| c.corrected.csb_corrected == Some("Smit".to_string()))
-            .unwrap();
-        assert_eq!(
-            p1_c2.edit_path,
-            format!(
-                "/csb/examination/{}/correction/person/{}/last-name?&redirect_to=%2Fcsb%2Fexamination%2F{}%2Fomissions",
-                store.stream_id, p_id1, store.stream_id
-            )
+        assert_correction(
+            &store,
+            p1_corrections,
+            p_id1,
+            "Smit",
+            "last-name",
+            "Achternaam",
         );
-        assert_eq!(p1_c2.label, "Achternaam".to_string());
-
-        let p2_c1 = p2_corrections
-            .corrections
-            .iter()
-            .find(|c| c.corrected.csb_corrected == Some("Amsterdam".to_string()))
-            .unwrap();
-        assert_eq!(
-            p2_c1.edit_path,
-            format!(
-                "/csb/examination/{}/correction/person/{}/place-of-residence?&redirect_to=%2Fcsb%2Fexamination%2F{}%2Fomissions",
-                store.stream_id, p_id2, store.stream_id
-            )
+        assert_correction(
+            &store,
+            p2_corrections,
+            p_id2,
+            "Amsterdam",
+            "place-of-residence",
+            "Woonplaats",
         );
-        assert_eq!(p2_c1.label, "Woonplaats".to_string());
 
         Ok(())
+    }
+
+    /// The corrections entry of one candidate.
+    fn corrections_for(corrections: &AllCsbCorrections, person: PersonId) -> &CandidateCorrections {
+        corrections
+            .candidates
+            .iter()
+            .find(|c| c.person.id == person)
+            .unwrap_or_else(|| panic!("no corrections for {person}"))
+    }
+
+    /// Asserts that the candidate has a correction to `value` with the
+    /// expected edit path segment and label.
+    fn assert_correction(
+        store: &CsbStore,
+        candidate: &CandidateCorrections,
+        person: PersonId,
+        value: &str,
+        path_segment: &str,
+        label: &str,
+    ) {
+        let correction = candidate
+            .corrections
+            .iter()
+            .find(|c| c.corrected.csb_corrected.as_deref() == Some(value))
+            .unwrap_or_else(|| panic!("no correction to {value:?}"));
+        assert_eq!(
+            correction.edit_path,
+            format!(
+                "/csb/examination/{}/correction/person/{}/{}?&redirect_to=%2Fcsb%2Fexamination%2F{}%2Fomissions",
+                store.stream_id, person, path_segment, store.stream_id
+            )
+        );
+        assert_eq!(correction.label, label.to_string());
     }
 
     #[tokio::test]

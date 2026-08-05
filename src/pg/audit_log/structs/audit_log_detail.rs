@@ -162,6 +162,8 @@ fn natural_cmp(a: &str, b: &str) -> std::cmp::Ordering {
 /// Uses the leaf segment of the dot-notation path (e.g. `name.first_name` →
 /// `first_name`) to look up a translation. Array indices become a 1-indexed
 /// suffix on the parent field name (e.g. `candidates.3` → `Candidates #4`).
+// A flat translation table; the `trans!` expansions inflate the metric.
+#[expect(clippy::cognitive_complexity)]
 fn translate_field_name(field: &str, locale: Locale) -> String {
     let leaf = field.rsplit('.').next().unwrap_or(field);
     if let Ok(index) = leaf.parse::<usize>()

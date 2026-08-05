@@ -40,3 +40,6 @@ tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 eks = { path = "..", default-features = false }
 eks-locales = { path = "../tooling" }
+
+[lints]
+workspace = true

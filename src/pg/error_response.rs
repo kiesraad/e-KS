@@ -229,17 +229,20 @@ fn log_app_error(err: &AppError, response: &ErrorResponse) {
         }
         ErrorResponseVariant::BadRequest
         | ErrorResponseVariant::Unauthorised
-        | ErrorResponseVariant::NotFound => {
-            if message_is_safe_to_log(err) {
-                warn!(error = ?err, "4xx error");
-            } else {
-                // Debug of inner extractor errors can echo request input, so
-                // log only the variant name (the prefix of the Debug output).
-                let dbg = format!("{err:?}");
-                let kind = dbg.split_once('(').map_or(dbg.as_str(), |(n, _)| n);
-                warn!(kind, "4xx error");
-            }
-        }
+        | ErrorResponseVariant::NotFound => log_client_error(err),
+    }
+}
+
+/// Warn about a 4xx error without echoing request input into the log.
+fn log_client_error(err: &AppError) {
+    if message_is_safe_to_log(err) {
+        warn!(error = ?err, "4xx error");
+    } else {
+        // Debug of inner extractor errors can echo request input, so
+        // log only the variant name (the prefix of the Debug output).
+        let dbg = format!("{err:?}");
+        let kind = dbg.split_once('(').map_or(dbg.as_str(), |(n, _)| n);
+        warn!(kind, "4xx error");
     }
 }
 

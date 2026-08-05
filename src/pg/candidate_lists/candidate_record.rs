@@ -234,6 +234,11 @@ mod tests {
 
     use super::*;
 
+    /// The `Display` rendering of an optional field.
+    fn disp<T: std::fmt::Display>(value: &Option<T>) -> Option<String> {
+        value.as_ref().map(|v| v.to_string())
+    }
+
     #[test]
     fn validate_create_maps_correspondence_address_to_person_address() {
         let record = CandidateRecord::from(CandidateRecordCsv {
@@ -273,41 +278,21 @@ mod tests {
             Some("20-10-2000".to_string())
         );
         assert_eq!(
-            person
-                .personal_data
-                .place_of_residence
-                .as_ref()
-                .map(|v| v.to_string()),
-            Some("Amsterdam".to_string())
+            disp(&person.personal_data.place_of_residence).as_deref(),
+            Some("Amsterdam")
+        );
+        assert_eq!(disp(&person.personal_data.country).as_deref(), Some("NL"));
+        assert_eq!(disp(&person.address.postal_code).as_deref(), Some("1234AB"));
+        assert_eq!(disp(&person.address.house_number).as_deref(), Some("12"));
+        assert_eq!(
+            disp(&person.address.house_number_addition).as_deref(),
+            Some("a")
         );
         assert_eq!(
-            person.personal_data.country.as_ref().map(|v| v.to_string()),
-            Some("NL".to_string())
+            disp(&person.address.street_name).as_deref(),
+            Some("Mooie Straat")
         );
-        assert_eq!(
-            person.address.postal_code.as_ref().map(|v| v.to_string()),
-            Some("1234AB".to_string())
-        );
-        assert_eq!(
-            person.address.house_number.as_ref().map(|v| v.to_string()),
-            Some("12".to_string())
-        );
-        assert_eq!(
-            person
-                .address
-                .house_number_addition
-                .as_ref()
-                .map(|v| v.to_string()),
-            Some("a".to_string())
-        );
-        assert_eq!(
-            person.address.street_name.as_ref().map(|v| v.to_string()),
-            Some("Mooie Straat".to_string())
-        );
-        assert_eq!(
-            person.address.locality.as_ref().map(|v| v.to_string()),
-            Some("Rotterdam".to_string())
-        );
+        assert_eq!(disp(&person.address.locality).as_deref(), Some("Rotterdam"));
         assert_eq!(person.representative, None);
     }
 
@@ -360,63 +345,25 @@ mod tests {
         let person = record.validate_create().unwrap();
 
         assert_eq!(person.personal_data.gender, Some(Gender::Female));
-        assert_eq!(
-            person.personal_data.country.as_ref().map(|v| v.to_string()),
-            Some("BE".to_string())
-        );
+        assert_eq!(disp(&person.personal_data.country).as_deref(), Some("BE"));
         assert_eq!(person.address, DutchAddress::default());
 
         let representative = person.representative.as_ref().unwrap();
+        let address = &representative.address;
 
         assert_eq!(representative.name.initials.to_string(), "P.");
         assert_eq!(
-            representative
-                .name
-                .first_name
-                .as_ref()
-                .map(|v| v.to_string()),
-            Some("Pietje".to_string())
+            disp(&representative.name.first_name).as_deref(),
+            Some("Pietje")
         );
         assert_eq!(representative.name.last_name.to_string(), "Puk");
+        assert_eq!(disp(&address.postal_code).as_deref(), Some("5678CD"));
+        assert_eq!(disp(&address.house_number).as_deref(), Some("34"));
+        assert_eq!(disp(&address.house_number_addition).as_deref(), Some("b"));
         assert_eq!(
-            representative
-                .address
-                .postal_code
-                .as_ref()
-                .map(|v| v.to_string()),
-            Some("5678CD".to_string())
+            disp(&address.street_name).as_deref(),
+            Some("Mooiere Straat")
         );
-        assert_eq!(
-            representative
-                .address
-                .house_number
-                .as_ref()
-                .map(|v| v.to_string()),
-            Some("34".to_string())
-        );
-        assert_eq!(
-            representative
-                .address
-                .house_number_addition
-                .as_ref()
-                .map(|v| v.to_string()),
-            Some("b".to_string())
-        );
-        assert_eq!(
-            representative
-                .address
-                .street_name
-                .as_ref()
-                .map(|v| v.to_string()),
-            Some("Mooiere Straat".to_string())
-        );
-        assert_eq!(
-            representative
-                .address
-                .locality
-                .as_ref()
-                .map(|v| v.to_string()),
-            Some("'s-Gravenhage".to_string())
-        );
+        assert_eq!(disp(&address.locality).as_deref(), Some("'s-Gravenhage"));
     }
 }
