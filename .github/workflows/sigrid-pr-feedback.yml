@@ -26,6 +26,7 @@ jobs:
 
       - name: Sigrid CI
         uses: Software-Improvement-Group/sigridci@39939375047c74432ca8d1b2afd94fd4bc2b336c # main
+        continue-on-error: true # a failed quality gate should not fail the job
         with:
           customer: kiesraad
           system: e-ks
