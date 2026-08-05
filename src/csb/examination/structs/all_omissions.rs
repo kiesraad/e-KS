@@ -2,10 +2,12 @@ use axum_extra::routing::TypedPath;
 
 use crate::{
     AppError, CsbStore, QueryParamState,
-    candidate_lists::CandidateListId,
     csb::examination::extractors::CsbPoliticalGroup,
-    persons::{Person, PersonId},
-    structs::csb::{Omission, OmissionCategory},
+    structs::{
+        candidate_lists::CandidateListId,
+        csb::{Omission, OmissionCategory},
+        persons::{Person, PersonId},
+    },
 };
 
 pub struct AllOmissions {
@@ -86,7 +88,7 @@ impl CsbStore {
                                 omission,
                             }],
                             person: self
-                                .get_person(person, crate::csb::WithCorrections::All)
+                                .get_person(person, crate::projection::WithCorrections::All)
                                 .ok_or(AppError::InternalServerError)?,
                         });
                     }

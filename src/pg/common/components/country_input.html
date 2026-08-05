@@ -9,11 +9,11 @@
          required
          class="uppercase" />
   <ul>
-    {% for country in crate::common::COUNTRY_CODES %}
+    {% for country in crate::structs::common::COUNTRY_CODES %}
       <li data-country="{{ country }}">
         <span class="icon">{{ country|flag }}</span> {{ country }}
       </li>
     {% endfor %}
   </ul>
 </div>
-<span class="hint">{{ "person.hints.country_code"|trans(crate::common::RVIG_COUNTRY_CODES_URL) |safe }}</span>
+<span class="hint">{{ "person.hints.country_code"|trans(crate::structs::common::RVIG_COUNTRY_CODES_URL) |safe }}</span>

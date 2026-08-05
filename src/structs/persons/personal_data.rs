@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     ElectionConfig, OptionAsStrExt,
-    common::{
+    structs::common::{
         BsnOrNoneConfirmed, CountryCode, DateOfBirth, Gender, InfoProblems, PlaceOfResidence,
         PotentialProblems, Problematic, Problems,
     },

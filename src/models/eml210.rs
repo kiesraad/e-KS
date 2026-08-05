@@ -21,13 +21,15 @@ use eml_nl::{
 
 use crate::{
     AnyLocale, AppError, ElectionConfig, PgStore,
-    candidate_lists::{CandidateListId, FullCandidateList},
-    candidates::Candidate,
-    common::{Address, BsnOrNoneConfirmed, DutchAddress, FullName, Gender},
     core::{ElectionType, ModelLocale},
-    list_submitters::ListSubmitter,
-    persons::Representative,
-    political_groups::PoliticalGroup,
+    structs::{
+        candidate_lists::{CandidateListId, FullCandidateList},
+        candidates::Candidate,
+        common::{Address, BsnOrNoneConfirmed, DutchAddress, FullName, Gender},
+        list_submitters::ListSubmitter,
+        persons::Representative,
+        political_groups::PoliticalGroup,
+    },
     utils::slugify_teletex,
 };
 
@@ -347,11 +349,13 @@ mod tests {
 
     use crate::{
         AppError, Context, ElectoralDistrict, PgStore,
-        candidate_lists::{CandidateListId, FullCandidateList},
-        common::CountryCode,
         core::ModelLocale,
-        list_submitters::ListSubmitterId,
-        persons::{PersonId, Representative},
+        structs::{
+            candidate_lists::{CandidateListId, FullCandidateList},
+            common::CountryCode,
+            list_submitters::ListSubmitterId,
+            persons::{PersonId, Representative},
+        },
         test_utils::{
             sample_candidate_list, sample_dutch_address, sample_full_name, sample_list_submitter,
             sample_person,

@@ -2,7 +2,7 @@ use rand::{RngExt, rng};
 
 use crate::{
     AnyLocale, CsbStore,
-    csb::WithCorrections,
+    projection::WithCorrections,
     structs::{candidate_lists::CandidateList, persons::Person},
 };
 

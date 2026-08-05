@@ -1,7 +1,7 @@
 use crate::{
     AppError, PgStore,
-    candidate_lists::{CandidateList, pages::CandidateListReorderPath},
-    persons::PersonId,
+    candidate_lists::pages::CandidateListReorderPath,
+    structs::{candidate_lists::CandidateList, persons::PersonId},
 };
 use axum::{Json, http::StatusCode, response::IntoResponse};
 use serde::Deserialize;
@@ -29,8 +29,10 @@ mod tests {
     use super::*;
     use crate::{
         PgStore,
-        candidate_lists::{CandidateListId, FullCandidateList},
-        persons::PersonId,
+        structs::{
+            candidate_lists::{CandidateListId, FullCandidateList},
+            persons::PersonId,
+        },
         test_utils::{sample_candidate_list, sample_person_with_last_name},
     };
 

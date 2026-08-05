@@ -221,10 +221,10 @@ mod tests {
     use super::*;
     use crate::{
         ElectoralDistrict, Locale,
-        candidate_lists::CandidateListId,
-        common::FullName,
-        persons::PersonId,
-        structs::audit_log::EntityRef,
+        structs::{
+            audit_log::EntityRef, candidate_lists::CandidateListId, common::FullName,
+            persons::PersonId,
+        },
         test_utils::{sample_candidate_list, sample_person, sample_political_group},
     };
 

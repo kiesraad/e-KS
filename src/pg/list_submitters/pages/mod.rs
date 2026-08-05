@@ -1,7 +1,7 @@
 use axum::Router;
 use axum_extra::routing::{RouterExt, TypedPath};
 
-use crate::{AppError, AppState, QueryParamState, list_submitters::ListSubmitter};
+use crate::{AppError, AppRequestState, QueryParamState, structs::list_submitters::ListSubmitter};
 
 mod update;
 mod view;
@@ -28,7 +28,7 @@ impl ListSubmitter {
     }
 }
 
-pub fn router() -> Router<AppState> {
+pub fn router<S: AppRequestState>() -> Router<S> {
     Router::new()
         .typed_get(view::view_list_submitter)
         .typed_get(update::update_list_submitter)
@@ -53,6 +53,6 @@ mod tests {
 
     #[test]
     fn list_submitter_router_builds() {
-        let _router = router();
+        let _router = router::<crate::AppState>();
     }
 }

@@ -1,10 +1,10 @@
+use crate::structs::candidate_lists::FullCandidateList;
 use axum::response::Response;
 
 use crate::{
     AppError, PgEvent, PgStore,
-    candidate_lists::{FullCandidateList, pages::CandidateListExportPath},
+    candidate_lists::{CSV_HEADERS, CandidateRecordCsv, pages::CandidateListExportPath},
     core::Csv,
-    structs::candidate_lists::{CSV_HEADERS, CandidateRecordCsv},
 };
 
 pub async fn export_candidate_list(
@@ -55,8 +55,7 @@ mod tests {
 
     use crate::{
         PgStore,
-        candidate_lists::CandidateListId,
-        persons::PersonId,
+        structs::{candidate_lists::CandidateListId, persons::PersonId},
         test_utils::{sample_candidate_list, sample_person},
     };
 

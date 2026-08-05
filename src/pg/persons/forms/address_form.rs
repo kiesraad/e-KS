@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use validate::Validate;
 
-use crate::{common::DutchAddressForm, persons::Person};
+use crate::{common::DutchAddressForm, structs::persons::Person};
 
 #[derive(Default, Serialize, Deserialize, Clone, Debug, Validate)]
 #[validate(target = "Person")]

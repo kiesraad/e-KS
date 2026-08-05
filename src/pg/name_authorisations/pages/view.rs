@@ -1,12 +1,14 @@
 use super::NameAuthorisationsPath;
 use crate::{
-    AppError, Context, HtmlTemplate, PgStore, QueryParamState,
-    common::{HasSeverity, PotentialProblems, Problematic},
-    filters,
-    list_submitters::ListSubmitter,
-    name_authorisations::NameAuthorisation,
-    pg::list_designation::ListDesignation,
-    political_groups::{PoliticalGroup, PoliticalGroupSteps},
+    AppError, Context, HtmlTemplate, PgStore, QueryParamState, filters,
+    political_groups::PoliticalGroupSteps,
+    structs::{
+        common::{HasSeverity, PotentialProblems, Problematic},
+        list_designation::ListDesignation,
+        list_submitters::ListSubmitter,
+        name_authorisations::NameAuthorisation,
+        political_groups::PoliticalGroup,
+    },
 };
 use askama::Template;
 use axum::{extract::Query, response::IntoResponse};
@@ -44,7 +46,7 @@ mod tests {
     use super::*;
     use crate::{
         AppError, Context, PgStore, QueryParamState,
-        name_authorisations::NameAuthorisationId,
+        structs::name_authorisations::NameAuthorisationId,
         test_utils::{response_body_string, sample_name_authorisation},
     };
     use axum::{extract::Query, http::StatusCode, response::IntoResponse};

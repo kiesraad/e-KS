@@ -1,3 +1,4 @@
+use crate::structs::name_authorisations::NameAuthorisation;
 use askama::Template;
 use axum::{
     extract::Query,
@@ -7,8 +8,7 @@ use axum::{
 use super::NameAuthorisationCreatePath;
 use crate::{
     AppError, Context, Form, HtmlTemplate, Overlay, PgStore, QueryParamState, filters,
-    form::FormData,
-    name_authorisations::{NameAuthorisation, NameAuthorisationForm},
+    form::FormData, name_authorisations::NameAuthorisationForm,
 };
 
 #[derive(Template)]

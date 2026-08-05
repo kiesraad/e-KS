@@ -1,6 +1,6 @@
 //! Store-backed operations for [`NameAuthorisation`].
 
-use crate::{AppError, PgEvent, PgStore, name_authorisations::NameAuthorisation};
+use crate::{AppError, PgEvent, PgStore, structs::name_authorisations::NameAuthorisation};
 
 impl NameAuthorisation {
     pub async fn create(&self, store: &PgStore) -> Result<(), AppError> {

@@ -1,4 +1,4 @@
-use crate::{PgEvent, PgStoreData, persons::Person};
+use crate::{PgEvent, PgStoreData, structs::persons::Person};
 
 /// Extract the old/new JSON snapshots for a given event, used by
 /// `AuditLogDetail::compute` to build a field-level diff.
@@ -139,11 +139,11 @@ mod tests {
     use super::*;
     use crate::{
         ElectoralDistrict, StreamId,
-        candidate_lists::CandidateListId,
-        common::PreviousElectionResults,
-        list_submitters::ListSubmitterId,
-        name_authorisations::NameAuthorisationId,
-        persons::PersonId,
+        structs::{
+            candidate_lists::CandidateListId, common::PreviousElectionResults,
+            list_submitters::ListSubmitterId, name_authorisations::NameAuthorisationId,
+            persons::PersonId,
+        },
         test_utils::{
             sample_candidate_list, sample_list_submitter, sample_name_authorisation, sample_person,
             sample_political_group,

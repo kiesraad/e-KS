@@ -7,9 +7,6 @@ mod forms;
 mod pages;
 mod paths;
 
-pub use crate::structs::candidates::{
-    AddPerson, AddPersonAction, Candidate, CandidatePosition, CandidateWithProblems,
-};
 pub use forms::{AddPersonForm, CandidatePositionForm};
 pub use pages::router;
 pub use paths::{AddCandidatePath, CreateCandidatePath};

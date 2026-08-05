@@ -1,10 +1,12 @@
 use crate::{
     AppError, PgStore,
-    common::{Address, DisplayName, DutchAddress, FullName},
-    list_designation::ListDesignation,
-    list_submitters::{ListSubmitter, ListSubmitterId},
-    name_authorisations::{NameAuthorisation, NameAuthorisationId},
-    political_groups::PoliticalGroup,
+    structs::{
+        common::{Address, DisplayName, DutchAddress, FullName},
+        list_designation::ListDesignation,
+        list_submitters::{ListSubmitter, ListSubmitterId},
+        name_authorisations::{NameAuthorisation, NameAuthorisationId},
+        political_groups::PoliticalGroup,
+    },
 };
 use uuid::Uuid;
 
@@ -112,7 +114,7 @@ pub async fn load(store: &PgStore, display_name: Option<DisplayName>) -> Result<
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::common::{HasSeverity, Problematic};
+    use crate::structs::common::{HasSeverity, Problematic};
 
     #[tokio::test]
     async fn test_load() {

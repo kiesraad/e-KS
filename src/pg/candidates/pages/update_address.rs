@@ -5,13 +5,14 @@ use axum::{
 };
 
 use crate::{
-    AppError, AppResponse, Context, Form, HtmlTemplate, Overlay, PgStore, QueryParamState,
-    candidate_lists::FullCandidateList,
-    candidates::Candidate,
-    common::{HasSeverity, Problematic},
-    filters,
+    AppError, AppResponse, Context, Form, HtmlTemplate, Overlay, PgStore, QueryParamState, filters,
     form::FormData,
     persons::AddressForm,
+    structs::{
+        candidate_lists::FullCandidateList,
+        candidates::Candidate,
+        common::{HasSeverity, Problematic},
+    },
 };
 
 use super::CandidateListUpdateAddressPath;
@@ -83,8 +84,7 @@ mod tests {
     use super::*;
     use crate::{
         Context, Form, PgStore, QueryParamState,
-        candidate_lists::CandidateListId,
-        persons::PersonId,
+        structs::{candidate_lists::CandidateListId, persons::PersonId},
         test_utils::{
             response_body_string, sample_address_form, sample_candidate_list,
             sample_person_with_last_name,

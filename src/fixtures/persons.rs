@@ -7,11 +7,14 @@ use uuid::Uuid;
 
 use crate::{
     AppError, PgStore,
-    common::{
-        BsnOrNoneConfirmed, CountryCode, DateOfBirth, DutchAddress, FirstName, FullName, Gender,
-        HouseNumber, Initials, LastName, Locality, PlaceOfResidence, PostalCode, StreetName,
+    structs::{
+        common::{
+            BsnOrNoneConfirmed, CountryCode, DateOfBirth, DutchAddress, FirstName, FullName,
+            Gender, HouseNumber, Initials, LastName, Locality, PlaceOfResidence, PostalCode,
+            StreetName,
+        },
+        persons::{Person, PersonalData},
     },
-    persons::{Person, PersonalData},
 };
 
 const PERSONS_CSV: &str = include_str!("persons.csv");
@@ -142,7 +145,7 @@ pub async fn load(store: &PgStore) -> Result<(), AppError> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{pagination::SortDirection, persons::PersonSort};
+    use crate::{pagination::SortDirection, structs::persons::PersonSort};
 
     use super::*;
 
@@ -151,9 +154,14 @@ mod tests {
         let store = PgStore::new_for_test();
         load(&store).await.unwrap();
 
-        let persons =
-            crate::persons::Person::list(&store, 50, 0, &PersonSort::LastName, &SortDirection::Asc)
-                .unwrap();
+        let persons = crate::structs::persons::Person::list(
+            &store,
+            50,
+            0,
+            &PersonSort::LastName,
+            &SortDirection::Asc,
+        )
+        .unwrap();
 
         assert_eq!(persons.len(), 50);
     }

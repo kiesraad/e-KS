@@ -5,11 +5,13 @@ use axum::{
 };
 
 use crate::{
-    AnyLocale, AppError, AppState, Context, ElectionConfig, HtmlTemplate, Province, Session,
-    WaterCouncil, common::SwitchElectionForm, filters,
+    AnyLocale, AppError, AppRequestState, Context, ElectionConfig, HtmlTemplate, Province, Session,
+    WaterCouncil,
+    common::{PgIndexPath, SwitchElectionForm},
+    filters,
 };
 
-use super::{IndexPath, SwitchElectionPath};
+use super::SwitchElectionPath;
 
 #[derive(Template)]
 #[template(path = "pg/common/pages/switch_election.html")]
@@ -24,9 +26,9 @@ struct SwitchElectionTemplate {
     water_councils: &'static [WaterCouncil],
 }
 
-pub async fn switch_election(
+pub async fn switch_election<S: AppRequestState>(
     _: SwitchElectionPath,
-    State(state): State<AppState>,
+    State(state): State<S>,
     context: Context,
 ) -> Result<Response, AppError> {
     let existing_elections = existing_elections_for(&state, &context.session).await?;
@@ -47,8 +49,8 @@ pub async fn switch_election(
     .into_response())
 }
 
-async fn existing_elections_for(
-    state: &AppState,
+async fn existing_elections_for<S: AppRequestState>(
+    state: &S,
     session: &Session,
 ) -> Result<Vec<ElectionConfig>, AppError> {
     match session.stream_id {
@@ -57,9 +59,9 @@ async fn existing_elections_for(
     }
 }
 
-pub async fn switch_election_submit(
+pub async fn switch_election_submit<S: AppRequestState>(
     _: SwitchElectionPath,
-    State(state): State<AppState>,
+    State(state): State<S>,
     mut session: Session,
     axum::Form(form): axum::Form<SwitchElectionForm>,
 ) -> Result<Response, AppError> {
@@ -69,7 +71,7 @@ pub async fn switch_election_submit(
 
     // Short-circuit if already on this election.
     if session.current_election == Some(election) {
-        return Ok(Redirect::to(&IndexPath.to_string()).into_response());
+        return Ok(Redirect::to(&PgIndexPath.to_string()).into_response());
     }
 
     let Some(stream_id) = session.stream_id else {
@@ -80,9 +82,9 @@ pub async fn switch_election_submit(
     state.store_for_stream(stream_id, election, false).await?;
 
     session.set_current_election(election);
-    state.sessions.insert(session).await;
+    state.sessions().insert(session).await;
 
-    Ok(Redirect::to(&IndexPath.to_string()).into_response())
+    Ok(Redirect::to(&PgIndexPath.to_string()).into_response())
 }
 
 #[cfg(test)]
@@ -104,8 +106,8 @@ mod tests {
     async fn switch_election_submit_changes_session_election() {
         let state = AppState::new_for_tests().await;
         let app = Router::new()
-            .typed_get(switch_election)
-            .typed_post(switch_election_submit)
+            .typed_get(switch_election::<crate::AppState>)
+            .typed_post(switch_election_submit::<crate::AppState>)
             .layer(middleware::from_fn_with_state(
                 state.clone(),
                 store_middleware,
@@ -128,7 +130,7 @@ mod tests {
         session.set_current_election(ElectionConfig::EK27);
         let token_value = session.token_string();
         let csrf_token = session.csrf_token().clone();
-        state.sessions.insert(session).await;
+        state.sessions().insert(session).await;
 
         let cookie = format!("{}={}", crate::SESSION_COOKIE_NAME, token_value);
 

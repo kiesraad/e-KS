@@ -3,18 +3,14 @@ use axum::response::{IntoResponse, Response};
 
 use crate::{
     AppError, Context, CsbContext, CsbStore, ElectoralDistrict, HtmlTemplate,
-    candidate_lists::CandidateListId,
-    csb::{
-        WithCorrections,
-        examination::{
-            extractors::CsbPoliticalGroup,
-            pages::CsbCandidatePath,
-            structs::{PaperCorrected, PaperCorrectedPersonDetails},
-        },
+    csb::examination::{
+        extractors::CsbPoliticalGroup,
+        pages::CsbCandidatePath,
+        structs::{PaperCorrected, PaperCorrectedPersonDetails},
     },
     filters,
-    persons::Person,
-    structs::csb::Omission,
+    projection::WithCorrections,
+    structs::{candidate_lists::CandidateListId, csb::Omission, persons::Person},
 };
 
 #[derive(Template)]
@@ -89,8 +85,7 @@ mod tests {
     use axum::http::StatusCode;
 
     use crate::{
-        persons::PersonId,
-        structs::csb::OmissionCategory,
+        structs::{csb::OmissionCategory, persons::PersonId},
         test_utils::{response_body_string, sample_candidate_list, sample_person},
     };
 

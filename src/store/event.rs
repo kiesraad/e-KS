@@ -11,8 +11,19 @@ use sha2::{Digest, Sha256};
 
 use crate::{Locale, structs::audit_log::FieldChange};
 
+/// SHA-256 digest linking one persisted event to the previous one.
+pub type EventHash = [u8; 32];
+
 /// Hash linked to the (virtual) event preceding the first event of a stream.
-pub const GENESIS_HASH: [u8; 32] = [0u8; 32];
+pub const GENESIS_HASH: EventHash = [0u8; 32];
+
+/// One event as it sits in a backend's storage: payload still encrypted.
+pub(crate) struct EncryptedEvent {
+    pub event_id: usize,
+    pub created_at: DateTime<Utc>,
+    pub hash: EventHash,
+    pub payload: Vec<u8>,
+}
 
 pub trait Event {
     /// Return a stable category key for filtering in the audit log
@@ -49,7 +60,7 @@ pub struct StoreEvent<E> {
     /// where `body` is the persisted representation of the payload (the AES-GCM
     /// blob for the file/database backends, the plain encoding for the in-memory
     /// backend). Stored unencrypted; see [`chain_hash`] and the README.
-    pub hash: [u8; 32],
+    pub hash: EventHash,
 }
 
 impl<E: Event> StoreEvent<E> {
@@ -83,7 +94,7 @@ impl<E: Event> StoreEvent<E> {
 pub(crate) fn event_aad(
     event_id: usize,
     created_at: DateTime<Utc>,
-    prev_hash: &[u8; 32],
+    prev_hash: &EventHash,
 ) -> Vec<u8> {
     let mut aad = Vec::with_capacity(8 + 8 + 32);
     aad.extend_from_slice(&(event_id as u64).to_le_bytes());
@@ -101,11 +112,11 @@ pub(crate) fn event_aad(
 /// safe to store the hash unencrypted: it commits to the stored event without
 /// leaking anything about the plaintext.
 pub(crate) fn chain_hash(
-    prev_hash: &[u8; 32],
+    prev_hash: &EventHash,
     event_id: usize,
     created_at: DateTime<Utc>,
     body: &[u8],
-) -> [u8; 32] {
+) -> EventHash {
     let mut hasher = Sha256::new();
     hasher.update(prev_hash);
     hasher.update((event_id as u64).to_le_bytes());

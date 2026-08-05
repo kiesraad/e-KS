@@ -1,10 +1,11 @@
+use crate::structs::persons::Person;
 use askama::Template;
 use axum::response::{IntoResponse, Redirect, Response};
 
 use crate::{
     AppError, Context, Form, HtmlTemplate, Overlay, PgStore, filters,
     form::FormData,
-    persons::{Person, PersonalDataForm, pages::PersonsCreatePath},
+    persons::{PersonalDataForm, pages::PersonsCreatePath},
 };
 
 #[derive(Template)]
@@ -130,7 +131,7 @@ mod tests {
     #[tokio::test]
     async fn create_person_duplicate_name_renders_error() -> Result<(), AppError> {
         let store = PgStore::new_for_test();
-        let existing = crate::test_utils::sample_person(crate::persons::PersonId::new());
+        let existing = crate::test_utils::sample_person(crate::structs::persons::PersonId::new());
         existing.create(&store).await?;
 
         let context = Context::new_test_without_db();

@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use validate::Validate;
 
-use crate::{candidates::CandidatePosition, common::FormAction};
+use crate::structs::{candidates::CandidatePosition, common::FormAction};
 
 #[derive(Default, Serialize, Deserialize, Clone, Debug, Validate)]
 #[validate(target = "CandidatePosition")]

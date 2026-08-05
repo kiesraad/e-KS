@@ -1,5 +1,5 @@
 use super::PaperCorrected;
-use crate::{CsbStore, csb::WithCorrections, structs::list_submitters::ListSubmitter};
+use crate::{CsbStore, projection::WithCorrections, structs::list_submitters::ListSubmitter};
 
 /// A (substitute) list submitter with its rows diffed against the corrections.
 pub struct PaperCorrectedSubmitter {

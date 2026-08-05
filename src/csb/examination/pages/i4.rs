@@ -3,24 +3,24 @@ use std::collections::BTreeMap;
 use axum::{extract::State, http::HeaderValue, response::IntoResponse};
 
 use crate::{
-    AppError, CsbMainStore, CsbStoreData,
+    AppError, AppRequestState, CsbMainStore,
     core::{ModelLocale, constants::DEFAULT_DATE_FORMAT},
     csb::examination::pages::CsbI4DownloadPath,
     models::{
         Pdf,
         i4::{I4, OmissionGroup},
     },
-    store::StoreRegistry,
     utils::no_cache_headers,
 };
 
 const PDF_CONTENT_TYPE: &str = "application/pdf";
 
-pub async fn gen_i4(
+pub async fn gen_i4<S: AppRequestState>(
     _: CsbI4DownloadPath,
     main_store: CsbMainStore,
-    State(csb_registry): State<StoreRegistry<CsbStoreData>>,
+    State(state): State<S>,
 ) -> Result<impl IntoResponse, AppError> {
+    let csb_registry = state.csb_store_registry();
     let election = main_store.election;
 
     let mut found_omissions = Vec::new();
@@ -39,7 +39,7 @@ pub async fn gen_i4(
                 .push(omission.description.to_string());
         }
 
-        let designation = store.get_display_name(crate::csb::WithCorrections::All);
+        let designation = store.get_display_name(crate::projection::WithCorrections::All);
         for (district, descriptions) in by_district {
             found_omissions.push(OmissionGroup {
                 designation: designation.clone(),
@@ -85,20 +85,17 @@ pub async fn gen_i4(
 mod tests {
     use super::*;
     use axum::{
-        extract::FromRef,
         http::{StatusCode, header},
         response::IntoResponse,
     };
 
-    use crate::{AppState, store::StoreRegistry};
+    use crate::AppState;
 
     #[tokio::test]
     async fn gen_i4_returns_pdf_response() -> Result<(), AppError> {
         let main_store = CsbMainStore::new_for_test();
         let state = AppState::new_for_tests().await;
-        let csb_registry = StoreRegistry::<CsbStoreData>::from_ref(&state);
-
-        let response = gen_i4(CsbI4DownloadPath, main_store, State(csb_registry))
+        let response = gen_i4(CsbI4DownloadPath, main_store, State(state))
             .await?
             .into_response();
 

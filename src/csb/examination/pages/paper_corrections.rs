@@ -3,16 +3,18 @@ use axum::{
     response::{IntoResponse, Redirect, Response},
 };
 
-use crate::{AppError, AppState, CsbStore, Session, common::IndexPath};
+use crate::{AppError, AppRequestState, CsbStore, Session};
 
-use super::{CsbPaperCorrectionsStartPath, CsbPaperCorrectionsStopPath, CsbPoliticalGroupPath};
+use super::{
+    CsbPaperCorrectionsStartPath, CsbPaperCorrectionsStopPath, CsbPoliticalGroupPath, PgIndexPath,
+};
 
 /// Put the committee session in paper-corrections mode for this stream. App
 /// routes then serve the political group interface over the stream's
 /// paper-corrected data (see `store_middleware`).
-pub async fn start_paper_corrections(
+pub async fn start_paper_corrections<S: AppRequestState>(
     _: CsbPaperCorrectionsStartPath,
-    State(state): State<AppState>,
+    State(state): State<S>,
     mut session: Session,
     store: CsbStore,
 ) -> Result<Response, AppError> {
@@ -20,20 +22,20 @@ pub async fn start_paper_corrections(
     // Invalidate forms rendered before the switch, so a stale tab cannot
     // submit changes against this stream's data.
     session.rotate_csrf_token();
-    state.sessions.insert(session).await;
+    state.sessions().insert(session).await;
 
-    Ok(Redirect::to(&IndexPath.to_string()).into_response())
+    Ok(Redirect::to(&PgIndexPath.to_string()).into_response())
 }
 
 /// Leave paper-corrections mode and return to the stream's examination page.
-pub async fn stop_paper_corrections(
+pub async fn stop_paper_corrections<S: AppRequestState>(
     path: CsbPaperCorrectionsStopPath,
-    State(state): State<AppState>,
+    State(state): State<S>,
     mut session: Session,
 ) -> Result<Response, AppError> {
     session.paper_correction_stream_id = None;
     session.rotate_csrf_token();
-    state.sessions.insert(session).await;
+    state.sessions().insert(session).await;
 
     Ok(Redirect::to(
         &CsbPoliticalGroupPath {
@@ -49,7 +51,7 @@ mod tests {
     use super::*;
     use axum::http::StatusCode;
 
-    use crate::{CsbEvent, ElectionConfig, PgStoreData, StreamId};
+    use crate::{AppState, CsbEvent, ElectionConfig, PgStoreData, StreamId};
 
     /// Persist a CSB stream carrying a single import event and return its id.
     async fn seed_csb_store(state: &AppState) -> StreamId {

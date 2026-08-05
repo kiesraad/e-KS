@@ -1,14 +1,17 @@
+use crate::structs::candidates::{Candidate, CandidatePosition};
 use askama::Template;
 use axum::{extract::Query, response::IntoResponse};
 
 use crate::{
     AppError, Context, Form, HtmlTemplate, Overlay, PgStore, QueryParamState,
-    candidate_lists::FullCandidateList,
-    candidates::{Candidate, CandidatePosition, CandidatePositionForm},
-    common::{FormAction, HasSeverity, Problematic},
+    candidates::CandidatePositionForm,
     filters,
     form::FormData,
     redirect_success,
+    structs::{
+        candidate_lists::FullCandidateList,
+        common::{FormAction, HasSeverity, Problematic},
+    },
 };
 
 use super::UpdateCandidatePositionPath;
@@ -95,8 +98,7 @@ mod tests {
     use super::*;
     use crate::{
         Context, Form, PgStore, QueryParamState,
-        candidate_lists::CandidateListId,
-        persons::PersonId,
+        structs::{candidate_lists::CandidateListId, persons::PersonId},
         test_utils::{
             response_body_string, sample_candidate_list, sample_person,
             sample_person_with_last_name,

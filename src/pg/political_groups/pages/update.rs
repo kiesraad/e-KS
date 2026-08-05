@@ -1,3 +1,4 @@
+use crate::structs::political_groups::PoliticalGroup;
 use askama::Template;
 use axum::{
     extract::Query,
@@ -7,10 +8,11 @@ use axum::{
 use crate::{
     AppError, Context, HtmlTemplate, PgStore, QueryParamState, filters,
     form::{Form, FormData},
-    list_designation::ListDesignation,
-    list_submitters::ListSubmitter,
-    name_authorisations::NameAuthorisation,
-    political_groups::{PoliticalGroup, PoliticalGroupForm, PoliticalGroupSteps},
+    political_groups::{PoliticalGroupForm, PoliticalGroupSteps},
+    structs::{
+        list_designation::ListDesignation, list_submitters::ListSubmitter,
+        name_authorisations::NameAuthorisation,
+    },
 };
 
 use crate::political_groups::PoliticalGroupUpdatePath;
@@ -73,8 +75,10 @@ mod tests {
     use super::*;
     use crate::{
         AppError, Context, Form, PgStore, QueryParamState,
-        common::{DisplayName, PreviousElectionResults},
-        name_authorisations::NameAuthorisationId,
+        structs::{
+            common::{DisplayName, PreviousElectionResults},
+            name_authorisations::NameAuthorisationId,
+        },
         test_utils::{
             response_body_string, sample_name_authorisation, sample_political_group_form,
         },

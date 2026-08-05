@@ -5,13 +5,14 @@ use axum::{
 };
 
 use crate::{
-    AppError, AppResponse, Context, Form, HtmlTemplate, Overlay, PgStore, QueryParamState,
-    candidate_lists::FullCandidateList,
-    candidates::Candidate,
-    common::{HasSeverity, Problematic},
-    filters,
+    AppError, AppResponse, Context, Form, HtmlTemplate, Overlay, PgStore, QueryParamState, filters,
     form::FormData,
     persons::RepresentativeForm,
+    structs::{
+        candidate_lists::FullCandidateList,
+        candidates::Candidate,
+        common::{HasSeverity, Problematic},
+    },
 };
 
 use super::UpdateRepresentativePath;
@@ -89,8 +90,7 @@ mod tests {
     use super::*;
     use crate::{
         AppError, Context, Form, PgStore, QueryParamState,
-        candidate_lists::CandidateListId,
-        persons::PersonId,
+        structs::{candidate_lists::CandidateListId, persons::PersonId},
         test_utils::{
             extract_csrf_token, response_body_string, sample_candidate_list, sample_person,
             sample_representative_form,

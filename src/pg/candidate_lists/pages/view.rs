@@ -1,11 +1,10 @@
+use crate::structs::candidate_lists::{CandidateList, FullCandidateList};
 use askama::Template;
 use axum::{extract::Query, response::IntoResponse};
 
 use crate::{
     AppError, Context, ElectoralDistrict, HtmlTemplate, PgStore, QueryParamState,
-    candidate_lists::{CandidateList, FullCandidateList, pages::ViewCandidateListPath},
-    common::HasSeverity,
-    filters,
+    candidate_lists::pages::ViewCandidateListPath, filters, structs::common::HasSeverity,
 };
 
 #[derive(Template)]
@@ -42,8 +41,7 @@ mod tests {
     use super::*;
     use crate::{
         Context, PgStore,
-        candidate_lists::CandidateListId,
-        persons::PersonId,
+        structs::{candidate_lists::CandidateListId, persons::PersonId},
         test_utils::{response_body_string, sample_candidate_list, sample_person},
     };
     use axum::response::IntoResponse;

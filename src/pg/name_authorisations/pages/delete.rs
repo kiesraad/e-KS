@@ -5,10 +5,11 @@ use axum::{
 };
 
 use crate::{
-    AppError, AppResponse, Context, HtmlTemplate, Overlay, PgStore, QueryParamState,
-    common::{HasSeverity, Problematic},
-    filters,
-    name_authorisations::NameAuthorisation,
+    AppError, AppResponse, Context, HtmlTemplate, Overlay, PgStore, QueryParamState, filters,
+    structs::{
+        common::{HasSeverity, Problematic},
+        name_authorisations::NameAuthorisation,
+    },
 };
 
 use super::NameAuthorisationDeletePath;
@@ -55,7 +56,7 @@ mod tests {
     use super::*;
     use crate::{
         AppError, Context, PgStore, QueryParamState,
-        name_authorisations::NameAuthorisationId,
+        structs::name_authorisations::NameAuthorisationId,
         test_utils::{response_body_string, sample_name_authorisation},
     };
 

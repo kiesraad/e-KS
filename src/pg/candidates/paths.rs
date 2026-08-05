@@ -4,8 +4,8 @@ use axum_extra::routing::TypedPath;
 use serde::Deserialize;
 
 use crate::{
-    AppError, QueryParamState, candidate_lists::CandidateListId, candidates::Candidate,
-    persons::PersonId,
+    AppError, QueryParamState,
+    structs::{candidate_lists::CandidateListId, candidates::Candidate, persons::PersonId},
 };
 
 #[derive(TypedPath, Deserialize)]

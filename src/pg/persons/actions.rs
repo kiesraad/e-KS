@@ -2,10 +2,14 @@
 
 use crate::{
     AppError, PgEvent, PgStore,
-    common::{DutchAddress, FullName, Problematic},
     pagination::SortDirection,
-    persons::{Person, PersonId, PersonSort, PersonalData, Representative},
-    structs::persons::{PersonWithProblems, compare_persons},
+    structs::{
+        common::{DutchAddress, FullName, Problematic},
+        persons::{
+            Person, PersonId, PersonSort, PersonWithProblems, PersonalData, Representative,
+            compare_persons,
+        },
+    },
 };
 
 impl Person {

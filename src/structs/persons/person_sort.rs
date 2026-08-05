@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{OptionAsStrExt, persons::Person};
+use crate::{OptionAsStrExt, structs::persons::Person};
 
 #[derive(Default, Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -84,8 +84,10 @@ impl Ord for Person {
 mod tests {
     use super::*;
     use crate::{
-        common::{Gender, PlaceOfResidence},
-        persons::PersonId,
+        structs::{
+            common::{Gender, PlaceOfResidence},
+            persons::PersonId,
+        },
         test_utils::{
             parse_first_name, parse_initials, parse_last_name, parse_last_name_prefix,
             sample_person_with,
@@ -95,8 +97,8 @@ mod tests {
     use std::cmp::Ordering;
     use uuid::Uuid;
 
-    fn timestamp(day: u32) -> crate::common::UtcDateTime {
-        crate::common::UtcDateTime::from(
+    fn timestamp(day: u32) -> crate::structs::common::UtcDateTime {
+        crate::structs::common::UtcDateTime::from(
             Utc.with_ymd_and_hms(2026, 1, day, 0, 0, 0)
                 .single()
                 .unwrap(),

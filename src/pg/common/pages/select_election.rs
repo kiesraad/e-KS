@@ -6,11 +6,14 @@ use axum::{
 };
 
 use crate::{
-    AnyLocale, AppError, AppState, Context, Province, Scope, Session, SessionPageValues,
-    WaterCouncil, common::SelectElectionForm, csb::index::CsbIndexPath, filters,
+    AnyLocale, AppError, AppRequestState, Context, Province, Scope, Session, SessionPageValues,
+    WaterCouncil,
+    common::{PgIndexPath, SelectElectionForm},
+    csb::index::CsbIndexPath,
+    filters,
 };
 
-use super::{IndexPath, SelectElectionPath};
+use super::SelectElectionPath;
 
 #[derive(Template)]
 #[template(path = "pg/common/pages/select_election.html")]
@@ -21,16 +24,16 @@ struct SelectElectionTemplate {
     water_councils: &'static [WaterCouncil],
 }
 
-pub async fn select_election(
+pub async fn select_election<S: AppRequestState>(
     _: SelectElectionPath,
     session: Session,
-    State(state): State<AppState>,
+    State(state): State<S>,
 ) -> Result<Response, AppError> {
     if session.current_election.is_some() {
-        return Ok(Redirect::to(&IndexPath.to_string()).into_response());
+        return Ok(Redirect::to(&PgIndexPath.to_string()).into_response());
     }
 
-    state.sessions.insert(session.clone()).await;
+    state.sessions().insert(session.clone()).await;
 
     let template = SelectElectionTemplate {
         elections: crate::ElectionConfig::type_options(),
@@ -54,9 +57,9 @@ pub async fn select_election(
     Ok(response)
 }
 
-pub async fn select_election_submit(
+pub async fn select_election_submit<S: AppRequestState>(
     _: SelectElectionPath,
-    State(state): State<AppState>,
+    State(state): State<S>,
     mut session: Session,
     axum::Form(form): axum::Form<SelectElectionForm>,
 ) -> Result<Response, AppError> {
@@ -82,7 +85,7 @@ pub async fn select_election_submit(
             crate::csb::import::fixture::import_csb_fixture(&state, election).await?;
         }
 
-        state.sessions.insert(session).await;
+        state.sessions().insert(session).await;
 
         return Ok(Redirect::to(&CsbIndexPath {}.to_string()).into_response());
     }
@@ -97,9 +100,9 @@ pub async fn select_election_submit(
         .await?;
 
     session.set_current_election(election);
-    state.sessions.insert(session).await;
+    state.sessions().insert(session).await;
 
-    Ok(Redirect::to(&IndexPath.to_string()).into_response())
+    Ok(Redirect::to(&PgIndexPath.to_string()).into_response())
 }
 
 #[cfg(test)]
@@ -121,7 +124,7 @@ mod tests {
     async fn select_election_redirects_when_election_already_set() {
         let state = AppState::new_for_tests().await;
         let app = Router::new()
-            .typed_get(select_election)
+            .typed_get(select_election::<crate::AppState>)
             .layer(middleware::from_fn_with_state(
                 state.clone(),
                 session_middleware,
@@ -132,7 +135,7 @@ mod tests {
         session.set_stream_id(crate::StreamId::new());
         session.set_current_election(ElectionConfig::EK27);
         let token = session.token_string();
-        state.sessions.insert(session).await;
+        state.sessions().insert(session).await;
 
         let response = app
             .oneshot(
@@ -156,8 +159,8 @@ mod tests {
     async fn select_election_submit_sets_current_election() {
         let state = AppState::new_for_tests().await;
         let app = Router::new()
-            .typed_get(select_election)
-            .typed_post(select_election_submit)
+            .typed_get(select_election::<crate::AppState>)
+            .typed_post(select_election_submit::<crate::AppState>)
             .layer(middleware::from_fn_with_state(
                 state.clone(),
                 session_middleware,
@@ -167,7 +170,7 @@ mod tests {
         let mut session = Session::new_test();
         session.set_stream_id(crate::StreamId::new());
         let token = session.token_string();
-        state.sessions.insert(session).await;
+        state.sessions().insert(session).await;
 
         // Fetch page to receive a CSRF token
         let get = app

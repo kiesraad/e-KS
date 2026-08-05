@@ -3,8 +3,8 @@ use axum_extra::routing::{RouterExt, TypedPath};
 use serde::Deserialize;
 
 use crate::{
-    AppError, AppState, QueryParamState,
-    list_submitters::{ListSubmitter, ListSubmitterId},
+    AppError, AppRequestState, QueryParamState,
+    structs::list_submitters::{ListSubmitter, ListSubmitterId},
 };
 
 mod create;
@@ -58,7 +58,7 @@ impl ListSubmitter {
     }
 }
 
-pub fn router() -> Router<AppState> {
+pub fn router<S: AppRequestState>() -> Router<S> {
     Router::new()
         .typed_get(create::create_substitute_submitter)
         .typed_post(create::create_substitute_submitter_submit)
@@ -99,6 +99,6 @@ mod tests {
 
     #[test]
     fn substitute_submitter_router_builds() {
-        let _router = router();
+        let _router = router::<crate::AppState>();
     }
 }

@@ -1,11 +1,10 @@
+use crate::structs::persons::{Person, PersonPagination, PersonSort};
 use askama::Template;
 use axum::response::IntoResponse;
 
 use crate::{
-    AppError, Context, HtmlTemplate,
-    common::HasSeverity,
-    filters,
-    persons::{Person, PersonPagination, PersonSort, pages::PersonsPath},
+    AppError, Context, HtmlTemplate, filters, persons::pages::PersonsPath,
+    structs::common::HasSeverity,
 };
 
 #[derive(Template)]
@@ -30,10 +29,11 @@ mod tests {
     use super::*;
     use crate::{
         AppError, Context, PgStore,
-        common::Problems,
         pagination::Pagination,
-        persons::PersonId,
-        structs::persons::PersonWithProblems,
+        structs::{
+            common::Problems,
+            persons::{PersonId, PersonWithProblems},
+        },
         test_utils::{response_body_string, sample_person},
     };
     use axum::{http::StatusCode, response::IntoResponse};

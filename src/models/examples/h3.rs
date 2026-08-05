@@ -3,11 +3,11 @@
 use super::{brief_candidates, model_data, standard_districts, van_smit};
 use crate::{
     core::{ElectionType, ModelLocale},
-    list_designation::ListDesignation,
     models::{
         h3::H3,
         inputs::{ElectoralDistricts, NameAuthorisation},
     },
+    structs::list_designation::ListDesignation,
 };
 
 fn name_authorisation(legal_name: &str, last_name: &str, initials: &str) -> NameAuthorisation {

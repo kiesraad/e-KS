@@ -1,6 +1,6 @@
 //! Store-backed operations for [`ListSubmitter`].
 
-use crate::{AppError, PgEvent, PgStore, list_submitters::ListSubmitter};
+use crate::{AppError, PgEvent, PgStore, structs::list_submitters::ListSubmitter};
 
 impl ListSubmitter {
     pub async fn update(&self, store: &PgStore) -> Result<(), AppError> {

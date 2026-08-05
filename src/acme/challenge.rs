@@ -2,14 +2,14 @@
 
 use axum::{
     Router,
-    extract::State,
+    extract::{FromRef, State},
     http::StatusCode,
     response::{IntoResponse, Response},
 };
 use axum_extra::routing::{RouterExt, TypedPath};
 use serde::Deserialize;
 
-use crate::{AppError, AppState, acme::AcmeStore};
+use crate::{AppError, acme::AcmeStore};
 
 #[derive(TypedPath, Deserialize)]
 #[typed_path("/.well-known/acme-challenge/{token}", rejection(AppError))]
@@ -17,7 +17,13 @@ pub struct AcmeChallengePath {
     pub token: String,
 }
 
-pub fn acme_challenge_router() -> Router<AppState> {
+/// Generic over the router state, requiring only that an [`AcmeStore`] can be
+/// borrowed from it.
+pub fn acme_challenge_router<S>() -> Router<S>
+where
+    S: Clone + Send + Sync + 'static,
+    AcmeStore: FromRef<S>,
+{
     Router::new().typed_get(acme_challenge)
 }
 

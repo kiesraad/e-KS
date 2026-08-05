@@ -3,7 +3,7 @@ use validate::Validate;
 
 use crate::{
     OptionStringExt,
-    common::{FirstName, FullName, Initials, LastName, LastNamePrefix},
+    structs::common::{FirstName, FullName, Initials, LastName, LastNamePrefix},
 };
 
 /// A name form containing only the initials and last name (with optional prefix)

@@ -1,3 +1,4 @@
+use crate::structs::candidate_lists::CandidateList;
 use askama::Template;
 use axum::{
     http::StatusCode,
@@ -7,16 +8,14 @@ use axum::{
 use crate::{
     AppError, Context, HtmlTemplate, Locale, Overlay, PgStore,
     candidate_lists::{
-        CandidateList,
+        CSV_HEADERS, CandidateRecordCsv,
         importer::{ImportCandidateListError, import_candidate_list_csv},
         pages::{CandidateListImportPath, CandidateListImportTemplatePath},
     },
     core::Csv,
     filters,
     form::FileForm,
-    redirect_success,
-    structs::candidate_lists::{CSV_HEADERS, CandidateRecordCsv},
-    trans,
+    redirect_success, trans,
 };
 
 /// Upload (CSV import) body limit, applied via `DefaultBodyLimit` on the route.
@@ -185,7 +184,7 @@ mod tests {
 
     use crate::{
         AppState, Locale, Session, StreamId,
-        candidate_lists::CandidateListId,
+        structs::candidate_lists::CandidateListId,
         test_utils::{response_body_string, sample_candidate_list},
     };
 
