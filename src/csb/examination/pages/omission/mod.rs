@@ -266,9 +266,9 @@ pub async fn add_omission_submit(
     }
 }
 
-/// Remove a single omission and return to the overview it was removed from (the
-/// `redirect_to` carried by the button, falling back to the overview derived
-/// from the omission's category).
+/// Remove a single omission and return to the overview it was listed on,
+/// keeping the dialog's `redirect_to` (where the close button returns to) and
+/// the overlay marker across the redirect.
 pub async fn delete_omission(
     path: CsbDeleteOmissionPath,
     _context: CsbContext,
@@ -282,16 +282,14 @@ pub async fn delete_omission(
     let omission = store.get_omission(omission_id)?;
     let overview = overview_url_for(&omission.category, stream_id);
     omission.delete(&store).await?;
-    if let Some(redirect_url) = query.redirect_url() {
-        Ok(Redirect::to(
-            &overview
-                .with_query_params(QueryParamState::redirect_to(redirect_url.to_owned()))
-                .to_string(),
-        )
-        .into_response())
-    } else {
-        Ok(Redirect::to(&overview.to_string()).into_response())
-    }
+    Ok(Redirect::to(
+        &overview
+            .with_query_params(QueryParamState::overlay(
+                query.redirect_url().map(str::to_owned),
+            ))
+            .to_string(),
+    )
+    .into_response())
 }
 
 #[cfg(test)]
@@ -645,7 +643,8 @@ mod tests {
         assert_eq!(response.status(), StatusCode::SEE_OTHER);
         // The omission is gone...
         assert!(store.get_candidate_list_omissions(list).unwrap().is_empty());
-        // ...and without an explicit redirect we fall back to the political group overview
+        // ...and we return to the overview it was listed on, without replaying
+        // the overlay open animation
         let location = response
             .headers()
             .get("Location")
@@ -653,8 +652,9 @@ mod tests {
             .to_str()
             .unwrap();
         assert!(location.contains(&format!(
-            "/csb/examination/{stream_id}/omission/political-group/{stream_id}/overview"
+            "/csb/examination/{stream_id}/omission/candidate-list/{list}/overview"
         )));
+        assert!(location.contains("overlay=true"));
     }
 
     #[tokio::test]
@@ -693,6 +693,7 @@ mod tests {
             .to_str()
             .unwrap();
         assert!(location.contains("redirect_to=%2Fback%2Fhere"));
+        assert!(location.contains("overlay=true"));
     }
 
     #[tokio::test]

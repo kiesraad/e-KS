@@ -59,8 +59,8 @@ pub(super) struct CsbOmissionOverviewTemplate {
     pub(super) title_suffix: String,
 }
 
-/// An omission in the overview tab, paired with the URL of its remove action
-/// (which returns to this same overview afterwards).
+/// An omission in the overview tab; the URL of its remove action is derived
+/// from the dialog's target via `remove_url`.
 pub(super) struct OmissionView {
     omission: Omission,
     /// Formatted district string for display (e.g. "1. Groningen, 2. Friesland").
@@ -158,8 +158,7 @@ pub(super) fn preset_views(target: &OmissionTarget, store: &CsbStore) -> Vec<Pre
 
 /// The omissions already added to the entity the dialog was opened for, shown
 /// on the overview tab. A candidate lists every omission for the person, both
-/// list-scoped and general. Each is paired with a remove action that returns to
-/// `overview_url` afterwards.
+/// list-scoped and general.
 pub(super) fn omission_views(
     target: &OmissionTarget,
     store: &CsbStore,
