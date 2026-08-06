@@ -26,7 +26,7 @@ impl Problematic<()> for PoliticalGroup {
 }
 
 impl PoliticalGroup {
-    /// display name for use in exported PG documents (EML 210 and H-models)
+    /// Appellation for use in exported PG documents (EML 210 and H-models)
     pub fn pg_display_name(&self) -> Result<String, AppError> {
         if self.list_designation == Some(ListDesignation::Blank) {
             // empty place holder
@@ -36,11 +36,11 @@ impl PoliticalGroup {
             .as_ref()
             .map(|d| Ok(d.to_string()))
             .unwrap_or(Err(AppError::IncompleteData(
-                "Missing registered designation",
+                "Missing appellation",
             )))
     }
 
-    /// display name for use in the UI of the CSB module and the I-models
+    /// Appellation for use in the UI of the CSB module and the I-models
     pub fn csb_display_name(&self, first_candidate_name: Option<&FullName>) -> String {
         if let Some(name) = &self.display_name
             && self.list_designation != Some(ListDesignation::Blank)

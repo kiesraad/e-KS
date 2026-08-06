@@ -218,7 +218,7 @@ impl CsbStore {
             .map(|p| p.name)
     }
 
-    /// Short-hand to get the display name of the political group (including special names for blank lists)
+    /// Short-hand to get the appellation of the political group (including special names for blank lists)
     pub fn get_display_name(&self, corrections: WithCorrections) -> String {
         let political_group = self.get_political_group(corrections);
         political_group.csb_display_name(self.get_first_candidate_name(corrections).as_ref())

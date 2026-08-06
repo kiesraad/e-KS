@@ -35,7 +35,7 @@ struct CsbCorrectionTemplate {
     form: FormData<CorrectionForm>,
 }
 
-/// Render the correction overlay for the political-group display name.
+/// Render the correction overlay for the political-group appellation.
 pub async fn display_name_correction(
     _: CsbDisplayNameCorrectionPath,
     context: CsbContext,

@@ -119,7 +119,7 @@ mod tests {
         .into_response();
 
         assert_eq!(response.status(), StatusCode::OK);
-        // The display name is used as the page title.
+        // The appellation is used as the page title.
         let body = response_body_string(response).await;
         assert!(body.contains("Kiesraad Demo"));
         // The paper corrections card posts to the start route.

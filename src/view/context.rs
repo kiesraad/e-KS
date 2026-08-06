@@ -22,7 +22,7 @@ pub(crate) const CSB_PAPER_CORRECTIONS_STOP_PREFIX: &str = "/csb/examination";
 pub struct PaperCorrectionMode {
     /// URL that leaves paper-corrections mode.
     pub exit_path: String,
-    /// Display name of the political group being corrected,
+    /// Appellation of the political group being corrected,
     /// shown in the corrections banner.
     pub group_name: String,
 }

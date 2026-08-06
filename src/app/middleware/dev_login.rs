@@ -460,7 +460,7 @@ mod tests {
         assert!(store.get_candidate_list_count() > 0);
     }
 
-    /// The `name` query sets the fixture group's display name and the redirect
+    /// The `name` query sets the fixture group's appellation and the redirect
     /// carries the chain hash of the stream's last event.
     #[cfg(feature = "fixtures")]
     #[tokio::test]

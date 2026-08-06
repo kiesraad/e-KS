@@ -59,7 +59,7 @@ mod tests {
     };
 
     #[tokio::test]
-    async fn renders_section_headings_and_registered_designation() {
+    async fn renders_section_headings_and_appellation() {
         let store = CsbStore::new_for_test();
         store.set_political_group(sample_political_group());
         let stream_id = store.stream_id;
@@ -75,7 +75,7 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
-        // The political group section and the imported registered designation
+        // The political group section and the imported appellation
         // (the test session uses the English locale).
         assert!(body.contains("Political group information"));
         assert!(body.contains("Kiesraad Demo"));
@@ -221,8 +221,8 @@ mod tests {
         let stream_id = store.stream_id;
         let mut omission = Omission::new(
             OmissionCategory::PoliticalGroup,
-            "Unregistered designation".parse().unwrap(),
-            "The designation is not registered.".parse().unwrap(),
+            "Unregistered appellation".parse().unwrap(),
+            "The appellation is not registered.".parse().unwrap(),
             None,
         );
         omission.recoverable = false;
