@@ -274,62 +274,86 @@ pub enum InfoProblems {
     IncompleteAddress { problems: Vec<EmptyAddressProblems> },
 }
 
-/// Singular or plural message for a count of candidates with a first name.
-fn few_with_first_name(count: usize, total: usize, locale: &Locale) -> String {
-    if count == 1 {
-        trans!(
-            "problems.few_candidates_with_first_name_one",
-            *locale,
-            total
-        )
-    } else {
-        trans!(
-            "problems.few_candidates_with_first_name",
-            *locale,
-            count,
-            total
-        )
-    }
+/// How many of the `total` candidates on a list have (or lack) some attribute.
+///
+/// The messages are worded differently for a single candidate, which is why
+/// each one picks between a singular and a plural translation key.
+struct FewCandidates {
+    count: usize,
+    total: usize,
 }
 
-/// Singular or plural message for a count of candidates without a first name.
-fn few_without_first_name(count: usize, total: usize, locale: &Locale) -> String {
-    if count == 1 {
-        trans!(
-            "problems.few_candidates_without_first_name_one",
-            *locale,
-            total
-        )
-    } else {
-        trans!(
-            "problems.few_candidates_without_first_name",
-            *locale,
-            count,
-            total
-        )
+impl FewCandidates {
+    fn new(count: usize, total: usize) -> Self {
+        Self { count, total }
     }
-}
 
-/// Singular or plural message for a count of candidates with a gender.
-fn few_with_gender(count: usize, total: usize, locale: &Locale) -> String {
-    if count == 1 {
-        trans!("problems.few_candidates_with_gender_one", *locale, total)
-    } else {
-        trans!("problems.few_candidates_with_gender", *locale, count, total)
+    fn with_first_name(&self, locale: &Locale) -> String {
+        if self.count == 1 {
+            trans!(
+                "problems.few_candidates_with_first_name_one",
+                *locale,
+                self.total
+            )
+        } else {
+            trans!(
+                "problems.few_candidates_with_first_name",
+                *locale,
+                self.count,
+                self.total
+            )
+        }
     }
-}
 
-/// Singular or plural message for a count of candidates without a gender.
-fn few_without_gender(count: usize, total: usize, locale: &Locale) -> String {
-    if count == 1 {
-        trans!("problems.few_candidates_without_gender_one", *locale, total)
-    } else {
-        trans!(
-            "problems.few_candidates_without_gender",
-            *locale,
-            count,
-            total
-        )
+    fn without_first_name(&self, locale: &Locale) -> String {
+        if self.count == 1 {
+            trans!(
+                "problems.few_candidates_without_first_name_one",
+                *locale,
+                self.total
+            )
+        } else {
+            trans!(
+                "problems.few_candidates_without_first_name",
+                *locale,
+                self.count,
+                self.total
+            )
+        }
+    }
+
+    fn with_gender(&self, locale: &Locale) -> String {
+        if self.count == 1 {
+            trans!(
+                "problems.few_candidates_with_gender_one",
+                *locale,
+                self.total
+            )
+        } else {
+            trans!(
+                "problems.few_candidates_with_gender",
+                *locale,
+                self.count,
+                self.total
+            )
+        }
+    }
+
+    fn without_gender(&self, locale: &Locale) -> String {
+        if self.count == 1 {
+            trans!(
+                "problems.few_candidates_without_gender_one",
+                *locale,
+                self.total
+            )
+        } else {
+            trans!(
+                "problems.few_candidates_without_gender",
+                *locale,
+                self.count,
+                self.total
+            )
+        }
     }
 }
 
@@ -353,16 +377,16 @@ impl InfoProblems {
                 trans!("problems.no_previous_election_results", *locale)
             }
             InfoProblems::FewCandidatesWithFirstName { count, total } => {
-                few_with_first_name(*count, *total, locale)
+                FewCandidates::new(*count, *total).with_first_name(locale)
             }
             InfoProblems::FewCandidatesWithoutFirstName { count, total } => {
-                few_without_first_name(*count, *total, locale)
+                FewCandidates::new(*count, *total).without_first_name(locale)
             }
             InfoProblems::FewCandidatesWithGender { count, total } => {
-                few_with_gender(*count, *total, locale)
+                FewCandidates::new(*count, *total).with_gender(locale)
             }
             InfoProblems::FewCandidatesWithoutGender { count, total } => {
-                few_without_gender(*count, *total, locale)
+                FewCandidates::new(*count, *total).without_gender(locale)
             }
             InfoProblems::IncompleteAddress { .. } => {
                 trans!("problems.incomplete_address", *locale)

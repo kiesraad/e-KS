@@ -1,7 +1,7 @@
 use axum::{
     extract::{Query, State},
     http::{HeaderName, HeaderValue},
-    response::{IntoResponse, Redirect, Response},
+    response::{IntoResponse, Redirect},
 };
 use axum_extra::extract::CookieJar;
 use secrecy::SecretString;
@@ -50,47 +50,9 @@ pub async fn dev_login(
     Query(query): Query<DevLoginQuery>,
     headers: axum::http::HeaderMap,
 ) -> Result<impl IntoResponse, AppError> {
-    let scope = if query.csb.unwrap_or(false) {
-        Scope::CentralElectoralCommittee
-    } else {
-        Scope::PoliticalGroup
-    };
-    perform_dev_login(state, jar, query, headers, scope).await
-}
-
-async fn perform_dev_login(
-    state: AppState,
-    jar: CookieJar,
-    query: DevLoginQuery,
-    headers: axum::http::HeaderMap,
-    scope: Scope,
-) -> Result<Response, AppError> {
-    let fixture_name: Option<DisplayName> = query
-        .name
-        .as_deref()
-        .filter(|s| !s.is_empty())
-        .map(str::parse)
-        .transpose()
-        .map_err(|_| AppError::UserError("invalid political group name".to_string()))?;
-
-    let stream_id = derive_dev_stream_id(&state, query.bsn.as_deref());
-
-    let mut session = Session::new_with_locale(Locale::from_headers(&headers));
-    session.set_stream_id(stream_id);
-    session.set_scope(scope);
-    session.set_user_agent_hash(user_agent_hash(&headers));
-    session.saml_name_id = DEV_LOGIN_NAME_ID.to_string();
-
-    let (redirect_to, last_event_hash) = match scope {
-        Scope::CentralElectoralCommittee => {
-            let path = csb_dev_login(&state, &mut session, stream_id, &query).await?;
-            (path, None)
-        }
-        Scope::ImportedByCsb => return Err(AppError::Unauthorised),
-        Scope::PoliticalGroup => {
-            pg_dev_login(&state, &mut session, stream_id, &query, fixture_name).await?
-        }
-    };
+    let mut login = DevLogin::new(&state, &query, &headers);
+    let (redirect_to, last_event_hash) = login.run().await?;
+    let session = login.session;
 
     state.sessions.cleanup_expired().await;
     state.sessions.insert(session.clone()).await;
@@ -110,6 +72,152 @@ async fn perform_dev_login(
     Ok(response)
 }
 
+/// A dev login in progress: the session being established, and the request that
+/// asked for it.
+struct DevLogin<'a> {
+    state: &'a AppState,
+    query: &'a DevLoginQuery,
+    stream_id: StreamId,
+    session: Session,
+}
+
+impl<'a> DevLogin<'a> {
+    /// Builds the session: its scope from `csb`, its stream from `bsn`, and its
+    /// locale and user agent from the request headers.
+    fn new(state: &'a AppState, query: &'a DevLoginQuery, headers: &axum::http::HeaderMap) -> Self {
+        let scope = if query.csb.unwrap_or(false) {
+            Scope::CentralElectoralCommittee
+        } else {
+            Scope::PoliticalGroup
+        };
+        let stream_id = derive_dev_stream_id(state, query.bsn.as_deref());
+
+        let mut session = Session::new_with_locale(Locale::from_headers(headers));
+        session.set_stream_id(stream_id);
+        session.set_scope(scope);
+        session.set_user_agent_hash(user_agent_hash(headers));
+        session.saml_name_id = DEV_LOGIN_NAME_ID.to_string();
+
+        Self {
+            state,
+            query,
+            stream_id,
+            session,
+        }
+    }
+
+    /// Sets up the stores the session's scope gives access to, and returns the
+    /// redirect path plus the chain hash of the stream's last event.
+    async fn run(&mut self) -> Result<(String, Option<String>), AppError> {
+        // Checked for every scope, so a malformed name is rejected up front.
+        let fixture_name = self.fixture_name()?;
+
+        match self.session.scope {
+            Scope::CentralElectoralCommittee => Ok((self.csb().await?, None)),
+            Scope::ImportedByCsb => Err(AppError::Unauthorised),
+            Scope::PoliticalGroup => self.pg(fixture_name).await,
+        }
+    }
+
+    /// The display name the `name` query parameter asks the fixture group to be
+    /// given, if any.
+    fn fixture_name(&self) -> Result<Option<DisplayName>, AppError> {
+        self.query
+            .name
+            .as_deref()
+            .filter(|s| !s.is_empty())
+            .map(str::parse)
+            .transpose()
+            .map_err(|_| AppError::UserError("invalid political group name".to_string()))
+    }
+
+    /// Logs the login on the shared committee main stream, optionally imports
+    /// the CSB fixture, and returns the redirect path.
+    async fn csb(&mut self) -> Result<String, AppError> {
+        // All committee members share a single stream
+        // The session's own stream_id is not used for CSB state (other than for logging)
+        let election = ElectionConfig::EK27;
+        let store = self.state.csb_main_store(election).await?;
+        store
+            .update(CsbMainEvent::DeveloperLogin {
+                stream_id: self.stream_id,
+            })
+            .await?;
+        self.session.set_current_election(election);
+
+        #[cfg(feature = "fixtures")]
+        if self.query.fixtures.unwrap_or(false) {
+            crate::csb::import::fixture::import_csb_fixture(self.state, election).await?;
+        }
+
+        Ok(CsbIndexPath {}.to_string())
+    }
+
+    /// Sets up the political group's own stream and returns the redirect path
+    /// plus the chain hash of the stream's last event (for end-to-end tests).
+    async fn pg(
+        &mut self,
+        fixture_name: Option<DisplayName>,
+    ) -> Result<(String, Option<String>), AppError> {
+        if self.query.select_election.unwrap_or(false) {
+            return Ok((SelectElectionPath.to_string(), None));
+        }
+
+        let election = ElectionConfig::EK27;
+        let (store, was_new) = self.ensure_store(fixture_name, election).await?;
+
+        if was_new {
+            store
+                .update(PgEvent::DeveloperLogin {
+                    stream_id: self.stream_id,
+                })
+                .await?;
+        }
+        let last_event_hash = store
+            .data
+            .read()
+            .events
+            .last()
+            .map(|e| format_hash(&e.hash, false));
+
+        self.session.set_current_election(election);
+        Ok((PgIndexPath.to_string(), last_event_hash))
+    }
+
+    /// Opens the session's store, creating the political group (and loading the
+    /// fixtures, if asked for) when the stream is still empty.
+    async fn ensure_store(
+        &self,
+        fixture_name: Option<DisplayName>,
+        election: ElectionConfig,
+    ) -> Result<(Store<PgStoreData>, bool), AppError> {
+        let store = self
+            .state
+            .store_registry
+            .get_or_create(self.stream_id, election)
+            .await?;
+        let store_is_empty = store.data.read().events.is_empty();
+
+        if store_is_empty {
+            PoliticalGroup::default()
+                .create(&crate::PgStore::own(store.clone()))
+                .await?;
+        }
+
+        if self.query.fixtures.unwrap_or(false) {
+            #[cfg(feature = "fixtures")]
+            {
+                crate::fixtures::load(&crate::PgStore::own(store.clone()), fixture_name).await?;
+                return Ok((store, store_is_empty));
+            }
+        }
+        #[cfg(not(feature = "fixtures"))]
+        let _ = fixture_name;
+
+        Ok((store, store_is_empty))
+    }
+}
+
 /// Derives the dev stream id from the requested BSN, or a random BSN if none
 /// was given.
 ///
@@ -126,97 +234,6 @@ fn derive_dev_stream_id(state: &AppState, bsn: Option<&str>) -> StreamId {
         .map(SecretString::from)
         .unwrap_or_else(random_bsn);
     state.id_deriver.derive_stream_id(&id_code)
-}
-
-/// Logs the login on the shared committee main stream, optionally imports the
-/// CSB fixture, and returns the redirect path.
-async fn csb_dev_login(
-    state: &AppState,
-    session: &mut Session,
-    stream_id: StreamId,
-    query: &DevLoginQuery,
-) -> Result<String, AppError> {
-    // All committee members share a single stream
-    // The session's own stream_id is not used for CSB state (other than for logging)
-    let election = ElectionConfig::EK27;
-    let store = state.csb_main_store(election).await?;
-    store
-        .update(CsbMainEvent::DeveloperLogin { stream_id })
-        .await?;
-    session.set_current_election(election);
-
-    #[cfg(feature = "fixtures")]
-    if query.fixtures.unwrap_or(false) {
-        crate::csb::import::fixture::import_csb_fixture(state, election).await?;
-    }
-    #[cfg(not(feature = "fixtures"))]
-    let _ = query;
-
-    Ok(CsbIndexPath {}.to_string())
-}
-
-/// Sets up the political group's own stream and returns the redirect path plus
-/// the chain hash of the stream's last event (for end-to-end tests).
-async fn pg_dev_login(
-    state: &AppState,
-    session: &mut Session,
-    stream_id: StreamId,
-    query: &DevLoginQuery,
-    fixture_name: Option<DisplayName>,
-) -> Result<(String, Option<String>), AppError> {
-    if query.select_election.unwrap_or(false) {
-        return Ok((SelectElectionPath.to_string(), None));
-    }
-
-    let election = ElectionConfig::EK27;
-    let load_fixtures = query.fixtures.unwrap_or(false);
-    let (store, was_new) =
-        ensure_dev_store(state, stream_id, load_fixtures, fixture_name, election).await?;
-
-    if was_new {
-        store.update(PgEvent::DeveloperLogin { stream_id }).await?;
-    }
-    let last_event_hash = store
-        .data
-        .read()
-        .events
-        .last()
-        .map(|e| format_hash(&e.hash, false));
-
-    session.set_current_election(election);
-    Ok((PgIndexPath.to_string(), last_event_hash))
-}
-
-async fn ensure_dev_store(
-    state: &AppState,
-    stream_id: StreamId,
-    load_fixtures: bool,
-    fixture_name: Option<DisplayName>,
-    election: ElectionConfig,
-) -> Result<(Store<PgStoreData>, bool), AppError> {
-    let store = state
-        .store_registry
-        .get_or_create(stream_id, election)
-        .await?;
-    let store_is_empty = store.data.read().events.is_empty();
-
-    if store_is_empty {
-        PoliticalGroup::default()
-            .create(&crate::PgStore::own(store.clone()))
-            .await?;
-    }
-
-    if load_fixtures {
-        #[cfg(feature = "fixtures")]
-        {
-            crate::fixtures::load(&crate::PgStore::own(store.clone()), fixture_name).await?;
-            return Ok((store, store_is_empty));
-        }
-    }
-    #[cfg(not(feature = "fixtures"))]
-    let _ = fixture_name;
-
-    Ok((store, store_is_empty))
 }
 
 #[cfg(all(feature = "dev-features", test))]

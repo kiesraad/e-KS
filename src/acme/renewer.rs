@@ -25,6 +25,16 @@ const CHECK_HOUR_UTC: u32 = 2;
 /// Failure backoff (seconds); the last value repeats.
 const BACKOFF_SECS: [u64; 4] = [60, 300, 900, 3600];
 
+/// Everything one renewal run works with: the ACME account and domain, where
+/// the certificate lives on disk, the serving TLS handle to reload it into, and
+/// the store that serves the http-01 challenge responses.
+struct Renewal<'a> {
+    acme: &'a AcmeConfig,
+    tls: &'a TlsConfig,
+    rustls_config: &'a RustlsConfig,
+    store: &'a AcmeStore,
+}
+
 /// Renew this instance's certificate before it expires. `rustls_config` is a
 /// clone of the serving handle, so renewals go live without a restart.
 pub async fn run_acme_renewer(
@@ -33,10 +43,16 @@ pub async fn run_acme_renewer(
     rustls_config: RustlsConfig,
     store: AcmeStore,
 ) {
+    let renewal = Renewal {
+        acme,
+        tls,
+        rustls_config: &rustls_config,
+        store: &store,
+    };
     let mut consecutive_failures: usize = 0;
 
     loop {
-        match renew_if_due(acme, tls, &rustls_config, &store).await {
+        match renewal.renew_if_due().await {
             Ok(()) => {
                 consecutive_failures = 0;
                 let now = Utc::now();
@@ -62,25 +78,163 @@ fn log_renewal_error(err: &AppError) {
     }
 }
 
-async fn renew_if_due(
-    acme: &AcmeConfig,
-    tls: &TlsConfig,
-    rustls_config: &RustlsConfig,
-    store: &AcmeStore,
-) -> Result<(), AppError> {
-    let cert_pem = tokio::fs::read(&tls.cert_path)
-        .await
-        .map_err(AppError::ServerError)?;
-    let not_after = cert_not_after(&cert_pem)?;
-    if !renewal_due(not_after, Utc::now()) {
-        return Ok(());
+impl Renewal<'_> {
+    async fn renew_if_due(&self) -> Result<(), AppError> {
+        let cert_pem = tokio::fs::read(&self.tls.cert_path)
+            .await
+            .map_err(AppError::ServerError)?;
+        let not_after = cert_not_after(&cert_pem)?;
+        if !renewal_due(not_after, Utc::now()) {
+            return Ok(());
+        }
+
+        tracing::info!(
+            "TLS certificate for {} expires {not_after}; starting ACME renewal",
+            self.acme.domain
+        );
+        self.renew(&cert_pem).await
     }
 
-    tracing::info!(
-        "TLS certificate for {} expires {not_after}; starting ACME renewal",
-        acme.domain
-    );
-    renew(acme, tls, rustls_config, store, &cert_pem).await
+    async fn renew(&self, current_cert_pem: &[u8]) -> Result<(), AppError> {
+        let account = account::load_account(self.acme).await?;
+        let mut order = self.new_order(&account, current_cert_pem).await?;
+
+        let mut tokens = Vec::new();
+        let result = self.complete_order(&mut order, &mut tokens).await;
+
+        // Tokens are single-use; clean up regardless of outcome.
+        for token in &tokens {
+            self.store.delete_challenge(token).await;
+        }
+
+        result
+    }
+
+    /// Order with an ARI `replaces` identifier (RFC 9773) when possible: it
+    /// exempts the renewal from the duplicate-certificate rate limit.
+    async fn new_order(
+        &self,
+        account: &Account,
+        current_cert_pem: &[u8],
+    ) -> Result<Order, AppError> {
+        let identifiers = [Identifier::Dns(self.acme.domain.clone())];
+
+        let current_cert = CertificateDer::pem_slice_iter(current_cert_pem)
+            .next()
+            .and_then(|cert| cert.ok());
+        if let Some(cert) = &current_cert {
+            match CertificateIdentifier::try_from(cert) {
+                Ok(cert_id) => {
+                    match account
+                        .new_order(&NewOrder::new(&identifiers).replaces(cert_id))
+                        .await
+                    {
+                        Ok(order) => return Ok(order),
+                        Err(err) => tracing::info!(
+                            "ACME order with ARI `replaces` failed ({err}); retrying without"
+                        ),
+                    }
+                }
+                Err(err) => tracing::info!(
+                    "current certificate has no usable ARI identifier ({err}); ordering without"
+                ),
+            }
+        }
+
+        Ok(account.new_order(&NewOrder::new(&identifiers)).await?)
+    }
+
+    async fn complete_order(
+        &self,
+        order: &mut Order,
+        tokens: &mut Vec<String>,
+    ) -> Result<(), AppError> {
+        self.answer_http_challenges(order, tokens).await?;
+
+        let status = order.poll_ready(&RetryPolicy::default()).await?;
+        if status != OrderStatus::Ready {
+            return Err(order_failure(order, status).await);
+        }
+
+        let key_pem = order.finalize().await?;
+        let cert_pem = order.poll_certificate(&RetryPolicy::default()).await?;
+
+        self.install_certificate(&key_pem, &cert_pem).await
+    }
+
+    /// Answers every pending authorization on the order with an http-01
+    /// challenge.
+    ///
+    /// Each challenge token is recorded in `tokens` so the caller can clean up.
+    async fn answer_http_challenges(
+        &self,
+        order: &mut Order,
+        tokens: &mut Vec<String>,
+    ) -> Result<(), AppError> {
+        let mut authorizations = order.authorizations();
+        while let Some(result) = authorizations.next().await {
+            let mut authz = result?;
+            match authz.status {
+                AuthorizationStatus::Valid => continue,
+                AuthorizationStatus::Pending => {}
+                status => {
+                    return Err(AppError::ConfigLoadError(format!(
+                        "unexpected ACME authorization status: {status:?}"
+                    )));
+                }
+            }
+
+            let mut challenge =
+                authz
+                    .challenge(ChallengeType::Http01)
+                    .ok_or(AppError::AcmeError(instant_acme::Error::Str(
+                        "server offered no http-01 challenge",
+                    )))?;
+
+            // Store the token before set_ready: the CA may validate immediately.
+            self.store
+                .put_challenge(&challenge.token, challenge.key_authorization().as_str())
+                .await?;
+            tokens.push(challenge.token.clone());
+
+            challenge.set_ready().await?;
+        }
+
+        Ok(())
+    }
+
+    /// Installs the issued certificate on the running server and persists it
+    /// best-effort.
+    async fn install_certificate(&self, key_pem: &str, cert_pem: &str) -> Result<(), AppError> {
+        // Same pinned builder as startup: a broken pair can never be installed.
+        let new_config = server::server_config_from_pem(cert_pem.as_bytes(), key_pem.as_bytes())?;
+
+        let persisted = async {
+            write_atomic(&self.tls.key_path, key_pem.as_bytes(), 0o600).await?;
+            write_atomic(&self.tls.cert_path, cert_pem.as_bytes(), 0o644).await
+        }
+        .await;
+        if let Err(err) = persisted {
+            tracing::warn!(
+                "could not persist the renewed TLS certificate to {} / {}: {err}; \
+                 it is only active in memory until the next restart",
+                self.tls.cert_path.display(),
+                self.tls.key_path.display()
+            );
+        }
+
+        self.rustls_config.reload_from_config(Arc::new(new_config));
+
+        let not_after = cert_not_after(cert_pem.as_bytes())
+            .map(|t| t.to_string())
+            .unwrap_or_else(|_| "unknown".to_string());
+        tracing::info!(
+            "renewed TLS certificate for {}, valid until {not_after}",
+            self.acme.domain
+        );
+
+        Ok(())
+    }
 }
 
 /// NotAfter of the first (end-entity) certificate in a PEM bundle.
@@ -115,160 +269,6 @@ pub(super) fn next_check_at(now: DateTime<Utc>) -> DateTime<Utc> {
     } else {
         today + chrono::Duration::days(1)
     }
-}
-
-async fn renew(
-    acme: &AcmeConfig,
-    tls: &TlsConfig,
-    rustls_config: &RustlsConfig,
-    store: &AcmeStore,
-    current_cert_pem: &[u8],
-) -> Result<(), AppError> {
-    let account = account::load_account(acme).await?;
-    let mut order = new_order(&account, acme, current_cert_pem).await?;
-
-    let mut tokens = Vec::new();
-    let result = complete_order(&mut order, acme, tls, rustls_config, store, &mut tokens).await;
-
-    // Tokens are single-use; clean up regardless of outcome.
-    for token in &tokens {
-        store.delete_challenge(token).await;
-    }
-
-    result
-}
-
-/// Order with an ARI `replaces` identifier (RFC 9773) when possible: it
-/// exempts the renewal from the duplicate-certificate rate limit.
-async fn new_order(
-    account: &Account,
-    acme: &AcmeConfig,
-    current_cert_pem: &[u8],
-) -> Result<Order, AppError> {
-    let identifiers = [Identifier::Dns(acme.domain.clone())];
-
-    let current_cert = CertificateDer::pem_slice_iter(current_cert_pem)
-        .next()
-        .and_then(|cert| cert.ok());
-    if let Some(cert) = &current_cert {
-        match CertificateIdentifier::try_from(cert) {
-            Ok(cert_id) => {
-                match account
-                    .new_order(&NewOrder::new(&identifiers).replaces(cert_id))
-                    .await
-                {
-                    Ok(order) => return Ok(order),
-                    Err(err) => tracing::info!(
-                        "ACME order with ARI `replaces` failed ({err}); retrying without"
-                    ),
-                }
-            }
-            Err(err) => tracing::info!(
-                "current certificate has no usable ARI identifier ({err}); ordering without"
-            ),
-        }
-    }
-
-    Ok(account.new_order(&NewOrder::new(&identifiers)).await?)
-}
-
-async fn complete_order(
-    order: &mut Order,
-    acme: &AcmeConfig,
-    tls: &TlsConfig,
-    rustls_config: &RustlsConfig,
-    store: &AcmeStore,
-    tokens: &mut Vec<String>,
-) -> Result<(), AppError> {
-    answer_http_challenges(order, store, tokens).await?;
-
-    let status = order.poll_ready(&RetryPolicy::default()).await?;
-    if status != OrderStatus::Ready {
-        return Err(order_failure(order, status).await);
-    }
-
-    let key_pem = order.finalize().await?;
-    let cert_pem = order.poll_certificate(&RetryPolicy::default()).await?;
-
-    install_certificate(acme, tls, rustls_config, &key_pem, &cert_pem).await
-}
-
-/// Answers every pending authorization on the order with an http-01 challenge.
-///
-/// Each challenge token is recorded in `tokens` so the caller can clean up.
-async fn answer_http_challenges(
-    order: &mut Order,
-    store: &AcmeStore,
-    tokens: &mut Vec<String>,
-) -> Result<(), AppError> {
-    let mut authorizations = order.authorizations();
-    while let Some(result) = authorizations.next().await {
-        let mut authz = result?;
-        match authz.status {
-            AuthorizationStatus::Valid => continue,
-            AuthorizationStatus::Pending => {}
-            status => {
-                return Err(AppError::ConfigLoadError(format!(
-                    "unexpected ACME authorization status: {status:?}"
-                )));
-            }
-        }
-
-        let mut challenge = authz
-            .challenge(ChallengeType::Http01)
-            .ok_or(AppError::AcmeError(instant_acme::Error::Str(
-                "server offered no http-01 challenge",
-            )))?;
-
-        // Store the token before set_ready: the CA may validate immediately.
-        store
-            .put_challenge(&challenge.token, challenge.key_authorization().as_str())
-            .await?;
-        tokens.push(challenge.token.clone());
-
-        challenge.set_ready().await?;
-    }
-
-    Ok(())
-}
-
-/// Installs the issued certificate on the running server and persists it
-/// best-effort.
-async fn install_certificate(
-    acme: &AcmeConfig,
-    tls: &TlsConfig,
-    rustls_config: &RustlsConfig,
-    key_pem: &str,
-    cert_pem: &str,
-) -> Result<(), AppError> {
-    // Same pinned builder as startup: a broken pair can never be installed.
-    let new_config = server::server_config_from_pem(cert_pem.as_bytes(), key_pem.as_bytes())?;
-
-    let persisted = async {
-        write_atomic(&tls.key_path, key_pem.as_bytes(), 0o600).await?;
-        write_atomic(&tls.cert_path, cert_pem.as_bytes(), 0o644).await
-    }
-    .await;
-    if let Err(err) = persisted {
-        tracing::warn!(
-            "could not persist the renewed TLS certificate to {} / {}: {err}; \
-             it is only active in memory until the next restart",
-            tls.cert_path.display(),
-            tls.key_path.display()
-        );
-    }
-
-    rustls_config.reload_from_config(Arc::new(new_config));
-
-    let not_after = cert_not_after(cert_pem.as_bytes())
-        .map(|t| t.to_string())
-        .unwrap_or_else(|_| "unknown".to_string());
-    tracing::info!(
-        "renewed TLS certificate for {}, valid until {not_after}",
-        acme.domain
-    );
-
-    Ok(())
 }
 
 // Collect problem details from the CA
@@ -331,71 +331,91 @@ mod tests {
         (cert.pem(), key.serialize_pem())
     }
 
-    /// Config pointing at a fresh temp dir holding a cert expiring in `days`.
-    async fn renewer_setup(
-        name: &str,
-        days: i64,
-        credentials: &str,
-    ) -> (AcmeConfig, TlsConfig, RustlsConfig, std::path::PathBuf) {
-        let dir =
-            std::env::temp_dir().join(format!("eks-acme-renew-{name}-{}", std::process::id()));
-        tokio::fs::create_dir_all(&dir).await.unwrap();
+    /// A renewer pointing at a fresh temp dir holding a cert expiring in `days`.
+    struct RenewerSetup {
+        acme: AcmeConfig,
+        tls: TlsConfig,
+        rustls_config: RustlsConfig,
+        store: AcmeStore,
+        dir: std::path::PathBuf,
+    }
 
-        let (cert_pem, key_pem) = self_signed_pair(days);
-        let tls = TlsConfig {
-            cert_path: dir.join("cert.pem"),
-            key_path: dir.join("key.pem"),
-        };
-        tokio::fs::write(&tls.cert_path, &cert_pem).await.unwrap();
-        tokio::fs::write(&tls.key_path, &key_pem).await.unwrap();
+    impl RenewerSetup {
+        async fn new(name: &str, days: i64, credentials: &str) -> Self {
+            let dir =
+                std::env::temp_dir().join(format!("eks-acme-renew-{name}-{}", std::process::id()));
+            tokio::fs::create_dir_all(&dir).await.unwrap();
 
-        let acme = AcmeConfig {
-            directory_url: "https://acme.example/dir".to_string(),
-            domain: "eks.example.nl".to_string(),
-            account_credentials: secrecy::SecretString::from(credentials),
-            root_ca_path: None,
-        };
-        let config = server::server_config_from_pem(cert_pem.as_bytes(), key_pem.as_bytes())
-            .expect("valid pair");
-        (acme, tls, RustlsConfig::from_config(Arc::new(config)), dir)
+            let (cert_pem, key_pem) = self_signed_pair(days);
+            let tls = TlsConfig {
+                cert_path: dir.join("cert.pem"),
+                key_path: dir.join("key.pem"),
+            };
+            tokio::fs::write(&tls.cert_path, &cert_pem).await.unwrap();
+            tokio::fs::write(&tls.key_path, &key_pem).await.unwrap();
+
+            let acme = AcmeConfig {
+                directory_url: "https://acme.example/dir".to_string(),
+                domain: "eks.example.nl".to_string(),
+                account_credentials: secrecy::SecretString::from(credentials),
+                root_ca_path: None,
+            };
+            let config = server::server_config_from_pem(cert_pem.as_bytes(), key_pem.as_bytes())
+                .expect("valid pair");
+
+            Self {
+                acme,
+                tls,
+                rustls_config: RustlsConfig::from_config(Arc::new(config)),
+                store: AcmeStore::default(),
+                dir,
+            }
+        }
+
+        fn renewal(&self) -> Renewal<'_> {
+            Renewal {
+                acme: &self.acme,
+                tls: &self.tls,
+                rustls_config: &self.rustls_config,
+                store: &self.store,
+            }
+        }
+
+        async fn cleanup(self) {
+            tokio::fs::remove_dir_all(&self.dir).await.unwrap();
+        }
     }
 
     #[tokio::test]
     async fn renew_if_due_skips_a_certificate_that_is_not_due() {
-        let (acme, tls, rustls_config, dir) = renewer_setup("not-due", 60, "{}").await;
+        let setup = RenewerSetup::new("not-due", 60, "{}").await;
 
         // Returns before touching credentials or the network.
-        renew_if_due(&acme, &tls, &rustls_config, &AcmeStore::default())
-            .await
-            .expect("not due");
+        setup.renewal().renew_if_due().await.expect("not due");
 
-        tokio::fs::remove_dir_all(&dir).await.unwrap();
+        setup.cleanup().await;
     }
 
     #[tokio::test]
     async fn renew_if_due_fails_fast_on_invalid_credentials() {
-        let (acme, tls, rustls_config, dir) = renewer_setup("due", 7, "not json").await;
+        let setup = RenewerSetup::new("due", 7, "not json").await;
 
         // Due, so renewal starts; credential parsing fails before any traffic.
-        let err = renew_if_due(&acme, &tls, &rustls_config, &AcmeStore::default())
-            .await
-            .expect_err("err");
+        let err = setup.renewal().renew_if_due().await.expect_err("err");
         assert!(matches!(err, AppError::ConfigLoadError(_)));
 
-        tokio::fs::remove_dir_all(&dir).await.unwrap();
+        setup.cleanup().await;
     }
 
     #[tokio::test]
     async fn renew_if_due_reports_a_missing_certificate() {
-        let (acme, mut tls, rustls_config, dir) = renewer_setup("missing", 60, "{}").await;
-        tls.cert_path = dir.join("nonexistent.pem");
+        let mut setup = RenewerSetup::new("missing", 60, "{}").await;
+        setup.tls.cert_path = setup.dir.join("nonexistent.pem");
 
-        let err = renew_if_due(&acme, &tls, &rustls_config, &AcmeStore::default())
-            .await
-            .expect_err("err");
+        let err = setup.renewal().renew_if_due().await.expect_err("err");
         assert!(matches!(err, AppError::ServerError(_)));
 
-        tokio::fs::remove_dir_all(&dir).await.unwrap();
+        setup.cleanup().await;
     }
 
     #[test]

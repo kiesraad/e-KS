@@ -16,10 +16,10 @@ const fn date(year: i32, month: u32, day: u32) -> NaiveDate {
     }
 }
 
-/// A date and time from constant values; invalid values fail to compile in `const` blocks.
-const fn datetime(year: i32, month: u32, day: u32, hour: u32, minute: u32) -> NaiveDateTime {
+/// A time of day on `date`; invalid times fail to compile in `const` blocks.
+const fn at(date: NaiveDate, hour: u32, minute: u32) -> NaiveDateTime {
     match NaiveTime::from_hms_opt(hour, minute, 0) {
-        Some(time) => NaiveDateTime::new(date(year, month, day), time),
+        Some(time) => NaiveDateTime::new(date, time),
         None => panic!("invalid constant time"),
     }
 }
@@ -42,7 +42,7 @@ super::define_elections! {
         omission_period_end_date: const { date(2027, 4, 29) },
         public_session: PublicSession {
             location: "'s-Gravenhage",
-            datetime: const { datetime(2027, 5, 3, 17, 0) },
+            datetime: const { at(date(2027, 5, 3), 17, 0) },
             chair: "",
             members: &["", "", "", "", ""],
         },
@@ -78,7 +78,7 @@ super::define_elections! {
         omission_period_end_date: const { date(2027, 2, 4) },
         public_session: PublicSession {
             location: "'s-Gravenhage",
-            datetime: const { datetime(2027, 2, 5, 17, 0) },
+            datetime: const { at(date(2027, 2, 5), 17, 0) },
             chair: "",
             members: &["", "", "", "", ""],
         },
@@ -123,7 +123,7 @@ super::define_elections! {
         omission_period_end_date: const { date(2027, 2, 4) },
         public_session: PublicSession {
             location: "'s-Gravenhage",
-            datetime: const { datetime(2027, 2, 5, 17, 0) },
+            datetime: const { at(date(2027, 2, 5), 17, 0) },
             chair: "",
             members: &["", "", "", "", ""],
         },
