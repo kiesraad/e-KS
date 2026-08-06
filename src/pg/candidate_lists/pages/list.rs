@@ -1,15 +1,16 @@
+use crate::structs::candidate_lists::{CandidateList, CandidateListSummary, FullCandidateList};
 use askama::Template;
 use axum::response::IntoResponse;
 
 use crate::{
     AppError, Context, HtmlTemplate, PgStore,
-    candidate_lists::{
-        CandidateList, CandidateListSummary, FullCandidateList, pages::CandidateListsPath,
-    },
-    common::{HasSeverity, Problematic},
+    candidate_lists::pages::CandidateListsPath,
     filters,
-    persons::Person,
-    structs::candidate_lists::CandidateListWithProblems,
+    structs::{
+        candidate_lists::CandidateListWithProblems,
+        common::{HasSeverity, Problematic},
+        persons::Person,
+    },
 };
 
 #[derive(Template)]
@@ -62,7 +63,7 @@ mod tests {
     use super::*;
     use crate::{
         Context, PgStore,
-        candidate_lists::CandidateListId,
+        structs::candidate_lists::CandidateListId,
         test_utils::{response_body_string, sample_candidate_list},
     };
     use axum::{http::StatusCode, response::IntoResponse};

@@ -3,8 +3,10 @@ use validate::Validate;
 
 use crate::{
     OptionStringExt,
-    common::{DisplayName, PreviousElectionResults},
-    political_groups::PoliticalGroup,
+    structs::{
+        common::{DisplayName, PreviousElectionResults},
+        political_groups::PoliticalGroup,
+    },
 };
 
 #[derive(Default, Deserialize, Debug, Validate)]

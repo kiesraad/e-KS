@@ -1,7 +1,7 @@
 use super::PaperCorrected;
 use crate::{
     CsbStore, Locale,
-    csb::WithCorrections,
+    projection::WithCorrections,
     structs::{
         common::PreviousElectionResults, list_designation::ListDesignation,
         political_groups::PoliticalGroup,

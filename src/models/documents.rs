@@ -16,10 +16,12 @@ use super::{
 };
 use crate::{
     AppError, Context, ElectionConfig, PgStore,
-    candidate_lists::{CandidateListId, FullCandidateList},
-    common::{HasSeverity, Problematic, Severity},
     core::{ModelLocale, ZipResponseWriter},
-    list_designation::ListDesignation,
+    structs::{
+        candidate_lists::{CandidateListId, FullCandidateList},
+        common::{HasSeverity, Problematic, Severity},
+        list_designation::ListDesignation,
+    },
     utils::{format_hash, no_cache_headers, slugify_teletex},
 };
 use axum::{

@@ -1,3 +1,4 @@
+use crate::structs::{list_designation::ListDesignation, political_groups::PoliticalGroup};
 use askama::Template;
 use axum::{
     extract::Query,
@@ -8,12 +9,10 @@ use crate::{
     AppError, Context, Form, HtmlTemplate, PgStore, QueryParamState, filters,
     form::FormData,
     list_designation::{
-        ListDesignation, ListDesignationUpdatePath,
-        forms::list_designation_form::ListDesignationForm,
+        ListDesignationUpdatePath, forms::list_designation_form::ListDesignationForm,
     },
-    list_submitters::ListSubmitter,
-    name_authorisations::NameAuthorisation,
-    political_groups::{PoliticalGroup, PoliticalGroupSteps},
+    political_groups::PoliticalGroupSteps,
+    structs::{list_submitters::ListSubmitter, name_authorisations::NameAuthorisation},
 };
 
 #[derive(Template)]

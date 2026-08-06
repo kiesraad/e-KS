@@ -1,7 +1,6 @@
 use crate::{
-    CsbStore,
-    csb::{WithCorrections, examination::structs::CandidateCorrectionField},
-    persons::PersonId,
+    CsbStore, csb::examination::structs::CandidateCorrectionField, projection::WithCorrections,
+    structs::persons::PersonId,
 };
 
 /// Which type of input to render in the correction overlay.

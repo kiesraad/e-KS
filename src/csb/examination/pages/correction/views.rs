@@ -6,7 +6,6 @@ use axum::{
 
 use crate::{
     AppError, Context, CsbContext, CsbStore, Form, HtmlTemplate, Overlay, QueryParamState,
-    common::DisplayName,
     csb::examination::{
         extractors::CsbPoliticalGroup,
         pages::{
@@ -19,7 +18,7 @@ use crate::{
     },
     filters,
     form::FormData,
-    structs::csb::Correction,
+    structs::{common::DisplayName, csb::Correction},
 };
 #[derive(Template)]
 #[template(path = "csb/examination/pages/correction.html")]
@@ -177,11 +176,12 @@ fn render_correction(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::projection::WithCorrections;
     use axum::http::StatusCode;
 
     use crate::{
-        csb::{WithCorrections, examination::structs::CandidateCorrectionField},
-        persons::PersonId,
+        csb::examination::structs::CandidateCorrectionField,
+        structs::persons::PersonId,
         test_utils::{
             response_body_string, sample_candidate_list, sample_person, sample_political_group,
         },
@@ -271,7 +271,7 @@ mod tests {
 
         let person = sample_person(PersonId::new());
         let person_id = person.id;
-        let list_id = crate::candidate_lists::CandidateListId::new();
+        let list_id = crate::structs::candidate_lists::CandidateListId::new();
         let mut list = sample_candidate_list(list_id);
         list.candidates = vec![person_id];
         store.add_person(person);

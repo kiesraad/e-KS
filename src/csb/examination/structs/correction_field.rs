@@ -1,6 +1,6 @@
 use serde::Deserialize;
 
-use crate::{common::DateOfBirth, persons::Person};
+use crate::structs::{common::DateOfBirth, persons::Person};
 
 /// Which personal-data field of a candidate a correction dialog operates on.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]

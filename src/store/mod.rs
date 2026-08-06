@@ -1,3 +1,4 @@
+pub(crate) mod crypto;
 #[cfg(feature = "database")]
 pub(crate) mod database;
 
@@ -9,21 +10,24 @@ mod health;
 pub(crate) mod memory;
 mod registry;
 mod store_handle;
+mod stream_id;
 
-pub use event::{Event, GENESIS_HASH, StoreEvent};
+pub(crate) use event::EncryptedEvent;
+pub use event::{Event, EventHash, GENESIS_HASH, StoreEvent};
 pub use health::{DbHealth, run_db_prober};
 pub use persistence::StorePersistence;
 pub use registry::StoreRegistry;
 pub use store_handle::Store;
 #[cfg(test)]
 pub(crate) use store_handle::StoreBackend;
+pub use stream_id::StreamId;
 
 pub(crate) use event::{chain_hash, event_aad};
 
 use chrono::{DateTime, Utc};
 use serde::de::DeserializeOwned;
 
-use crate::{AppError, ElectionConfig, Scope, StreamId, crypto::EventCipher};
+use crate::{AppError, ElectionConfig, Scope, crypto::EventCipher};
 
 /// Decryption-free metadata about a persisted stream, read from the backend's
 /// index without replaying (or warming) it. The political group name is absent:
@@ -54,7 +58,7 @@ pub trait StoreData: Default + Send + Sync + 'static {
 
     /// Return the chain hash of the last applied event, or [`GENESIS_HASH`] if
     /// no events have been applied yet.
-    fn last_event_hash(&self) -> [u8; 32] {
+    fn last_event_hash(&self) -> EventHash {
         self.events().last().map(|e| e.hash).unwrap_or(GENESIS_HASH)
     }
 
@@ -63,13 +67,13 @@ pub trait StoreData: Default + Send + Sync + 'static {
 
 /// Decrypt persisted events and apply the ones `data` has not seen yet.
 ///
-/// `events` yields `(event_id, created_at, hash, encrypted_payload)` in
-/// ascending event order; events at or below the projection's last ID are
-/// skipped. Shared by the filesystem and database backends.
+/// `events` yields the stored events in ascending event order; events at or
+/// below the projection's last ID are skipped. Shared by the filesystem and
+/// database backends.
 pub(crate) fn apply_encrypted_events<D>(
     data: &mut D,
     cipher: &EventCipher,
-    events: impl IntoIterator<Item = (usize, DateTime<Utc>, [u8; 32], Vec<u8>)>,
+    events: impl IntoIterator<Item = EncryptedEvent>,
 ) -> Result<(), AppError>
 where
     D: StoreData,
@@ -77,7 +81,13 @@ where
 {
     let mut prev_hash = data.last_event_hash();
 
-    for (event_id, created_at, hash, encrypted_payload) in events {
+    for EncryptedEvent {
+        event_id,
+        created_at,
+        hash,
+        payload: encrypted_payload,
+    } in events
+    {
         if data.last_event_id() >= event_id {
             continue;
         }

@@ -1,8 +1,8 @@
 use std::cmp;
 
 use crate::{
-    common::Severity,
     finalise::{AllProblems, EntityProblems},
+    structs::common::Severity,
 };
 
 impl AllProblems {
@@ -64,20 +64,22 @@ impl AllProblems {
 #[cfg(test)]
 mod tests {
     use crate::{
-        candidate_lists::CandidateListId,
-        common::{
-            InfoProblems::{self},
-            PotentialProblems,
-        },
         finalise::{
             EntityProblems,
             structs::problems::{
                 EntityInfoProblems, GeneralProblems, ListProblems, PersonProblems,
             },
         },
-        list_submitters::ListSubmitterId,
-        name_authorisations::NameAuthorisationId,
-        persons::PersonId,
+        structs::{
+            candidate_lists::CandidateListId,
+            common::{
+                InfoProblems::{self},
+                PotentialProblems,
+            },
+            list_submitters::ListSubmitterId,
+            name_authorisations::NameAuthorisationId,
+            persons::PersonId,
+        },
         test_utils::{
             sample_candidate_list, sample_list_submitter, sample_name_authorisation, sample_person,
         },

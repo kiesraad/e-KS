@@ -49,10 +49,12 @@ mod tests {
 
     use crate::{
         CsbEvent, ElectoralDistrict,
-        candidate_lists::{CandidateList, CandidateListId},
-        common::{PlaceOfResidence, UtcDateTime},
-        persons::PersonId,
-        structs::csb::{Correction, Omission, OmissionCategory, PersonCorrection},
+        structs::{
+            candidate_lists::{CandidateList, CandidateListId},
+            common::{PlaceOfResidence, UtcDateTime},
+            csb::{Correction, Omission, OmissionCategory, PersonCorrection},
+            persons::PersonId,
+        },
         test_utils::{response_body_string, sample_person},
     };
 

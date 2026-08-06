@@ -4,9 +4,11 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     Locale,
-    common::{DateOfBirth, DisplayName, Initials, LastName, PlaceOfResidence},
-    persons::{Person, PersonId},
-    structs::audit_log::FieldChange,
+    structs::{
+        audit_log::FieldChange,
+        common::{DateOfBirth, DisplayName, Initials, LastName, PlaceOfResidence},
+        persons::{Person, PersonId},
+    },
     trans,
 };
 

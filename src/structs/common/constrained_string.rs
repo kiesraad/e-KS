@@ -1,4 +1,4 @@
-use crate::common::{PotentialProblems, Problematic, Problems};
+use crate::structs::common::{PotentialProblems, Problematic, Problems};
 
 /// Define string types constrained in the FromStr implementation: trimmed, at
 /// most `max` bytes, teletex characters only (which excludes all control

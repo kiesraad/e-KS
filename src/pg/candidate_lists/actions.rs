@@ -4,10 +4,14 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use crate::{
     AppError, ElectionConfig, ElectoralDistrict, MAX_CANDIDATES, PgEvent, PgStore,
-    candidate_lists::{CandidateList, CandidateListId, CandidateListSummary, FullCandidateList},
-    candidates::{Candidate, CandidateWithProblems},
-    common::Problematic,
-    persons::{Person, PersonId},
+    structs::{
+        candidate_lists::{
+            CandidateList, CandidateListId, CandidateListSummary, FullCandidateList,
+        },
+        candidates::{Candidate, CandidateWithProblems},
+        common::Problematic,
+        persons::{Person, PersonId},
+    },
 };
 
 impl CandidateList {
@@ -58,7 +62,9 @@ impl CandidateList {
 
         // never allow a list to grow beyond the hard maximum
         if person_ids.len() > MAX_CANDIDATES {
-            return Err(AppError::TooManyCandidates);
+            return Err(AppError::TooManyCandidates {
+                max: MAX_CANDIDATES,
+            });
         }
 
         // check all new ids exist
@@ -112,7 +118,9 @@ impl CandidateList {
         if !self.candidates.contains(&person.id) {
             // never allow a list to grow beyond the hard maximum
             if self.candidates.len() >= MAX_CANDIDATES {
-                return Err(AppError::TooManyCandidates);
+                return Err(AppError::TooManyCandidates {
+                    max: MAX_CANDIDATES,
+                });
             }
 
             store

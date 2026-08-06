@@ -1,9 +1,10 @@
+use crate::structs::common::{CountryCode, PostalCode};
 use std::str::FromStr;
 
 use crate::{
-    common::{CountryCode, InternationalAddressForm, MinimalNameForm, PostalCode},
+    common::{InternationalAddressForm, MinimalNameForm},
     form::{FieldErrors, FormData, MergeErrors},
-    list_submitters::{ListSubmitter, ListSubmitterData},
+    structs::list_submitters::{ListSubmitter, ListSubmitterData},
 };
 use serde::Deserialize;
 use validate::Validate;
@@ -67,10 +68,7 @@ impl ListSubmitterForm {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        common::{Address, CountryCode},
-        form::ValidationError,
-    };
+    use crate::{form::ValidationError, structs::common::Address};
 
     #[test]
     fn validate_create_uses_dutch_address_when_country_is_empty() {

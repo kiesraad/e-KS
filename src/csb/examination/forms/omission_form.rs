@@ -3,8 +3,10 @@ use validate::Validate;
 
 use crate::{
     ElectoralDistrict,
-    candidate_lists::CandidateListId,
-    structs::csb::{Omission, OmissionText, OmissionTitle},
+    structs::{
+        candidate_lists::CandidateListId,
+        csb::{Omission, OmissionText, OmissionTitle},
+    },
 };
 
 /// Form backing the "add omission" dialog. The category is not part of the form:

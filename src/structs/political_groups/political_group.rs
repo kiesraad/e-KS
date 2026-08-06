@@ -1,7 +1,9 @@
 use crate::{
     AppError, OptionAsStrExt,
-    common::{DisplayName, FullName, PreviousElectionResults, Problematic, Problems},
-    list_designation::ListDesignation,
+    structs::{
+        common::{DisplayName, FullName, PreviousElectionResults, Problematic, Problems},
+        list_designation::ListDesignation,
+    },
 };
 use serde::{Deserialize, Serialize};
 
@@ -85,7 +87,7 @@ impl PoliticalGroup {
 
 #[cfg(test)]
 mod tests {
-    use crate::common::{InfoProblems, PotentialProblems};
+    use crate::structs::common::{InfoProblems, PotentialProblems};
 
     use super::*;
 

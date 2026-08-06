@@ -20,7 +20,7 @@ impl OmissionCategory {
                 let mut districts: Vec<ElectoralDistrict> = Vec::new();
                 for id in lists {
                     let list = store
-                        .get_candidate_list(*id, crate::csb::WithCorrections::All)
+                        .get_candidate_list(*id, crate::projection::WithCorrections::All)
                         .ok_or(AppError::GenericNotFound)?;
                     for d in list.electoral_districts {
                         if !districts.contains(&d) {
@@ -74,8 +74,8 @@ impl Omission {
 mod tests {
     use super::*;
     use crate::{
-        ElectionConfig, ElectoralDistrict, candidate_lists::CandidateListId,
-        structs::candidate_lists::CandidateList,
+        ElectionConfig, ElectoralDistrict,
+        structs::candidate_lists::{CandidateList, CandidateListId},
     };
 
     const EK: ElectionConfig = ElectionConfig::EK27;

@@ -6,11 +6,11 @@ use super::{
 };
 use crate::{
     core::{ElectionType, ModelLocale},
-    list_designation::ListDesignation,
     models::{
         h1::H1,
         inputs::{Candidate, ElectoralDistricts, Person},
     },
+    structs::list_designation::ListDesignation,
 };
 
 /// The substitute submitter shared by all three examples.

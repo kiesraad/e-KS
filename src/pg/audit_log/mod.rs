@@ -1,4 +1,5 @@
 //! Audit log overview showing all applied events.
+mod event_info;
 mod pages;
 mod paths;
 mod structs;

@@ -2,10 +2,12 @@ use uuid::Uuid;
 
 use crate::{
     AppError, PgStore,
-    candidate_lists::CandidateList,
-    common::HasSeverity,
     pagination::SortDirection,
-    persons::{Person, PersonId, PersonSort},
+    structs::{
+        candidate_lists::CandidateList,
+        common::HasSeverity,
+        persons::{Person, PersonId, PersonSort},
+    },
 };
 
 const FIXTURE_CANDIDATE_LIST_SIZE: usize = 55;
@@ -90,8 +92,8 @@ mod tests {
     use super::*;
     use crate::{
         ElectionConfig,
-        candidate_lists::CandidateListSummary,
         core::election::{Province, WaterCouncil},
+        structs::candidate_lists::CandidateListSummary,
     };
     #[tokio::test]
     async fn test_load() {

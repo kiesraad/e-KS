@@ -2,9 +2,11 @@ use std::str::FromStr;
 
 use crate::{
     OptionAsStrExt,
-    common::{PotentialProblems, Problematic, Problems},
     form::{ValidationError, validate_teletex_chars},
-    list_designation::ListDesignation,
+    structs::{
+        common::{PotentialProblems, Problematic, Problems},
+        list_designation::ListDesignation,
+    },
     transparent_string,
 };
 

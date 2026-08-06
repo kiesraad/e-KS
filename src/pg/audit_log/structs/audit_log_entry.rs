@@ -47,10 +47,10 @@ mod tests {
     use super::*;
     use crate::{
         Locale, StreamId,
-        candidate_lists::CandidateListId,
-        list_submitters::ListSubmitterId,
-        name_authorisations::NameAuthorisationId,
-        persons::PersonId,
+        structs::{
+            candidate_lists::CandidateListId, list_submitters::ListSubmitterId,
+            name_authorisations::NameAuthorisationId, persons::PersonId,
+        },
         test_utils::{
             sample_candidate_list, sample_list_submitter, sample_name_authorisation, sample_person,
             sample_political_group,
@@ -265,7 +265,7 @@ mod tests {
             1,
             PgEvent::UpdatePersonAddress {
                 person_id,
-                address: crate::common::DutchAddress::default(),
+                address: crate::structs::common::DutchAddress::default(),
             },
         );
 

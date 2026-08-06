@@ -1,4 +1,4 @@
-use crate::AppState;
+use crate::AppRequestState;
 use axum::Router;
 use axum_extra::routing::RouterExt;
 
@@ -11,7 +11,7 @@ mod update;
 mod update_address;
 mod update_representative;
 
-pub fn router() -> Router<AppState> {
+pub fn router<S: AppRequestState>() -> Router<S> {
     Router::new()
         .typed_get(list::list_persons)
         .typed_post(create::create_person_submit)
@@ -30,8 +30,10 @@ pub fn router() -> Router<AppState> {
 mod tests {
     use super::*;
     use crate::{
-        common::CountryCode,
-        persons::{Person, PersonId},
+        structs::{
+            common::CountryCode,
+            persons::{Person, PersonId},
+        },
         test_utils::sample_person,
     };
 
@@ -78,6 +80,6 @@ mod tests {
 
     #[test]
     fn person_router_builds() {
-        let _router = router();
+        let _router = router::<crate::AppState>();
     }
 }

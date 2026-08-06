@@ -2,14 +2,17 @@ use axum_extra::routing::TypedPath as _;
 
 use crate::{
     AppError, Locale, PgStore, QueryParamState,
-    candidate_lists::{CandidateList, CandidateListSummary, FullCandidateList},
-    common::{HasSeverity, IndexPath, InfoProblems, PotentialProblems, Problematic, Severity},
+    common::PgIndexPath,
     finalise::FinalisePath,
-    list_designation::ListDesignation,
-    list_submitters::ListSubmitter,
-    name_authorisations::NameAuthorisation,
-    persons::Person,
-    political_groups::PoliticalGroup,
+    structs::{
+        candidate_lists::{CandidateList, CandidateListSummary, FullCandidateList},
+        common::{HasSeverity, InfoProblems, PotentialProblems, Problematic, Severity},
+        list_designation::ListDesignation,
+        list_submitters::ListSubmitter,
+        name_authorisations::NameAuthorisation,
+        persons::Person,
+        political_groups::PoliticalGroup,
+    },
 };
 
 impl PotentialProblems {
@@ -444,7 +447,7 @@ impl EntityInfoProblems {
             EntityInfoProblems::AnyProblem(InfoProblems::NoPreviousElectionResults) => {
                 PoliticalGroup::update_path().to_string()
             }
-            EntityInfoProblems::AnyProblem(..) => IndexPath.to_string(),
+            EntityInfoProblems::AnyProblem(..) => PgIndexPath.to_string(),
 
             EntityInfoProblems::List { list, .. } => list.view_path().to_string(),
             EntityInfoProblems::SubstituteSubmitter { submitter, .. } => submitter
@@ -493,11 +496,11 @@ impl EntityInfoProblems {
 mod tests {
     use crate::{
         AppError, ElectoralDistrict,
-        candidate_lists::CandidateListId,
-        common::HasSeverity,
-        list_submitters::ListSubmitterId,
-        name_authorisations::NameAuthorisationId,
-        persons::PersonId,
+        structs::{
+            candidate_lists::CandidateListId, common::HasSeverity,
+            list_submitters::ListSubmitterId, name_authorisations::NameAuthorisationId,
+            persons::PersonId,
+        },
         test_utils::{
             sample_candidate_list, sample_list_submitter, sample_name_authorisation, sample_person,
         },

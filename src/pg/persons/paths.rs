@@ -5,7 +5,7 @@ use serde::Deserialize;
 
 use crate::{
     AppError, QueryParamState,
-    persons::{Person, PersonId},
+    structs::persons::{Person, PersonId},
 };
 
 #[derive(TypedPath, Deserialize)]

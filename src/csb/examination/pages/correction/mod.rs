@@ -3,12 +3,14 @@ mod views;
 use serde::Deserialize;
 
 use crate::{
-    candidate_lists::CandidateListId,
-    common::{DateOfBirth, Initials, LastName, PlaceOfResidence},
     csb::examination::extractors::CsbPoliticalGroup,
     form::ValidationError,
-    persons::PersonId,
-    structs::csb::PersonCorrection,
+    structs::{
+        candidate_lists::CandidateListId,
+        common::{DateOfBirth, Initials, LastName, PlaceOfResidence},
+        csb::PersonCorrection,
+        persons::PersonId,
+    },
 };
 
 pub use views::{

@@ -3,7 +3,7 @@ use validate::Validate;
 
 use crate::{
     OptionStringExt,
-    common::{
+    structs::common::{
         CountryCode, DutchAddress, HouseNumber, HouseNumberAddition, InternationalAddress,
         InternationalPostalCode, Locality, PostalCode, StateOrProvince, StreetName,
     },

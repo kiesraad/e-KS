@@ -1,6 +1,6 @@
 use crate::{
-    common::{LegalName, MinimalNameForm},
-    name_authorisations::NameAuthorisation,
+    common::MinimalNameForm,
+    structs::{common::LegalName, name_authorisations::NameAuthorisation},
 };
 use serde::Deserialize;
 use validate::Validate;

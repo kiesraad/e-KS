@@ -54,8 +54,10 @@ pub enum AppError {
     IntegrityViolation,
 
     /// Attempted to add a candidate to a list that is already at the maximum
-    /// allowed number of candidates ([`crate::MAX_CANDIDATES`]).
-    TooManyCandidates,
+    /// allowed number of candidates. Carries the limit that was exceeded.
+    TooManyCandidates {
+        max: usize,
+    },
 
     /// A hash prefix matched more than one event; the user must supply a longer prefix.
     AmbiguousHash,
@@ -74,10 +76,9 @@ impl Display for AppError {
             AppError::FormRejection(err) => write!(f, "Form error: {err}"),
             AppError::GenericNotFound => write!(f, "Page not found"),
             AppError::IntegrityViolation => write!(f, "Data integrity violation"),
-            AppError::TooManyCandidates => write!(
+            AppError::TooManyCandidates { max } => write!(
                 f,
-                "Cannot add more than {} candidates to a candidate list",
-                crate::MAX_CANDIDATES
+                "Cannot add more than {max} candidates to a candidate list"
             ),
             AppError::AmbiguousHash => write!(f, "Ambiguous hash prefix"),
             AppError::InternalServerError => write!(f, "Internal server error"),

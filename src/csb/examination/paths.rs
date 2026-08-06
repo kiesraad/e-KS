@@ -7,11 +7,17 @@ use uuid::Uuid;
 
 use crate::{
     AppError, QueryParamState, StreamId,
-    candidate_lists::CandidateListId,
     csb::examination::{extractors::CsbPoliticalGroup, structs::CandidateCorrectionField},
-    persons::PersonId,
-    structs::csb::{OmissionId, OmissionType},
+    structs::{
+        candidate_lists::CandidateListId,
+        csb::{OmissionId, OmissionType},
+        persons::PersonId,
+    },
 };
+
+#[derive(TypedPath)]
+#[typed_path("/", rejection(AppError))]
+pub struct PgIndexPath;
 
 #[derive(TypedPath)]
 #[typed_path("/csb/examination", rejection(AppError))]
@@ -320,5 +326,24 @@ impl CsbPoliticalGroup {
         .with_query_params(QueryParamState::redirect_to(
             self.all_restorations_path().to_string(),
         ))
+    }
+}
+
+#[cfg(test)]
+mod prefix_guard {
+    use super::CsbPaperCorrectionsStopPath;
+    use crate::{StreamId, view::CSB_PAPER_CORRECTIONS_STOP_PREFIX};
+
+    /// `view::Context` builds the paper-corrections exit link from a prefix
+    /// constant; this keeps the two in sync.
+    #[test]
+    fn stop_path_matches_shared_prefix() {
+        let stream_id = StreamId::new();
+        let expected =
+            format!("{CSB_PAPER_CORRECTIONS_STOP_PREFIX}/{stream_id}/paper-corrections/stop");
+        assert_eq!(
+            CsbPaperCorrectionsStopPath { stream_id }.to_string(),
+            expected
+        );
     }
 }

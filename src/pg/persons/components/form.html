@@ -28,20 +28,20 @@
   </p>
 </div>
 <div class="form-row">
-  <div class="form-field {% if form.data.personal_data.bsn.is_empty() && form.data.personal_data.bsn != crate::common::BSN_NONE_CONFIRMATION && should_warn %}warning{% endif %}">
+  <div class="form-field {% if form.data.personal_data.bsn.is_empty() && form.data.personal_data.bsn != crate::structs::common::BSN_NONE_CONFIRMATION && should_warn %}warning{% endif %}">
     <label for="bsn">{{ "person.fields.bsn"|trans }}</label>
     <input type="text"
            placeholder=" "
            name="bsn"
            id="bsn"
-           value="{% if form.data.personal_data.bsn != crate::common::BSN_NONE_CONFIRMATION %}{{ form.data.personal_data.bsn }}{% endif %}" />
-    {% if (form.data.personal_data.bsn.is_empty() || form.data.personal_data.bsn == crate::common::BSN_NONE_CONFIRMATION) && should_warn %}
+           value="{% if form.data.personal_data.bsn != crate::structs::common::BSN_NONE_CONFIRMATION %}{{ form.data.personal_data.bsn }}{% endif %}" />
+    {% if (form.data.personal_data.bsn.is_empty() || form.data.personal_data.bsn == crate::structs::common::BSN_NONE_CONFIRMATION) && should_warn %}
       <label for="no_bsn_confirmed" class="no_bsn_confirmed">
         <input type="checkbox"
                name="bsn"
                id="no_bsn_confirmed"
-               value="{{ crate::common::BSN_NONE_CONFIRMATION }}"
-               {% if form.data.personal_data.bsn == crate::common::BSN_NONE_CONFIRMATION %}checked{% endif %} />
+               value="{{ crate::structs::common::BSN_NONE_CONFIRMATION }}"
+               {% if form.data.personal_data.bsn == crate::structs::common::BSN_NONE_CONFIRMATION %}checked{% endif %} />
         <span>{{ "person.no_bsn_confirm"|trans }}</span>
       </label>
     {% endif %}
@@ -87,7 +87,7 @@
     {% if form.data.personal_data.is_date_of_birth_too_young(election) && should_warn %}
       <span class="warning">{{ "common.warning_prefix"|trans }}: {{ "problems.candidate_too_young_long"|trans }}</span>
     {% else if form.data.personal_data.is_date_of_birth_very_old() && should_warn %}
-      <span class="warning">{{ "common.warning_prefix"|trans }}: {{ "problems.very_old_date_of_birth"|trans(&crate::common::DateOfBirth::WARN_AGE.to_string() ) }}</span>
+      <span class="warning">{{ "common.warning_prefix"|trans }}: {{ "problems.very_old_date_of_birth"|trans(&crate::structs::common::DateOfBirth::WARN_AGE.to_string() ) }}</span>
     {% endif %}
   </p>
 </div>

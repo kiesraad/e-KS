@@ -6,8 +6,8 @@ use axum::{
 use serde::Deserialize;
 
 use crate::{
-    AppError, AppState, Context, CsbContext, CsbEvent, Form, HtmlTemplate, Locale, PgStoreData,
-    StreamId,
+    AppError, AppRequestState, Context, CsbContext, CsbEvent, Form, HtmlTemplate, Locale,
+    PgStoreData, StreamId,
     csb::examination::{CsbExaminationOverviewPath, CsbPoliticalGroupPath},
     filters, redirect_success, trans,
     utils::parse_hash_prefix,
@@ -38,9 +38,9 @@ pub struct ImportForm {
 }
 
 /// Import the package identified by the submitted chain hash.
-pub async fn import_submit(
+pub async fn import_submit<S: AppRequestState>(
     _: CsbImportPath,
-    State(state): State<AppState>,
+    State(state): State<S>,
     context: CsbContext,
     Form(form): Form<ImportForm>,
 ) -> Result<Response, AppError> {
@@ -64,8 +64,8 @@ pub async fn import_submit(
 /// a fresh CSB stream keyed on the source election. The source `stream_id` is
 /// carried on the event for reference; it is never reused as the CSB partition,
 /// which would collide with the PG stream's own events there.
-async fn do_import(
-    state: &AppState,
+async fn do_import<S: AppRequestState>(
+    state: &S,
     form: ImportForm,
     locale: Locale,
 ) -> Result<Response, AppError> {
@@ -73,14 +73,14 @@ async fn do_import(
         .ok_or_else(|| AppError::UserError(trans!("csb.import.error.invalid_hash", locale)))?;
 
     let (source_stream_id, source_election, event_id) = state
-        .store_registry
+        .store_registry()
         .persistence()
         .find_event_by_hash_prefix(&hash_prefix)
         .await?
         .ok_or_else(|| AppError::UserError(trans!("csb.import.error.not_found", locale)))?;
 
     // Reject if this source stream has already been imported.
-    for store in state.csb_store_registry.stores_by_scope().await? {
+    for store in state.csb_store_registry().stores_by_scope().await? {
         let already_imported = store.data.read().events.first().is_some_and(|e| {
             matches!(&e.payload, CsbEvent::Import { source_stream_id: sid, .. } if *sid == source_stream_id)
         });
@@ -127,9 +127,9 @@ async fn do_import(
 }
 
 /// Create a new empty CSB store without importing from a political-group stream.
-pub async fn create_empty(
+pub async fn create_empty<S: AppRequestState>(
     _: CsbCreateEmptyPath,
-    State(state): State<AppState>,
+    State(state): State<S>,
     context: CsbContext,
 ) -> Result<Response, AppError> {
     let csb_store = state
@@ -240,7 +240,7 @@ mod tests {
         assert_eq!(response.status(), StatusCode::SEE_OTHER);
 
         // The import is recorded under a fresh CSB stream, carrying the source.
-        let csb_stores = state.csb_store_registry.stores_by_scope().await?;
+        let csb_stores = state.csb_store_registry().stores_by_scope().await?;
         assert_eq!(csb_stores.len(), 1);
         let imported = csb_stores[0].data.read().events.first().is_some_and(|e| {
             matches!(&e.payload, CsbEvent::Import { source_stream_id, .. } if *source_stream_id == source_stream)
@@ -283,7 +283,7 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
 
         // Only the first import was recorded.
-        let csb_stores = state.csb_store_registry.stores_by_scope().await?;
+        let csb_stores = state.csb_store_registry().stores_by_scope().await?;
         assert_eq!(csb_stores.len(), 1);
 
         Ok(())
@@ -305,7 +305,7 @@ mod tests {
         assert_eq!(response.status(), StatusCode::SEE_OTHER);
 
         // A single CSB store is recorded carrying the CreateEmpty event.
-        let csb_stores = state.csb_store_registry.stores_by_scope().await?;
+        let csb_stores = state.csb_store_registry().stores_by_scope().await?;
         assert_eq!(csb_stores.len(), 1);
         let data = csb_stores[0].data.read();
         assert!(matches!(

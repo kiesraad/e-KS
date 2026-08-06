@@ -1,6 +1,6 @@
 use crate::{
-    common::{InfoProblems, Problematic, Problems},
     form::ValidationError,
+    structs::common::{InfoProblems, Problematic, Problems},
 };
 use serde::{Deserialize, Serialize};
 
