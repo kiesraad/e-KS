@@ -20,8 +20,32 @@ pub struct I1 {
     /// The session in which the central voting bureau examined the lists;
     /// same shape as the I 4 session.
     pub session: PublicSession,
+    /// The lists that were submitted, one table per electoral district.
+    pub submitted_lists: Vec<DistrictLists>,
     /// Empty when the examination found no omissions.
     pub found_omissions: Vec<OmissionGroup>,
+}
+
+/// One "Kieskring" table of the submitted lists section: the district heading
+/// plus its rows, in the order they are printed.
+#[derive(Debug)]
+pub struct DistrictLists {
+    /// The district as printed after the "Kieskring" label, e.g. `20 (Bonaire)`.
+    pub electoral_district: String,
+    pub lists: Vec<SubmittedList>,
+}
+
+/// One row of a district table. The row number is the position in
+/// [`DistrictLists::lists`], so the template can number the rows itself.
+#[derive(Debug)]
+pub struct SubmittedList {
+    /// The designation printed above the candidate list.
+    pub designation: String,
+    /// Name and initials of the first candidate, e.g. `van Dijk, A.B. (Anne)`.
+    /// Empty when the list has no candidates.
+    pub first_candidate_name: String,
+    /// The number of names on the list.
+    pub candidate_count: usize,
 }
 
 model_template!(I1Template, I1, "models/templates/i1.md");

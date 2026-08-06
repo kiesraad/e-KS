@@ -3,7 +3,10 @@ use axum::{extract::State, http::HeaderValue, response::IntoResponse};
 use crate::{
     AppError, AppRequestState, CsbMainStore,
     core::{ModelLocale, constants::DEFAULT_DATE_FORMAT},
-    csb::examination::{actions::found_omissions, pages::CsbI1DownloadPath},
+    csb::examination::{
+        actions::{found_omissions, submitted_lists},
+        pages::CsbI1DownloadPath,
+    },
     models::{Pdf, i1::I1},
     utils::no_cache_headers,
 };
@@ -16,7 +19,9 @@ pub async fn gen_i1<S: AppRequestState>(
     State(state): State<S>,
 ) -> Result<impl IntoResponse, AppError> {
     let election = main_store.election;
-    let found_omissions = found_omissions(state.csb_store_registry(), &election).await?;
+    let registry = state.csb_store_registry();
+    let submitted_lists = submitted_lists(registry, &election).await?;
+    let found_omissions = found_omissions(registry, &election).await?;
 
     let model = I1 {
         election_name: election.formal_title(ModelLocale::Nl),
@@ -25,6 +30,7 @@ pub async fn gen_i1<S: AppRequestState>(
             .format(DEFAULT_DATE_FORMAT)
             .to_string(),
         session: election.public_session().into(),
+        submitted_lists,
         found_omissions,
     };
     let filename = model.filename();
