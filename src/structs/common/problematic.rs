@@ -157,8 +157,10 @@ fn too_few_authorized_names(count: usize, locale: &Locale) -> String {
 }
 
 impl PotentialProblems {
-    // A flat translation table; the `trans!` expansions inflate the metric.
-    #[expect(clippy::cognitive_complexity)]
+    #[expect(
+        clippy::cognitive_complexity,
+        reason = "A flat translation table; the `trans!` expansions inflate the metric."
+    )]
     pub fn translate(&self, locale: &Locale) -> String {
         match self {
             // candidate list

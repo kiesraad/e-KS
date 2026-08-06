@@ -230,13 +230,36 @@ fn bsn_from_csv(value: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use crate::structs::common::Gender;
+    use crate::{structs::common::Gender, test_utils::display_opt};
 
     use super::*;
 
-    /// The `Display` rendering of an optional field.
-    fn disp<T: std::fmt::Display>(value: &Option<T>) -> Option<String> {
-        value.as_ref().map(|v| v.to_string())
+    /// Asserts every field of a Dutch address by its `Display` rendering.
+    fn assert_address(
+        address: &DutchAddress,
+        postal_code: &str,
+        house_number: &str,
+        house_number_addition: &str,
+        street_name: &str,
+        locality: &str,
+    ) {
+        assert_eq!(
+            display_opt(&address.postal_code).as_deref(),
+            Some(postal_code)
+        );
+        assert_eq!(
+            display_opt(&address.house_number).as_deref(),
+            Some(house_number)
+        );
+        assert_eq!(
+            display_opt(&address.house_number_addition).as_deref(),
+            Some(house_number_addition)
+        );
+        assert_eq!(
+            display_opt(&address.street_name).as_deref(),
+            Some(street_name)
+        );
+        assert_eq!(display_opt(&address.locality).as_deref(), Some(locality));
     }
 
     #[test]
@@ -278,21 +301,21 @@ mod tests {
             Some("20-10-2000".to_string())
         );
         assert_eq!(
-            disp(&person.personal_data.place_of_residence).as_deref(),
+            display_opt(&person.personal_data.place_of_residence).as_deref(),
             Some("Amsterdam")
         );
-        assert_eq!(disp(&person.personal_data.country).as_deref(), Some("NL"));
-        assert_eq!(disp(&person.address.postal_code).as_deref(), Some("1234AB"));
-        assert_eq!(disp(&person.address.house_number).as_deref(), Some("12"));
         assert_eq!(
-            disp(&person.address.house_number_addition).as_deref(),
-            Some("a")
+            display_opt(&person.personal_data.country).as_deref(),
+            Some("NL")
         );
-        assert_eq!(
-            disp(&person.address.street_name).as_deref(),
-            Some("Mooie Straat")
+        assert_address(
+            &person.address,
+            "1234AB",
+            "12",
+            "a",
+            "Mooie Straat",
+            "Rotterdam",
         );
-        assert_eq!(disp(&person.address.locality).as_deref(), Some("Rotterdam"));
         assert_eq!(person.representative, None);
     }
 
@@ -345,25 +368,27 @@ mod tests {
         let person = record.validate_create().unwrap();
 
         assert_eq!(person.personal_data.gender, Some(Gender::Female));
-        assert_eq!(disp(&person.personal_data.country).as_deref(), Some("BE"));
+        assert_eq!(
+            display_opt(&person.personal_data.country).as_deref(),
+            Some("BE")
+        );
         assert_eq!(person.address, DutchAddress::default());
 
         let representative = person.representative.as_ref().unwrap();
-        let address = &representative.address;
 
         assert_eq!(representative.name.initials.to_string(), "P.");
         assert_eq!(
-            disp(&representative.name.first_name).as_deref(),
+            display_opt(&representative.name.first_name).as_deref(),
             Some("Pietje")
         );
         assert_eq!(representative.name.last_name.to_string(), "Puk");
-        assert_eq!(disp(&address.postal_code).as_deref(), Some("5678CD"));
-        assert_eq!(disp(&address.house_number).as_deref(), Some("34"));
-        assert_eq!(disp(&address.house_number_addition).as_deref(), Some("b"));
-        assert_eq!(
-            disp(&address.street_name).as_deref(),
-            Some("Mooiere Straat")
+        assert_address(
+            &representative.address,
+            "5678CD",
+            "34",
+            "b",
+            "Mooiere Straat",
+            "'s-Gravenhage",
         );
-        assert_eq!(disp(&address.locality).as_deref(), Some("'s-Gravenhage"));
     }
 }

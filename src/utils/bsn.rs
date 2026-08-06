@@ -34,11 +34,6 @@ pub fn random_bsn() -> SecretString {
             .map(|d| char::from(b'0' + *d as u8))
             .collect();
 
-        // reject all-zeros
-        if bsn == "000000000" {
-            continue;
-        }
-
         return SecretString::from(bsn);
     }
 }

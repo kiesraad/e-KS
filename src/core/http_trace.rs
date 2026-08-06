@@ -74,8 +74,10 @@ fn on_response(response: &Response<Body>, latency: Duration, span: &Span) {
 }
 
 /// Emits the per-response event at the level matching the status class.
-// `event!` requires a const level, and its expansion inflates the metric.
-#[expect(clippy::cognitive_complexity)]
+#[expect(
+    clippy::cognitive_complexity,
+    reason = "`event!` requires a const level, and its expansion inflates the metric."
+)]
 fn emit_response_event(span: &Span, status: u16) {
     match status {
         500.. => tracing::event!(parent: span, Level::ERROR, "http request"),

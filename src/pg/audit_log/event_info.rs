@@ -17,8 +17,10 @@ use crate::{
 };
 
 /// Translated label describing what the event did.
-// A flat translation table; the `trans!` expansions inflate the metric.
-#[expect(clippy::cognitive_complexity)]
+#[expect(
+    clippy::cognitive_complexity,
+    reason = "A flat translation table; the `trans!` expansions inflate the metric."
+)]
 fn event_description(event: &PgEvent, locale: Locale) -> String {
     match event {
         PgEvent::UpdatePoliticalGroup(_) => {

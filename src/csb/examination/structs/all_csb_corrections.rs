@@ -201,6 +201,40 @@ mod tests {
             .await
     }
 
+    /// The corrections entry of one candidate.
+    fn corrections_for(corrections: &AllCsbCorrections, person: PersonId) -> &CandidateCorrections {
+        corrections
+            .candidates
+            .iter()
+            .find(|c| c.person.id == person)
+            .unwrap_or_else(|| panic!("no corrections for {person}"))
+    }
+
+    /// Asserts that the candidate has a correction to `value` with the
+    /// expected edit path segment and label.
+    fn assert_correction(
+        store: &CsbStore,
+        candidate: &CandidateCorrections,
+        person: PersonId,
+        value: &str,
+        path_segment: &str,
+        label: &str,
+    ) {
+        let correction = candidate
+            .corrections
+            .iter()
+            .find(|c| c.corrected.csb_corrected.as_deref() == Some(value))
+            .unwrap_or_else(|| panic!("no correction to {value:?}"));
+        assert_eq!(
+            correction.edit_path,
+            format!(
+                "/csb/examination/{}/correction/person/{}/{}?&redirect_to=%2Fcsb%2Fexamination%2F{}%2Fomissions",
+                store.stream_id, person, path_segment, store.stream_id
+            )
+        );
+        assert_eq!(correction.label, label.to_string());
+    }
+
     #[test]
     fn get_all_corrections_no_corrections() {
         let store = CsbStore::new_for_test();
@@ -277,40 +311,6 @@ mod tests {
         );
 
         Ok(())
-    }
-
-    /// The corrections entry of one candidate.
-    fn corrections_for(corrections: &AllCsbCorrections, person: PersonId) -> &CandidateCorrections {
-        corrections
-            .candidates
-            .iter()
-            .find(|c| c.person.id == person)
-            .unwrap_or_else(|| panic!("no corrections for {person}"))
-    }
-
-    /// Asserts that the candidate has a correction to `value` with the
-    /// expected edit path segment and label.
-    fn assert_correction(
-        store: &CsbStore,
-        candidate: &CandidateCorrections,
-        person: PersonId,
-        value: &str,
-        path_segment: &str,
-        label: &str,
-    ) {
-        let correction = candidate
-            .corrections
-            .iter()
-            .find(|c| c.corrected.csb_corrected.as_deref() == Some(value))
-            .unwrap_or_else(|| panic!("no correction to {value:?}"));
-        assert_eq!(
-            correction.edit_path,
-            format!(
-                "/csb/examination/{}/correction/person/{}/{}?&redirect_to=%2Fcsb%2Fexamination%2F{}%2Fomissions",
-                store.stream_id, person, path_segment, store.stream_id
-            )
-        );
-        assert_eq!(correction.label, label.to_string());
     }
 
     #[tokio::test]

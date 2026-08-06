@@ -36,6 +36,11 @@ pub async fn response_body_string(response: axum::response::Response) -> String 
     String::from_utf8(bytes.to_vec()).expect("utf-8 body")
 }
 
+/// The `Display` rendering of an optional field.
+pub fn display_opt<T: std::fmt::Display>(value: &Option<T>) -> Option<String> {
+    value.as_ref().map(ToString::to_string)
+}
+
 pub fn extract_csrf_token(body: &str) -> Option<TokenValue> {
     let marker = "name=\"csrf_token\" value=\"";
     body.split(marker)
