@@ -157,7 +157,7 @@ modules:
 | `src/pg/` | Political group (PG) **domain** modules (see below). |
 | `src/csb/` | Central voting bureau (CSB) section: import, examination, monitoring, audit log, and its own event stores (see [The CSB section](#the-csb-section-srccsb)). |
 | `src/structs/` | Shared domain model structs (persons, political groups, candidate lists, common value types) used by both `src/pg/` and `src/csb/`. |
-| `src/models/` | The official PDF models (H 1, H 3-1, H 3-2, H 4, H 9, I 4) rendered with `textris-pdf`, plus the embedded fonts and the JSON example inputs. |
+| `src/models/` | The official PDF models (H 1, H 3-1, H 3-2, H 4, H 9, I 1, I 4) rendered with `textris-pdf`, plus the embedded fonts and the JSON example inputs. |
 | `src/auth/` | Authentication: the session model and token handling, session/pending-request storage, id derivation, and the session cookie helpers + `Session` extractor. The session/store middleware and the development login endpoint live in `src/middleware/`. |
 | `src/core/` | Cross-cutting infrastructure: `Config`, server startup, logging/tracing, election configuration, Askama rendering, CSV, ZIP, locales. |
 | `src/store/` | The generic event store: persistence backends (memory/file/Postgres), at-rest encryption, the event hash chain, and the per-stream `StoreRegistry`. |
@@ -438,8 +438,8 @@ separate asset directory to deploy:
 
 ### [`textris-pdf`](https://github.com/tweedegolf/textris-pdf): PDF generation
 
-The official candidate-nomination forms (models H 1, H 3-1, H 3-2, H 4, H 9 and
-I 4) are produced as PDF files by the `src/models/` module, one Rust file per
+The official candidate-nomination forms (models H 1, H 3-1, H 3-2, H 4, H 9,
+I 1 and I 4) are produced as PDF files by the `src/models/` module, one Rust file per
 model, using the `textris-pdf` document renderer. The DM Sans and Geist Mono
 variable fonts are embedded in the binary with `include_bytes!`
 (`src/models/fonts.rs`); DM Sans is patched to cover the Teletex character set

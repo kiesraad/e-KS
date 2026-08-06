@@ -1,14 +1,55 @@
 //! Store-backed operations for omissions.
 
+use std::collections::BTreeMap;
+
 use crate::{
-    AnyLocale, AppError, CsbEvent, CsbStore, ElectionConfig, ElectoralDistrict,
+    AnyLocale, AppError, CsbEvent, CsbStore, CsbStoreData, ElectionConfig, ElectoralDistrict,
+    models::i4::OmissionGroup,
+    projection::WithCorrections,
+    store::StoreRegistry,
     structs::csb::{Omission, OmissionCategory},
 };
 
 const ALL_DISTRICTS: &str = "alle kieskringen";
 
+/// The recoverable omissions of every political group, as the model input
+/// groups shared by models I 1 and I 4: one group per political group and
+/// electoral district, in store scope order.
+pub async fn found_omissions(
+    registry: &StoreRegistry<CsbStoreData>,
+    election: &ElectionConfig,
+) -> Result<Vec<OmissionGroup>, AppError> {
+    let mut found_omissions = Vec::new();
+    for store in registry.stores_by_scope().await? {
+        let recoverable = store.get_recoverable_omissions();
+        if recoverable.is_empty() {
+            continue;
+        }
+
+        let mut by_district: BTreeMap<String, Vec<String>> = BTreeMap::new();
+        for omission in recoverable {
+            let district = omission.category.electoral_district(&store, election)?;
+            by_district
+                .entry(district)
+                .or_default()
+                .push(omission.description.to_string());
+        }
+
+        let designation = store.get_display_name(WithCorrections::All);
+        for (district, descriptions) in by_district {
+            found_omissions.push(OmissionGroup {
+                designation: designation.clone(),
+                electoral_district: district,
+                omission_descriptions: descriptions,
+            });
+        }
+    }
+
+    Ok(found_omissions)
+}
+
 impl OmissionCategory {
-    /// Returns the electoral district string for use in model I 4.
+    /// Returns the electoral district string for use in models I 1 and I 4.
     pub fn electoral_district(
         &self,
         store: &CsbStore,
