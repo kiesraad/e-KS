@@ -2,15 +2,15 @@ pub(crate) mod eml110a;
 pub(crate) mod eml210;
 
 use chrono::Datelike;
+use eks_utils::slugify_teletex;
 use eml_nl::{
     documents::ElectionIdentifierBuilder,
     utils::{ElectionCategory, ElectionId, ElectionSubcategory},
 };
 
 use crate::{
-    AnyLocale, AppError, ElectionConfig,
+    AppError, ElectionConfig,
     core::{ElectionType, ModelLocale},
-    utils::slugify_teletex,
 };
 
 impl From<ElectionType> for ElectionCategory {
@@ -72,7 +72,7 @@ impl TryFrom<ElectionConfig> for ElectionIdentifierBuilder {
         let category = ElectionCategory::from(value.election_type());
         let year = value.election_date().year();
 
-        let id = if let Some(region) = value.region_title(AnyLocale::Nl) {
+        let id = if let Some(region) = value.region_title() {
             format!(
                 "{}{}_{}",
                 category.to_eml_value(),

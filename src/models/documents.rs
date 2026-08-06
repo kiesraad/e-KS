@@ -22,13 +22,14 @@ use crate::{
         common::{HasSeverity, Problematic, Severity},
         list_designation::ListDesignation,
     },
-    utils::{format_hash, no_cache_headers, slugify_teletex},
+    utils::{format_hash, no_cache_headers},
 };
 use axum::{
     body::Body,
     http::HeaderValue,
     response::{IntoResponse, Response},
 };
+use eks_utils::slugify_teletex;
 use tokio::io::duplex;
 use tokio_util::io::ReaderStream;
 use tracing::error;
@@ -145,7 +146,7 @@ impl DocumentData {
             .map(|c| DetailedCandidate::try_from(c, locale))
             .collect::<Result<Vec<_>, _>>()?;
 
-        let electoral_districts = ElectoralDistricts::from(&list, &context.election, locale);
+        let electoral_districts = ElectoralDistricts::from(&list, &context.election);
 
         let group = store.get_political_group();
         let appellation = group.pg_appellation()?;

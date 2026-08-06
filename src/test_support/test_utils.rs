@@ -149,7 +149,7 @@ fn sample_dutch_address_form(
 pub fn sample_candidate_list(id: CandidateListId) -> CandidateList {
     CandidateList {
         id,
-        electoral_districts: vec![ElectoralDistrict::UT],
+        electoral_districts: vec![ElectoralDistrict::Utrecht],
         ..Default::default()
     }
 }

@@ -1,87 +1,6 @@
-use crate::core::AnyLocale;
-
-super::define_districts! {
-    GR("1", "GR", "Groningen", fry: "Grinslân"),
-    PsGroningen("1", "GRQ", "Groningen"),
-    FR("2", "FR", "Fryslân", fry: "Fryslân"),
-    PsLeeuwarden("2", "LWR", "Leeuwarden", fry: "Ljouwert"),
-    DR("3", "DR", "Drenthe", fry: "Drinte"),
-    PsAssen("3", "ASS", "Assen"),
-    OV("4", "OV", "Overijssel", fry: "Oerisel"),
-    PsZwolle("4", "ZWO", "Zwolle"),
-    FL("5", "FL", "Flevoland", fry: "Flevolân"),
-    PsLelystad("5", "LEY", "Lelystad"),
-    GE("6", "GE", "Gelderland", fry: "Gelderlân"),
-    PsNijmegen("6", "NIJ", "Nijmegen"),
-    PsArnhem("7", "ARN", "Arnhem"),
-    UT("7", "UT", "Utrecht", fry: "Utert"),
-    PsUtrecht("8", "UTC", "Utrecht"),
-    NH("8", "NH", "Noord-Holland", fry: "Noard-Hollân", en: "North Holland"),
-    PsAmsterdam("9", "AMS", "Amsterdam"),
-    PsHaarlem("10", "HAA", "Haarlem"),
-    PsDenHelder("11", "DHR", "Den Helder"),
-    ZH("9", "ZH", "Zuid-Holland", fry: "Súd-Hollân", en: "South Holland"),
-    PsDenHaag("12", "HAG", "'s-Gravenhage", en: "The Hague"),
-    PsRotterdam("13", "RTM", "Rotterdam"),
-    PsDordrecht("14", "DOR", "Dordrecht"),
-    PsLeiden("15", "LID", "Leiden"),
-    ZE("10", "ZE", "Zeeland", fry: "Seelân"),
-    PsMiddelburg("16", "MDL", "Middelburg"),
-    NB("11", "NB", "Noord-Brabant", fry: "Noard-Brabân", en: "North Brabant"),
-    PsTilburg("17", "TLB", "Tilburg"),
-    PsDenBosch("18", "HTB", "'s-Hertogenbosch"),
-    LI("12", "LI", "Limburg", fry: "Limboarch"),
-    PsMaastricht("19", "MST", "Maastricht"),
-    PsVenlo("20", "VEN", "Venlo"),
-    BO("13", "BO", "Bonaire", fry: "Bonêre", en: "Bonaire"),
-    SE("14", "SE", "Sint Eustatius", fry: "Sint Eustaasjus", en: "Sint Eustatius"),
-    SA("15", "SA", "Saba", fry: "Saba", en: "Saba"),
-    KN("16", "KN", "Buitenland", fry: "Bûtenlân", en: "Abroad"),
-    WsNoorderzijlvest("1", "WS-NZV", "Noorderzijlvest"),
-    WsFryslan("2", "WS-FRY", "Fryslân"),
-    WsHunzeEnAas("3", "WS-HEA", "Hunze en Aa's"),
-    WsDrentsOverijsselseDelta("24", "WS-DOD", "Drents Overijsselse Delta"),
-    WsVechtstromen("5", "WS-VST", "Vechtstromen"),
-    WsValleiEnVeluwe("7", "WS-VEV", "Vallei en Veluwe"),
-    WsRijnEnIJssel("8", "WS-REI", "Rijn en IJssel"),
-    WsDeStichtseRijnlanden("9", "WS-SRL", "De Stichtse Rijnlanden"),
-    WsAmstelGooiEnVecht("10", "WS-AGV", "Amstel, Gooi en Vecht"),
-    WsHollandsNoorderkwartier("11", "WS-HNK", "Hollands Noorderkwartier"),
-    WsRijnland("12", "WS-RNL", "Rijnland"),
-    WsDelfland("13", "WS-DFL", "Delfland"),
-    WsSchielandEnDeKrimpenerwaard("14", "WS-SKW", "Schieland en de Krimpenerwaard"),
-    WsRivierenland("15", "WS-RVL", "Rivierenland"),
-    WsHollandseDelta("16", "WS-HDT", "Hollandse Delta"),
-    WsScheldestromen("17", "WS-SDS", "Scheldestromen"),
-    WsBrabantseDelta("18", "WS-BDT", "Brabantse Delta"),
-    WsDeDommel("19", "WS-DDM", "De Dommel"),
-    WsAaEnMaas("20", "WS-AEM", "Aa en Maas"),
-    WsLimburg("25", "WS-LMB", "Limburg"),
-    WsZuiderzeeland("23", "WS-ZZL", "Zuiderzeeland"),
-}
+include!(concat!(env!("OUT_DIR"), "/districts_generated.rs"));
 
 impl ElectoralDistrict {
-    pub fn ek27() -> &'static [Self] {
-        &[
-            Self::GR,
-            Self::FR,
-            Self::DR,
-            Self::OV,
-            Self::FL,
-            Self::GE,
-            Self::UT,
-            Self::NH,
-            Self::ZH,
-            Self::ZE,
-            Self::NB,
-            Self::LI,
-            Self::BO,
-            Self::SE,
-            Self::SA,
-            Self::KN,
-        ]
-    }
-
     /// Returns the serde variant name, used as form value so that
     /// `serde_urlencoded` can deserialize it back into `ElectoralDistrict`.
     pub fn serde_name(&self) -> String {
@@ -97,105 +16,89 @@ mod tests {
 
     #[test]
     fn ek_district_title_and_code_match() {
-        assert_eq!(ElectoralDistrict::UT.code(), "UT");
-        assert_eq!(ElectoralDistrict::UT.region_number(), "7");
-        assert_eq!(ElectoralDistrict::UT.title(AnyLocale::Nl), "Utrecht");
-        assert_eq!(ElectoralDistrict::UT.title(AnyLocale::Fry), "Utert");
+        assert_eq!(ElectoralDistrict::Utrecht.code(), "prov7");
+        assert_eq!(ElectoralDistrict::Utrecht.region_number(), 7);
+        assert_eq!(ElectoralDistrict::Utrecht.title(), "Utrecht");
 
-        assert_eq!(ElectoralDistrict::FR.title(AnyLocale::Nl), "Fryslân");
-        assert_eq!(ElectoralDistrict::FR.title(AnyLocale::Fry), "Fryslân");
+        assert_eq!(ElectoralDistrict::Fryslan.code(), "prov2");
+        assert_eq!(ElectoralDistrict::Fryslan.region_number(), 2);
+        assert_eq!(ElectoralDistrict::Fryslan.title(), "Fryslân");
 
-        assert_eq!(ElectoralDistrict::KN.region_number(), "16");
+        assert_eq!(ElectoralDistrict::Buitenland.code(), "kc16");
+        assert_eq!(ElectoralDistrict::Buitenland.region_number(), 16);
+        assert_eq!(ElectoralDistrict::Buitenland.title(), "Buitenland");
     }
 
     #[test]
     fn ps_district_title_and_code_match() {
-        assert_eq!(ElectoralDistrict::PsArnhem.code(), "ARN");
-        assert_eq!(ElectoralDistrict::PsArnhem.region_number(), "7");
-        assert_eq!(ElectoralDistrict::PsArnhem.title(AnyLocale::Nl), "Arnhem");
-        assert_eq!(
-            ElectoralDistrict::PsDenHaag.title(AnyLocale::Nl),
-            "'s-Gravenhage"
-        );
-        assert_eq!(
-            ElectoralDistrict::PsDenHaag.title(AnyLocale::En),
-            "The Hague"
-        );
-        assert_eq!(
-            ElectoralDistrict::PsLeeuwarden.title(AnyLocale::Nl),
-            "Leeuwarden"
-        );
-        assert_eq!(
-            ElectoralDistrict::PsLeeuwarden.title(AnyLocale::Fry),
-            "Ljouwert"
-        );
+        assert_eq!(ElectoralDistrict::PsArnhem.code(), "pk1");
+        assert_eq!(ElectoralDistrict::PsArnhem.region_number(), 1);
+        assert_eq!(ElectoralDistrict::PsArnhem.title(), "Arnhem");
+
+        assert_eq!(ElectoralDistrict::PsNijmegen.code(), "pk2");
+        assert_eq!(ElectoralDistrict::PsNijmegen.region_number(), 2);
+        assert_eq!(ElectoralDistrict::PsNijmegen.title(), "Nijmegen");
     }
 
     #[test]
     fn ws_district_title_and_code_match() {
-        assert_eq!(ElectoralDistrict::WsHunzeEnAas.code(), "WS-HEA");
-        assert_eq!(ElectoralDistrict::WsHunzeEnAas.region_number(), "3");
+        assert_eq!(ElectoralDistrict::WsHunzeEnAas.code(), "ws3");
+        assert_eq!(ElectoralDistrict::WsHunzeEnAas.region_number(), 1);
+        assert_eq!(ElectoralDistrict::WsHunzeEnAas.title(), "Hunze en Aa's");
+
+        assert_eq!(ElectoralDistrict::WsAmstelGooiEnVecht.code(), "ws10");
+        assert_eq!(ElectoralDistrict::WsAmstelGooiEnVecht.region_number(), 1);
         assert_eq!(
-            ElectoralDistrict::WsHunzeEnAas.title(AnyLocale::Nl),
-            "Hunze en Aa's"
-        );
-        assert_eq!(ElectoralDistrict::WsAmstelGooiEnVecht.code(), "WS-AGV");
-        assert_eq!(ElectoralDistrict::WsAmstelGooiEnVecht.region_number(), "10");
-        assert_eq!(
-            ElectoralDistrict::WsAmstelGooiEnVecht.title(AnyLocale::Nl),
+            ElectoralDistrict::WsAmstelGooiEnVecht.title(),
             "Amstel, Gooi en Vecht"
         );
 
-        assert_eq!(ElectoralDistrict::WsFryslan.title(AnyLocale::Nl), "Fryslân");
+        assert_eq!(ElectoralDistrict::WsFryslan.title(), "Fryslân");
+
         assert_eq!(
             ElectoralDistrict::WsDrentsOverijsselseDelta.region_number(),
-            "24"
+            1
         );
-        assert_eq!(ElectoralDistrict::WsLimburg.region_number(), "25");
+        assert_eq!(ElectoralDistrict::WsLimburg.region_number(), 1);
     }
 
     #[test]
     fn electoral_districts_include_expected_code() {
-        let districts = ElectoralDistrict::ek27();
-        assert!(districts.contains(&ElectoralDistrict::UT));
+        let districts = ElectoralDistrict::ek_districts();
+        assert!(districts.contains(&ElectoralDistrict::Utrecht));
         assert_eq!(districts.len(), 16);
     }
 
     #[test]
-    fn similar_districts_have_different_codes() {
+    fn similar_districts_have_same_title_but_differ_in_code() {
+        // Fryslân appears as both a province (EK) and a waterschap; titles match,
+        // codes differ by prefix: "prov2" vs "ws2".
         assert_eq!(
-            ElectoralDistrict::FR.title(AnyLocale::Fry),
-            ElectoralDistrict::WsFryslan.title(AnyLocale::Fry)
+            ElectoralDistrict::Fryslan.title(),
+            ElectoralDistrict::WsFryslan.title()
         );
         assert_ne!(
-            ElectoralDistrict::FR.code(),
+            ElectoralDistrict::Fryslan.code(),
             ElectoralDistrict::WsFryslan.code()
         );
 
+        // Utrecht: EK district "prov7" vs PS district "pk{n}"
         assert_eq!(
-            ElectoralDistrict::GR.title(AnyLocale::Nl),
-            ElectoralDistrict::PsGroningen.title(AnyLocale::Nl)
+            ElectoralDistrict::Utrecht.title(),
+            ElectoralDistrict::PsUtrecht.title()
         );
         assert_ne!(
-            ElectoralDistrict::GR.code(),
-            ElectoralDistrict::PsGroningen.code()
-        );
-
-        assert_eq!(
-            ElectoralDistrict::UT.title(AnyLocale::Nl),
-            ElectoralDistrict::PsUtrecht.title(AnyLocale::Nl)
-        );
-        assert_ne!(
-            ElectoralDistrict::UT.code(),
+            ElectoralDistrict::Utrecht.code(),
             ElectoralDistrict::PsUtrecht.code()
         );
 
+        // Limburg: province "prov12" vs waterschap "ws25"
         assert_eq!(
-            ElectoralDistrict::LI.title(AnyLocale::Nl),
-            ElectoralDistrict::WsLimburg.title(AnyLocale::Nl)
+            ElectoralDistrict::Limburg.title(),
+            ElectoralDistrict::WsLimburg.title()
         );
         assert_ne!(
-            ElectoralDistrict::LI.code(),
+            ElectoralDistrict::Limburg.code(),
             ElectoralDistrict::WsLimburg.code()
         );
     }

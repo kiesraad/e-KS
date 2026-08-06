@@ -160,9 +160,14 @@ mod tests {
 
     #[tokio::test]
     async fn gen_documents_disallowed_frisian_export_returns_error() -> Result<(), AppError> {
-        let (store, _, context) =
-            setup_documents_test_state(1, 1, true, true, ElectionConfig::PS27(crate::Province::GR))
-                .await?;
+        let (store, _, context) = setup_documents_test_state(
+            1,
+            1,
+            true,
+            true,
+            ElectionConfig::PS27(crate::Province::Groningen),
+        )
+        .await?;
 
         let result = gen_documents(
             DownloadDocumentsPath {

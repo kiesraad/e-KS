@@ -19,7 +19,7 @@ use eml_nl::{
 };
 
 use crate::{
-    AnyLocale, AppError, ElectionConfig, PgStore,
+    AppError, ElectionConfig, PgStore,
     core::ModelLocale,
     structs::{
         candidate_lists::{CandidateList, CandidateListId, FullCandidateList},
@@ -207,8 +207,8 @@ fn list_data(list: &CandidateList, locale: ModelLocale) -> Result<ListData, AppE
             .electoral_districts
             .iter()
             .map(|d| {
-                Ok(ListDataContest::new(ContestId::new(d.region_number())?)
-                    .with_name(d.title(AnyLocale::Nl)))
+                let id = ContestId::new(d.region_number().to_string())?;
+                Ok(ListDataContest::new(id).with_name(d.title()))
             })
             .collect::<Result<Vec<ListDataContest>, AppError>>()?,
     })
@@ -254,8 +254,8 @@ pub fn eml210(
             // The full set of electoral districts can be found in the ListData.
             let district = list.electoral_districts[0];
             NominationContestIdentifier::new(
-                ContestId::new(district.region_number())?,
-                district.title(AnyLocale::Nl),
+                ContestId::new(district.region_number().to_string())?,
+                district.title(),
             )
         })
         .affiliation(NominationAffiliation {
@@ -375,7 +375,7 @@ mod tests {
         // setup
         let store = PgStore::new_for_test();
         let mut context = Context::new_test_without_db();
-        context.election = ElectionConfig::PS27(crate::Province::GR);
+        context.election = ElectionConfig::PS27(crate::Province::Groningen);
         let mut list = create_sample_list(&store).await.unwrap();
         list.list.electoral_districts = vec![ElectoralDistrict::PsGroningen];
         list.list.update_districts(&store).await.unwrap();
@@ -403,7 +403,7 @@ mod tests {
         // setup
         let store = PgStore::new_for_test();
         let mut context = Context::new_test_without_db();
-        context.election = ElectionConfig::PS27(crate::Province::LI);
+        context.election = ElectionConfig::PS27(crate::Province::Limburg);
         let mut list = create_sample_list(&store).await.unwrap();
         list.list.electoral_districts =
             vec![ElectoralDistrict::PsMaastricht, ElectoralDistrict::PsVenlo];

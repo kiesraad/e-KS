@@ -150,7 +150,7 @@ mod tests {
         let cookie = format!("{}={}", crate::SESSION_COOKIE_NAME, token_value);
 
         // Submit switch to PS27 Groningen
-        let body = format!("csrf_token={csrf_token}&election=PS27&region_province=GR");
+        let body = format!("csrf_token={csrf_token}&election=PS27&region_province=prov1");
         let response = app
             .oneshot(
                 Request::builder()
@@ -177,7 +177,7 @@ mod tests {
         assert_eq!(session.test_stream_id(), stream_id);
         assert_eq!(
             session.user.election(),
-            Some(ElectionConfig::PS27(Province::GR))
+            Some(ElectionConfig::PS27(Province::Groningen))
         );
     }
 }

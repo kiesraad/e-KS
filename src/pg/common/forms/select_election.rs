@@ -62,10 +62,10 @@ mod tests {
 
     #[test]
     fn ps27_uses_region_province() {
-        let form = parse("election=PS27&region_province=GR");
+        let form = parse("election=PS27&region_province=prov1");
         assert_eq!(
             form.election_config(),
-            Some(ElectionConfig::PS27(Province::GR))
+            Some(ElectionConfig::PS27(Province::Groningen))
         );
     }
 }

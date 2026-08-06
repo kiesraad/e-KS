@@ -60,7 +60,7 @@ mod tests {
     #[tokio::test]
     async fn delete_candidate_list_confirm_contains_delete_button() -> Result<(), AppError> {
         let candidate_list = CandidateList {
-            electoral_districts: vec![ElectoralDistrict::UT],
+            electoral_districts: vec![ElectoralDistrict::Utrecht],
             ..Default::default()
         };
 
@@ -87,7 +87,7 @@ mod tests {
         let store = PgStore::new_for_test();
         let context = Context::new_test_without_db();
         let candidate_list = CandidateList {
-            electoral_districts: vec![ElectoralDistrict::UT],
+            electoral_districts: vec![ElectoralDistrict::Utrecht],
             ..Default::default()
         };
         candidate_list.create(&store).await?;

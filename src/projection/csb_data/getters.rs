@@ -486,8 +486,8 @@ mod tests {
         let list_a = CandidateListId::new();
         let list_b = CandidateListId::new();
         let store = CsbStore::new_for_test();
-        insert_list(&store, list_a, vec![ElectoralDistrict::GR]);
-        insert_list(&store, list_b, vec![ElectoralDistrict::DR]);
+        insert_list(&store, list_a, vec![ElectoralDistrict::Groningen]);
+        insert_list(&store, list_b, vec![ElectoralDistrict::Drenthe]);
         insert(&store, OmissionCategory::CandidateList(vec![list_a]));
         insert(&store, OmissionCategory::CandidateList(vec![list_b]));
         insert(&store, OmissionCategory::PoliticalGroup);
@@ -509,21 +509,21 @@ mod tests {
     fn get_candidate_list_prefers_the_paper_corrected_version() {
         let list_id = CandidateListId::new();
         let store = CsbStore::new_for_test();
-        insert_list(&store, list_id, vec![ElectoralDistrict::UT]);
+        insert_list(&store, list_id, vec![ElectoralDistrict::Utrecht]);
         store.set_paper_corrected_candidate_list(CandidateList {
             id: list_id,
-            electoral_districts: vec![ElectoralDistrict::GR],
+            electoral_districts: vec![ElectoralDistrict::Groningen],
             ..Default::default()
         });
 
         let list = store
             .get_candidate_list(list_id, WithCorrections::None)
             .unwrap();
-        assert_eq!(list.electoral_districts, vec![ElectoralDistrict::UT]);
+        assert_eq!(list.electoral_districts, vec![ElectoralDistrict::Utrecht]);
         let list = store
             .get_candidate_list(list_id, WithCorrections::Paper)
             .unwrap();
-        assert_eq!(list.electoral_districts, vec![ElectoralDistrict::GR]);
+        assert_eq!(list.electoral_districts, vec![ElectoralDistrict::Groningen]);
     }
 
     #[test]

@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <EML xmlns="urn:oasis:names:tc:evs:schema:eml" xmlns:kr="http://www.kiesraad.nl/extensions" xmlns:xal="urn:oasis:names:tc:ciq:xsdschema:xAL:2.0" xmlns:xnl="urn:oasis:names:tc:ciq:xsdschema:xNL:2.0" Id="110a" SchemaVersion="5">
     <TransactionId>1</TransactionId>
-    <kr:CreationDateTime>2026-07-28T10:20:41.460522024+00:00</kr:CreationDateTime>
-    <IssueDate>2026-07-28</IssueDate>
+    <kr:CreationDateTime>2026-08-06T12:26:14.692974539+00:00</kr:CreationDateTime>
+    <IssueDate>2026-08-06</IssueDate>
     <ElectionEvent>
         <EventIdentifier/>
         <Election>
@@ -19,6 +19,69 @@
                 <MaxVotes/>
             </Contest>
             <kr:ElectionTree>
+                <kr:Region RegionNumber="2" RegionCategory="WATERSCHAP" FrysianExportAllowed="true">
+                    <kr:RegionName>Fryslân</kr:RegionName>
+                </kr:Region>
+                <kr:Region RegionNumber="1" RegionCategory="KIESKRING" SuperiorRegionNumber="2" SuperiorRegionCategory="WATERSCHAP">
+                    <kr:RegionName>Fryslân</kr:RegionName>
+                </kr:Region>
+                <kr:Region RegionNumber="59" RegionCategory="GEMEENTE" FrysianExportAllowed="true" SuperiorRegionNumber="1" SuperiorRegionCategory="KIESKRING">
+                    <kr:RegionName>Achtkarspelen</kr:RegionName>
+                </kr:Region>
+                <kr:Region RegionNumber="60" RegionCategory="GEMEENTE" FrysianExportAllowed="true" SuperiorRegionNumber="1" SuperiorRegionCategory="KIESKRING">
+                    <kr:RegionName>Ameland</kr:RegionName>
+                </kr:Region>
+                <kr:Region RegionNumber="1891" RegionCategory="GEMEENTE" FrysianExportAllowed="true" SuperiorRegionNumber="1" SuperiorRegionCategory="KIESKRING">
+                    <kr:RegionName>Dantumadiel</kr:RegionName>
+                </kr:Region>
+                <kr:Region RegionNumber="1940" RegionCategory="GEMEENTE" FrysianExportAllowed="true" SuperiorRegionNumber="1" SuperiorRegionCategory="KIESKRING">
+                    <kr:RegionName>De Fryske Marren</kr:RegionName>
+                </kr:Region>
+                <kr:Region RegionNumber="72" RegionCategory="GEMEENTE" FrysianExportAllowed="true" SuperiorRegionNumber="1" SuperiorRegionCategory="KIESKRING">
+                    <kr:RegionName>Harlingen</kr:RegionName>
+                </kr:Region>
+                <kr:Region RegionNumber="74" RegionCategory="GEMEENTE" FrysianExportAllowed="true" SuperiorRegionNumber="1" SuperiorRegionCategory="KIESKRING">
+                    <kr:RegionName>Heerenveen</kr:RegionName>
+                </kr:Region>
+                <kr:Region RegionNumber="80" RegionCategory="GEMEENTE" FrysianExportAllowed="true" SuperiorRegionNumber="1" SuperiorRegionCategory="KIESKRING">
+                    <kr:RegionName>Leeuwarden</kr:RegionName>
+                </kr:Region>
+                <kr:Region RegionNumber="1970" RegionCategory="GEMEENTE" FrysianExportAllowed="true" SuperiorRegionNumber="1" SuperiorRegionCategory="KIESKRING">
+                    <kr:RegionName>Noardeast-Fryslân</kr:RegionName>
+                </kr:Region>
+                <kr:Region RegionNumber="85" RegionCategory="GEMEENTE" FrysianExportAllowed="true" SuperiorRegionNumber="1" SuperiorRegionCategory="KIESKRING">
+                    <kr:RegionName>Ooststellingwerf</kr:RegionName>
+                </kr:Region>
+                <kr:Region RegionNumber="86" RegionCategory="GEMEENTE" FrysianExportAllowed="true" SuperiorRegionNumber="1" SuperiorRegionCategory="KIESKRING">
+                    <kr:RegionName>Opsterland</kr:RegionName>
+                </kr:Region>
+                <kr:Region RegionNumber="88" RegionCategory="GEMEENTE" FrysianExportAllowed="true" SuperiorRegionNumber="1" SuperiorRegionCategory="KIESKRING">
+                    <kr:RegionName>Schiermonnikoog</kr:RegionName>
+                </kr:Region>
+                <kr:Region RegionNumber="90" RegionCategory="GEMEENTE" FrysianExportAllowed="true" SuperiorRegionNumber="1" SuperiorRegionCategory="KIESKRING">
+                    <kr:RegionName>Smallingerland</kr:RegionName>
+                </kr:Region>
+                <kr:Region RegionNumber="1900" RegionCategory="GEMEENTE" FrysianExportAllowed="true" SuperiorRegionNumber="1" SuperiorRegionCategory="KIESKRING">
+                    <kr:RegionName>Súdwest-Fryslân</kr:RegionName>
+                </kr:Region>
+                <kr:Region RegionNumber="93" RegionCategory="GEMEENTE" FrysianExportAllowed="true" SuperiorRegionNumber="1" SuperiorRegionCategory="KIESKRING">
+                    <kr:RegionName>Terschelling</kr:RegionName>
+                </kr:Region>
+                <kr:Region RegionNumber="737" RegionCategory="GEMEENTE" FrysianExportAllowed="true" SuperiorRegionNumber="1" SuperiorRegionCategory="KIESKRING">
+                    <kr:RegionName>Tytsjerksteradiel</kr:RegionName>
+                </kr:Region>
+                <kr:Region RegionNumber="96" RegionCategory="GEMEENTE" FrysianExportAllowed="true" SuperiorRegionNumber="1" SuperiorRegionCategory="KIESKRING">
+                    <kr:RegionName>Vlieland</kr:RegionName>
+                </kr:Region>
+                <kr:Region RegionNumber="1949" RegionCategory="GEMEENTE" FrysianExportAllowed="true" SuperiorRegionNumber="1" SuperiorRegionCategory="KIESKRING">
+                    <kr:RegionName>Waadhoeke</kr:RegionName>
+                </kr:Region>
+                <kr:Region RegionNumber="1969" RegionCategory="GEMEENTE" FrysianExportAllowed="true" SuperiorRegionNumber="1" SuperiorRegionCategory="KIESKRING">
+                    <kr:RegionName>Westerkwartier</kr:RegionName>
+                </kr:Region>
+                <kr:Region RegionNumber="98" RegionCategory="GEMEENTE" FrysianExportAllowed="true" SuperiorRegionNumber="1" SuperiorRegionCategory="KIESKRING">
+                    <kr:RegionName>Weststellingwerf</kr:RegionName>
+                </kr:Region>
             </kr:ElectionTree>
             <kr:NumberOfSeats>21</kr:NumberOfSeats>
             <kr:PreferenceThreshold>25</kr:PreferenceThreshold>

@@ -41,11 +41,7 @@ pub enum ElectoralDistricts {
 }
 
 impl ElectoralDistricts {
-    pub fn from(
-        list: &CandidateList,
-        election_config: &ElectionConfig,
-        locale: ModelLocale,
-    ) -> Self {
+    pub fn from(list: &CandidateList, election_config: &ElectionConfig) -> Self {
         if election_config.has_only_one_district() {
             ElectoralDistricts::OnlyOne
         } else if list.contains_all_districts(election_config) {
@@ -54,7 +50,7 @@ impl ElectoralDistricts {
             ElectoralDistricts::Some(
                 list.electoral_districts
                     .iter()
-                    .map(|d| d.title(locale.into()).to_string())
+                    .map(|d| d.title().to_string())
                     .collect(),
             )
         }
@@ -447,7 +443,7 @@ mod tests {
         };
 
         assert_eq!(
-            ElectoralDistricts::from(&list, &election, ModelLocale::Fry),
+            ElectoralDistricts::from(&list, &election),
             ElectoralDistricts::All
         );
     }
@@ -456,24 +452,15 @@ mod tests {
     fn electoral_districts_from_partial_list_returns_titles() {
         let election = ElectionConfig::EK27;
         let list = CandidateList {
-            electoral_districts: vec![ElectoralDistrict::UT, ElectoralDistrict::NH],
+            electoral_districts: vec![ElectoralDistrict::Utrecht, ElectoralDistrict::NoordHolland],
             ..Default::default()
         };
 
-        match ElectoralDistricts::from(&list, &election, ModelLocale::Nl) {
+        match ElectoralDistricts::from(&list, &election) {
             ElectoralDistricts::Some(districts) => {
                 assert_eq!(
                     districts,
                     vec!["Utrecht".to_string(), "Noord-Holland".to_string()]
-                );
-            }
-            _ => panic!("expected Some districts"),
-        }
-        match ElectoralDistricts::from(&list, &election, ModelLocale::Fry) {
-            ElectoralDistricts::Some(districts) => {
-                assert_eq!(
-                    districts,
-                    vec!["Utert".to_string(), "Noard-Hollân".to_string()]
                 );
             }
             _ => panic!("expected Some districts"),
@@ -487,7 +474,7 @@ mod tests {
             ..Default::default()
         };
 
-        let district = ElectoralDistricts::from(&list, &election, ModelLocale::Nl);
+        let district = ElectoralDistricts::from(&list, &election);
 
         assert_eq!(district, ElectoralDistricts::OnlyOne);
     }

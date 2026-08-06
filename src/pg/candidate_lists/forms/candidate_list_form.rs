@@ -27,11 +27,11 @@ mod tests {
     #[tokio::test]
     async fn builds_candidate_list() {
         let form = CandidateListForm {
-            electoral_districts: vec![ElectoralDistrict::UT],
+            electoral_districts: vec![ElectoralDistrict::Utrecht],
         };
 
         let list = form.validate_create().unwrap();
-        assert_eq!(list.electoral_districts, vec![ElectoralDistrict::UT]);
+        assert_eq!(list.electoral_districts, vec![ElectoralDistrict::Utrecht]);
     }
 
     #[tokio::test]

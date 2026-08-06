@@ -83,7 +83,6 @@ impl OmissionTarget {
             .then(|| {
                 views::candidate_list_options(
                     store,
-                    context.session.locale,
                     (self.omission_type == OmissionType::Candidate)
                         .then(|| PersonId::from(self.reference)),
                 )
@@ -240,7 +239,7 @@ pub async fn add_omission_submit(
         target.omission_type.needs_candidate_lists(),
         &form.candidate_lists,
         || {
-            views::candidate_list_options(&store, context.session.locale, None)
+            views::candidate_list_options(&store, None)
                 .into_iter()
                 .map(|o| o.id)
                 .collect()
@@ -390,11 +389,11 @@ mod tests {
         let stream_id = store.stream_id;
         let list_id = CandidateListId::new();
         let mut list = sample_candidate_list(list_id);
-        list.electoral_districts = vec![ElectoralDistrict::UT, ElectoralDistrict::FR];
+        list.electoral_districts = vec![ElectoralDistrict::Utrecht, ElectoralDistrict::Fryslan];
         store.add_candidate_list(list.clone());
 
         // Change Utrecht to Groningen
-        list.electoral_districts = vec![ElectoralDistrict::GR, ElectoralDistrict::FR];
+        list.electoral_districts = vec![ElectoralDistrict::Groningen, ElectoralDistrict::Fryslan];
         store.set_paper_corrected_candidate_list(list);
 
         let response = add_omission(
@@ -454,7 +453,7 @@ mod tests {
         assert!(!body.contains("data-district-nl"));
         // A second list in Drenthe shows the selector
         let mut list2 = sample_candidate_list(CandidateListId::new());
-        list2.electoral_districts = vec![crate::ElectoralDistrict::DR];
+        list2.electoral_districts = vec![crate::ElectoralDistrict::Drenthe];
         store.set_paper_corrected_candidate_list(list2);
         let body = render(store.clone()).await;
         assert!(body.contains(r#"data-district-nl="Utrecht" />"#));

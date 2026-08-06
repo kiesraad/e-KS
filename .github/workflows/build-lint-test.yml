@@ -147,13 +147,13 @@ jobs:
       - *setup-project
 
       - name: Check Clippy with all features
-        run: cargo clippy --locked --all-targets --all-features -- -D warnings
+        run: cargo clippy --locked --workspace --all-targets --all-features -- -D warnings
 
       - name: Check Clippy without default features
-        run: cargo clippy --locked --all-targets --no-default-features -- -D warnings
+        run: cargo clippy --locked --workspace --all-targets --no-default-features -- -D warnings
 
       - name: Run tests
-        run: cargo test --locked -- --nocapture
+        run: cargo test --locked --workspace -- --nocapture
 
       - name: Build docs
         run: cargo doc --locked --workspace --no-deps --all-features --document-private-items

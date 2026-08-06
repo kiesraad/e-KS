@@ -1,5 +1,5 @@
 [workspace]
-members = ["validate", "auth-service", "development", "tools/locales"]
+members = ["validate", "auth-service", "development", "tools/locales", "tools/utils"]
 resolver = "3"
 
 # Fields shared by every crate in the workspace. Individual crates inherit these
@@ -94,13 +94,19 @@ textris-pdf = "0.10.1"
 bagatel = "0.8.3"
 
 # kiesraad
-eml-nl = "0.7.0"
+eml-nl = { git = "https://github.com/kiesraad/rust-eml-nl", branch = "master-election-tree" }
 
 # dev-dependencies
 futures-lite = { version = "2.1.0", default-features = false, features = ["std"] }
 http-body-util = "0.1"
 tower = "0.5"
 tracing-test = "0.2.6"
+
+# codegen
+prettyplease = "0.3"
+proc-macro2 = "1.0"
+quote = "1.0"
+syn = "3.0"
 
 [package]
 name = "eks"
@@ -159,6 +165,7 @@ chrono = { workspace = true, features = ["now"] }
 chrono-tz = { workspace = true }
 csv = { workspace = true }
 eml-nl = { workspace = true }
+eks-utils = { path = "tools/utils" }
 hkdf = { workspace = true }
 http-body-util = { workspace = true }
 hyper-util = { workspace = true }
@@ -195,10 +202,12 @@ zeroize = { workspace = true }
 
 [build-dependencies]
 eks-locales = { path = "tools/locales" }
+eks-utils = { path = "tools/utils" }
 memory-serve = { workspace = true, optional = true }
 
 [dev-dependencies]
 eks-locales = { path = "tools/locales" }
+eks-utils = { path = "tools/utils" }
 futures-lite = { workspace = true }
 tower = { workspace = true }
 tracing-test = { workspace = true }

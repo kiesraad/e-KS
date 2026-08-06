@@ -326,7 +326,7 @@ mod tests {
                 .unwrap_key(
                     &wrapped,
                     stream_id,
-                    ElectionConfig::PS27(crate::Province::GR)
+                    ElectionConfig::PS27(crate::Province::Groningen)
                 )
                 .is_err()
         );

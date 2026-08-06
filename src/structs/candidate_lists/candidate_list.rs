@@ -1,7 +1,5 @@
 use crate::{
-    ElectionConfig, ElectoralDistrict,
-    core::AnyLocale,
-    id_newtype,
+    ElectionConfig, ElectoralDistrict, id_newtype,
     structs::{common::UtcDateTime, persons::PersonId},
 };
 use serde::{Deserialize, Serialize};
@@ -25,10 +23,10 @@ impl CandidateList {
             .map(|index| index + 1)
     }
 
-    pub fn districts_name(&self, locale: AnyLocale) -> String {
+    pub fn districts_name(&self) -> String {
         self.electoral_districts
             .iter()
-            .map(|d| d.title(locale))
+            .map(|d| d.title())
             .collect::<Vec<&str>>()
             .join(", ")
     }
@@ -68,19 +66,12 @@ mod tests {
     #[tokio::test]
     async fn districts_formats_titles_in_order() {
         let list = base_candidate_list(vec![
-            ElectoralDistrict::UT,
-            ElectoralDistrict::NH,
-            ElectoralDistrict::DR,
+            ElectoralDistrict::Utrecht,
+            ElectoralDistrict::NoordHolland,
+            ElectoralDistrict::Drenthe,
         ]);
 
-        assert_eq!(
-            list.districts_name(AnyLocale::Nl),
-            "Utrecht, Noord-Holland, Drenthe"
-        );
-        assert_eq!(
-            list.districts_name(AnyLocale::En),
-            "Utrecht, North Holland, Drenthe"
-        );
+        assert_eq!(list.districts_name(), "Utrecht, Noord-Holland, Drenthe");
     }
 
     #[tokio::test]
@@ -89,7 +80,10 @@ mod tests {
         let list = base_candidate_list(election.electoral_districts().to_vec());
         assert!(list.contains_all_districts(&election));
 
-        let list = base_candidate_list(vec![ElectoralDistrict::UT, ElectoralDistrict::NH]);
+        let list = base_candidate_list(vec![
+            ElectoralDistrict::Utrecht,
+            ElectoralDistrict::NoordHolland,
+        ]);
         assert!(!list.contains_all_districts(&election));
     }
 
@@ -110,7 +104,11 @@ mod tests {
     #[tokio::test]
     async fn duplicate_districts_returns_empty_for_single_list() -> Result<(), AppError> {
         let store = PgStore::new_for_test();
-        let list = insert_list(&store, vec![ElectoralDistrict::UT, ElectoralDistrict::DR]).await?;
+        let list = insert_list(
+            &store,
+            vec![ElectoralDistrict::Utrecht, ElectoralDistrict::Drenthe],
+        )
+        .await?;
 
         assert_eq!(list.duplicate_districts(&store), vec![]);
 
@@ -123,19 +121,31 @@ mod tests {
         let list = insert_list(
             &store,
             vec![
-                ElectoralDistrict::UT,
-                ElectoralDistrict::DR,
-                ElectoralDistrict::NH,
+                ElectoralDistrict::Utrecht,
+                ElectoralDistrict::Drenthe,
+                ElectoralDistrict::NoordHolland,
             ],
         )
         .await?;
-        insert_list(&store, vec![ElectoralDistrict::UT, ElectoralDistrict::GR]).await?;
-        insert_list(&store, vec![ElectoralDistrict::LI, ElectoralDistrict::GR]).await?;
-        insert_list(&store, vec![ElectoralDistrict::GE, ElectoralDistrict::DR]).await?;
+        insert_list(
+            &store,
+            vec![ElectoralDistrict::Utrecht, ElectoralDistrict::Groningen],
+        )
+        .await?;
+        insert_list(
+            &store,
+            vec![ElectoralDistrict::Limburg, ElectoralDistrict::Groningen],
+        )
+        .await?;
+        insert_list(
+            &store,
+            vec![ElectoralDistrict::Gelderland, ElectoralDistrict::Drenthe],
+        )
+        .await?;
 
         assert_eq!(
             list.duplicate_districts(&store),
-            vec![ElectoralDistrict::UT, ElectoralDistrict::DR] // but not GR!
+            vec![ElectoralDistrict::Utrecht, ElectoralDistrict::Drenthe] // but not Groningen!
         );
 
         Ok(())
@@ -144,9 +154,21 @@ mod tests {
     #[tokio::test]
     async fn duplicate_districts_excludes_non_overlapping_districts() -> Result<(), AppError> {
         let store = PgStore::new_for_test();
-        let list = insert_list(&store, vec![ElectoralDistrict::UT, ElectoralDistrict::DR]).await?;
-        insert_list(&store, vec![ElectoralDistrict::GR, ElectoralDistrict::OV]).await?;
-        insert_list(&store, vec![ElectoralDistrict::LI, ElectoralDistrict::GE]).await?;
+        let list = insert_list(
+            &store,
+            vec![ElectoralDistrict::Utrecht, ElectoralDistrict::Drenthe],
+        )
+        .await?;
+        insert_list(
+            &store,
+            vec![ElectoralDistrict::Groningen, ElectoralDistrict::Overijssel],
+        )
+        .await?;
+        insert_list(
+            &store,
+            vec![ElectoralDistrict::Limburg, ElectoralDistrict::Gelderland],
+        )
+        .await?;
 
         assert_eq!(list.duplicate_districts(&store), vec![]);
 
@@ -173,10 +195,22 @@ mod tests {
     async fn get_candidate_list_summaries_with_duplicate_districts() -> Result<(), AppError> {
         let store = PgStore::new_for_test();
         // setup
-        let list1 = insert_list(&store, vec![ElectoralDistrict::UT, ElectoralDistrict::DR]).await?;
-        let list2 = insert_list(&store, vec![ElectoralDistrict::UT, ElectoralDistrict::GR]).await?;
+        let list1 = insert_list(
+            &store,
+            vec![ElectoralDistrict::Utrecht, ElectoralDistrict::Drenthe],
+        )
+        .await?;
+        let list2 = insert_list(
+            &store,
+            vec![ElectoralDistrict::Utrecht, ElectoralDistrict::Groningen],
+        )
+        .await?;
 
-        let list3 = insert_list(&store, vec![ElectoralDistrict::OV, ElectoralDistrict::GR]).await?;
+        let list3 = insert_list(
+            &store,
+            vec![ElectoralDistrict::Overijssel, ElectoralDistrict::Groningen],
+        )
+        .await?;
 
         // test
         let lists = CandidateListSummary::list(&store);
@@ -188,28 +222,28 @@ mod tests {
         let list_summary2 = lists.iter().find(|list| list.list.id == list2.id).unwrap();
         let list_summary3 = lists.iter().find(|list| list.list.id == list3.id).unwrap();
 
-        // list 1 clashes on UT with list 2
+        // list 1 clashes on Utrecht with list 2
         assert_eq!(
-            vec![ElectoralDistrict::UT],
+            vec![ElectoralDistrict::Utrecht],
             list_summary1.duplicate_districts
         );
 
-        // list 2 clashes on UT with list 1 and on GR with list 3
+        // list 2 clashes on Utrecht with list 1 and on Groningen with list 3
         assert_eq!(2, list_summary2.duplicate_districts.len());
         assert!(
             list_summary2
                 .duplicate_districts
-                .contains(&ElectoralDistrict::UT)
+                .contains(&ElectoralDistrict::Utrecht)
         );
         assert!(
             list_summary2
                 .duplicate_districts
-                .contains(&ElectoralDistrict::GR)
+                .contains(&ElectoralDistrict::Groningen)
         );
 
-        // list 3 clashes on GR with list 2
+        // list 3 clashes on Groningen with list 2
         assert_eq!(
-            vec![ElectoralDistrict::GR],
+            vec![ElectoralDistrict::Groningen],
             list_summary3.duplicate_districts
         );
 
@@ -220,7 +254,7 @@ mod tests {
     async fn list_candidate_list_orders_by_created_at() -> Result<(), AppError> {
         let store = PgStore::new_for_test();
         let list_early = CandidateList {
-            electoral_districts: vec![ElectoralDistrict::UT],
+            electoral_districts: vec![ElectoralDistrict::Utrecht],
             ..Default::default()
         };
         list_early.create(&store).await?;
@@ -229,7 +263,7 @@ mod tests {
         tokio::time::sleep(std::time::Duration::from_secs(1)).await;
 
         let list_late = CandidateList {
-            electoral_districts: vec![ElectoralDistrict::OV],
+            electoral_districts: vec![ElectoralDistrict::Overijssel],
             ..Default::default()
         };
         list_late.create(&store).await?;
@@ -264,7 +298,7 @@ mod tests {
         list.create(&store).await?;
 
         let updated_list = CandidateList {
-            electoral_districts: vec![ElectoralDistrict::DR, ElectoralDistrict::OV],
+            electoral_districts: vec![ElectoralDistrict::Drenthe, ElectoralDistrict::Overijssel],
             ..list.clone()
         };
 
@@ -273,7 +307,7 @@ mod tests {
         assert_eq!(updated_list.id, list.id);
         assert_eq!(
             updated_list.electoral_districts,
-            vec![ElectoralDistrict::DR, ElectoralDistrict::OV]
+            vec![ElectoralDistrict::Drenthe, ElectoralDistrict::Overijssel]
         );
 
         Ok(())
@@ -284,13 +318,17 @@ mod tests {
         let store = PgStore::new_for_test();
         // setup
         let expected = BTreeSet::from([
-            ElectoralDistrict::UT,
-            ElectoralDistrict::DR,
-            ElectoralDistrict::OV,
+            ElectoralDistrict::Utrecht,
+            ElectoralDistrict::Drenthe,
+            ElectoralDistrict::Overijssel,
         ]);
 
-        insert_list(&store, vec![ElectoralDistrict::UT, ElectoralDistrict::DR]).await?;
-        insert_list(&store, vec![ElectoralDistrict::OV]).await?;
+        insert_list(
+            &store,
+            vec![ElectoralDistrict::Utrecht, ElectoralDistrict::Drenthe],
+        )
+        .await?;
+        insert_list(&store, vec![ElectoralDistrict::Overijssel]).await?;
         insert_list(&store, vec![]).await?;
 
         // test
@@ -316,14 +354,22 @@ mod tests {
     async fn get_used_districts_double_districts() -> Result<(), AppError> {
         let store = PgStore::new_for_test();
         let expected = BTreeSet::from([
-            ElectoralDistrict::UT,
-            ElectoralDistrict::DR,
-            ElectoralDistrict::OV,
+            ElectoralDistrict::Utrecht,
+            ElectoralDistrict::Drenthe,
+            ElectoralDistrict::Overijssel,
         ]);
 
         // setup
-        insert_list(&store, vec![ElectoralDistrict::UT, ElectoralDistrict::DR]).await?;
-        insert_list(&store, vec![ElectoralDistrict::UT, ElectoralDistrict::OV]).await?;
+        insert_list(
+            &store,
+            vec![ElectoralDistrict::Utrecht, ElectoralDistrict::Drenthe],
+        )
+        .await?;
+        insert_list(
+            &store,
+            vec![ElectoralDistrict::Utrecht, ElectoralDistrict::Overijssel],
+        )
+        .await?;
 
         // test
         let result: BTreeSet<ElectoralDistrict> =
@@ -338,15 +384,23 @@ mod tests {
     async fn get_used_district_with_exclude() -> Result<(), AppError> {
         let store = PgStore::new_for_test();
         let expected = BTreeSet::from([
-            ElectoralDistrict::UT,
-            ElectoralDistrict::DR,
-            ElectoralDistrict::GR,
-            ElectoralDistrict::OV,
+            ElectoralDistrict::Utrecht,
+            ElectoralDistrict::Drenthe,
+            ElectoralDistrict::Groningen,
+            ElectoralDistrict::Overijssel,
         ]);
 
         // setup
-        insert_list(&store, vec![ElectoralDistrict::UT, ElectoralDistrict::DR]).await?;
-        insert_list(&store, vec![ElectoralDistrict::GR, ElectoralDistrict::OV]).await?;
+        insert_list(
+            &store,
+            vec![ElectoralDistrict::Utrecht, ElectoralDistrict::Drenthe],
+        )
+        .await?;
+        insert_list(
+            &store,
+            vec![ElectoralDistrict::Groningen, ElectoralDistrict::Overijssel],
+        )
+        .await?;
 
         // test
         let result: BTreeSet<ElectoralDistrict> =

@@ -26,8 +26,8 @@
             <Type>op zichzelf staande lijst</Type>
             <kr:ListData PublishGender="true" PublicationLanguage="nl">
                 <kr:Contests>
-                    <kr:Contest Id="19">Maastricht</kr:Contest>
-                    <kr:Contest Id="20">Venlo</kr:Contest>
+                    <kr:Contest Id="1">Maastricht</kr:Contest>
+                    <kr:Contest Id="2">Venlo</kr:Contest>
                 </kr:Contests>
             </kr:ListData>
             <Candidate>

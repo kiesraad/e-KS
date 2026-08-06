@@ -137,6 +137,9 @@ sharing one `Cargo.lock` and a workspace-level dependency list.
 - **`tools/locales/`** (`eks-locales`): shared locale tooling, used by the `eks`
   build script (locale codegen), the `eks` test suite (used-key scanning) and
   the `update_locales` binary.
+- **`tools/utils/`** (`eks-utils`): other shared tooling, used by the `eks`
+  build script (e.g. election tree codegen) and the e-KS itself (e.g. the 
+  `slugify_teletex` function).
 
 Document generation is done in-process with the
 [`textris-pdf`](https://github.com/tweedegolf/textris-pdf) library: the PDF
@@ -502,7 +505,7 @@ Runtime configuration is read from environment variables once at startup into a
 | `SERVER_NAME` | Short server identifier shown in the page footer. |
 | `EKS_KEY` | Optional shared secret for the `x-eks-key` request gate. |
 | `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` / `GITHUB_ALLOWED_USER_IDS` | Enable the CSB GitHub OAuth login (`/csb/login`): the GitHub OAuth app's credentials and the comma-separated numeric GitHub account ids allowed to log in; all three or none. The client secret is a secret like the master keys. |
-| `DEFAULT_ELECTION` | Election a login lands on when the flow has no election selection of its own (CSB logins, dev logins): the election code, with the region appended after a colon where the type needs one (e.g. `EK27`, `PS27:GR`). Dev builds default to `EK27`. |
+| `DEFAULT_ELECTION` | Election a login lands on when the flow has no election selection of its own (CSB logins, dev logins): the election code, with the region appended after a colon where the type needs one (e.g. `EK27`, `PS27:prov1`). Dev builds default to `EK27`. |
 | `BIND_ADDRESS` | Address the server binds to (also accepted as a CLI argument). |
 
 The binary itself only reads `env::var`, but the deployment can supply these
