@@ -27,16 +27,12 @@ pub fn random_bsn() -> SecretString {
         }
         let last_digit = remainder as u32;
 
+        // all digits are 0..=9, so this maps them to '0'..='9'
         let bsn: String = digits
             .iter()
             .chain(std::iter::once(&last_digit))
-            .map(|d| char::from_digit(*d, 10).unwrap())
+            .map(|d| char::from(b'0' + *d as u8))
             .collect();
-
-        // reject all-zeros
-        if bsn == "000000000" {
-            continue;
-        }
 
         return SecretString::from(bsn);
     }

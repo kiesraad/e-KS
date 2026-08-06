@@ -8,7 +8,10 @@ use crate::{
     },
 };
 
-#[expect(clippy::enum_variant_names)]
+#[expect(
+    clippy::enum_variant_names,
+    reason = "The `Seats` suffix mirrors the serde and form value of each variant."
+)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum PreviousElectionResults {

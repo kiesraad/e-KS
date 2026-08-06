@@ -108,6 +108,62 @@ fn check_account_credentials(credentials: &str, directory_url: &str) -> Result<(
     Ok(())
 }
 
+/// TLS config from `TLS_CERT_PATH` and `TLS_KEY_PATH`; both or neither must be
+/// set.
+fn tls_from_env<F>(lookup: &mut F) -> Result<Option<TlsConfig>, AppError>
+where
+    F: FnMut(&'static str) -> Result<String, env::VarError>,
+{
+    match (lookup("TLS_CERT_PATH").ok(), lookup("TLS_KEY_PATH").ok()) {
+        (Some(cert), Some(key)) => Ok(Some(TlsConfig {
+            cert_path: PathBuf::from(cert),
+            key_path: PathBuf::from(key),
+        })),
+        (None, None) => Ok(None),
+        _ => Err(AppError::ConfigLoadError(
+            "TLS_CERT_PATH and TLS_KEY_PATH must both be set, or both unset".to_string(),
+        )),
+    }
+}
+
+/// ACME config from `ACME_DIRECTORY_URL` and `ACME_DOMAIN`; both or neither
+/// must be set, and renewal requires TLS plus directory-bound credentials.
+fn acme_from_env<F>(lookup: &mut F, has_tls: bool) -> Result<Option<AcmeConfig>, AppError>
+where
+    F: FnMut(&'static str) -> Result<String, env::VarError>,
+{
+    let directory_url = lookup("ACME_DIRECTORY_URL").ok().filter(|s| !s.is_empty());
+    let domain = lookup("ACME_DOMAIN").ok().filter(|s| !s.is_empty());
+
+    match (directory_url, domain) {
+        (Some(directory_url), Some(domain)) => {
+            if !has_tls {
+                return Err(AppError::ConfigLoadError(
+                    "ACME renewal requires TLS_CERT_PATH and TLS_KEY_PATH".to_string(),
+                ));
+            }
+            let account_credentials = lookup("ACME_ACCOUNT_CREDENTIALS")
+                .ok()
+                .filter(|s| !s.is_empty())
+                .ok_or(AppError::MissingEnvVar("ACME_ACCOUNT_CREDENTIALS"))?;
+            check_account_credentials(&account_credentials, &directory_url)?;
+            Ok(Some(AcmeConfig {
+                directory_url,
+                domain,
+                account_credentials: SecretString::from(account_credentials),
+                root_ca_path: lookup("ACME_ROOT_CA_PATH")
+                    .ok()
+                    .filter(|s| !s.is_empty())
+                    .map(PathBuf::from),
+            }))
+        }
+        (None, None) => Ok(None),
+        _ => Err(AppError::ConfigLoadError(
+            "ACME_DIRECTORY_URL and ACME_DOMAIN must both be set, or both unset".to_string(),
+        )),
+    }
+}
+
 impl Config {
     pub fn from_env() -> Result<Self, AppError> {
         Self::from_env_with(env::var)
@@ -122,52 +178,8 @@ impl Config {
 
         let master_encryption_key = get_env_with("MASTER_ENCRYPTION_KEY", &mut lookup)?;
 
-        let tls = match (lookup("TLS_CERT_PATH").ok(), lookup("TLS_KEY_PATH").ok()) {
-            (Some(cert), Some(key)) => Some(TlsConfig {
-                cert_path: PathBuf::from(cert),
-                key_path: PathBuf::from(key),
-            }),
-            (None, None) => None,
-            _ => {
-                return Err(AppError::ConfigLoadError(
-                    "TLS_CERT_PATH and TLS_KEY_PATH must both be set, or both unset".to_string(),
-                ));
-            }
-        };
-
-        let acme = match (
-            lookup("ACME_DIRECTORY_URL").ok().filter(|s| !s.is_empty()),
-            lookup("ACME_DOMAIN").ok().filter(|s| !s.is_empty()),
-        ) {
-            (Some(directory_url), Some(domain)) => {
-                if tls.is_none() {
-                    return Err(AppError::ConfigLoadError(
-                        "ACME renewal requires TLS_CERT_PATH and TLS_KEY_PATH".to_string(),
-                    ));
-                }
-                let account_credentials = lookup("ACME_ACCOUNT_CREDENTIALS")
-                    .ok()
-                    .filter(|s| !s.is_empty())
-                    .ok_or(AppError::MissingEnvVar("ACME_ACCOUNT_CREDENTIALS"))?;
-                check_account_credentials(&account_credentials, &directory_url)?;
-                Some(AcmeConfig {
-                    directory_url,
-                    domain,
-                    account_credentials: SecretString::from(account_credentials),
-                    root_ca_path: lookup("ACME_ROOT_CA_PATH")
-                        .ok()
-                        .filter(|s| !s.is_empty())
-                        .map(PathBuf::from),
-                })
-            }
-            (None, None) => None,
-            _ => {
-                return Err(AppError::ConfigLoadError(
-                    "ACME_DIRECTORY_URL and ACME_DOMAIN must both be set, or both unset"
-                        .to_string(),
-                ));
-            }
-        };
+        let tls = tls_from_env(&mut lookup)?;
+        let acme = acme_from_env(&mut lookup, tls.is_some())?;
 
         let server_name = lookup("SERVER_NAME").ok().filter(|s| !s.is_empty());
 

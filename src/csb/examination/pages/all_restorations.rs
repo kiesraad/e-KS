@@ -58,6 +58,22 @@ mod tests {
         test_utils::{response_body_string, sample_person},
     };
 
+    /// Creates an omission with the given category and title.
+    async fn create_omission(
+        store: &CsbStore,
+        category: OmissionCategory,
+        title: &str,
+    ) -> Result<(), AppError> {
+        Omission::new(
+            category,
+            title.parse().unwrap(),
+            "description".parse().unwrap(),
+            Some("help_text".parse().unwrap()),
+        )
+        .create(store)
+        .await
+    }
+
     #[tokio::test]
     async fn all_restorations_shows_all_omissions() -> Result<(), AppError> {
         let store = CsbStore::new_for_test();
@@ -78,43 +94,27 @@ mod tests {
 
         let dos_title = "declarations of support title".to_string();
 
-        Omission::new(
-            OmissionCategory::PoliticalGroup,
-            pg_title.parse().unwrap(),
-            "description".parse().unwrap(),
-            Some("help_text".parse().unwrap()),
-        )
-        .create(&store)
-        .await?;
-
-        Omission::new(
+        create_omission(&store, OmissionCategory::PoliticalGroup, &pg_title).await?;
+        create_omission(
+            &store,
             OmissionCategory::CandidateList(vec![list_id]),
-            list_title.parse().unwrap(),
-            "description".parse().unwrap(),
-            Some("help_text".parse().unwrap()),
+            &list_title,
         )
-        .create(&store)
         .await?;
-
-        Omission::new(
+        create_omission(
+            &store,
             OmissionCategory::DeclarationsOfSupport(vec![ElectoralDistrict::UT]),
-            dos_title.parse().unwrap(),
-            "description".parse().unwrap(),
-            Some("help_text".parse().unwrap()),
+            &dos_title,
         )
-        .create(&store)
         .await?;
-
-        Omission::new(
+        create_omission(
+            &store,
             OmissionCategory::Candidate {
                 person: person_id,
                 lists: vec![list_id],
             },
-            candidate_title.parse().unwrap(),
-            "description".parse().unwrap(),
-            Some("help_text".parse().unwrap()),
+            &candidate_title,
         )
-        .create(&store)
         .await?;
 
         let stream_id = store.stream_id;
@@ -161,25 +161,20 @@ mod tests {
             created_at: UtcDateTime::now(),
         });
 
-        Omission::new(
+        create_omission(
+            &store,
             OmissionCategory::Candidate {
                 person: person_id,
                 lists: vec![list_id],
             },
-            "candidate title".parse().unwrap(),
-            "description".parse().unwrap(),
-            Some("help_text".parse().unwrap()),
+            "candidate title",
         )
-        .create(&store)
         .await?;
-
-        Omission::new(
+        create_omission(
+            &store,
             OmissionCategory::CandidateList(vec![list_id]),
-            "list title".parse().unwrap(),
-            "description".parse().unwrap(),
-            Some("help_text".parse().unwrap()),
+            "list title",
         )
-        .create(&store)
         .await?;
 
         let response = all_restorations(

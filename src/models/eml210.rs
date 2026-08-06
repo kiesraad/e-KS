@@ -23,7 +23,7 @@ use crate::{
     AnyLocale, AppError, ElectionConfig, PgStore,
     core::{ElectionType, ModelLocale},
     structs::{
-        candidate_lists::{CandidateListId, FullCandidateList},
+        candidate_lists::{CandidateList, CandidateListId, FullCandidateList},
         candidates::Candidate,
         common::{Address, BsnOrNoneConfirmed, DutchAddress, FullName, Gender},
         list_submitters::ListSubmitter,
@@ -252,16 +252,10 @@ fn nomination_proposer(
     })
 }
 
-/// Build the EML 2.10 candidate nomination XML for a candidate list.
-pub fn eml210(
+/// The list submitter and its deputies as nomination proposers.
+fn nominated_proposers(
     store: &PgStore,
-    election: &ElectionConfig,
-    political_group: &PoliticalGroup,
-    list_id: CandidateListId,
-    locale: ModelLocale,
-) -> Result<Vec<u8>, AppError> {
-    let FullCandidateList { list, candidates } = FullCandidateList::get(store, list_id)?;
-
+) -> Result<Vec<eml_nl::documents::nomination::NominationProposer>, AppError> {
     let substitutes = store.get_substitute_submitters();
     let mut nominated = Vec::with_capacity(1 + substitutes.len());
     nominated.push(nomination_proposer(
@@ -278,8 +272,12 @@ pub fn eml210(
         )?);
     }
 
-    // ListData is additional data specifically for OSV, we can possibly change this in the future if necessary
-    let list_data = ListData {
+    Ok(nominated)
+}
+
+// ListData is additional data specifically for OSV, we can possibly change this in the future if necessary
+fn list_data(list: &CandidateList, locale: ModelLocale) -> Result<ListData, AppError> {
+    Ok(ListData {
         // We always publish genders, but the individual candidates may leave the gender unspecified
         publish_gender: StringValue::Parsed(true),
         publication_language: Some(StringValue::from_value(match locale {
@@ -296,7 +294,21 @@ pub fn eml210(
                     .with_name(d.title(AnyLocale::Nl)))
             })
             .collect::<Result<Vec<ListDataContest>, AppError>>()?,
-    };
+    })
+}
+
+/// Build the EML 2.10 candidate nomination XML for a candidate list.
+pub fn eml210(
+    store: &PgStore,
+    election: &ElectionConfig,
+    political_group: &PoliticalGroup,
+    list_id: CandidateListId,
+    locale: ModelLocale,
+) -> Result<Vec<u8>, AppError> {
+    let FullCandidateList { list, candidates } = FullCandidateList::get(store, list_id)?;
+
+    let nominated = nominated_proposers(store)?;
+    let list_data = list_data(&list, locale)?;
 
     let now = chrono::Utc::now();
     let nomination = Nomination::builder()

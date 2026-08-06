@@ -23,28 +23,26 @@ for arg in "$@"; do
     esac
 done
 
-# rust
-SCOPE=()
-if [ "$FULL" = true ]; then
-    SCOPE=(--workspace --all-features)
-fi
-
 echo "==> Rust checks"
-cargo check ${SCOPE[@]+"${SCOPE[@]}"}
-cargo +nightly fmt --all -- --config imports_granularity="Crate"
-cargo clippy --all-targets ${SCOPE[@]+"${SCOPE[@]}"} -- -D warnings
-cargo test ${SCOPE[@]+"${SCOPE[@]}"}
-
 if [ "$FULL" = true ]; then
-    echo "==> Rust docs"
+    cargo check --workspace --all-features
+    cargo +nightly fmt --all -- --config imports_granularity="Crate"
+    cargo clippy --all-targets --workspace --all-features -- -D warnings
+    cargo test --workspace --all-features
     cargo doc --workspace --no-deps --all-features --document-private-items
+else 
+    cargo +nightly fmt --all -- --config imports_granularity="Crate"
+    cargo clippy --all-targets -- -D warnings
+    cargo test
 fi
 
 # typescript
+echo "==> Typescript checks"
 ./bin/biome check --fix ./frontend
 ./bin/biome check --fix ./playwright/tests
 
 # html
+echo "==> Html checks"
 docker run --rm -v ./src:/work/templates djlint
 
 # generic

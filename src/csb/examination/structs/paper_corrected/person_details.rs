@@ -40,58 +40,34 @@ impl PaperCorrectedPersonDetails {
         csb_corrected: Option<&Person>,
         locale: Locale,
     ) -> Self {
-        let cc_field = |f: fn(&Person) -> String| csb_corrected.map(f);
+        // Diff one field of both projections; `csb_field` includes the CSB
+        // correction of the same field.
+        let field = |f: fn(&Person) -> String| PaperCorrected::from_field(imported, corrected, f);
+        let csb_field =
+            |f: fn(&Person) -> String| field(f).with_csb_correction(csb_corrected.map(f));
 
         Self {
-            initials: PaperCorrected::from_field(imported, corrected, |p| {
-                p.name.initials.to_string()
-            })
-            .with_csb_correction(cc_field(|p| p.name.initials.to_string())),
-            first_name: PaperCorrected::from_field(imported, corrected, |p| {
-                opt_display(&p.name.first_name)
-            }),
-            last_name: PaperCorrected::from_field(imported, corrected, |p| {
-                p.name.last_name_with_prefix()
-            })
-            .with_csb_correction(cc_field(|p| p.name.last_name_with_prefix())),
+            initials: csb_field(|p| p.name.initials.to_string()),
+            first_name: field(|p| opt_display(&p.name.first_name)),
+            last_name: csb_field(|p| p.name.last_name_with_prefix()),
             gender: PaperCorrected::from_field(imported, corrected, |p| p.gender_label(locale)),
-            date_of_birth: PaperCorrected::from_field(imported, corrected, |p| {
+            date_of_birth: csb_field(|p| {
                 DateOfBirth::format_option(&p.personal_data.date_of_birth)
-            })
-            .with_csb_correction(cc_field(|p| {
-                DateOfBirth::format_option(&p.personal_data.date_of_birth)
-            })),
-            bsn: PaperCorrected::from_field(imported, corrected, |p| {
+            }),
+            bsn: field(|p| {
                 p.personal_data
                     .bsn
                     .as_ref()
                     .map(|bsn| bsn.to_exposed_string())
                     .unwrap_or_default()
             }),
-            place_of_residence: PaperCorrected::from_field(imported, corrected, |p| {
-                opt_display(&p.personal_data.place_of_residence)
-            })
-            .with_csb_correction(cc_field(|p| {
-                opt_display(&p.personal_data.place_of_residence)
-            })),
-            street_name: PaperCorrected::from_field(imported, corrected, |p| {
-                opt_display(&p.address.street_name)
-            }),
-            house_number: PaperCorrected::from_field(imported, corrected, |p| {
-                opt_display(&p.address.house_number)
-            }),
-            house_number_addition: PaperCorrected::from_field(imported, corrected, |p| {
-                opt_display(&p.address.house_number_addition)
-            }),
-            postal_code: PaperCorrected::from_field(imported, corrected, |p| {
-                opt_display(&p.address.postal_code)
-            }),
-            locality: PaperCorrected::from_field(imported, corrected, |p| {
-                opt_display(&p.address.locality)
-            }),
-            country: PaperCorrected::from_field(imported, corrected, |p| {
-                opt_display(&p.personal_data.country)
-            }),
+            place_of_residence: csb_field(|p| opt_display(&p.personal_data.place_of_residence)),
+            street_name: field(|p| opt_display(&p.address.street_name)),
+            house_number: field(|p| opt_display(&p.address.house_number)),
+            house_number_addition: field(|p| opt_display(&p.address.house_number_addition)),
+            postal_code: field(|p| opt_display(&p.address.postal_code)),
+            locality: field(|p| opt_display(&p.address.locality)),
+            country: field(|p| opt_display(&p.personal_data.country)),
             has_representative: imported.is_some_and(|p| p.representative.is_some())
                 || corrected.is_some_and(|p| p.representative.is_some()),
             representative_name: representative_field(imported, corrected, |r| r.name.display()),
