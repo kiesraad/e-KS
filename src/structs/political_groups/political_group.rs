@@ -35,9 +35,7 @@ impl PoliticalGroup {
         self.display_name
             .as_ref()
             .map(|d| Ok(d.to_string()))
-            .unwrap_or(Err(AppError::IncompleteData(
-                "Missing appellation",
-            )))
+            .unwrap_or(Err(AppError::IncompleteData("Missing appellation")))
     }
 
     /// Appellation for use in the UI of the CSB module and the I-models
