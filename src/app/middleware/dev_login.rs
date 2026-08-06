@@ -85,10 +85,9 @@ impl<'a> DevLogin<'a> {
     /// Builds the session: its scope from `csb`, its stream from `bsn`, and its
     /// locale and user agent from the request headers.
     fn new(state: &'a AppState, query: &'a DevLoginQuery, headers: &axum::http::HeaderMap) -> Self {
-        let scope = if query.csb.unwrap_or(false) {
-            Scope::CentralElectoralCommittee
-        } else {
-            Scope::PoliticalGroup
+        let scope = match query.csb {
+            Some(true) => Scope::CentralElectoralCommittee,
+            _ => Scope::PoliticalGroup,
         };
         let stream_id = derive_dev_stream_id(state, query.bsn.as_deref());
 
