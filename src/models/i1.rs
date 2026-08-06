@@ -9,7 +9,7 @@ use super::{
     Pdf,
     i4::{OmissionGroup, PublicSession},
     layout::markdown_document,
-    markdown::model_template,
+    markdown::{filters, model_template},
 };
 use crate::AppError;
 
