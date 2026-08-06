@@ -101,7 +101,8 @@ test.describe("fix submit warnings", async () => {
     await expect(finalisePage.linkBSN).toBeVisible();
     await expect(finalisePage.linkDateOfBirth).toBeVisible();
     await expect(finalisePage.linkPlaceOfResidenceNotFound).toBeVisible();
-    await expect(finalisePage.linkAdressIncorrect).toBeVisible();
+    await expect(finalisePage.linkAdressIncomplete).toBeVisible();
+    await expect(finalisePage.linkAdressNotFound.first()).toBeVisible();
     await expect(finalisePage.linkTooYoung.first()).toBeVisible();
   });
 });

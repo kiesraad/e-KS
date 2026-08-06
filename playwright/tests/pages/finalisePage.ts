@@ -8,7 +8,8 @@ export class FinalisePage {
   readonly linkBSN: Locator;
   readonly linkDateOfBirth: Locator;
   readonly linkPlaceOfResidenceNotFound: Locator;
-  readonly linkAdressIncorrect: Locator;
+  readonly linkAdressIncomplete: Locator;
+  readonly linkAdressNotFound: Locator;
   readonly linkTooYoung: Locator;
   readonly linkTooManyCandidates: Locator;
   readonly linkIncorrectDate: Locator;
@@ -35,10 +36,14 @@ export class FinalisePage {
       exact: true,
     });
     this.linkPlaceOfResidenceNotFound = this.page.getByRole("link", {
-      name: "Woonplaats niet gevonden",
+      name: "Woonplaats niet gevonden in de BAG",
     });
-    this.linkAdressIncorrect = this.page.getByRole("link", {
+    this.linkAdressIncomplete = this.page.getByRole("link", {
       name: "Adres",
+      exact: true,
+    });
+    this.linkAdressNotFound = this.page.getByRole("link", {
+      name: "Adres niet gevonden in de BAG",
     });
     this.linkTooYoung = this.page.getByRole("link", {
       name: "Te jong",
