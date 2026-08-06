@@ -50,7 +50,7 @@ impl<S: AppRequestState> FromRequestParts<S> for StreamMonitor {
                             .or(meta.last_event_at);
                         let name = data
                             .political_group
-                            .display_name
+                            .appellation
                             .as_ref()
                             .map(|name| name.to_string());
                         let until = data.events.last().map(|e| e.event_id).unwrap_or(0);

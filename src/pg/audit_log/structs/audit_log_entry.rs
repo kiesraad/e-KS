@@ -75,7 +75,7 @@ mod tests {
     #[test]
     fn from_update_political_group_event() {
         let pg = sample_political_group();
-        let expected_name = pg.display_name.as_ref().unwrap().to_string();
+        let expected_name = pg.appellation.as_ref().unwrap().to_string();
         let event = StoreEvent::new(2, PgEvent::UpdatePoliticalGroup(pg));
 
         let entry = AuditLogEntry::new(event, EN);

@@ -52,25 +52,25 @@
       </fieldset>
     </div>
     <div class="form-row">
-      <div class="form-field {% if form.data.display_name.is_empty() && steps.basic_state != "empty" %}error{% endif %}">
-        <label for="display_name">
+      <div class="form-field {% if form.data.appellation.is_empty() && steps.basic_state != "empty" %}error{% endif %}">
+        <label for="appellation">
           {% if steps.is_combined() %}
-            {{ "political_group.display_name_combined"|trans }}
+            {{ "political_group.appellation_combined"|trans }}
           {% else %}
-            {{ "political_group.display_name"|trans }}
+            {{ "political_group.appellation"|trans }}
           {% endif %}
         </label>
         <input type="text"
-               name="display_name"
-               value="{{ form.data.display_name }}"
-               id="display_name" />
-        {% for error in form|error("display_name") %}<span class="error">{{ error }}</span>{% endfor %}
-        {% if !steps.is_combined() %}<span class="hint">{{ "political_group.type.display_name_hint"|trans }}</span>{% endif %}
+               name="appellation"
+               value="{{ form.data.appellation }}"
+               id="appellation" />
+        {% for error in form|error("appellation") %}<span class="error">{{ error }}</span>{% endfor %}
+        {% if !steps.is_combined() %}<span class="hint">{{ "political_group.type.appellation_hint"|trans }}</span>{% endif %}
       </div>
     </div>
     <div class="form-row">
       {% if steps.is_combined() %}
-        <span class="alert alert-info">{{ "political_group.type.display_name_combined_hint"|trans }}</span>
+        <span class="alert alert-info">{{ "political_group.type.appellation_combined_hint"|trans }}</span>
       {% endif %}
     </div>
   </fieldset>

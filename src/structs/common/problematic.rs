@@ -86,7 +86,7 @@ pub enum PotentialProblems {
 
     // political group
     NoLegalName,
-    NoDisplayName,
+    NoAppellation,
     NoAuthorisedAgent,
     NoListSubmitter,
     TooManyAuthorizedNames {
@@ -174,7 +174,7 @@ impl PotentialProblems {
 
             // political group
             PotentialProblems::NoLegalName => trans!("problems.no_legal_name", *locale),
-            PotentialProblems::NoDisplayName => trans!("problems.no_display_name", *locale),
+            PotentialProblems::NoAppellation => trans!("problems.no_appellation", *locale),
             PotentialProblems::NoListSubmitter => trans!("problems.no_list_submitter", *locale),
             PotentialProblems::NoAuthorisedAgent => trans!("problems.no_authorised_agent", *locale),
             PotentialProblems::TooManyAuthorizedNames { count } => {
@@ -232,7 +232,7 @@ impl PotentialProblems {
 
             // political group
             PotentialProblems::NoLegalName => Severity::Warn,
-            PotentialProblems::NoDisplayName => Severity::Error,
+            PotentialProblems::NoAppellation => Severity::Error,
             PotentialProblems::NoListSubmitter => Severity::Error,
             PotentialProblems::NoAuthorisedAgent => Severity::Warn,
             PotentialProblems::TooManyAuthorizedNames { .. } => Severity::Error,

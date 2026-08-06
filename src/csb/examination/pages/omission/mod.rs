@@ -101,9 +101,9 @@ impl OmissionTarget {
 
     fn generate_title_suffix(&self, store: &CsbStore, locale: Locale) -> Result<String, AppError> {
         let first_candidate = store.get_first_candidate_name(WithCorrections::All);
-        let display_name = store
+        let appellation = store
             .get_political_group(WithCorrections::All)
-            .csb_display_name(first_candidate.as_ref());
+            .csb_appellation(first_candidate.as_ref());
         let first_part = match self.omission_type {
             OmissionType::PoliticalGroup => trans!("common.general_information", locale),
             OmissionType::CandidateList => trans!("candidate_list.title_single", locale),
@@ -116,7 +116,7 @@ impl OmissionTarget {
                 .name
                 .display(),
         };
-        Ok(format!("{} ({})", first_part, display_name))
+        Ok(format!("{} ({})", first_part, appellation))
     }
 }
 

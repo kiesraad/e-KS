@@ -190,7 +190,7 @@ mod tests {
         );
         assert!(
             body.contains(&person_name),
-            "expected person display name to appear next to the abbreviated id"
+            "expected person appellation to appear next to the abbreviated id"
         );
 
         Ok(())

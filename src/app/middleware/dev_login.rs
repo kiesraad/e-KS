@@ -14,7 +14,7 @@ use crate::{
     common::{PgIndexPath, SelectElectionPath},
     csb::index::CsbIndexPath,
     store::Store,
-    structs::{common::DisplayName, political_groups::PoliticalGroup},
+    structs::{common::Appellation, political_groups::PoliticalGroup},
     utils::{format_hash, random_bsn},
 };
 
@@ -118,9 +118,9 @@ impl<'a> DevLogin<'a> {
         }
     }
 
-    /// The display name the `name` query parameter asks the fixture group to be
+    /// The appellation the `name` query parameter asks the fixture group to be
     /// given, if any.
-    fn fixture_name(&self) -> Result<Option<DisplayName>, AppError> {
+    fn fixture_name(&self) -> Result<Option<Appellation>, AppError> {
         self.query
             .name
             .as_deref()
@@ -156,7 +156,7 @@ impl<'a> DevLogin<'a> {
     /// plus the chain hash of the stream's last event (for end-to-end tests).
     async fn pg(
         &mut self,
-        fixture_name: Option<DisplayName>,
+        fixture_name: Option<Appellation>,
     ) -> Result<(String, Option<String>), AppError> {
         if self.query.select_election.unwrap_or(false) {
             return Ok((SelectElectionPath.to_string(), None));
@@ -187,7 +187,7 @@ impl<'a> DevLogin<'a> {
     /// fixtures, if asked for) when the stream is still empty.
     async fn ensure_store(
         &self,
-        fixture_name: Option<DisplayName>,
+        fixture_name: Option<Appellation>,
         election: ElectionConfig,
     ) -> Result<(Store<PgStoreData>, bool), AppError> {
         let store = self
@@ -478,8 +478,8 @@ mod tests {
         assert_eq!(
             store
                 .get_political_group()
-                .display_name
-                .expect("display name")
+                .appellation
+                .expect("appellation")
                 .to_string(),
             "Unieke Groep"
         );

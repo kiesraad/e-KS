@@ -9,7 +9,7 @@ use crate::{
     csb::examination::{
         extractors::CsbPoliticalGroup,
         pages::{
-            CsbDisplayNameCorrectionPath, CsbPersonCorrectionPath, OmissionListQuery,
+            CsbAppellationCorrectionPath, CsbPersonCorrectionPath, OmissionListQuery,
             correction::{
                 CorrectionForm, parse_person_correction, return_path,
                 structs::{CorrectionDisplay, CorrectionFieldType, FieldValues},
@@ -18,7 +18,7 @@ use crate::{
     },
     filters,
     form::FormData,
-    structs::{common::DisplayName, csb::Correction},
+    structs::{common::Appellation, csb::Correction},
 };
 #[derive(Template)]
 #[template(path = "csb/examination/pages/correction.html")]
@@ -36,31 +36,31 @@ struct CsbCorrectionTemplate {
 }
 
 /// Render the correction overlay for the political-group appellation.
-pub async fn display_name_correction(
-    _: CsbDisplayNameCorrectionPath,
+pub async fn appellation_name_correction(
+    _: CsbAppellationCorrectionPath,
     context: CsbContext,
     store: CsbStore,
     Query(query): Query<QueryParamState>,
 ) -> Result<Response, AppError> {
     let political_group = CsbPoliticalGroup::new_from_csb_store(&store);
     let locale = context.session.locale;
-    let field_values = FieldValues::for_display_name(&store);
+    let field_values = FieldValues::for_appellation(&store);
     let value = field_values.prefill();
     Ok(render_correction(
         context,
         query,
         political_group.general_information_path().to_string(),
         field_values.into_display(
-            crate::trans!("political_group.display_name", locale),
+            crate::trans!("political_group.appellation", locale),
             CorrectionFieldType::Text,
         ),
         FormData::new_with_data(CorrectionForm { value }),
     ))
 }
 
-/// Handle the submitted display-name correction form.
-pub async fn display_name_correction_submit(
-    _: CsbDisplayNameCorrectionPath,
+/// Handle the submitted appellation correction form.
+pub async fn appellation_correction_submit(
+    _: CsbAppellationCorrectionPath,
     context: CsbContext,
     store: CsbStore,
     Query(query): Query<QueryParamState>,
@@ -70,21 +70,21 @@ pub async fn display_name_correction_submit(
     let close_action = political_group.general_information_path().to_string();
     let locale = context.session.locale;
 
-    match form.value.parse::<DisplayName>() {
+    match form.value.parse::<Appellation>() {
         Err(err) => Ok(render_correction(
             context,
             query,
             close_action,
-            FieldValues::for_display_name(&store).into_display(
-                crate::trans!("political_group.display_name", locale),
+            FieldValues::for_appellation(&store).into_display(
+                crate::trans!("political_group.appellation", locale),
                 CorrectionFieldType::Text,
             ),
             FormData::new_with_errors(form, vec![("value".to_string(), err)]),
         )),
-        Ok(display_name) => {
+        Ok(appellation) => {
             store
-                .update(crate::CsbEvent::UpdateCorrection(Correction::DisplayName(
-                    display_name,
+                .update(crate::CsbEvent::UpdateCorrection(Correction::Appellation(
+                    appellation,
                 )))
                 .await?;
             Ok(query.redirect_or(close_action))
@@ -188,15 +188,15 @@ mod tests {
     };
 
     #[tokio::test]
-    async fn display_name_correction_renders_overlay() {
+    async fn appellation_correction_renders_overlay() {
         use crate::test_utils::sample_political_group;
 
         let store = crate::CsbStore::new_for_test();
         let stream_id = store.stream_id;
         store.set_political_group(sample_political_group());
 
-        let response = display_name_correction(
-            CsbDisplayNameCorrectionPath { stream_id },
+        let response = appellation_name_correction(
+            CsbAppellationCorrectionPath { stream_id },
             CsbContext::new_test(),
             store,
             Query(QueryParamState::default()),
@@ -212,13 +212,13 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn display_name_correction_submit_persists_correction() {
+    async fn appellation_correction_submit_persists_correction() {
         let store = crate::CsbStore::new_for_test();
         let stream_id = store.stream_id;
         store.set_political_group(sample_political_group());
 
-        let response = display_name_correction_submit(
-            CsbDisplayNameCorrectionPath { stream_id },
+        let response = appellation_correction_submit(
+            CsbAppellationCorrectionPath { stream_id },
             CsbContext::new_test(),
             store.clone(),
             Query(QueryParamState::default()),
@@ -232,20 +232,20 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::SEE_OTHER);
         assert_eq!(
-            store.get_display_name(WithCorrections::Paper),
+            store.get_appellation(WithCorrections::Paper),
             "Kiesraad Demo"
         );
-        assert_eq!(store.get_display_name(WithCorrections::All), "Nieuwe Naam");
+        assert_eq!(store.get_appellation(WithCorrections::All), "Nieuwe Naam");
     }
 
     #[tokio::test]
-    async fn display_name_correction_submit_rerenders_on_invalid_value() {
+    async fn appellation_correction_submit_rerenders_on_invalid_value() {
         let store = crate::CsbStore::new_for_test();
         let stream_id = store.stream_id;
         store.set_political_group(sample_political_group());
 
-        let response = display_name_correction_submit(
-            CsbDisplayNameCorrectionPath { stream_id },
+        let response = appellation_correction_submit(
+            CsbAppellationCorrectionPath { stream_id },
             CsbContext::new_test(),
             store.clone(),
             Query(QueryParamState::default()),
@@ -258,10 +258,7 @@ mod tests {
         .into_response();
 
         assert_eq!(response.status(), StatusCode::OK);
-        assert_eq!(
-            store.get_display_name(WithCorrections::All),
-            "Kiesraad Demo"
-        );
+        assert_eq!(store.get_appellation(WithCorrections::All), "Kiesraad Demo");
     }
 
     #[tokio::test]

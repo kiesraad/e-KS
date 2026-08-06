@@ -1,7 +1,7 @@
 use crate::{
     AppError, PgStore,
     structs::{
-        common::{Address, DisplayName, DutchAddress, FullName},
+        common::{Address, Appellation, DutchAddress, FullName},
         list_designation::ListDesignation,
         list_submitters::{ListSubmitter, ListSubmitterId},
         name_authorisations::{NameAuthorisation, NameAuthorisationId},
@@ -43,10 +43,10 @@ fn address(
     })
 }
 
-pub async fn load(store: &PgStore, display_name: Option<DisplayName>) -> Result<(), AppError> {
+pub async fn load(store: &PgStore, appellation: Option<Appellation>) -> Result<(), AppError> {
     let political_group = PoliticalGroup {
-        display_name: Some(
-            display_name.unwrap_or_else(|| "Kiesraad Demo".parse().expect("display name")),
+        appellation: Some(
+            appellation.unwrap_or_else(|| "Kiesraad Demo".parse().expect("appellation")),
         ),
         list_designation: Some(ListDesignation::Standalone),
         previous_election_results: None,

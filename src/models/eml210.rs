@@ -340,7 +340,7 @@ pub fn eml210(
             )
         })
         .affiliation(NominationAffiliation {
-            registered_name: political_group.pg_display_name()?.into(),
+            registered_name: political_group.pg_appellation()?.into(),
             affiliation_type: StringValue::from_value(AffiliationType::StandAloneList),
             list_data,
             candidates: candidates

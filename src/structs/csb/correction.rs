@@ -6,7 +6,7 @@ use crate::{
     Locale,
     structs::{
         audit_log::FieldChange,
-        common::{DateOfBirth, DisplayName, Initials, LastName, PlaceOfResidence},
+        common::{Appellation, DateOfBirth, Initials, LastName, PlaceOfResidence},
         persons::{Person, PersonId},
     },
     trans,
@@ -128,8 +128,8 @@ impl PersonCorrection {
 impl Correction {
     pub fn change(&self, locale: Locale) -> FieldChange {
         match self {
-            Correction::DisplayName(v) => FieldChange::Regular {
-                field: trans!("audit_log.detail.fields.display_name", locale),
+            Correction::Appellation(v) => FieldChange::Regular {
+                field: trans!("audit_log.detail.fields.appellation", locale),
                 old_value: String::new(),
                 new_value: v.to_string(),
             },
@@ -141,6 +141,6 @@ impl Correction {
 /// "Ambtshalve" (ex officio) corrections, done by the CSB based on the BRP and other official records
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum Correction {
-    DisplayName(DisplayName),
+    Appellation(Appellation),
     Person(PersonId, PersonCorrection),
 }

@@ -94,7 +94,7 @@ mod tests {
         let stream_id = store.stream_id;
 
         let mut corrected_group = sample_political_group();
-        corrected_group.display_name = Some("Gecorrigeerde Naam".parse().unwrap());
+        corrected_group.appellation = Some("Gecorrigeerde Naam".parse().unwrap());
         store
             .update(CsbEvent::PaperCorrectedUpdate(Box::new(
                 PgEvent::UpdatePoliticalGroup(corrected_group),

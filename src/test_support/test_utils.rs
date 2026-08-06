@@ -1,7 +1,7 @@
 //! Test helpers for building sample domain data and reading responses.
 use crate::structs::{
     common::{
-        Address, BsnOrNoneConfirmed, CountryCode, DateOfBirth, DisplayName, DutchAddress,
+        Address, Appellation, BsnOrNoneConfirmed, CountryCode, DateOfBirth, DutchAddress,
         FirstName, FullName, Gender, HouseNumber, HouseNumberAddition, Initials, LastName,
         LastNamePrefix, Locality, PlaceOfResidence, PostalCode, PreviousElectionResults,
         StreetName,
@@ -215,11 +215,7 @@ pub fn sample_representative_form() -> RepresentativeForm {
 
 pub fn sample_political_group() -> PoliticalGroup {
     PoliticalGroup {
-        display_name: Some(
-            "Kiesraad Demo"
-                .parse::<DisplayName>()
-                .expect("display name"),
-        ),
+        appellation: Some("Kiesraad Demo".parse::<Appellation>().expect("appellation")),
         list_designation: Some(ListDesignation::Standalone),
         previous_election_results: Some(PreviousElectionResults::ZeroSeats),
     }
@@ -277,7 +273,7 @@ pub fn sample_list_submitter_form() -> ListSubmitterForm {
 pub fn sample_political_group_form() -> PoliticalGroupForm {
     PoliticalGroupForm {
         previous_election_results: PreviousElectionResults::OneToFifteenSeats.to_string(),
-        display_name: "Updated Display Name".to_string(),
+        appellation: "Updated Appellation".to_string(),
     }
 }
 

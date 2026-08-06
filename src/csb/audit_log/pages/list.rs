@@ -139,7 +139,7 @@ fn collect_entries(
         filter_events(
             store.data.read().events.iter(),
             store.stream_id,
-            store.get_display_name(crate::projection::WithCorrections::All),
+            store.get_appellation(crate::projection::WithCorrections::All),
             locale,
             active_event_type,
             active_search,
@@ -177,7 +177,7 @@ pub async fn csb_audit_log<S: AppRequestState>(
         .map(|store| {
             (
                 store.stream_id,
-                store.get_display_name(crate::projection::WithCorrections::All),
+                store.get_appellation(crate::projection::WithCorrections::All),
             )
         })
         .collect();

@@ -7,7 +7,7 @@ detail:
     country: Country code
     created_persons: Created candidates
     date_of_birth: Date of birth
-    display_name: Appellation
+    appellation: Appellation
     download_path: Download path
     electoral_districts: Electoral districts
     file_name: File name

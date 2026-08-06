@@ -71,7 +71,7 @@ impl Context {
                         "{CSB_PAPER_CORRECTIONS_STOP_PREFIX}/{stream_id}/paper-corrections/stop"
                     ),
                     group_name: political_group
-                        .csb_display_name(store.get_first_candidate_name().as_ref()),
+                        .csb_appellation(store.get_first_candidate_name().as_ref()),
                 });
 
         Self {

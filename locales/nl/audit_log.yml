@@ -7,7 +7,7 @@ detail:
     country: Landcode
     created_persons: Aangemaakte kandidaten
     date_of_birth: Geboortedatum
-    display_name: Geregistreerde aanduiding
+    appellation: Geregistreerde aanduiding
     download_path: Downloadpad
     electoral_districts: Kieskringen
     file_name: Bestandsnaam

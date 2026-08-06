@@ -104,7 +104,7 @@ mod tests {
     };
 
     #[tokio::test]
-    async fn political_group_renders_imported_display_name() {
+    async fn political_group_renders_imported_appellation() {
         let store = CsbStore::new_for_test();
         store.set_political_group(sample_political_group());
         let stream_id = store.stream_id;

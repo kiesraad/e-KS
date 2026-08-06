@@ -39,7 +39,7 @@ pub async fn gen_i4<S: AppRequestState>(
                 .push(omission.description.to_string());
         }
 
-        let designation = store.get_display_name(crate::projection::WithCorrections::All);
+        let designation = store.get_appellation(crate::projection::WithCorrections::All);
         for (district, descriptions) in by_district {
             found_omissions.push(OmissionGroup {
                 designation: designation.clone(),

@@ -95,7 +95,7 @@ fn event_details(event: &PgEvent) -> String {
 
     match event {
         PgEvent::UpdatePoliticalGroup(pg) => pg
-            .display_name
+            .appellation
             .as_ref()
             .map(|n| n.to_string())
             .unwrap_or_default(),
