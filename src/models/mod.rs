@@ -156,6 +156,18 @@ mod tests {
         assert_pdf(&render(input), "i4 open objections");
     }
 
+    /// I 1 is downloaded before anything was imported too: render it with both
+    /// list sections empty so the "geen verzuimen" fallback and the empty
+    /// "Kandidatenlijsten" section run. (`i1_example_2` covers the fallback
+    /// with lists present.)
+    #[test]
+    fn i1_renders_with_empty_sections() {
+        let mut input = i1_example_1();
+        input.submitted_lists.clear();
+        input.found_omissions.clear();
+        assert_pdf(&render(input), "i1 empty sections");
+    }
+
     /// Models report a download file name; check the locale- and
     /// designation-dependent ones, plus the Dutch-only I 1 and I 4.
     #[test]

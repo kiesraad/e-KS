@@ -48,11 +48,22 @@ pub async fn gen_i1<S: AppRequestState>(
 mod tests {
     use super::*;
     use axum::{
+        body::to_bytes,
         http::{StatusCode, header},
         response::IntoResponse,
     };
 
-    use crate::AppState;
+    use crate::{
+        AppState, CsbEvent, ElectionConfig, PgStoreData, StreamId,
+        structs::{
+            candidate_lists::CandidateList,
+            csb::{OmissionCategory, sample_omission},
+            list_designation::ListDesignation,
+            persons::PersonId,
+            political_groups::PoliticalGroup,
+        },
+        test_utils::sample_person,
+    };
 
     #[tokio::test]
     async fn gen_i1_returns_pdf_response() -> Result<(), AppError> {
@@ -78,6 +89,56 @@ mod tests {
             headers.get(header::CACHE_CONTROL).expect("cache control"),
             "no-store, no-cache, must-revalidate, max-age=0"
         );
+
+        Ok(())
+    }
+
+    /// The empty-registry case above never fills the submitted-lists and
+    /// omissions sections; drive the handler once with a group that has both.
+    #[tokio::test]
+    async fn gen_i1_renders_the_imported_lists_and_omissions() -> Result<(), AppError> {
+        let state = AppState::new_for_tests().await;
+        let store = state
+            .csb_store_for_stream(StreamId::new(), ElectionConfig::EK27)
+            .await?;
+
+        let person = sample_person(PersonId::new());
+        let mut snapshot = PgStoreData {
+            political_group: PoliticalGroup {
+                display_name: Some("Kiesraad Demo".parse().unwrap()),
+                list_designation: Some(ListDesignation::Standalone),
+                ..Default::default()
+            },
+            ..PgStoreData::default()
+        };
+        snapshot.persons.insert(person.id, person.clone());
+        let list = CandidateList {
+            electoral_districts: vec![crate::ElectoralDistrict::GR],
+            candidates: vec![person.id],
+            ..Default::default()
+        };
+        snapshot.candidate_lists.insert(list.id, list);
+        store
+            .update(CsbEvent::Import {
+                hash: [0u8; 32],
+                source_stream_id: StreamId::new(),
+                snapshot: Box::new(snapshot),
+            })
+            .await?;
+        sample_omission(OmissionCategory::PoliticalGroup)
+            .create(&store)
+            .await?;
+
+        let main_store = CsbMainStore::new_for_test();
+        let response = gen_i1(CsbI1DownloadPath, main_store, State(state))
+            .await?
+            .into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = to_bytes(response.into_body(), usize::MAX)
+            .await
+            .expect("read body");
+        assert!(body.starts_with(b"%PDF"), "body is not a PDF");
 
         Ok(())
     }
