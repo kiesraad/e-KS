@@ -10,7 +10,8 @@ use crate::{
         constants::NS_DSIG,
         crypto::{self, SignatureVerification},
         xml_parser::{
-            Document, NodeId, children_by_tag, descendants_by_tag, find_descendant, inner_text,
+            Document, NodeId, all_elements, children_by_tag, descendants_by_tag, direct_text,
+            find_descendant,
         },
     },
 };
@@ -51,6 +52,25 @@ const EXCLUSIVE_C14N: &str = "http://www.w3.org/2001/10/xml-exc-c14n#";
 // over our message root did.
 const ENVELOPED_SIGNATURE_TRANSFORM: &str = "http://www.w3.org/2000/09/xmldsig#enveloped-signature";
 
+// Attribute names that name an element for a `#id` reference. Must stay aligned
+// with the backend's ID map so both resolve a reference the same way;
+// `get_attribute` matches by local name, so `"id"` also covers `xml:id`.
+const ID_ATTRIBUTES: &[&str] = &["ID", "Id", "id", "AssertionID"];
+
+/// The element the caller is about to consume, read from the caller's own tree.
+///
+/// SECURITY (XSW): [`verify_xml_signature`] re-parses its input and the backend
+/// parses it again with a different parser, so "the element I extracted" and "the
+/// element that was verified" come from separate parses. This makes their equality
+/// a check instead of an assumption.
+pub struct ExpectedRoot<'a> {
+    pub namespace: &'a str,
+    pub local_name: &'a str,
+    /// `None` leaves the ID unasserted, for a caller that has not parsed the
+    /// document itself. `signature_covers_root` still binds every Reference.
+    pub id: Option<&'a str>,
+}
+
 /// Outcome of signature verification.
 pub struct VerifyResult {
     pub errors: Vec<String>,
@@ -64,7 +84,14 @@ impl VerifyResult {
 }
 
 /// Verify the enveloping XML-DSig signature of `xml` against `trusted_keys`.
-pub fn verify_xml_signature(xml: &str, trusted_keys: &[KeyPair]) -> VerifyResult {
+///
+/// `expected_root` identifies the element the caller will consume; see
+/// [`ExpectedRoot`]. `None` skips that binding and is only appropriate in tests.
+pub fn verify_xml_signature(
+    xml: &str,
+    trusted_keys: &[KeyPair],
+    expected_root: Option<&ExpectedRoot<'_>>,
+) -> VerifyResult {
     debug!(
         "[verify] Verifying XML signature (xml_len={}, trusted_keys={})",
         xml.len(),
@@ -74,7 +101,11 @@ pub fn verify_xml_signature(xml: &str, trusted_keys: &[KeyPair]) -> VerifyResult
     // Parse the XML once; the document is used for key matching, signature
     // enumeration, algorithm checks and the Reference-covers-root check.
     match crate::saml::xml_parser::parse(xml) {
-        Ok(doc) => SignatureChecks::new(&doc, &mut errors).check_and_verify(xml, trusted_keys),
+        Ok(doc) => SignatureChecks::new(&doc, &mut errors).check_and_verify(
+            xml,
+            trusted_keys,
+            expected_root,
+        ),
         Err(e) => errors.push(format!("XML parse error: {e}")),
     }
     debug!(
@@ -109,10 +140,18 @@ impl<'a, 'input> SignatureChecks<'a, 'input> {
     // digest matches its resolved target; in a detached layout that target may
     // be a sibling of the Signature while we consume the root. eID uses one
     // enveloped signature over the message root, so every Reference must target
-    // this root (empty URI = whole document, or "#<root-id>"). Duplicate IDs
-    // are rejected by the backend, so a matching ID uniquely names the root.
-    fn check_and_verify(&mut self, xml: &str, trusted_keys: &[KeyPair]) {
+    // this root (empty URI = whole document, or "#<root-id>"), and
+    // `check_id_is_unique` makes that ID name the root unambiguously.
+    fn check_and_verify(
+        &mut self,
+        xml: &str,
+        trusted_keys: &[KeyPair],
+        expected_root: Option<&ExpectedRoot<'_>>,
+    ) {
         let root = self.doc.document_element();
+        if !self.check_expected_root(root, expected_root) {
+            return;
+        }
         let sig_node = match self.enveloping_signature(root) {
             Ok(n) => n,
             Err(e) => {
@@ -126,6 +165,38 @@ impl<'a, 'input> SignatureChecks<'a, 'input> {
         {
             self.verify_with_cert(xml, &trusted_keys[key_index]);
         }
+    }
+
+    /// SECURITY (XSW): require this parse's root to be the same element the caller
+    /// extracted from its own tree. Runs first, so a mismatch never reaches the
+    /// crypto backend. See [`ExpectedRoot`].
+    fn check_expected_root(&mut self, root: NodeId, expected: Option<&ExpectedRoot<'_>>) -> bool {
+        let Some(expected) = expected else {
+            return true;
+        };
+        let Some(node) = self.doc.node_qname(root) else {
+            self.error("Signed document has no root element".to_string());
+            return false;
+        };
+        if node != (Some(expected.namespace), expected.local_name) {
+            self.error(format!(
+                "Signed root element is {:?}, but the caller consumes {{{}}}{} \
+                 (possible XML signature wrapping)",
+                node, expected.namespace, expected.local_name
+            ));
+            return false;
+        }
+        if let Some(expected_id) = expected.id {
+            let root_id = self.root_id(root);
+            if root_id.as_deref() != Some(expected_id) {
+                self.error(format!(
+                    "Signed root element ID {root_id:?} does not match the ID {expected_id:?} the \
+                     caller consumes (possible XML signature wrapping)"
+                ));
+                return false;
+            }
+        }
+        true
     }
 
     /// Run the crypto backend over `xml` with the matched trusted cert,
@@ -273,35 +344,84 @@ impl<'a, 'input> SignatureChecks<'a, 'input> {
         }
     }
 
-    // eID §9.1: every Reference must apply the enveloped-signature transform,
-    // and any c14n transform it names must also be the exclusive, comment-free
-    // one.
+    // eID §9.1: a Reference may only apply the enveloped-signature transform
+    // (required) and exclusive c14n (optional, last).
+    //
+    // SECURITY (XSW): an allow-list, not a known-bad list. The backend implements
+    // XPath, XPath Filter 2.0, XPointer, XSLT, base64 and Relationship transforms,
+    // all of which select an arbitrary node-set to digest. Any of those would let
+    // a Reference name `#<root-id>`, passing `signature_covers_root`, while
+    // digesting something narrower.
     fn check_reference_transforms(&mut self, sig: NodeId) -> bool {
         let mut ok = true;
         for r in descendants_by_tag(self.doc, sig, NS_DSIG, "Reference") {
-            let transforms: Vec<&str> = descendants_by_tag(self.doc, r, NS_DSIG, "Transform")
-                .into_iter()
-                .filter_map(|t| self.doc.get_attribute(t, "Algorithm"))
-                .collect();
-            if !transforms.contains(&ENVELOPED_SIGNATURE_TRANSFORM) {
-                self.error(
-                    "Signature Reference does not apply the enveloped-signature transform \
-                     (eID §9.1)"
-                        .to_string(),
-                );
-                ok = false;
+            let nodes = descendants_by_tag(self.doc, r, NS_DSIG, "Transform");
+            let mut transforms = Vec::with_capacity(nodes.len());
+            for t in nodes {
+                match self.doc.get_attribute(t, "Algorithm") {
+                    Some(a) => transforms.push(a),
+                    None => {
+                        self.error("Signature Reference Transform has no Algorithm".to_string());
+                        ok = false;
+                    }
+                }
             }
-            if let Some(bad) = transforms
-                .iter()
-                .find(|t| t.contains("c14n") && **t != EXCLUSIVE_C14N)
-            {
-                self.error(format!(
-                    "Signature Reference uses a disallowed canonicalization transform \
-                     (eID §9.1 requires exclusive c14n without comments): {bad}"
-                ));
-                ok = false;
-            }
+            ok &= self.check_transform_list(&transforms);
         }
+        ok
+    }
+
+    /// The eID §9.1 transform allow-list, applied to one Reference in order.
+    fn check_transform_list(&mut self, transforms: &[&str]) -> bool {
+        let mut ok = true;
+
+        for unexpected in transforms
+            .iter()
+            .filter(|t| ![ENVELOPED_SIGNATURE_TRANSFORM, EXCLUSIVE_C14N].contains(*t))
+        {
+            self.error(format!(
+                "Signature Reference uses a disallowed transform (eID §9.1 permits only the \
+                 enveloped-signature transform and exclusive c14n without comments): {unexpected}"
+            ));
+            ok = false;
+        }
+
+        let enveloped = transforms
+            .iter()
+            .filter(|t| **t == ENVELOPED_SIGNATURE_TRANSFORM)
+            .count();
+        if enveloped == 0 {
+            self.error(
+                "Signature Reference does not apply the enveloped-signature transform (eID §9.1)"
+                    .to_string(),
+            );
+            ok = false;
+        } else if enveloped > 1 {
+            self.error(format!(
+                "Signature Reference applies the enveloped-signature transform {enveloped} times \
+                 (eID §9.1 permits one)"
+            ));
+            ok = false;
+        }
+
+        let c14n = transforms.iter().filter(|t| **t == EXCLUSIVE_C14N).count();
+        if c14n > 1 {
+            self.error(format!(
+                "Signature Reference applies {c14n} canonicalization transforms (eID §9.1 \
+                 permits at most one)"
+            ));
+            ok = false;
+        }
+        // c14n yields octets, so a later transform would get the wrong input kind.
+        if c14n == 1 && transforms.last() != Some(&EXCLUSIVE_C14N) {
+            self.error(
+                "Signature Reference applies a canonicalization transform before another \
+                 transform (eID §9.1: c14n comes last)"
+                    .to_string(),
+            );
+            ok = false;
+        }
+
         ok
     }
 
@@ -313,9 +433,7 @@ impl<'a, 'input> SignatureChecks<'a, 'input> {
     // sibling/nested element cannot authenticate a forged root wrapped around
     // it.
     fn signature_covers_root(&mut self, root: NodeId, sig: NodeId) -> bool {
-        let root_id = ["ID", "Id", "id", "AssertionID"]
-            .iter()
-            .find_map(|a| self.doc.get_attribute(root, a));
+        let root_id = self.root_id(root);
 
         let refs = descendants_by_tag(self.doc, sig, NS_DSIG, "Reference");
         if refs.is_empty() {
@@ -324,17 +442,67 @@ impl<'a, 'input> SignatureChecks<'a, 'input> {
         }
         for r in refs {
             let uri = self.doc.get_attribute(r, "URI").unwrap_or("");
-            let targets_root =
-                uri.is_empty() || root_id.is_some_and(|id| uri.strip_prefix('#') == Some(id));
-            if !targets_root {
+            if uri.is_empty() {
+                continue; // whole document, which is rooted at `root`
+            }
+            let targets_root = root_id
+                .as_deref()
+                .filter(|id| uri.strip_prefix('#') == Some(id));
+            let Some(id) = targets_root else {
                 self.error(format!(
                     "Signature Reference URI {uri:?} does not target the signed root element \
                      (possible XML signature wrapping)"
                 ));
                 return false;
+            };
+            // Names the root's ID, but uniquely only if nothing else carries it.
+            if !self.check_id_is_unique(root, id) {
+                return false;
             }
         }
         true
+    }
+
+    /// The root's ID under any [`ID_ATTRIBUTES`] name. Owned so callers can hold
+    /// it across an `error()` call.
+    fn root_id(&self, root: NodeId) -> Option<String> {
+        ID_ATTRIBUTES
+            .iter()
+            .find_map(|a| self.doc.get_attribute(root, a))
+            .map(str::to_owned)
+    }
+
+    /// SECURITY (XSW): a `#id` reference names the root unambiguously only if
+    /// exactly one element carries that ID, else the backend could resolve to one
+    /// element while we consume another. The backend rejects duplicate IDs too;
+    /// this is our own guarantee rather than an inherited one.
+    fn check_id_is_unique(&mut self, root: NodeId, id: &str) -> bool {
+        let carriers: Vec<NodeId> = all_elements(self.doc)
+            .into_iter()
+            .filter(|&n| {
+                ID_ATTRIBUTES
+                    .iter()
+                    .any(|a| self.doc.get_attribute(n, a) == Some(id))
+            })
+            .collect();
+        match carriers.as_slice() {
+            [only] if *only == root => true,
+            [_] => {
+                self.error(format!(
+                    "Signature Reference URI {id:?} resolves to an element other than the signed \
+                     root (possible XML signature wrapping)"
+                ));
+                false
+            }
+            others => {
+                self.error(format!(
+                    "{} elements carry the ID {id:?} referenced by the signature, so it does not \
+                     uniquely name the signed root (possible XML signature wrapping)",
+                    others.len()
+                ));
+                false
+            }
+        }
     }
 
     // eID §9.2: the KeyInfo only *selects* which trusted cert verifies; a
@@ -343,9 +511,24 @@ impl<'a, 'input> SignatureChecks<'a, 'input> {
     fn find_matching_key(&mut self, sig: NodeId, trusted: &[KeyPair]) -> Option<usize> {
         let found = if let Some(key_name_node) = find_descendant(self.doc, sig, NS_DSIG, "KeyName")
         {
-            self.key_by_name(&inner_text(self.doc, key_name_node), trusted)
+            // `direct_text`: the key selector is the element's own text only.
+            match direct_text(self.doc, key_name_node) {
+                Some(name) => self.key_by_name(&name, trusted),
+                None => {
+                    self.error("Signature KeyInfo KeyName contains child elements".to_string());
+                    None
+                }
+            }
         } else if let Some(x509_node) = find_descendant(self.doc, sig, NS_DSIG, "X509Certificate") {
-            self.key_by_cert(&inner_text(self.doc, x509_node), trusted)
+            match direct_text(self.doc, x509_node) {
+                Some(cert) => self.key_by_cert(&cert, trusted),
+                None => {
+                    self.error(
+                        "Signature KeyInfo X509Certificate contains child elements".to_string(),
+                    );
+                    None
+                }
+            }
         } else {
             self.error(
                 "Signature KeyInfo contains neither KeyName nor X509Certificate".to_string(),
@@ -386,6 +569,7 @@ impl<'a, 'input> SignatureChecks<'a, 'input> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::saml::constants::{NS_SAML, NS_SAMLP};
 
     fn key_pair(cert_pem: &str) -> KeyPair {
         KeyPair::from_pem(cert_pem.to_string(), String::new().into())
@@ -400,7 +584,7 @@ mod tests {
         // nested one (e.g. an Assertion's, signed by a different party) must be
         // ignored here so it doesn't fail ArtifactResponse verification.
         let xml = r#"<ArtifactResponse><Status/><Response><Signature><KeyInfo><KeyName>x</KeyName></KeyInfo></Signature></Response></ArtifactResponse>"#;
-        let result = verify_xml_signature(xml, &[key_pair(TEST_PEM)]);
+        let result = verify_xml_signature(xml, &[key_pair(TEST_PEM)], None);
         assert!(!result.is_valid());
         assert_eq!(
             result.errors,
@@ -462,7 +646,8 @@ mod tests {
             "{errors:?}"
         );
 
-        // Inclusive c14n named as a Reference transform is rejected too.
+        // Inclusive c14n as a Reference transform is rejected by the allow-list,
+        // which names the offending URI.
         let (ok, errors) = algorithm_errors(&signed_info(
             "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256",
             "http://www.w3.org/2001/04/xmlenc#sha256",
@@ -476,7 +661,91 @@ mod tests {
         assert!(
             errors
                 .iter()
-                .any(|e| e.contains("disallowed canonicalization transform")),
+                .any(|e| e.contains("disallowed transform") && e.contains("REC-xml-c14n-20010315")),
+            "{errors:?}"
+        );
+    }
+
+    /// The backend implements these transforms and each can select an arbitrary
+    /// node-set to digest, so the allow-list must reject them all.
+    #[test]
+    fn check_reference_transforms_rejects_node_set_selecting_transforms() {
+        for rejected in [
+            "http://www.w3.org/TR/1999/REC-xpath-19991116",
+            "http://www.w3.org/2002/06/xmldsig-filter2",
+            "http://www.w3.org/2001/04/xmldsig-more/xptr",
+            "http://www.w3.org/TR/1999/REC-xslt-19991116",
+            "http://www.w3.org/2000/09/xmldsig#base64",
+            "http://schemas.openxmlformats.org/package/2006/RelationshipTransform",
+        ] {
+            let (ok, errors) = algorithm_errors(&signed_info(
+                "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256",
+                "http://www.w3.org/2001/04/xmlenc#sha256",
+                EXCLUSIVE_C14N,
+                &[ENVELOPED_SIGNATURE_TRANSFORM, rejected],
+            ));
+            assert!(!ok, "{rejected} must be rejected");
+            assert!(
+                errors
+                    .iter()
+                    .any(|e| e.contains("disallowed transform") && e.contains(rejected)),
+                "{rejected}: {errors:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn check_reference_transforms_accepts_only_the_two_permitted_shapes() {
+        let algorithms = |transforms: &[&str]| {
+            algorithm_errors(&signed_info(
+                "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256",
+                "http://www.w3.org/2001/04/xmlenc#sha256",
+                EXCLUSIVE_C14N,
+                transforms,
+            ))
+        };
+
+        // The two shapes eID §9.1 allows.
+        for accepted in [
+            vec![ENVELOPED_SIGNATURE_TRANSFORM],
+            vec![ENVELOPED_SIGNATURE_TRANSFORM, EXCLUSIVE_C14N],
+        ] {
+            let (ok, errors) = algorithms(&accepted);
+            assert!(ok, "{accepted:?} must be accepted: {errors:?}");
+        }
+
+        // c14n yields octets, so nothing may follow it.
+        let (ok, errors) = algorithms(&[EXCLUSIVE_C14N, ENVELOPED_SIGNATURE_TRANSFORM]);
+        assert!(!ok);
+        assert!(
+            errors.iter().any(|e| e.contains("c14n comes last")),
+            "{errors:?}"
+        );
+
+        // Repeats of either permitted transform are rejected rather than ignored.
+        let (ok, errors) = algorithms(&[
+            ENVELOPED_SIGNATURE_TRANSFORM,
+            ENVELOPED_SIGNATURE_TRANSFORM,
+            EXCLUSIVE_C14N,
+        ]);
+        assert!(!ok);
+        assert!(
+            errors
+                .iter()
+                .any(|e| e.contains("enveloped-signature transform 2 times")),
+            "{errors:?}"
+        );
+
+        let (ok, errors) = algorithms(&[
+            ENVELOPED_SIGNATURE_TRANSFORM,
+            EXCLUSIVE_C14N,
+            EXCLUSIVE_C14N,
+        ]);
+        assert!(!ok);
+        assert!(
+            errors
+                .iter()
+                .any(|e| e.contains("2 canonicalization transforms")),
             "{errors:?}"
         );
     }
@@ -572,12 +841,112 @@ mod tests {
         let xml = format!(
             r##"<Root xmlns="urn:x" ID="_root"><Wrapper><Signature xmlns="{NS_DSIG}"><SignedInfo><Reference URI="#_inner"/></SignedInfo><KeyInfo><KeyName>x</KeyName></KeyInfo></Signature></Wrapper><Signature xmlns="{NS_DSIG}"><SignedInfo><Reference URI="#_root"/></SignedInfo><KeyInfo><KeyName>x</KeyName></KeyInfo></Signature></Root>"##
         );
-        let result = verify_xml_signature(&xml, &[key_pair(TEST_PEM)]);
+        let result = verify_xml_signature(&xml, &[key_pair(TEST_PEM)], None);
         assert!(!result.is_valid());
         assert!(
             result.errors.iter().any(|e| e.contains("wrapping")),
             "{:?}",
             result.errors
+        );
+    }
+
+    /// SECURITY (XSW): the bytes are parsed again here, so `ExpectedRoot` must
+    /// reject any disagreement about which element they are.
+    #[test]
+    fn expected_root_must_match_the_element_the_caller_consumes() {
+        let xml = format!(
+            r##"<samlp:ArtifactResponse xmlns:samlp="{NS_SAMLP}" ID="_genuine"><Signature xmlns="{NS_DSIG}"><SignedInfo><Reference URI="#_genuine"/></SignedInfo><KeyInfo><KeyName>x</KeyName></KeyInfo></Signature></samlp:ArtifactResponse>"##
+        );
+
+        // A matching name and ID gets past the binding, on to the algorithm
+        // checks that this stub signature fails.
+        let matching = ExpectedRoot {
+            namespace: NS_SAMLP,
+            local_name: "ArtifactResponse",
+            id: Some("_genuine"),
+        };
+        let errors = verify_xml_signature(&xml, &[key_pair(TEST_PEM)], Some(&matching)).errors;
+        assert!(
+            !errors
+                .iter()
+                .any(|e| e.contains("possible XML signature wrapping")),
+            "the binding must accept the matching root: {errors:?}"
+        );
+
+        // Wrong local name, wrong namespace and wrong ID are each rejected.
+        let mismatches = [
+            ExpectedRoot {
+                namespace: NS_SAMLP,
+                local_name: "Response",
+                id: Some("_genuine"),
+            },
+            ExpectedRoot {
+                namespace: NS_SAML,
+                local_name: "ArtifactResponse",
+                id: Some("_genuine"),
+            },
+            ExpectedRoot {
+                namespace: NS_SAMLP,
+                local_name: "ArtifactResponse",
+                id: Some("_other"),
+            },
+        ];
+        for expected in &mismatches {
+            let result = verify_xml_signature(&xml, &[key_pair(TEST_PEM)], Some(expected));
+            assert!(!result.is_valid());
+            assert!(
+                result
+                    .errors
+                    .iter()
+                    .any(|e| e.contains("possible XML signature wrapping")),
+                "{:?} should be rejected as wrapping: {:?}",
+                expected.local_name,
+                result.errors
+            );
+        }
+    }
+
+    /// SECURITY (XSW): `#id` names the root only if nothing else carries that ID.
+    #[test]
+    fn signature_covers_root_requires_the_referenced_id_to_be_unique() {
+        // A second element carries the root's ID value under a different ID-ish
+        // attribute name, so `#_root` no longer names the root unambiguously.
+        let xml = format!(
+            r##"<Root xmlns="urn:x" ID="_root"><Forged id="_root"/><Signature xmlns="{NS_DSIG}"><SignedInfo><Reference URI="#_root"/></SignedInfo></Signature></Root>"##
+        );
+        let doc = crate::saml::xml_parser::parse(&xml).unwrap();
+        let root = doc.document_element();
+        let sig = crate::saml::xml_parser::find_child(&doc, root, NS_DSIG, "Signature").unwrap();
+        let mut errors = Vec::new();
+        assert!(!SignatureChecks::new(&doc, &mut errors).signature_covers_root(root, sig));
+        assert!(
+            errors
+                .iter()
+                .any(|e| e.contains("2 elements carry the ID") && e.contains("wrapping")),
+            "{errors:?}"
+        );
+    }
+
+    /// A key name is the element's own text, not text folded up from children.
+    #[test]
+    fn key_name_with_child_elements_is_rejected() {
+        let kp = key_pair(TEST_PEM);
+        let sha256 = crate::keys::derive_key_names(TEST_PEM)[1].clone();
+        let xml = format!(
+            r#"<Signature xmlns="{NS_DSIG}"><KeyInfo><KeyName><x>{sha256}</x></KeyName></KeyInfo></Signature>"#
+        );
+        let doc = crate::saml::xml_parser::parse(&xml).unwrap();
+        let sig = doc.document_element();
+        let mut errors = Vec::new();
+        assert!(
+            SignatureChecks::new(&doc, &mut errors)
+                .find_matching_key(sig, std::slice::from_ref(&kp))
+                .is_none(),
+            "a KeyName whose text comes from a child element must not select a key"
+        );
+        assert!(
+            errors.iter().any(|e| e.contains("contains child elements")),
+            "{errors:?}"
         );
     }
 

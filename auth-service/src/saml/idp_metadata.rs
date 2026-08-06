@@ -9,8 +9,8 @@ use crate::{
     keys::{KeyPair, cert_base64, pem_from_cert_base64},
     saml::{
         constants::{BINDING_HTTP_POST, BINDING_SOAP, CLOCK_SKEW_SECONDS, NS_DSIG, NS_MD},
-        verification::verify_xml_signature,
-        xml_parser::{Document, NodeId, descendants_by_tag, find_descendant, inner_text},
+        verification::{ExpectedRoot, verify_xml_signature},
+        xml_parser::{Document, NodeId, descendants_by_tag, direct_text, find_descendant},
     },
 };
 use rustls_pki_types::{CertificateDer, UnixTime};
@@ -87,7 +87,8 @@ pub fn extract_idp_keys(doc: &Document, root: NodeId) -> IdpKeys {
 /// `None` for a KeyName-only descriptor.
 fn descriptor_key_pair(doc: &Document, kd: NodeId) -> Option<KeyPair> {
     let cert_node = find_descendant(doc, kd, NS_DSIG, "X509Certificate")?;
-    let cert_pem = pem_from_cert_base64(&inner_text(doc, cert_node));
+    // `direct_text`: a trusted signing cert is the element's own text.
+    let cert_pem = pem_from_cert_base64(&direct_text(doc, cert_node)?);
     Some(KeyPair::from_pem(
         cert_pem,
         SecretString::from(String::new()),
@@ -390,7 +391,14 @@ fn verified_signing_keys(
     let signing_keys = pinned_signing_keys(extract_idp_keys(doc, root), trust)?;
     debug!("[metadata] Trusted signing keys: {}", signing_keys.len());
 
-    let sig_result = verify_xml_signature(xml, &signing_keys);
+    // `xml` is the document the endpoints and keys came from, so the re-parse
+    // inside `verify_xml_signature` must land on the same root.
+    let expected_root = ExpectedRoot {
+        namespace: NS_MD,
+        local_name: "EntityDescriptor",
+        id: doc.get_attribute(root, "ID"),
+    };
+    let sig_result = verify_xml_signature(xml, &signing_keys, Some(&expected_root));
     if !sig_result.is_valid() {
         return Err(AuthError::Crypto(format!(
             "metadata signature verification failed: {}",

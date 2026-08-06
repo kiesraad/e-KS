@@ -1,7 +1,11 @@
 //! The SLS endpoint: receiving and verifying the RD's LogoutResponse (eID §7.7.2).
 
 use crate::{
-    saml::{validation::validate_logout_response, verification::verify_xml_signature},
+    saml::{
+        constants::NS_SAMLP,
+        validation::validate_logout_response,
+        verification::{ExpectedRoot, verify_xml_signature},
+    },
     state::{AuthServiceState, AuthState},
 };
 use axum::{
@@ -95,7 +99,14 @@ fn verified_logout_fields(
     };
 
     // eID §7.7.2: the LogoutResponse MUST carry a valid RD signature.
-    let sig_result = verify_xml_signature(saml_response, &rd.signing_keys);
+    // `validate_logout_response` re-parses these bytes, so both parses must agree
+    // on which element is verified and read.
+    let expected_root = ExpectedRoot {
+        namespace: NS_SAMLP,
+        local_name: "LogoutResponse",
+        id: None,
+    };
+    let sig_result = verify_xml_signature(saml_response, &rd.signing_keys, Some(&expected_root));
     if !sig_result.is_valid() {
         warn!(
             "[SLS] LogoutResponse signature invalid ({:?}); ignoring (local logout already done)",

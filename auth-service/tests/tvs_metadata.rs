@@ -98,7 +98,7 @@ fn validate_metadata(xml: &str, url: &str) {
     }
 
     // Verify the XML signature using ONLY the signing keys
-    let result = verify_xml_signature(xml, &keys.signing);
+    let result = verify_xml_signature(xml, &keys.signing, None);
     assert!(
         result.is_valid(),
         "{url}: signature verification with signing keys failed: {:?}",
@@ -115,7 +115,7 @@ fn validate_metadata(xml: &str, url: &str) {
         .collect();
 
     if !encryption_only.is_empty() {
-        let result = verify_xml_signature(xml, &encryption_only);
+        let result = verify_xml_signature(xml, &encryption_only, None);
         assert!(
             !result.is_valid(),
             "{url}: signature verification should fail with encryption-only keys"

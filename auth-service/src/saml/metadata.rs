@@ -157,7 +157,7 @@ mod tests {
             std::slice::from_ref(&encryption),
         );
 
-        let result = verify_xml_signature(&xml, std::slice::from_ref(&signing));
+        let result = verify_xml_signature(&xml, std::slice::from_ref(&signing), None);
         assert!(
             result.is_valid(),
             "signed DV metadata must verify with the signing key: {:?}",

@@ -7,8 +7,8 @@ use crate::saml::{
     loa::LevelOfAssurance,
     subject::SubjectId,
     xml_parser::{
-        NodeId, descendants_by_tag_pruned, find_child, find_descendant, find_descendant_pruned,
-        inner_text,
+        NodeId, descendants_by_tag_pruned, direct_text, find_child, find_descendant,
+        find_descendant_pruned,
     },
 };
 use secrecy::ExposeSecret;
@@ -177,7 +177,11 @@ impl Validator<'_, '_> {
         let name_id_node = self
             .find_claim(root, "Subject")
             .and_then(|s| find_child(self.doc, s, NS_SAML, "NameID"));
-        let name_id = name_id_node.map(|n| inner_text(self.doc, n));
+        // `direct_text`: the identifier is the NameID's own text.
+        let name_id = name_id_node.and_then(|n| direct_text(self.doc, n));
+        if name_id_node.is_some() && name_id.is_none() {
+            self.error("Subject NameID contains child elements".to_string());
+        }
         self.check_subject_name_id_format(name_id_node);
         debug!(
             "[validate] NameID present={}, length={}",
@@ -215,7 +219,8 @@ impl Validator<'_, '_> {
             .iter()
             .find(|&&a| self.doc.get_attribute(a, "Name") == Some(EID_SERVICE_UUID))
             .and_then(|&a| find_descendant(self.doc, a, NS_SAML, "AttributeValue"))
-            .map(|av| inner_text(self.doc, av));
+            // `direct_text`: the ServiceUUID is the AttributeValue's own text.
+            .and_then(|av| direct_text(self.doc, av));
 
         if let Some(expected) = expected {
             match service_uuid.as_deref().map(str::trim) {
@@ -345,10 +350,12 @@ impl Validator<'_, '_> {
     // eID §7.6.3.1: Assertion may only be processed if AudienceRestriction
     // contains the DV EntityID.
     fn check_audience_restriction(&mut self, root: NodeId, dv_entity_id: &str) {
+        // `direct_text`: an entry with element children is not an audience, so it
+        // is skipped and cannot match.
         let audiences: Vec<String> = self
             .find_claims(root, "Audience")
             .iter()
-            .map(|&n| inner_text(self.doc, n))
+            .filter_map(|&n| direct_text(self.doc, n))
             .collect();
         debug!(
             "[validate] Rule 5: AudienceRestriction has {} audience(s); expected '{}'",
@@ -373,12 +380,15 @@ impl Validator<'_, '_> {
         root: NodeId,
         minimum_loa: Option<LevelOfAssurance>,
     ) -> (Option<String>, Option<String>) {
+        // `direct_text`: the LoA URI decides whether this authentication is strong
+        // enough. Element children yield `None`, rejected below as a missing
+        // AuthnContextClassRef.
         let authn_context_class_ref = self
             .find_claim(root, "AuthnContextClassRef")
-            .map(|n| inner_text(self.doc, n));
+            .and_then(|n| direct_text(self.doc, n));
         let authenticating_authority = self
             .find_claim(root, "AuthenticatingAuthority")
-            .map(|n| inner_text(self.doc, n));
+            .and_then(|n| direct_text(self.doc, n));
         debug!(
             "[validate] AuthnContextClassRef={:?}, AuthenticatingAuthority={:?}",
             authn_context_class_ref.as_deref(),
@@ -499,7 +509,7 @@ impl Validator<'_, '_> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::saml::xml_parser::parse;
+    use crate::saml::xml_parser::{inner_text, parse};
 
     // -- Advice pruning --
 

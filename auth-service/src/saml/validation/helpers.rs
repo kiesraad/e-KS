@@ -2,7 +2,7 @@
 
 use crate::saml::{
     constants::{CLOCK_SKEW_SECONDS, MESSAGE_FRESHNESS_SECONDS, NS_SAML, NS_SAMLP, STATUS_SUCCESS},
-    xml_parser::{Document, NodeId, find_child, find_descendant, inner_text},
+    xml_parser::{Document, NodeId, direct_text, find_child, find_descendant, inner_text},
 };
 use chrono::{DateTime, Duration, Utc};
 
@@ -52,12 +52,15 @@ impl<'a, 'input> Validator<'a, 'input> {
         let Some(expected) = expected_issuer else {
             return;
         };
-        match find_child(self.doc, node, NS_SAML, "Issuer").map(|n| inner_text(self.doc, n)) {
-            Some(ref i) if i.trim() == expected => {}
-            Some(i) => self.error(format!(
+        // `direct_text`: an Issuer with element children is not an identity.
+        let issuer = find_child(self.doc, node, NS_SAML, "Issuer");
+        match issuer.map(|n| direct_text(self.doc, n)) {
+            Some(Some(ref i)) if i.trim() == expected => {}
+            Some(Some(i)) => self.error(format!(
                 "{label} Issuer mismatch: expected {expected}, got {}",
                 i.trim()
             )),
+            Some(None) => self.error(format!("{label} Issuer contains child elements")),
             None => self.error(format!("{label} has no Issuer")),
         }
     }

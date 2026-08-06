@@ -7,7 +7,7 @@
 use crate::saml::{
     constants::{NS_SAML, NS_XENC},
     crypto,
-    xml_parser::{Document, NodeId, descendants_by_tag, find_child, find_descendant, inner_text},
+    xml_parser::{Document, NodeId, descendants_by_tag, direct_text, find_child, find_descendant},
 };
 use secrecy::{ExposeSecret, SecretString};
 use tracing::{debug, warn};
@@ -145,10 +145,11 @@ pub fn decrypt_encrypted_id(
         return None;
     }
 
-    // Extract the EncryptedID XML substring from the source document.
-    // Namespace declarations are on the child elements, so the subtree is self-contained.
-    let enc_id_xml = doc.node_source(enc_id)?;
-    let decrypted_xml = decrypt_ciphertext(enc_id_xml, private_keys)?;
+    // Normally self-contained; when the namespaces are declared on an ancestor,
+    // restore the inherited ones. The backend only locates the ciphertext, so this
+    // cannot affect what is decrypted.
+    let enc_id_xml = self_contained_source(doc, enc_id)?;
+    let decrypted_xml = decrypt_ciphertext(&enc_id_xml, private_keys)?;
 
     // eID §7.6.3.4.4: "An <EncryptedID> MUST contain a SAML <NameID> after
     // decryption". Require exactly that, matched by namespace, so plaintext that
@@ -169,6 +170,18 @@ pub fn decrypt_encrypted_id(
         result.value.expose_secret().len()
     );
     Some(result)
+}
+
+/// `node` as a standalone document: raw bytes when those parse, else with the
+/// inherited namespace declarations restored. Mirrors the signature path.
+fn self_contained_source(doc: &Document, node: NodeId) -> Option<String> {
+    let raw = doc.node_source(node)?;
+    if crate::saml::xml_parser::parse(raw).is_ok() {
+        return Some(raw.to_string());
+    }
+    let reconstructed = doc.node_source_with_inherited_namespaces(node)?;
+    crate::saml::xml_parser::parse(&reconstructed).ok()?;
+    Some(reconstructed)
 }
 
 /// Hand the self-contained EncryptedID XML to the crypto backend, trying each
@@ -216,7 +229,9 @@ fn decrypted_name_id_node(dec_doc: &Document) -> Option<NodeId> {
 /// Lift the NameID text and its eID §7.6.3.4.4 attributes into owned fields.
 fn name_id_fields(dec_doc: &Document, name_id_node: NodeId) -> DecryptedNameId {
     DecryptedNameId {
-        value: SecretString::from(inner_text(dec_doc, name_id_node)),
+        // `direct_text`: the identifier is the NameID's own text. Element children
+        // yield an empty value, which `check_decrypted_name_id` rejects.
+        value: SecretString::from(direct_text(dec_doc, name_id_node).unwrap_or_default()),
         format: dec_doc
             .get_attribute(name_id_node, "Format")
             .unwrap_or("")

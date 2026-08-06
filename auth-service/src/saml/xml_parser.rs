@@ -80,6 +80,14 @@ impl<'a> Document<'a> {
         n.is_element().then(|| n.tag_name().name())
     }
 
+    /// The `(namespace-URI, local-name)` of element `id`, or `None` for a
+    /// non-element. The namespace is `None` for an element in no namespace.
+    pub fn node_qname(&self, id: NodeId) -> Option<(Option<&str>, &str)> {
+        let n = self.node(id)?;
+        n.is_element()
+            .then(|| (n.tag_name().namespace(), n.tag_name().name()))
+    }
+
     /// The value of attribute `name` (matched by local name) on element `id`.
     pub fn get_attribute(&self, id: NodeId, name: &str) -> Option<&str> {
         self.node(id)?
@@ -93,6 +101,66 @@ impl<'a> Document<'a> {
     pub fn node_source(&self, id: NodeId) -> Option<&str> {
         let range: Range<usize> = self.node(id)?.range();
         self.inner.input_text().get(range)
+    }
+
+    /// The `(prefix, uri)` namespace declarations `id` inherits from its
+    /// ancestors; a `None` prefix is the default namespace. A pair counts as
+    /// inherited when in scope at both `id` and its parent, so a prefix `id`
+    /// redeclares itself (already in its start tag) is excluded.
+    fn inherited_namespaces(&self, id: NodeId) -> Vec<(Option<&str>, &str)> {
+        let Some(node) = self.node(id) else {
+            return Vec::new();
+        };
+        let parent_scope: Vec<(Option<&str>, &str)> = node
+            .parent()
+            .map(|p| p.namespaces().map(|ns| (ns.name(), ns.uri())).collect())
+            .unwrap_or_default();
+        node.namespaces()
+            .map(|ns| (ns.name(), ns.uri()))
+            .filter(|pair| parent_scope.contains(pair))
+            .collect()
+    }
+
+    /// [`Document::node_source`] with the inherited namespace declarations
+    /// restored onto the start tag, for a subtree whose declarations live on an
+    /// ancestor (e.g. a `soap:Envelope`) and so does not parse standalone.
+    ///
+    /// Digest-preserving only because exclusive c14n is pinned: it emits a
+    /// declaration only where the prefix is visibly utilized, so restoring the
+    /// scope the signer canonicalized in gives the same canonical bytes.
+    ///
+    /// `None` if the start tag cannot be delimited, or a URI would need attribute
+    /// escaping (fail closed rather than escape).
+    pub fn node_source_with_inherited_namespaces(&self, id: NodeId) -> Option<String> {
+        let source = self.node_source(id)?;
+        let inherited = self.inherited_namespaces(id);
+        if inherited.is_empty() {
+            return Some(source.to_owned());
+        }
+        if inherited
+            .iter()
+            .any(|(_, uri)| uri.contains(['"', '&', '<']))
+        {
+            return None;
+        }
+
+        // Insert after the element name, which ends at the first whitespace, `/`
+        // or `>`: a fixed position in a known start tag, not a content search.
+        let rest = source.strip_prefix('<')?;
+        let insert_at = 1 + rest.find(|c: char| c.is_whitespace() || c == '/' || c == '>')?;
+
+        let declarations: String = inherited
+            .iter()
+            .map(|(prefix, uri)| match prefix {
+                Some(p) => format!(r#" xmlns:{p}="{uri}""#),
+                None => format!(r#" xmlns="{uri}""#),
+            })
+            .collect();
+        Some(format!(
+            "{}{declarations}{}",
+            &source[..insert_at],
+            &source[insert_at..]
+        ))
     }
 
     /// The first child element of `id` (skipping text/comment nodes), if any.
@@ -113,6 +181,36 @@ pub fn inner_text(doc: &Document, id: NodeId) -> String {
             .collect(),
         None => String::new(),
     }
+}
+
+/// The direct text children of `id`, unescaped, or `None` if `id` has any element
+/// child.
+///
+/// SECURITY: use this rather than [`inner_text`] for values a trust decision is
+/// made on (`Issuer`, `KeyName`, `NameID`, `Audience`, `AuthnContextClassRef`).
+/// [`inner_text`] folds in descendant text, so `<saml:Issuer><x>urn:rd</x></saml:Issuer>`
+/// would read as `urn:rd`.
+pub fn direct_text(doc: &Document, id: NodeId) -> Option<String> {
+    let node = doc.node(id)?;
+    if node.children().any(|c| c.is_element()) {
+        return None;
+    }
+    Some(
+        node.children()
+            .filter_map(|c| c.is_text().then(|| c.text()).flatten())
+            .collect(),
+    )
+}
+
+/// Every element in the document, in document order. Used for the document-wide
+/// ID uniqueness check, which must look outside the referenced subtree.
+pub fn all_elements(doc: &Document) -> Vec<NodeId> {
+    doc.inner
+        .root()
+        .descendants()
+        .filter(|n| n.is_element())
+        .map(|n| n.id())
+        .collect()
 }
 
 /// Find the first direct child element matching `(ns, local_name)`.
@@ -214,7 +312,7 @@ fn collect_pruned(node: roxmltree::Node<'_, '_>, prune: Tag, out: &mut Vec<NodeI
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::saml::constants::{NS_DSIG, NS_SAML, NS_SAMLP};
+    use crate::saml::constants::{NS_DSIG, NS_SAML, NS_SAMLP, NS_SOAP};
 
     #[test]
     fn inner_text_concatenates_recursively() {
@@ -293,6 +391,81 @@ mod tests {
     #[test]
     fn empty_document_is_error() {
         assert!(parse("").is_err());
+    }
+
+    #[test]
+    fn direct_text_excludes_element_children() {
+        // Own text is returned, with entities unescaped.
+        let doc = parse(r#"<r xmlns="urn:x">a &amp; b</r>"#).unwrap();
+        assert_eq!(
+            direct_text(&doc, doc.document_element()),
+            Some("a & b".to_string())
+        );
+
+        // A child element yields None, where `inner_text` would fold in its text.
+        let doc = parse(r#"<r xmlns="urn:x"><x>urn:rd</x></r>"#).unwrap();
+        let root = doc.document_element();
+        assert_eq!(direct_text(&doc, root), None);
+        assert_eq!(inner_text(&doc, root), "urn:rd");
+
+        // Comments are not element children, so they do not suppress the text,
+        // and their content is never part of it.
+        let doc = parse(r#"<r xmlns="urn:x">ab<!--EVIL-->cd</r>"#).unwrap();
+        assert_eq!(
+            direct_text(&doc, doc.document_element()),
+            Some("abcd".to_string())
+        );
+    }
+
+    #[test]
+    fn inherited_namespaces_make_a_sliced_element_parse_standalone() {
+        // samlp:/saml: are declared on the envelope, not on the sliced element.
+        let xml = format!(
+            r#"<soap:Envelope xmlns:soap="{NS_SOAP}" xmlns:samlp="{NS_SAMLP}" xmlns:saml="{NS_SAML}"><soap:Body><samlp:ArtifactResponse ID="_a1"><saml:Issuer>urn:rd</saml:Issuer></samlp:ArtifactResponse></soap:Body></soap:Envelope>"#
+        );
+        let doc = parse(&xml).unwrap();
+        let art =
+            find_descendant(&doc, doc.document_element(), NS_SAMLP, "ArtifactResponse").unwrap();
+
+        // The raw slice has undeclared prefixes.
+        let raw = doc.node_source(art).unwrap();
+        assert!(parse(raw).is_err(), "raw slice must not parse: {raw}");
+
+        // With the inherited declarations restored it parses, and is the same
+        // element with the same content.
+        let restored = doc.node_source_with_inherited_namespaces(art).unwrap();
+        let restored_doc = parse(&restored).expect("restored slice must parse");
+        let root = restored_doc.document_element();
+        assert_eq!(
+            restored_doc.node_qname(root),
+            Some((Some(NS_SAMLP), "ArtifactResponse"))
+        );
+        assert_eq!(restored_doc.get_attribute(root, "ID"), Some("_a1"));
+        let issuer = find_child(&restored_doc, root, NS_SAML, "Issuer").unwrap();
+        assert_eq!(inner_text(&restored_doc, issuer), "urn:rd");
+    }
+
+    #[test]
+    fn self_contained_element_source_is_returned_unchanged() {
+        // Nothing is inherited, so the bytes must be byte-identical to the slice.
+        let xml = format!(r#"<samlp:Response xmlns:samlp="{NS_SAMLP}" ID="_r1"/>"#);
+        let doc = parse(&xml).unwrap();
+        let root = doc.document_element();
+        assert_eq!(
+            doc.node_source_with_inherited_namespaces(root).as_deref(),
+            doc.node_source(root)
+        );
+    }
+
+    #[test]
+    fn all_elements_lists_the_whole_document() {
+        let xml = format!(r#"<r xmlns="{NS_SAMLP}"><a/><b><c/></b></r>"#);
+        let doc = parse(&xml).unwrap();
+        let names: Vec<&str> = all_elements(&doc)
+            .into_iter()
+            .filter_map(|n| doc.local_name(n))
+            .collect();
+        assert_eq!(names, vec!["r", "a", "b", "c"]);
     }
 
     #[test]

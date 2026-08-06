@@ -34,7 +34,16 @@ pub fn verify_signature(xml: &str, cert_pem: &str) -> Result<SignatureVerificati
         .map_err(|e| AuthError::Crypto(format!("Failed to load verification cert: {e}")))?;
     let mut mgr = KeysManager::new();
     mgr.add_key(key);
-    let ctx = DsigContext::new(mgr).with_trusted_keys_only(true);
+    // All three are already `DsigContext::new` defaults, pinned so the floor
+    // survives a backend default change (as with `min_tls_version` in
+    // `bindings::soap`): only `cert_pem` may verify, reference targets must sit in
+    // an expected position relative to the `<Signature>` (a second XSW check
+    // beside `signature_covers_root`), and every Reference digest must be
+    // verified locally.
+    let ctx = DsigContext::new(mgr)
+        .with_trusted_keys_only(true)
+        .with_strict_verification(true)
+        .with_require_reference_digests(true);
     match bergshamra_dsig::verify::verify(&ctx, xml) {
         Ok(bergshamra_dsig::VerifyResult::Valid { .. }) => Ok(SignatureVerification::Valid),
         Ok(bergshamra_dsig::VerifyResult::Invalid { reason }) => {

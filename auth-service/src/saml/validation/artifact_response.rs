@@ -5,7 +5,7 @@ use crate::{
     keys::KeyPair,
     saml::{
         constants::*,
-        verification::verify_xml_signature,
+        verification::{ExpectedRoot, verify_xml_signature},
         xml_parser::{Document, NodeId, children_by_tag},
     },
 };
@@ -74,14 +74,18 @@ pub fn validate_artifact_response_at(
 impl Validator<'_, '_> {
     fn check_signature(&mut self, art_node: NodeId, trusted_keys: &[KeyPair]) {
         debug!("[validate] Verifying ArtifactResponse XML signature");
-        // The ArtifactResponse element carries its own namespace declarations, so
-        // its source bytes are self-contained input for canonicalization and
-        // verification.
-        let Some(xml) = self.doc.node_source(art_node) else {
-            self.error("ArtifactResponse sig: could not read element source".to_string());
+        let Some(xml) = self.signed_element_source(art_node) else {
             return;
         };
-        let sig_result = verify_xml_signature(xml, trusted_keys);
+        // SECURITY (XSW): these bytes get re-parsed twice more while the claims are
+        // read from *this* tree. Naming the element we consume makes "the signature
+        // covered what I read" a check, not an inference about byte ranges.
+        let expected_root = ExpectedRoot {
+            namespace: NS_SAMLP,
+            local_name: "ArtifactResponse",
+            id: self.doc.get_attribute(art_node, "ID"),
+        };
+        let sig_result = verify_xml_signature(&xml, trusted_keys, Some(&expected_root));
         if !sig_result.is_valid() {
             self.errors.extend(
                 sig_result
@@ -92,6 +96,44 @@ impl Validator<'_, '_> {
         } else {
             debug!("[validate] ArtifactResponse signature OK");
         }
+    }
+
+    /// The signed ArtifactResponse element as a standalone document.
+    ///
+    /// The RD normally declares the SAML/dsig namespaces on the ArtifactResponse
+    /// itself, so its raw bytes are used verbatim. When they are declared on an
+    /// ancestor instead the slice has undeclared prefixes, and the inherited
+    /// declarations are restored (digest-preserving under exclusive c14n, see
+    /// `node_source_with_inherited_namespaces`). The `ExpectedRoot` binding in
+    /// `check_signature` is what keeps that reconstruction honest.
+    fn signed_element_source(&mut self, art_node: NodeId) -> Option<String> {
+        let Some(raw) = self.doc.node_source(art_node) else {
+            self.error("ArtifactResponse sig: could not read element source".to_string());
+            return None;
+        };
+        if crate::saml::xml_parser::parse(raw).is_ok() {
+            return Some(raw.to_string());
+        }
+
+        let reconstructed = self
+            .doc
+            .node_source_with_inherited_namespaces(art_node)
+            .filter(|xml| crate::saml::xml_parser::parse(xml).is_ok());
+        if reconstructed.is_none() {
+            // Not a forgery signal but an RD serialization we cannot make
+            // self-contained. Say so, or it surfaces as an opaque parse error.
+            self.error(
+                "ArtifactResponse sig: the signed element does not parse standalone even with \
+                 its inherited namespace declarations restored (unexpected RD serialization)"
+                    .to_string(),
+            );
+        } else {
+            debug!(
+                "[validate] ArtifactResponse namespaces are declared on an ancestor; \
+                 restored inherited declarations for verification"
+            );
+        }
+        reconstructed
     }
 
     fn check_in_response_to(&mut self, root: NodeId, expected: &str) {

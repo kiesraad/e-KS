@@ -30,7 +30,9 @@ pub fn validate_logout_response(
         .map_err(|e| format!("could not parse LogoutResponse XML: {e}"))?;
     let root = doc.document_element();
 
-    if doc.local_name(root) != Some("LogoutResponse") {
+    // Matched by (namespace, local name): a same-local-name element in another
+    // namespace is not a samlp:LogoutResponse.
+    if doc.node_qname(root) != Some((Some(NS_SAMLP), "LogoutResponse")) {
         return Err("response root is not samlp:LogoutResponse".to_string());
     }
     check_logout_response(&doc, root, rd_entity_id, sls_url)?;
