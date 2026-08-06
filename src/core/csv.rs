@@ -12,11 +12,11 @@ use crate::{AppError, Locale, OptionStringExt, trans, utils::no_cache_headers};
 
 pub enum CsvError {
     FormatError {
-        candidate_number: usize,
+        line_number: usize,
         message: csv::ErrorKind,
     },
     ParseError {
-        candidate_number: usize,
+        line_number: usize,
         field_name: String,
         message: String,
     },
@@ -32,22 +32,22 @@ impl CsvError {
     pub fn message(&self, locale: Locale) -> String {
         match self {
             CsvError::FormatError {
-                candidate_number,
+                line_number,
                 message,
             } => trans!(
                 "candidate_list.import_errors.format_error",
                 locale,
-                candidate_number,
+                line_number,
                 format_error_kind(message, locale)
             ),
             CsvError::ParseError {
-                candidate_number,
+                line_number,
                 field_name,
                 message,
             } => trans!(
                 "candidate_list.import_errors.parse_error",
                 locale,
-                candidate_number,
+                line_number,
                 translated_field_name(field_name, locale),
                 message
             ),
@@ -270,10 +270,10 @@ impl<T: DeserializeOwned> Csv<T> {
         reader_from_bytes(data)
             .deserialize::<T>()
             .enumerate()
-            .for_each(|(count, res)| match res {
+            .for_each(|(index, res)| match res {
                 Ok(record) => records.push(record),
                 Err(error) => errors.push(CsvError::FormatError {
-                    candidate_number: count + 1,
+                    line_number: index + 2,
                     message: error.into_kind(),
                 }),
             });
@@ -328,7 +328,7 @@ mod tests {
     fn formats_error_kind_messages_in_english() {
         assert_eq!(
             CsvError::FormatError {
-                candidate_number: 3,
+                line_number: 3,
                 message: csv::ErrorKind::Io(std::io::Error::other("disk failed")),
             }
             .message(Locale::En),
@@ -336,7 +336,7 @@ mod tests {
         );
         assert_eq!(
             CsvError::FormatError {
-                candidate_number: 3,
+                line_number: 3,
                 message: csv::ErrorKind::Utf8 {
                     pos: None,
                     err: utf8_error(),
@@ -347,7 +347,7 @@ mod tests {
         );
         assert_eq!(
             CsvError::FormatError {
-                candidate_number: 3,
+                line_number: 3,
                 message: csv::ErrorKind::Utf8 {
                     pos: Some(position(2, 4, 18)),
                     err: utf8_error(),
@@ -358,7 +358,7 @@ mod tests {
         );
         assert_eq!(
             CsvError::FormatError {
-                candidate_number: 3,
+                line_number: 3,
                 message: csv::ErrorKind::UnequalLengths {
                     pos: None,
                     expected_len: 4,
@@ -370,7 +370,7 @@ mod tests {
         );
         assert_eq!(
             CsvError::FormatError {
-                candidate_number: 3,
+                line_number: 3,
                 message: csv::ErrorKind::UnequalLengths {
                     pos: Some(position(2, 4, 18)),
                     expected_len: 4,
@@ -382,7 +382,7 @@ mod tests {
         );
         assert_eq!(
             CsvError::FormatError {
-                candidate_number: 3,
+                line_number: 3,
                 message: csv::ErrorKind::Seek,
             }
             .message(Locale::En),
@@ -390,7 +390,7 @@ mod tests {
         );
         assert_eq!(
             CsvError::FormatError {
-                candidate_number: 3,
+                line_number: 3,
                 message: csv::ErrorKind::Serialize("unsupported value".to_string()),
             }
             .message(Locale::En),
@@ -398,7 +398,7 @@ mod tests {
         );
         assert_eq!(
             CsvError::FormatError {
-                candidate_number: 3,
+                line_number: 3,
                 message: csv::ErrorKind::Deserialize {
                     pos: None,
                     err: deserialize_error(),
@@ -409,7 +409,7 @@ mod tests {
         );
         assert_eq!(
             CsvError::FormatError {
-                candidate_number: 3,
+                line_number: 3,
                 message: csv::ErrorKind::Deserialize {
                     pos: Some(position(1, 2, 6)),
                     err: deserialize_error(),
@@ -420,7 +420,7 @@ mod tests {
         );
         assert_eq!(
             CsvError::ParseError {
-                candidate_number: 4,
+                line_number: 4,
                 field_name: "postal_code".to_string(),
                 message: "invalid value".to_string(),
             }
@@ -433,7 +433,7 @@ mod tests {
     fn formats_error_kind_messages_in_dutch() {
         assert_eq!(
             CsvError::FormatError {
-                candidate_number: 3,
+                line_number: 3,
                 message: csv::ErrorKind::Io(std::io::Error::other("disk failed")),
             }
             .message(Locale::Nl),
@@ -441,7 +441,7 @@ mod tests {
         );
         assert_eq!(
             CsvError::FormatError {
-                candidate_number: 3,
+                line_number: 3,
                 message: csv::ErrorKind::Utf8 {
                     pos: None,
                     err: utf8_error(),
@@ -452,7 +452,7 @@ mod tests {
         );
         assert_eq!(
             CsvError::FormatError {
-                candidate_number: 3,
+                line_number: 3,
                 message: csv::ErrorKind::Utf8 {
                     pos: Some(position(2, 4, 18)),
                     err: utf8_error(),
@@ -463,7 +463,7 @@ mod tests {
         );
         assert_eq!(
             CsvError::FormatError {
-                candidate_number: 3,
+                line_number: 3,
                 message: csv::ErrorKind::UnequalLengths {
                     pos: None,
                     expected_len: 4,
@@ -475,7 +475,7 @@ mod tests {
         );
         assert_eq!(
             CsvError::FormatError {
-                candidate_number: 3,
+                line_number: 3,
                 message: csv::ErrorKind::UnequalLengths {
                     pos: Some(position(2, 4, 18)),
                     expected_len: 4,
@@ -487,7 +487,7 @@ mod tests {
         );
         assert_eq!(
             CsvError::FormatError {
-                candidate_number: 3,
+                line_number: 3,
                 message: csv::ErrorKind::Seek,
             }
             .message(Locale::Nl),
@@ -495,7 +495,7 @@ mod tests {
         );
         assert_eq!(
             CsvError::FormatError {
-                candidate_number: 3,
+                line_number: 3,
                 message: csv::ErrorKind::Serialize("unsupported value".to_string()),
             }
             .message(Locale::Nl),
@@ -503,7 +503,7 @@ mod tests {
         );
         assert_eq!(
             CsvError::FormatError {
-                candidate_number: 3,
+                line_number: 3,
                 message: csv::ErrorKind::Deserialize {
                     pos: None,
                     err: deserialize_error(),
@@ -514,7 +514,7 @@ mod tests {
         );
         assert_eq!(
             CsvError::FormatError {
-                candidate_number: 3,
+                line_number: 3,
                 message: csv::ErrorKind::Deserialize {
                     pos: Some(position(1, 2, 6)),
                     err: deserialize_error(),
@@ -525,7 +525,7 @@ mod tests {
         );
         assert_eq!(
             CsvError::ParseError {
-                candidate_number: 4,
+                line_number: 4,
                 field_name: "postal_code".to_string(),
                 message: "invalid value".to_string(),
             }
@@ -537,7 +537,7 @@ mod tests {
     #[test]
     fn display_uses_default_locale() {
         let message = CsvError::FormatError {
-            candidate_number: 1,
+            line_number: 1,
             message: csv::ErrorKind::Serialize("invalid record".to_string()),
         }
         .to_string();

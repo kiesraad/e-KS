@@ -284,7 +284,7 @@ mod tests {
 
         let body = response_body_string(response).await;
         assert!(body.contains("Import failed"));
-        assert!(body.contains("The candidate on line 1 could not be imported:"));
+        assert!(body.contains("The candidate on line 2 could not be imported:"));
         assert!(body.contains("has 2 columns, but earlier rows have 23"));
         assert_eq!(body.matches("alert alert-warning").count(), 1);
 
@@ -315,7 +315,7 @@ mod tests {
         let body = response_body_string(response).await;
         assert!(body.contains("Import failed"));
         assert_eq!(
-            body.matches("The candidate on line 1 could not be imported.")
+            body.matches("The candidate on line 2 could not be imported.")
                 .count(),
             2
         );
