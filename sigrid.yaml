@@ -41,6 +41,8 @@ dependencychecker:
     - "textris-pdf"
   transitive: true
 
+component_depth: 1
+
 architecture:
   enabled: true
 
