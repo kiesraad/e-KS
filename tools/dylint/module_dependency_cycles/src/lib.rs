@@ -10,7 +10,7 @@ extern crate rustc_span;
 use rustc_errors::DiagDecorator;
 use rustc_hir::{HirId, ItemKind, Node, Path, def::Res, def_id::DefId};
 use rustc_lint::{LateContext, LateLintPass, LintContext};
-use rustc_span::{FileName, Span};
+use rustc_span::{FileName, Span, def_id::LOCAL_CRATE};
 use std::{
     collections::BTreeMap,
     path::{Component as PathComponent, Path as FilePath, PathBuf},
@@ -21,7 +21,9 @@ dylint_linting::impl_late_lint! {
     ///
     /// Rejects cyclic dependencies between components, a component being a
     /// top-level directory under `src/`. One finding is emitted per cyclic pair,
-    /// heaviest first, naming the direction that is cheaper to remove.
+    /// heaviest first, naming the direction that is cheaper to remove. Every
+    /// dependency between components is reported as a note as well, cyclic or
+    /// not, so the shape of the graph is visible even when nothing is rejected.
     ///
     /// ### Why is this bad?
     ///
@@ -41,7 +43,7 @@ dylint_linting::impl_late_lint! {
 
 /// The component holding the files that sit directly in `src/`, which belong to
 /// no component directory of their own.
-const REMAINDER: &str = "Remainder";
+const ROOT: &str = "root";
 
 /// Directories under `src/` that are not production code.
 const EXCLUDED_DIRECTORIES: &[&str] = &["bin", "fixtures"];
@@ -91,6 +93,13 @@ impl<'tcx> LateLintPass<'tcx> for ModuleDependencyCycles {
     }
 
     fn check_crate_post(&mut self, cx: &LateContext<'tcx>) {
+        if let Some(summary) = self.graph.summary() {
+            cx.sess().dcx().note(format!(
+                "component dependencies in `{}`:\n{summary}",
+                cx.tcx.crate_name(LOCAL_CRATE),
+            ));
+        }
+
         for cycle in self.graph.cycles() {
             let Cycle {
                 from,
@@ -188,9 +197,10 @@ impl ModuleDependencyCycles {
 /// Cargo runs rustc from the workspace root, so file names are already relative
 /// to it. Absolute names are made relative so both forms map onto a component.
 fn workspace_relative(path: &FilePath) -> PathBuf {
-    static ROOT: std::sync::OnceLock<Option<PathBuf>> = std::sync::OnceLock::new();
+    static WORKSPACE_ROOT: std::sync::OnceLock<Option<PathBuf>> = std::sync::OnceLock::new();
 
-    ROOT.get_or_init(|| std::env::current_dir().ok())
+    WORKSPACE_ROOT
+        .get_or_init(|| std::env::current_dir().ok())
         .as_deref()
         .and_then(|root| path.strip_prefix(root).ok())
         .unwrap_or(path)
@@ -198,7 +208,7 @@ fn workspace_relative(path: &FilePath) -> PathBuf {
 }
 
 /// Every directory in `src/` is a component and the files directly in it form
-/// [`REMAINDER`]. Everything else has no component and is not analysed.
+/// [`ROOT`]. Everything else has no component and is not analysed.
 fn component_of(path: &FilePath) -> Option<String> {
     if is_test_code(path) {
         return None;
@@ -213,7 +223,7 @@ fn component_of(path: &FilePath) -> Option<String> {
         return None;
     };
     if segments.next().is_none() {
-        return Some(REMAINDER.to_owned());
+        return Some(ROOT.to_owned());
     }
 
     let directory = directory.to_str()?;
@@ -227,7 +237,7 @@ fn is_test_code(path: &FilePath) -> bool {
     let Some(name) = path.file_name().and_then(|name| name.to_str()) else {
         return false;
     };
-    
+
     name.contains("test")
 }
 
@@ -282,6 +292,30 @@ impl ComponentGraph {
                     .collect()
             })
             .unwrap_or_default()
+    }
+
+    /// Every edge in the graph, one `from -> to` per line and the cyclic ones
+    /// marked as such. `None` when no component depends on another.
+    fn summary(&self) -> Option<String> {
+        let lines = self
+            .edges
+            .iter()
+            .flat_map(|(from, targets)| {
+                targets.iter().map(move |(to, dependencies)| {
+                    let cyclic = if self.weight(to, from) > 0 {
+                        ", cyclic"
+                    } else {
+                        ""
+                    };
+                    format!(
+                        "  {from} -> {to} ({}{cyclic})",
+                        dependency_count(dependencies.len()),
+                    )
+                })
+            })
+            .collect::<Vec<_>>();
+
+        (!lines.is_empty()).then(|| lines.join("\n"))
     }
 
     /// One cycle per pair of components that depend on each other, heaviest first.
@@ -373,6 +407,27 @@ mod tests {
     }
 
     #[test]
+    fn summarises_every_edge_and_marks_the_cyclic_ones() {
+        let summary = graph(&[
+            ("src/a", "src/b", "B"),
+            ("src/b", "src/a", "A1"),
+            ("src/b", "src/a", "A2"),
+            ("src/b", "src/c", "C"),
+        ])
+        .summary();
+
+        assert_eq!(
+            summary.as_deref(),
+            Some(
+                "  src/a -> src/b (1 dependency, cyclic)\n  \
+                 src/b -> src/a (2 dependencies, cyclic)\n  \
+                 src/b -> src/c (1 dependency)"
+            )
+        );
+        assert_eq!(ComponentGraph::default().summary(), None);
+    }
+
+    #[test]
     fn heavier_cycles_come_first() {
         let cycles = graph(&[
             ("src/a", "src/b", "B"),
@@ -398,8 +453,8 @@ mod tests {
         let component = |path: &str| component_of(FilePath::new(path));
 
         assert_eq!(component("src/pg/store/mod.rs").as_deref(), Some("src/pg"));
-        assert_eq!(component("src/lib.rs").as_deref(), Some(REMAINDER));
-        assert_eq!(component("src/crypto.rs").as_deref(), Some(REMAINDER));
+        assert_eq!(component("src/lib.rs").as_deref(), Some(ROOT));
+        assert_eq!(component("src/crypto.rs").as_deref(), Some(ROOT));
         assert_eq!(component("auth-service/src/lib.rs"), None);
         assert_eq!(component("src/bin/eks.rs"), None);
         assert_eq!(component("src/fixtures/persons.rs"), None);

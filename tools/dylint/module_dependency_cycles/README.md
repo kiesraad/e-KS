@@ -2,9 +2,19 @@
 
 A [Dylint](https://github.com/trailofbits/dylint) library that rejects cyclic
 dependencies between components, a component being a top-level directory under
-`src/` (files sitting directly in `src/` form the `Remainder` component). One
+`src/` (files sitting directly in `src/` form the `root` component). One
 error is emitted per cyclic pair, naming the direction that is cheaper to
 remove and listing the dependencies that make up that direction.
+
+Every dependency between components is also reported as a note, cyclic or not,
+so a run shows the shape of the graph even when it rejects nothing:
+
+```
+note: component dependencies in `eks`:
+  root -> src/core (3 dependencies)
+  src/api -> src/core (12 dependencies, cyclic)
+  src/core -> src/api (1 dependency, cyclic)
+```
 
 Dependencies come from resolved paths, so a call reached through the type of a
 receiver (`value.method()`) does not count, and neither do references produced
