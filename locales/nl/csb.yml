@@ -145,4 +145,5 @@ status:
   approved: Goedgekeurd
   in_progress: Controle bezig
   name: Status
-  omission: Verzuim toegevoegd
+  omission: Verzuimen toegevoegd
+  correction: Ambtshalve correcties toegevoegd

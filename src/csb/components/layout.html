@@ -14,19 +14,18 @@
     </a>
   </li>
 {% endmacro breadcrumb %}
-{% macro omission_count_badge(count) %}
-  {% if count > 0 %}
-    <ul class="omission-badges">
-      <li class="omission-badge">
-        {% if count == 1 %}
-          {{ "csb.omission.count.singular"|trans }}
-        {% else %}
-          {{ "csb.omission.count.plural"|trans(&count.to_string() ) }}
-        {% endif %}
-      </li>
-    </ul>
-  {% endif %}
-{% endmacro omission_count_badge %}
+{% macro omission_badge(status) %}
+  <div class="icon-container">
+    {% if status.has_omissions %}
+      <div class="icon-small omission-icon-small"
+           title="{{ "csb.status.omission"|trans }}"></div>
+    {% endif %}
+    {% if status.has_corrections %}
+      <div class="icon-small correction-icon-small"
+           title="{{ "csb.status.correction"|trans }}"></div>
+    {% endif %}
+  </div>
+{% endmacro omission_badge %}
 {% block body %}
   <header>
     <nav>
@@ -39,7 +38,8 @@
               <span>{{ "common.home"|trans }}</span>
             </a>
           </li>
-          {% block breadcrumbs %}{% endblock %}
+          {% block breadcrumbs %}
+          {% endblock %}
         </ul>
         <ul>
           <li>

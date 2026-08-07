@@ -83,6 +83,7 @@
             <th scope="col">{{ "person.fields.place_of_residence"|trans }}</th>
             <th scope="col">{{ "csb.list.brp_errors"|trans }}</th>
             <th scope="col"></th>
+            <th scope="col"></th>
           </tr>
         </thead>
         <tbody>
@@ -121,6 +122,7 @@
                     </li>
                   {% endif %}
                 </ul>
+                <td>{{ omission_badge(candidate.restoration_status) }}</td>
               </td>
               <td class="actions">
                 <a href="{{ political_group.candidate_path(list_id, candidate.person.id) }}"

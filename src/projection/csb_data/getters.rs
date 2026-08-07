@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use parking_lot::{
     RawRwLock,
     lock_api::{MappedRwLockReadGuard, RwLockReadGuard},
@@ -98,6 +100,15 @@ impl CsbStore {
             .collect()
     }
 
+    pub fn get_political_group_csb_corrections_count(&self) -> usize {
+        let data = self.data.read();
+
+        match data.csb_corrected_display_name {
+            Some(_) => 1,
+            None => 0,
+        }
+    }
+
     pub fn get_candidate_omissions(&self, person_id: PersonId) -> Vec<Omission> {
         let data = self.data.read();
 
@@ -106,6 +117,26 @@ impl CsbStore {
             .filter(|o| matches!(&o.category, OmissionCategory::Candidate { person, .. } if *person == person_id))
             .cloned()
             .collect()
+    }
+
+    /// Whether a candidate has omissions for a specific list
+    pub fn has_candidate_omissions(&self, person_id: PersonId, list_id: CandidateListId) -> bool {
+        self.get_candidate_omissions(person_id).iter().any(|o| {
+            if let OmissionCategory::Candidate {
+                person: _person,
+                lists,
+            } = o.category.clone()
+            {
+                lists.contains(&list_id)
+            } else {
+                false
+            }
+        })
+    }
+    
+    /// Whether a candidate has csb corrections
+    pub fn has_candidate_csb_corrections(&self, person_id: PersonId) -> bool {
+        self.get_all_csb_corrected_persons().contains(&person_id)
     }
 
     /// Return all candidate-list omissions that reference the given list.
@@ -131,6 +162,41 @@ impl CsbStore {
             })
             .cloned()
             .collect())
+    }
+
+    /// Returns if the candidate list or any of its candidates has omissions
+    pub fn has_candidate_list_omissions(&self, list_id: CandidateListId) -> Result<bool, AppError> {
+        if !self.get_candidate_list_omissions(list_id)?.is_empty() {
+            return Ok(true);
+        }
+        for candidate in self
+            .get_candidate_list(list_id, WithCorrections::All)
+            .ok_or(AppError::GenericNotFound)?
+            .candidates
+        {
+            if self.has_candidate_omissions(candidate, list_id) {
+                return Ok(true);
+            }
+        }
+        Ok(false)
+    }
+
+    /// Returns if the candidate list has any candidates with csb corrections
+    pub fn has_candidate_list_csb_corrections(
+        &self,
+        list_id: CandidateListId,
+    ) -> Result<bool, AppError> {
+        let candidates_on_list = self
+            .get_candidate_list(list_id, WithCorrections::All)
+            .ok_or(AppError::GenericNotFound)?
+            .candidates
+            .into_iter()
+            .collect::<HashSet<_>>();
+        let candidates_with_correction = self
+            .get_all_csb_corrected_persons()
+            .into_iter()
+            .collect::<HashSet<_>>();
+        Ok(!candidates_on_list.is_disjoint(&candidates_with_correction))
     }
 
     pub fn get_all_declarations_of_support_omissions(&self) -> Vec<Omission> {

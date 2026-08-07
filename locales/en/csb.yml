@@ -145,4 +145,5 @@ status:
   approved: Approved
   in_progress: In progress
   name: Status
-  omission: Defect added
+  omission: Omissions added
+  correction: Corrections added

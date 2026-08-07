@@ -15,3 +15,8 @@ pub use paper_corrected::{
     PaperCorrectedPoliticalGroupInfo, PaperCorrectedSubmitter, paper_corrected_list_submitter,
     paper_corrected_name_authorisations, paper_corrected_substitute_submitters,
 };
+
+pub struct RestorationStatus {
+    pub has_omissions: bool,
+    pub has_corrections: bool,
+}
