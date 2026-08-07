@@ -172,12 +172,9 @@ jobs:
         with:
           shared-key: eks-dylint
 
+      # `bin/init` runs `bin/setup`, which installs cargo-dylint and dylint-link.
       - *tools-cache
       - *setup-project
-
-      # Version must match `dylint_linting` in the lint library's Cargo.toml.
-      - name: Install cargo-dylint and dylint-link
-        run: cargo install --locked cargo-dylint dylint-link --version 6.0.3
 
       # Builds the lint libraries in dylint.toml with their pinned nightly,
       # then type-checks the crate with them enabled.

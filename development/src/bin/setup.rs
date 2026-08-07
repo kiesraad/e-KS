@@ -52,6 +52,9 @@ async fn main() -> Result<()> {
     println!("📚 Installing cargo-watch (if it is not yet installed)...");
     config.commands.install_cargo_watch.run().await?;
 
+    println!("📚 Installing cargo-dylint (if it is not yet installed)...");
+    config.commands.install_dylint.run().await?;
+
     wait_for_postgres().await?;
 
     println!("✅ Yay, setup complete!");
@@ -80,6 +83,7 @@ struct CommandsConfig {
     docker_compose_up: CommandConfig,
     build_djlint_docker_image: CommandConfig,
     install_cargo_watch: CommandConfig,
+    install_dylint: CommandConfig,
     esbuild_bundle: CommandConfig,
 }
 

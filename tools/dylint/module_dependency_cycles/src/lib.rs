@@ -12,7 +12,7 @@ use rustc_hir::{HirId, ItemKind, Node, Path, def::Res, def_id::DefId};
 use rustc_lint::{LateContext, LateLintPass, LintContext};
 use rustc_span::{FileName, Span, def_id::LOCAL_CRATE};
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, BTreeSet},
     path::{Component as PathComponent, Path as FilePath, PathBuf},
 };
 
@@ -20,10 +20,12 @@ dylint_linting::impl_late_lint! {
     /// ### What it does
     ///
     /// Rejects cyclic dependencies between components, a component being a
-    /// top-level directory under `src/`. One finding is emitted per cyclic pair,
-    /// heaviest first, naming the direction that is cheaper to remove. Every
-    /// dependency between components is reported as a note as well, cyclic or
-    /// not, so the shape of the graph is visible even when nothing is rejected.
+    /// top-level directory under `src/`. Cycles are of any length: `A -> B -> A`
+    /// and `A -> B -> C -> A` are both rejected. One finding is emitted per group
+    /// of components that all reach each other, heaviest first, naming the
+    /// cheapest edge in the group to remove. Every dependency between components
+    /// is reported as a note as well, cyclic or not, so the shape of the graph is
+    /// visible even when nothing is rejected.
     ///
     /// ### Why is this bad?
     ///
@@ -102,21 +104,27 @@ impl<'tcx> LateLintPass<'tcx> for ModuleDependencyCycles {
 
         for cycle in self.graph.cycles() {
             let Cycle {
+                components,
                 from,
                 to,
                 remove,
                 back,
             } = cycle;
 
+            let rest = if components.len() == 2 {
+                "the other direction"
+            } else {
+                "the rest of the cycle"
+            };
             let message = format!(
-                "cyclic dependency between components `{from}` and `{to}`: \
-                 {} to remove against {} in the other direction",
+                "cyclic dependency between components {}: {} to remove against {} in {rest}",
+                component_list(&components),
                 dependency_count(remove.len()),
                 dependency_count(back),
             );
             let summary = format!(
-                "`{to}` -> `{from}` has {}, so breaking the cycle here is the \
-                 cheaper direction",
+                "`{from}` -> `{to}` is the cheapest edge in the cycle, and {rest} has {}, \
+                 so breaking the cycle here is the cheaper direction",
                 dependency_count(back),
             );
             let notes = remove
@@ -143,6 +151,20 @@ impl<'tcx> LateLintPass<'tcx> for ModuleDependencyCycles {
                 }),
             );
         }
+    }
+}
+
+/// The components of a cycle as `` `a` and `b` `` or `` `a`, `b` and `c` ``.
+fn component_list(components: &[String]) -> String {
+    let quoted = components
+        .iter()
+        .map(|component| format!("`{component}`"))
+        .collect::<Vec<_>>();
+
+    match quoted.split_last() {
+        Some((last, [])) => last.clone(),
+        Some((last, rest)) => format!("{} and {last}", rest.join(", ")),
+        None => String::new(),
     }
 }
 
@@ -249,11 +271,14 @@ struct Dependency {
 }
 
 struct Cycle {
+    /// Every component in the cycle, sorted.
+    components: Vec<String>,
+    /// The cheapest edge in the cycle, the one to remove.
     from: String,
     to: String,
-    /// The dependencies in the cheaper direction, the ones to remove.
+    /// The dependencies on that edge.
     remove: Vec<(Dependency, Span)>,
-    /// How many dependencies point the other way.
+    /// How many dependencies the rest of the cycle carries.
     back: usize,
 }
 
@@ -294,15 +319,94 @@ impl ComponentGraph {
             .unwrap_or_default()
     }
 
+    /// Every component that appears in the graph, on either side of an edge.
+    fn components(&self) -> BTreeSet<&str> {
+        self.edges
+            .iter()
+            .flat_map(|(from, targets)| {
+                std::iter::once(from.as_str()).chain(targets.keys().map(String::as_str))
+            })
+            .collect()
+    }
+
+    /// For every component, the components it reaches over one or more edges.
+    fn reachable(&self) -> BTreeMap<&str, BTreeSet<&str>> {
+        let mut reachable: BTreeMap<&str, BTreeSet<&str>> = self
+            .edges
+            .iter()
+            .map(|(from, targets)| (from.as_str(), targets.keys().map(String::as_str).collect()))
+            .collect();
+
+        // The graph has a handful of nodes, so growing every set until nothing
+        // changes is cheap enough and needs no bookkeeping.
+        let mut grown = true;
+        while grown {
+            grown = false;
+            for from in self.components() {
+                let indirect = reachable
+                    .get(from)
+                    .into_iter()
+                    .flatten()
+                    .filter_map(|via| reachable.get(via))
+                    .flatten()
+                    .copied()
+                    .collect::<Vec<_>>();
+                let targets = reachable.entry(from).or_default();
+                for target in indirect {
+                    grown |= targets.insert(target);
+                }
+            }
+        }
+        reachable
+    }
+
+    /// The groups of components that all reach each other, so every edge within
+    /// a group is part of a cycle. Components outside such a group are left out.
+    fn cyclic_groups(&self) -> Vec<Vec<&str>> {
+        let reachable = self.reachable();
+        let reaches =
+            |from: &str, to: &str| reachable.get(from).is_some_and(|set| set.contains(to));
+
+        let mut grouped = BTreeSet::new();
+        let mut groups = Vec::new();
+        for component in self.components() {
+            // A component never depends on itself, so reaching itself means it
+            // does so over a cycle through at least one other component.
+            if grouped.contains(component) || !reaches(component, component) {
+                continue;
+            }
+            let group = self
+                .components()
+                .into_iter()
+                .filter(|other| reaches(component, other) && reaches(other, component))
+                .collect::<Vec<_>>();
+            grouped.extend(group.iter().copied());
+            groups.push(group);
+        }
+        groups
+    }
+
     /// Every edge in the graph, one `from -> to` per line and the cyclic ones
     /// marked as such. `None` when no component depends on another.
     fn summary(&self) -> Option<String> {
+        let cyclic = self
+            .cyclic_groups()
+            .into_iter()
+            .flat_map(|group| {
+                group
+                    .iter()
+                    .flat_map(|from| group.iter().map(move |to| (*from, *to)))
+                    .collect::<Vec<_>>()
+            })
+            .collect::<BTreeSet<_>>();
+        let cyclic = &cyclic;
+
         let lines = self
             .edges
             .iter()
             .flat_map(|(from, targets)| {
                 targets.iter().map(move |(to, dependencies)| {
-                    let cyclic = if self.weight(to, from) > 0 {
+                    let cyclic = if cyclic.contains(&(from.as_str(), to.as_str())) {
                         ", cyclic"
                     } else {
                         ""
@@ -318,25 +422,40 @@ impl ComponentGraph {
         (!lines.is_empty()).then(|| lines.join("\n"))
     }
 
-    /// One cycle per pair of components that depend on each other, heaviest first.
+    /// One cycle per group of components that all reach each other, the group
+    /// with the most dependencies to remove first.
     fn cycles(&self) -> Vec<Cycle> {
         let mut cycles = self
-            .edges
-            .iter()
-            .flat_map(|(from, targets)| targets.keys().map(move |to| (from, to)))
-            .filter(|(from, to)| from < to && self.weight(to, from) > 0)
-            .map(|(a, b)| {
-                let (from, to) = if (self.weight(a, b), a) <= (self.weight(b, a), b) {
-                    (a, b)
-                } else {
-                    (b, a)
-                };
-                Cycle {
-                    from: from.clone(),
-                    to: to.clone(),
+            .cyclic_groups()
+            .into_iter()
+            .filter_map(|group| {
+                let edges = group
+                    .iter()
+                    .flat_map(|from| group.iter().map(move |to| (*from, *to)))
+                    .map(|(from, to)| (self.weight(from, to), from, to))
+                    .filter(|(weight, ..)| *weight > 0)
+                    .collect::<Vec<_>>();
+
+                // Breaking the cheapest edge is the cheapest way into a cycle;
+                // a group needing more than one edge removed reports again on
+                // the next run. Ties break on the names, to stay deterministic.
+                let &(_, from, to) = edges.iter().min()?;
+                let back = edges
+                    .iter()
+                    .filter(|(_, edge_from, edge_to)| (*edge_from, *edge_to) != (from, to))
+                    .map(|(weight, ..)| weight)
+                    .sum();
+
+                Some(Cycle {
+                    components: group
+                        .iter()
+                        .map(|&component| component.to_owned())
+                        .collect(),
+                    from: from.to_owned(),
+                    to: to.to_owned(),
                     remove: self.dependencies(from, to),
-                    back: self.weight(to, from),
-                }
+                    back,
+                })
             })
             .collect::<Vec<_>>();
 
@@ -384,10 +503,58 @@ mod tests {
         .cycles();
 
         assert_eq!(cycles.len(), 1);
+        assert_eq!(cycles[0].components, ["src/a", "src/b"]);
         assert_eq!(cycles[0].from, "src/a");
         assert_eq!(cycles[0].to, "src/b");
         assert_eq!(cycles[0].remove.len(), 1);
         assert_eq!(cycles[0].back, 2);
+    }
+
+    #[test]
+    fn reports_a_cycle_spanning_three_components() {
+        let cycles = graph(&[
+            ("src/a", "src/b", "B1"),
+            ("src/a", "src/b", "B2"),
+            ("src/b", "src/c", "C"),
+            ("src/c", "src/a", "A1"),
+            ("src/c", "src/a", "A2"),
+            ("src/c", "src/d", "D"),
+        ])
+        .cycles();
+
+        assert_eq!(cycles.len(), 1);
+        assert_eq!(cycles[0].components, ["src/a", "src/b", "src/c"]);
+        assert_eq!(cycles[0].from, "src/b");
+        assert_eq!(cycles[0].to, "src/c");
+        assert_eq!(cycles[0].remove.len(), 1);
+        assert_eq!(cycles[0].back, 4);
+    }
+
+    #[test]
+    fn groups_overlapping_cycles_into_one_finding() {
+        let cycles = graph(&[
+            ("src/a", "src/b", "B"),
+            ("src/b", "src/a", "A1"),
+            ("src/b", "src/c", "C"),
+            ("src/c", "src/a", "A2"),
+        ])
+        .cycles();
+
+        assert_eq!(cycles.len(), 1);
+        assert_eq!(cycles[0].components, ["src/a", "src/b", "src/c"]);
+    }
+
+    #[test]
+    fn does_not_report_an_acyclic_graph() {
+        let cycles = graph(&[
+            ("src/a", "src/b", "B"),
+            ("src/a", "src/c", "C"),
+            ("src/b", "src/d", "D1"),
+            ("src/c", "src/d", "D2"),
+        ])
+        .cycles();
+
+        assert!(cycles.is_empty());
     }
 
     #[test]
@@ -413,6 +580,9 @@ mod tests {
             ("src/b", "src/a", "A1"),
             ("src/b", "src/a", "A2"),
             ("src/b", "src/c", "C"),
+            ("src/c", "src/d", "D"),
+            ("src/d", "src/e", "E"),
+            ("src/e", "src/c", "C"),
         ])
         .summary();
 
@@ -421,7 +591,10 @@ mod tests {
             Some(
                 "  src/a -> src/b (1 dependency, cyclic)\n  \
                  src/b -> src/a (2 dependencies, cyclic)\n  \
-                 src/b -> src/c (1 dependency)"
+                 src/b -> src/c (1 dependency)\n  \
+                 src/c -> src/d (1 dependency, cyclic)\n  \
+                 src/d -> src/e (1 dependency, cyclic)\n  \
+                 src/e -> src/c (1 dependency, cyclic)"
             )
         );
         assert_eq!(ComponentGraph::default().summary(), None);
