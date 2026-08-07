@@ -133,7 +133,7 @@ impl CsbStore {
             }
         })
     }
-    
+
     /// Whether a candidate has csb corrections
     pub fn has_candidate_csb_corrections(&self, person_id: PersonId) -> bool {
         self.get_all_csb_corrected_persons().contains(&person_id)

@@ -112,9 +112,6 @@ omission:
     manage: Verzuimen beheren
   add:
     title: Toevoegen
-  count:
-    plural: "{} verzuimen"
-    singular: 1 verzuim
   form:
     applies_to: "Dit verzuim geldt voor:"
     description_label: I1 verzuim toevoegen
@@ -143,7 +140,7 @@ paper_corrections:
 progress: Voortgang
 status:
   approved: Goedgekeurd
+  correction: Ambtshalve correcties toegevoegd
   in_progress: Controle bezig
   name: Status
   omission: Verzuimen toegevoegd
-  correction: Ambtshalve correcties toegevoegd

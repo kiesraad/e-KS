@@ -12,7 +12,7 @@
     border-inline-end: none;
   }
 
-  .breadcrumb> ::before {
+  .breadcrumb > ::before {
     background-color: currentColor;
     content: "";
     height: var(--space-6);
@@ -38,7 +38,7 @@
   flex-direction: column;
   display: flex;
 
-  >.button {
+  > .button {
     margin-left: auto;
   }
 }
@@ -47,7 +47,7 @@
   display: flex;
   align-items: center;
 
-  >progress {
+  > progress {
     border-radius: var(--rounded-md);
     height: var(--space-2);
     width: 100%;
@@ -58,23 +58,23 @@
   }
 
   /* Chrome/Safari track */
-  >progress::-webkit-progress-bar {
+  > progress::-webkit-progress-bar {
     background-color: var(--gray-200);
   }
 
   /* Chrome/Safari filled part */
-  >progress::-webkit-progress-value {
+  > progress::-webkit-progress-value {
     background-color: var(--blue-600);
     border-radius: var(--rounded-md);
   }
 
   /* Firefox filled part */
-  >progress::-moz-progress-bar {
+  > progress::-moz-progress-bar {
     background-color: var(--blue-600);
     border-radius: var(--rounded-md);
   }
 
-  >.percentage {
+  > .percentage {
     white-space: no-wrap;
     margin-left: var(--space-2);
   }
@@ -163,7 +163,7 @@
       min-width: 10rem;
     }
 
-    >* {
+    > * {
       margin-right: var(--space-1);
     }
 
@@ -264,7 +264,7 @@
   background-color: var(--base-white);
   padding: var(--space-6);
 
-  &>h3 {
+  & > h3 {
     align-items: center;
     display: flex;
     gap: var(--space-3);
@@ -277,7 +277,7 @@
     mask-image: url("../icons/arrowNarrowRight.svg");
   }
 
-  &>h4 {
+  & > h4 {
     align-content: center;
     height: 2.75rem;
     text-align: left;
@@ -484,7 +484,7 @@
       color: var(--gray-500);
       white-space: nowrap;
 
-      &>span:last-child {
+      & > span:last-child {
         font-weight: var(--font-weight-bold);
       }
     }
@@ -560,7 +560,7 @@
   background-image: url("../icons/csb-phase-4.svg");
 }
 
-.csb-phase-locked>* {
+.csb-phase-locked > * {
   opacity: 0.4;
 }
 
@@ -585,7 +585,7 @@
 .icon-small {
   align-items: center;
   border-radius: 50%;
-  aspect-ratio: 1/1;
+  aspect-ratio: 1 / 1;
   display: flex;
   width: var(--space-8);
   justify-content: center;

@@ -112,9 +112,6 @@ omission:
     manage: Manage omissions
   add:
     title: Add
-  count:
-    plural: "{} omissions"
-    singular: 1 omission
   form:
     applies_to: "This omission applies to:"
     description_label: Add I 1 omission
@@ -143,7 +140,7 @@ paper_corrections:
 progress: Progress
 status:
   approved: Approved
+  correction: Corrections added
   in_progress: In progress
   name: Status
   omission: Omissions added
-  correction: Corrections added

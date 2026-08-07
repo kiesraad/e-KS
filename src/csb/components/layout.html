@@ -16,11 +16,11 @@
 {% endmacro breadcrumb %}
 {% macro omission_badge(status) %}
   <div class="icon-container">
-    {% if status.has_omissions %}
+    {% if status.has_omissions() %}
       <div class="icon-small omission-icon-small"
            title="{{ "csb.status.omission"|trans }}"></div>
     {% endif %}
-    {% if status.has_corrections %}
+    {% if status.has_corrections() %}
       <div class="icon-small correction-icon-small"
            title="{{ "csb.status.correction"|trans }}"></div>
     {% endif %}

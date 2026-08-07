@@ -43,10 +43,7 @@ pub async fn overview(
 
         let from_original_import = imported_lists.iter().any(|l| l.id == list.id);
         candidate_lists.push(CsbCandidateList {
-            restoration_status: RestorationStatus {
-                has_omissions: store.has_candidate_list_omissions(list.id)?,
-                has_corrections: store.has_candidate_list_csb_corrections(list.id)?,
-            },
+            restoration_status: RestorationStatus::for_candidate_list(&store, list.id)?,
             list,
             brp_error_count,
             is_paper_added: !from_original_import,
@@ -57,15 +54,9 @@ pub async fn overview(
         .iter()
         .map(|cl| cl.brp_error_count)
         .sum::<usize>();
-    let political_group_status = RestorationStatus {
-        has_omissions: !store.get_political_group_omissions().is_empty(),
-        has_corrections: store.get_political_group_csb_corrections_count() > 0,
-    };
-    let declarations_of_support_status = RestorationStatus {
-        has_omissions: !store.get_all_declarations_of_support_omissions().is_empty(),
-        has_corrections: false,
-    };
-    let declarations_of_support_card_path = if declarations_of_support_status.has_omissions {
+    let political_group_status = RestorationStatus::for_political_group(&store);
+    let declarations_of_support_status = RestorationStatus::for_declarations_of_support(&store);
+    let declarations_of_support_card_path = if declarations_of_support_status.has_omissions() {
         political_group
             .manage_declarations_of_support_omissions_path()
             .to_string()
@@ -295,8 +286,7 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
-        assert!(body.contains("omission-badge"));
-        assert!(body.contains("1 omission"));
+        assert!(body.contains("Omissions added"));
     }
 
     #[tokio::test]
