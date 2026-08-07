@@ -10,6 +10,7 @@ mod candidate;
 mod candidate_list;
 mod correction;
 mod general_information;
+mod i1;
 mod i4;
 mod omission;
 mod overview;
@@ -19,6 +20,7 @@ mod political_group;
 pub fn router<S: AppRequestState>() -> Router<S> {
     Router::new()
         .typed_get(overview::overview)
+        .typed_get(i1::gen_i1::<S>)
         .typed_get(i4::gen_i4::<S>)
         .typed_get(political_group::overview)
         .typed_post(political_group::toggle_examination_finish)

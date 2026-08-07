@@ -38,7 +38,7 @@ pub(super) fn markdown_document(template: impl Template) -> Result<Textris, AppE
 }
 
 /// [`markdown_document`] plus the event version footer that all H models
-/// carry; I 4 does not.
+/// carry; I 1 and I 4 do not.
 pub(super) fn h_document(common: &ModelData, template: impl Template) -> Result<Textris, AppError> {
     let mut doc = markdown_document(template)?;
     version_footer(&mut doc, common.locale, common.event_id, &common.sha_hash);
