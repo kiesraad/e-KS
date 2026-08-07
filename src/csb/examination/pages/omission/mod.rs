@@ -350,7 +350,7 @@ mod tests {
         assert!(body.contains("Add omissions"));
         // The pill shows the short preset title, while the full description and
         // help text ride along in data attributes for the client to fill in.
-        assert!(body.contains("De machtiging aanduiding ontbreekt"));
+        assert!(body.contains("De aanduiding(en) is/zijn niet geregistreerd"));
         assert!(body.contains("data-title="));
         assert!(body.contains("data-description="));
         assert!(body.contains("data-help-text="));

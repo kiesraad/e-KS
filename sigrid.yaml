@@ -30,7 +30,7 @@ exclude:
   - ".*/src/models/example-inputs/.*"
   - ".*/offline/.*"
   - ".*/src/fixtures/.*"
-  - ".*/tooling/.*"
+  - ".*/tools/.*"
   - ".*/validate/.*"
 
 dependencychecker:
@@ -40,6 +40,8 @@ dependencychecker:
     - "memory-serve"
     - "textris-pdf"
   transitive: true
+
+component_depth: 1
 
 architecture:
   enabled: true

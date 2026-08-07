@@ -1,4 +1,31 @@
-use crate::{PgEvent, PgStoreData, structs::persons::Person};
+use serde_json::json;
+
+use crate::{
+    PgEvent, PgStoreData,
+    structs::{
+        list_submitters::{ListSubmitter, ListSubmitterId},
+        persons::Person,
+    },
+};
+
+/// The substitute submitter with the given ID, if present.
+fn substitute_by_id<'a>(data: &'a PgStoreData, id: &ListSubmitterId) -> Option<&'a ListSubmitter> {
+    data.substitute_submitters.iter().find(|s| &s.id == id)
+}
+
+/// The JSON snapshots of an entity before and after an event.
+type OldNew = (Option<serde_json::Value>, Option<serde_json::Value>);
+
+/// Serializes the state of an entity before and after an event to JSON.
+fn json_diff<T: serde::Serialize>(old: Option<&T>, new: Option<&T>) -> OldNew {
+    let to_json = |data: Option<&T>| data.and_then(|data| serde_json::to_value(data).ok());
+    (to_json(old), to_json(new))
+}
+
+/// A payload that only exists after the event (system events).
+fn added(value: serde_json::Value) -> OldNew {
+    (None, Some(value))
+}
 
 /// Extract the old/new JSON snapshots for a given event, used by
 /// `AuditLogDetail::compute` to build a field-level diff.
@@ -12,106 +39,110 @@ pub(super) fn extract_old_new(
     event: &PgEvent,
     state_before: &PgStoreData,
     state_after: &PgStoreData,
-) -> (Option<serde_json::Value>, Option<serde_json::Value>) {
-    macro_rules! update {
-        ($kind:ident) => {{
-            let old = serde_json::to_value(&state_before.$kind).ok();
-            let new = serde_json::to_value(&state_after.$kind).ok();
-            (old, new)
-        }};
+) -> OldNew {
+    entity_old_new(event, state_before, state_after).unwrap_or_else(|| system_event_payload(event))
+}
 
-        (Vec, $kind:ident, $id:expr) => {{
-            let old = state_before
-                .$kind
-                .iter()
-                .find(|data| data.id == $id)
-                .and_then(|data| serde_json::to_value(data).ok());
-            let new = state_after
-                .$kind
-                .iter()
-                .find(|data| data.id == $id)
-                .and_then(|data| serde_json::to_value(data).ok());
-            (old, new)
-        }};
+/// Old/new snapshots for events that concern a stored entity; `None` for
+/// system events, whose payloads are not diffed from the store.
+fn entity_old_new(
+    event: &PgEvent,
+    state_before: &PgStoreData,
+    state_after: &PgStoreData,
+) -> Option<OldNew> {
+    // Look up one entity by ID in both snapshots.
+    let person = |id| json_diff(state_before.persons.get(id), state_after.persons.get(id));
+    let list = |id| {
+        json_diff(
+            state_before.candidate_lists.get(id),
+            state_after.candidate_lists.get(id),
+        )
+    };
+    let name_auth = |id| {
+        json_diff(
+            state_before.name_authorisations.get(id),
+            state_after.name_authorisations.get(id),
+        )
+    };
+    let substitute = |id| {
+        json_diff(
+            substitute_by_id(state_before, id),
+            substitute_by_id(state_after, id),
+        )
+    };
 
-        ($kind:ident, $id:expr) => {{
-            let old = state_before
-                .$kind
-                .get(&$id)
-                .and_then(|data| serde_json::to_value(data).ok());
-            let new = state_after
-                .$kind
-                .get(&$id)
-                .and_then(|data| serde_json::to_value(data).ok());
-            (old, new)
-        }};
-    }
+    Some(match event {
+        PgEvent::CreatePerson(p) => person(&p.id),
+        // Technically a create, but a diff against the absent old state works too
+        PgEvent::CreatePersonPersonalData { person_id, .. } => person(person_id),
+        PgEvent::CreateCandidateList(cl) => list(&cl.id),
+        PgEvent::CreateNameAuthorisation(na) => name_auth(&na.id),
+        PgEvent::CreateSubstituteSubmitter(ss) => substitute(&ss.id),
 
-    macro_rules! event {
-        ({
-            $($field:ident: $val:expr),* $(,)?
-        }) => {{
-            let val = serde_json::json!({ $(stringify!($field): $val,)* });
-            (None, Some(val))
-        }};
-    }
-
-    match event {
-        PgEvent::CreatePerson(person) => update!(persons, person.id),
-        // Technically a create, but update works too as it does a diff
-        PgEvent::CreatePersonPersonalData { person_id, .. } => update!(persons, person_id),
-        PgEvent::CreateCandidateList(cl) => update!(candidate_lists, cl.id),
-        PgEvent::CreateNameAuthorisation(na) => update!(name_authorisations, na.id),
-        PgEvent::CreateSubstituteSubmitter(ss) => update!(Vec, substitute_submitters, ss.id),
-
-        PgEvent::UpdatePerson(person) => update!(persons, person.id),
-        PgEvent::UpdateNameAuthorisation(na) => update!(name_authorisations, na.id),
-        PgEvent::UpdateListSubmitter(_) => update!(list_submitter),
-        PgEvent::UpdateSubstituteSubmitter(ss) => update!(Vec, substitute_submitters, ss.id),
-        PgEvent::UpdatePoliticalGroup(_) => update!(political_group),
+        PgEvent::UpdatePerson(p) => person(&p.id),
+        PgEvent::UpdateNameAuthorisation(na) => name_auth(&na.id),
+        PgEvent::UpdateListSubmitter(_) => json_diff(
+            Some(&state_before.list_submitter),
+            Some(&state_after.list_submitter),
+        ),
+        PgEvent::UpdateSubstituteSubmitter(ss) => substitute(&ss.id),
+        PgEvent::UpdatePoliticalGroup(_) => json_diff(
+            Some(&state_before.political_group),
+            Some(&state_after.political_group),
+        ),
 
         PgEvent::UpdatePersonPersonalData { person_id, .. }
         | PgEvent::UpdatePersonAddress { person_id, .. }
-        | PgEvent::UpdatePersonRepresentative { person_id, .. } => update!(persons, person_id),
+        | PgEvent::UpdatePersonRepresentative { person_id, .. } => person(person_id),
         PgEvent::UpdateCandidateListDistricts { list_id, .. }
-        | PgEvent::UpdateCandidateListOrder { list_id, .. } => {
-            update!(candidate_lists, list_id)
-        }
+        | PgEvent::UpdateCandidateListOrder { list_id, .. } => list(list_id),
 
+        PgEvent::DeletePerson { person_id } => person(person_id),
+        PgEvent::DeleteCandidateList(cl_id) => list(cl_id),
+        PgEvent::DeleteNameAuthorisation(na_id) => name_auth(na_id),
+        PgEvent::DeleteSubstituteSubmitter {
+            substitute_submitter_id,
+        } => substitute(substitute_submitter_id),
+
+        PgEvent::AddCandidateToCandidateList { .. }
+        | PgEvent::RemoveCandidateFromCandidateList { .. }
+        | PgEvent::DeveloperLogin { .. }
+        | PgEvent::HideDownloadWarning
+        | PgEvent::Import { .. }
+        | PgEvent::DownloadFile { .. }
+        | PgEvent::ExportCsv { .. }
+        | PgEvent::ImportCandidates { .. } => return None,
+    })
+}
+
+/// Payloads of system events, synthesized from the event itself.
+fn system_event_payload(event: &PgEvent) -> OldNew {
+    match event {
         PgEvent::AddCandidateToCandidateList { person_id, .. } => {
-            let new_val = serde_json::json!({ "person_id": person_id.to_string() });
-            (None, Some(new_val))
+            added(json!({ "person_id": person_id.to_string() }))
         }
         PgEvent::RemoveCandidateFromCandidateList { person_id, .. } => {
-            let old_val = serde_json::json!({ "person_id": person_id.to_string() });
-            (Some(old_val), None)
+            (Some(json!({ "person_id": person_id.to_string() })), None)
         }
-
-        PgEvent::DeletePerson { person_id } => update!(persons, person_id),
-        PgEvent::DeleteCandidateList(cl_id) => update!(candidate_lists, cl_id),
-        PgEvent::DeleteNameAuthorisation(na_id) => update!(name_authorisations, na_id),
-        PgEvent::DeleteSubstituteSubmitter {
-            substitute_submitter_id: ss_id,
-        } => update!(Vec, substitute_submitters, *ss_id),
-
-        PgEvent::DeveloperLogin { stream_id } => event!({ stream_id: stream_id.to_string() }),
-        PgEvent::HideDownloadWarning | PgEvent::Import { .. } => event!({}),
+        PgEvent::DeveloperLogin { stream_id } => {
+            added(json!({ "stream_id": stream_id.to_string() }))
+        }
         PgEvent::DownloadFile {
             file_name,
             download_path,
-        } => event!({
-            file_name: file_name,
-            download_path: download_path,
-        }),
+        } => added(json!({
+            "file_name": file_name,
+            "download_path": download_path,
+        })),
         PgEvent::ExportCsv {
             file_name,
             file_size,
             list_id,
-        } => event!({
-            file_name: file_name,
-            file_size: file_size,
-            list_id: list_id.to_string(),
-        }),
+        } => added(json!({
+            "file_name": file_name,
+            "file_size": file_size,
+            "list_id": list_id.to_string(),
+        })),
         PgEvent::ImportCandidates {
             file_name,
             file_size,
@@ -119,19 +150,21 @@ pub(super) fn extract_old_new(
             created_persons,
             updated_persons,
             ..
-        } => {
-            fn person_ids(persons: &[Person]) -> Vec<String> {
-                persons.iter().map(|p| p.id.to_string()).collect()
-            }
-            event!({
-                file_name: file_name,
-                file_size: file_size,
-                list_id: list_id.to_string(),
-                created_persons: person_ids(created_persons),
-                updated_persons: person_ids(updated_persons),
-            })
-        }
+        } => added(json!({
+            "file_name": file_name,
+            "file_size": file_size,
+            "list_id": list_id.to_string(),
+            "created_persons": person_ids(created_persons),
+            "updated_persons": person_ids(updated_persons),
+        })),
+        // `HideDownloadWarning` and `Import` carry no payload. Entity-backed
+        // events never reach here (they are handled by `entity_old_new`).
+        _ => added(json!({})),
     }
+}
+
+fn person_ids(persons: &[Person]) -> Vec<String> {
+    persons.iter().map(|p| p.id.to_string()).collect()
 }
 
 #[cfg(test)]

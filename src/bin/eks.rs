@@ -13,34 +13,31 @@ async fn main() {
     start(address).await;
 }
 
+/// Unwraps a startup step, logging the error and exiting on failure.
+fn or_exit<T>(result: Result<T, impl std::fmt::Display>, context: &str) -> T {
+    match result {
+        Ok(value) => value,
+        Err(err) => {
+            tracing::error!("{context}: {err}");
+            std::process::exit(1);
+        }
+    }
+}
+
 /// Starts the server on the given address.
 async fn start(address: String) {
     // Initialize tracing subscriber (logging)
     logging::init();
 
     // Load and validate configuration before binding so misconfiguration fails fast.
-    let config = match Config::from_env() {
-        Ok(config) => config,
-        Err(err) => {
-            tracing::error!("Invalid configuration: {err}");
-            std::process::exit(1);
-        }
-    };
+    let config = or_exit(Config::from_env(), "Invalid configuration");
 
-    // Create a `TcpListener` using tokio.
-    let listener = match TcpListener::bind(&address).await {
-        Ok(listener) => listener,
-        Err(err) => {
-            tracing::error!("Failed to bind to address {address}: {err}");
-            std::process::exit(1);
-        }
-    };
+    let listener = or_exit(
+        TcpListener::bind(&address).await,
+        &format!("Failed to bind to address {address}"),
+    );
 
-    // Run the application
-    if let Err(err) = run(listener, config).await {
-        tracing::error!("Application error: {}", err);
-        std::process::exit(1);
-    }
+    or_exit(run(listener, config).await, "Application error");
 }
 
 /// Runs the application with the given TCP listener and resolved configuration.

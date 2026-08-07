@@ -96,12 +96,20 @@ mod tests {
     use super::*;
 
     #[test]
-    fn district_title_and_code_match() {
+    fn ek_district_title_and_code_match() {
         assert_eq!(ElectoralDistrict::UT.code(), "UT");
         assert_eq!(ElectoralDistrict::UT.region_number(), "7");
         assert_eq!(ElectoralDistrict::UT.title(AnyLocale::Nl), "Utrecht");
         assert_eq!(ElectoralDistrict::UT.title(AnyLocale::Fry), "Utert");
 
+        assert_eq!(ElectoralDistrict::FR.title(AnyLocale::Nl), "Fryslân");
+        assert_eq!(ElectoralDistrict::FR.title(AnyLocale::Fry), "Fryslân");
+
+        assert_eq!(ElectoralDistrict::KN.region_number(), "16");
+    }
+
+    #[test]
+    fn ps_district_title_and_code_match() {
         assert_eq!(ElectoralDistrict::PsArnhem.code(), "ARN");
         assert_eq!(ElectoralDistrict::PsArnhem.region_number(), "7");
         assert_eq!(ElectoralDistrict::PsArnhem.title(AnyLocale::Nl), "Arnhem");
@@ -113,7 +121,18 @@ mod tests {
             ElectoralDistrict::PsDenHaag.title(AnyLocale::En),
             "The Hague"
         );
+        assert_eq!(
+            ElectoralDistrict::PsLeeuwarden.title(AnyLocale::Nl),
+            "Leeuwarden"
+        );
+        assert_eq!(
+            ElectoralDistrict::PsLeeuwarden.title(AnyLocale::Fry),
+            "Ljouwert"
+        );
+    }
 
+    #[test]
+    fn ws_district_title_and_code_match() {
         assert_eq!(ElectoralDistrict::WsHunzeEnAas.code(), "WS-HEA");
         assert_eq!(ElectoralDistrict::WsHunzeEnAas.region_number(), "3");
         assert_eq!(
@@ -127,19 +146,7 @@ mod tests {
             "Amstel, Gooi en Vecht"
         );
 
-        assert_eq!(ElectoralDistrict::FR.title(AnyLocale::Nl), "Fryslân");
-        assert_eq!(ElectoralDistrict::FR.title(AnyLocale::Fry), "Fryslân");
         assert_eq!(ElectoralDistrict::WsFryslan.title(AnyLocale::Nl), "Fryslân");
-        assert_eq!(
-            ElectoralDistrict::PsLeeuwarden.title(AnyLocale::Nl),
-            "Leeuwarden"
-        );
-        assert_eq!(
-            ElectoralDistrict::PsLeeuwarden.title(AnyLocale::Fry),
-            "Ljouwert"
-        );
-
-        assert_eq!(ElectoralDistrict::KN.region_number(), "16");
         assert_eq!(
             ElectoralDistrict::WsDrentsOverijsselseDelta.region_number(),
             "24"

@@ -217,7 +217,7 @@ fn field_error_messages(
         .into_iter()
         .map(|(field_name, error)| {
             CsvError::ParseError {
-                candidate_number,
+                line_number: candidate_number + 1,
                 field_name,
                 message: error.message(locale),
             }
@@ -632,8 +632,8 @@ mod tests {
         match result {
             Err(ImportCandidateListError::Messages(messages)) => {
                 assert_eq!(messages.len(), 2);
-                assert!(messages.iter().any(|message| message.contains("line 1")));
                 assert!(messages.iter().any(|message| message.contains("line 2")));
+                assert!(messages.iter().any(|message| message.contains("line 3")));
             }
             other => panic!("expected validation messages, got {other:?}"),
         }

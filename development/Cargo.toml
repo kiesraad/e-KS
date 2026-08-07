@@ -1,6 +1,6 @@
 [package]
 name = "eks-development"
-version = "0.5.5"
+version = "0.5.6"
 edition.workspace = true
 license.workspace = true
 publish.workspace = true
@@ -39,4 +39,7 @@ serde-saphyr = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 eks = { path = "..", default-features = false }
-eks-locales = { path = "../tooling" }
+eks-locales = { path = "../tools/locales" }
+
+[lints]
+workspace = true

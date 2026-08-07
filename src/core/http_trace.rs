@@ -70,12 +70,19 @@ fn on_response(response: &Response<Body>, latency: Duration, span: &Span) {
         span.record("response_size", size);
     }
 
-    if status >= 500 {
-        tracing::event!(parent: span, Level::ERROR, "http request");
-    } else if status >= 400 {
-        tracing::event!(parent: span, Level::WARN, "http request");
-    } else {
-        tracing::event!(parent: span, Level::INFO, "http request");
+    emit_response_event(span, status);
+}
+
+/// Emits the per-response event at the level matching the status class.
+#[expect(
+    clippy::cognitive_complexity,
+    reason = "`event!` requires a const level, and its expansion inflates the metric."
+)]
+fn emit_response_event(span: &Span, status: u16) {
+    match status {
+        500.. => tracing::event!(parent: span, Level::ERROR, "http request"),
+        400.. => tracing::event!(parent: span, Level::WARN, "http request"),
+        _ => tracing::event!(parent: span, Level::INFO, "http request"),
     }
 }
 

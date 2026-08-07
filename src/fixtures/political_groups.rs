@@ -10,18 +10,40 @@ use crate::{
 };
 use uuid::Uuid;
 
+/// A stable fixture ID derived from `key`.
+fn fixture_id<T: From<Uuid>>(key: &[u8]) -> T {
+    Uuid::new_v5(&Uuid::NAMESPACE_OID, key).into()
+}
+
+/// A `FullName` without first name, parsed from constant fixture values.
+fn name(initials: &str, prefix: Option<&str>, last_name: &str) -> FullName {
+    FullName {
+        first_name: None,
+        last_name: last_name.parse().expect("last name"),
+        last_name_prefix: prefix.map(|p| p.parse().expect("last name prefix")),
+        initials: initials.parse().expect("initials"),
+    }
+}
+
+/// A Dutch address parsed from constant fixture values.
+fn address(
+    street: &str,
+    number: &str,
+    addition: Option<&str>,
+    postal_code: &str,
+    locality: &str,
+) -> Address {
+    Address::Dutch(DutchAddress {
+        locality: Some(locality.parse().expect("locality")),
+        postal_code: Some(postal_code.parse().expect("postal code")),
+        house_number: Some(number.parse().expect("house number")),
+        house_number_addition: addition.map(|a| a.parse().expect("house number addition")),
+        street_name: Some(street.parse().expect("street name")),
+        known_in_bag: Some(true),
+    })
+}
+
 pub async fn load(store: &PgStore, display_name: Option<DisplayName>) -> Result<(), AppError> {
-    let agent_id: NameAuthorisationId =
-        Uuid::new_v5(&Uuid::NAMESPACE_OID, b"fixture_authorised_agent").into();
-
-    let submitter_id: ListSubmitterId =
-        Uuid::new_v5(&Uuid::NAMESPACE_OID, b"fixture_list_submitter").into();
-
-    let substitute_submitter_id_1: ListSubmitterId =
-        Uuid::new_v5(&Uuid::NAMESPACE_OID, b"fixture_substitute_submitter_1").into();
-    let substitute_submitter_id_2: ListSubmitterId =
-        Uuid::new_v5(&Uuid::NAMESPACE_OID, b"fixture_substitute_submitter_2").into();
-
     let political_group = PoliticalGroup {
         display_name: Some(
             display_name.unwrap_or_else(|| "Kiesraad Demo".parse().expect("display name")),
@@ -33,76 +55,35 @@ pub async fn load(store: &PgStore, display_name: Option<DisplayName>) -> Result<
     political_group.update(store).await?;
 
     NameAuthorisation {
-        id: agent_id,
-        name: FullName {
-            first_name: None,
-            last_name: "Jansen".parse().expect("last name"),
-            last_name_prefix: Some("de".parse().expect("last name prefix")),
-            initials: "A.B.".parse().expect("initials"),
-        },
+        id: fixture_id::<NameAuthorisationId>(b"fixture_authorised_agent"),
+        name: name("A.B.", Some("de"), "Jansen"),
         legal_name: "Kiesraad Demo Partij".parse().expect("legal name"),
     }
     .create(store)
     .await?;
 
     ListSubmitter {
-        id: submitter_id,
-        name: FullName {
-            first_name: None,
-            last_name: "Bos".parse().expect("last name"),
-            last_name_prefix: None,
-            initials: "E.F.".parse().expect("initials"),
-        },
-        address: Address::Dutch(DutchAddress {
-            locality: Some("Rotterdam".parse().expect("locality")),
-            postal_code: Some("3011 CC".parse().expect("postal code")),
-            house_number: Some("5".parse().expect("house number")),
-            house_number_addition: Some("B".parse().expect("house number addition")),
-            street_name: Some("Coolsingel".parse().expect("street name")),
-            known_in_bag: Some(true),
-        }),
+        id: fixture_id::<ListSubmitterId>(b"fixture_list_submitter"),
+        name: name("E.F.", None, "Bos"),
+        address: address("Coolsingel", "5", Some("B"), "3011 CC", "Rotterdam"),
         is_substitute: false,
     }
     .update(store)
     .await?;
 
     ListSubmitter {
-        id: substitute_submitter_id_1,
-        name: FullName {
-            first_name: None,
-            last_name: "Smit".parse().expect("last name"),
-            last_name_prefix: Some("van".parse().expect("last name prefix")),
-            initials: "G.H.".parse().expect("initials"),
-        },
-        address: Address::Dutch(DutchAddress {
-            locality: Some("Den Haag".parse().expect("locality")),
-            postal_code: Some("2511 DD".parse().expect("postal code")),
-            house_number: Some("18".parse().expect("house number")),
-            house_number_addition: None,
-            street_name: Some("Spui".parse().expect("street name")),
-            known_in_bag: Some(true),
-        }),
+        id: fixture_id::<ListSubmitterId>(b"fixture_substitute_submitter_1"),
+        name: name("G.H.", Some("van"), "Smit"),
+        address: address("Spui", "18", None, "2511 DD", "Den Haag"),
         is_substitute: true,
     }
     .create_substitute(store)
     .await?;
 
     ListSubmitter {
-        id: substitute_submitter_id_2,
-        name: FullName {
-            first_name: None,
-            last_name: "Jong".parse().expect("last name"),
-            last_name_prefix: None,
-            initials: "I.J.".parse().expect("initials"),
-        },
-        address: Address::Dutch(DutchAddress {
-            locality: Some("Utrecht".parse().expect("locality")),
-            postal_code: Some("3511 AA".parse().expect("postal code")),
-            house_number: Some("21".parse().expect("house number")),
-            house_number_addition: Some("C".parse().expect("house number addition")),
-            street_name: Some("Oudegracht".parse().expect("street name")),
-            known_in_bag: Some(true),
-        }),
+        id: fixture_id::<ListSubmitterId>(b"fixture_substitute_submitter_2"),
+        name: name("I.J.", None, "Jong"),
+        address: address("Oudegracht", "21", Some("C"), "3511 AA", "Utrecht"),
         is_substitute: true,
     }
     .create_substitute(store)

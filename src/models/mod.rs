@@ -1,7 +1,7 @@
 //! The official election PDF models, rendered in-process with
 //! [`textris_pdf`].
 //!
-//! Each model lives in its own file (`h1`, `h3`, `h4`, `h9`, `i4`); H 3 covers
+//! Each model lives in its own file (`h1`, `h3`, `h4`, `h9`, `i1`, `i4`); H 3 covers
 //! both the H 3-1 and H 3-2 variants. The document text is authored as askama
 //! Markdown templates in `templates/` (one per locale and variant), written in
 //! the textris-pdf Markdown dialect and wired up by [`mod@markdown`].
@@ -22,6 +22,7 @@ pub mod h1;
 pub mod h3;
 pub mod h4;
 pub mod h9;
+pub mod i1;
 pub mod i4;
 pub mod inputs;
 mod layout;
@@ -81,9 +82,9 @@ mod tests {
             .expect("render model")
     }
 
-    /// Every example input renders to a valid PDF. This drives all six document
-    /// builders (`h1`, `h3-1`, `h3-2`, `h4`, `h9`, `i4`) together with the
-    /// shared layout code, end to end.
+    /// Every example input renders to a valid PDF. This drives all seven
+    /// document builders (`h1`, `h3-1`, `h3-2`, `h4`, `h9`, `i1`, `i4`)
+    /// together with the shared layout code, end to end.
     #[test]
     fn renders_every_example_input() {
         let mut rendered = 0;
@@ -92,7 +93,7 @@ mod tests {
             assert_pdf(&example.render().expect("render example"), name);
             rendered += 1;
         }
-        assert_eq!(rendered, 17, "expected to render every example input");
+        assert_eq!(rendered, 19, "expected to render every example input");
     }
 
     /// H 1's attachment checklist branches on the election type; render each so
@@ -155,8 +156,20 @@ mod tests {
         assert_pdf(&render(input), "i4 open objections");
     }
 
+    /// I 1 is downloaded before anything was imported too: render it with both
+    /// list sections empty so the "geen verzuimen" fallback and the empty
+    /// "Kandidatenlijsten" section run. (`i1_example_2` covers the fallback
+    /// with lists present.)
+    #[test]
+    fn i1_renders_with_empty_sections() {
+        let mut input = i1_example_1();
+        input.submitted_lists.clear();
+        input.found_omissions.clear();
+        assert_pdf(&render(input), "i1 empty sections");
+    }
+
     /// Models report a download file name; check the locale- and
-    /// designation-dependent ones, including I 4 which the app never renders.
+    /// designation-dependent ones, plus the Dutch-only I 1 and I 4.
     #[test]
     fn filenames() {
         assert_eq!(
@@ -168,6 +181,7 @@ mod tests {
         frisian.common.locale = ModelLocale::Fry;
         assert_eq!(frisian.filename(), "h3-1-oantsjutting.pdf");
 
+        assert_eq!(i1_example_1().filename(), "i1-proces-verbaal.pdf");
         assert_eq!(i4_example_1().filename(), "i4-proces-verbaal.pdf");
     }
 }
