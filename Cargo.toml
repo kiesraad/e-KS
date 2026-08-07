@@ -1,5 +1,5 @@
 [workspace]
-members = ["validate", "auth-service", "development", "tooling"]
+members = ["validate", "auth-service", "development", "tools/locales"]
 resolver = "3"
 
 # Fields shared by every crate in the workspace. Individual crates inherit these
@@ -188,11 +188,11 @@ x509-parser = { workspace = true, optional = true }
 zeroize = { workspace = true }
 
 [build-dependencies]
-eks-locales = { path = "tooling" }
+eks-locales = { path = "tools/locales" }
 memory-serve = { workspace = true, optional = true }
 
 [dev-dependencies]
-eks-locales = { path = "tooling" }
+eks-locales = { path = "tools/locales" }
 tower = { workspace = true }
 tracing-test = { workspace = true }
 tokio = { workspace = true, features = ["test-util"] }

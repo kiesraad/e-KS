@@ -7,12 +7,13 @@ export MEMORY_SERVE_QUIET=1
 FULL=false
 for arg in "$@"; do
     case "$arg" in
-        --full) FULL=true ;;
+        -a|--all|--full) FULL=true ;;
         -h|--help)
             echo "Usage: bin/check [--full]"
             echo
             echo "  --full  Run the Rust checks for the whole workspace with"
-            echo "          --all-features, and also build the API docs."
+            echo "          --all-features, build the API docs, and run the"
+            echo "          dylint libraries."
             exit 0
             ;;
         *)
@@ -30,7 +31,8 @@ if [ "$FULL" = true ]; then
     cargo clippy --all-targets --workspace --all-features -- -D warnings
     cargo test --workspace --all-features
     cargo doc --workspace --no-deps --all-features --document-private-items
-else 
+    cargo dylint --all
+else
     cargo +nightly fmt --all -- --config imports_granularity="Crate"
     cargo clippy --all-targets -- -D warnings
     cargo test

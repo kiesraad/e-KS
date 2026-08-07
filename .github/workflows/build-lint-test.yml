@@ -154,6 +154,33 @@ jobs:
         with:
           path: './target/doc'
 
+  dylint:
+    name: Rust dylint
+    permissions:
+      contents: read
+    if: ${{ needs.changes.outputs.changed == 'true' }}
+    needs: changes
+    runs-on: ubuntu-24.04
+    env:
+      CARGO_TERM_COLOR: always
+    steps:
+      - *checkout
+      - *setup-stable-rust
+
+      - name: Cargo cache
+        uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
+        with:
+          shared-key: eks-dylint
+
+      # `bin/init` runs `bin/setup`, which installs cargo-dylint and dylint-link.
+      - *tools-cache
+      - *setup-project
+
+      # Builds the lint libraries in dylint.toml with their pinned nightly,
+      # then type-checks the crate with them enabled.
+      - name: Run dylint
+        run: cargo dylint --all
+
   deploy-docs:
     name: Deploy Rustdocs to GitHub Pages
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -342,6 +369,7 @@ jobs:
       - format
       - frontend
       - rust-lint
+      - dylint
       - build
       - playwright
       - audit-dependencies
