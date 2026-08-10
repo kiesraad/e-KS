@@ -30,7 +30,7 @@ exclude:
   - ".*/src/models/example-inputs/.*"
   - ".*/offline/.*"
   - ".*/src/fixtures/.*"
-  - ".*/tooling/.*"
+  - ".*/tools/.*"
   - ".*/validate/.*"
 
 dependencychecker:
