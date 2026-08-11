@@ -107,6 +107,26 @@ impl SessionStore {
         }
     }
 
+    /// Refreshes `last_activity` of an existing session. Unlike [`Self::insert`]
+    /// this never re-creates the row, so a concurrent logout stays terminal.
+    pub async fn touch(&self, session: &Session) {
+        match self {
+            SessionStore::InMemory(inner) => {
+                if let Some(existing) = inner.write().get_mut(session.token_hash()) {
+                    existing.last_activity = session.last_activity;
+                }
+            }
+            #[cfg(feature = "database")]
+            SessionStore::Database(pool) => {
+                if let Err(err) =
+                    session_db::touch(pool, session.token_hash(), session.last_activity).await
+                {
+                    error!("failed to touch session: {err}");
+                }
+            }
+        }
+    }
+
     /// Removes a session by its token. Returns the removed session, if any.
     pub async fn remove(&self, token: &str) -> Option<Session> {
         let token_hash = hash_token(token);
@@ -213,6 +233,25 @@ mod tests {
         assert_eq!(loaded, Some(session));
     }
 
+    /// `touch` refreshes activity but never re-creates a removed session, so
+    /// a logout that races an in-flight request stays terminal.
+    #[tokio::test]
+    async fn touch_does_not_resurrect_removed_session() {
+        let store = SessionStore::default();
+        let mut session = Session::new_test();
+        let token = session.token_string();
+        store.insert(session.clone()).await;
+
+        session.last_activity = Utc::now() + Duration::minutes(5);
+        store.touch(&session).await;
+        let refreshed = store.get(&token).await.expect("load").expect("present");
+        assert_eq!(refreshed.last_activity, session.last_activity);
+
+        store.remove(&token).await;
+        store.touch(&session).await;
+        assert!(store.get(&token).await.expect("load").is_none());
+    }
+
     /// Removes expired sessions on lookup.
     #[tokio::test]
     async fn get_removes_expired_sessions() {
@@ -308,6 +347,10 @@ mod tests {
         );
 
         store.remove(&token).await;
+        assert!(store.get(&token).await?.is_none());
+
+        // A touch after logout must not resurrect the session row.
+        store.touch(&reloaded).await;
         assert!(store.get(&token).await?.is_none());
         Ok(())
     }
