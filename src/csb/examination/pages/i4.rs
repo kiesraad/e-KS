@@ -1,15 +1,10 @@
-use std::collections::BTreeMap;
-
 use axum::{extract::State, http::HeaderValue, response::IntoResponse};
 
 use crate::{
     AppError, AppRequestState, CsbMainStore,
     core::{ModelLocale, constants::DEFAULT_DATE_FORMAT},
-    csb::examination::pages::CsbI4DownloadPath,
-    models::{
-        Pdf,
-        i4::{I4, OmissionGroup},
-    },
+    csb::examination::{actions::found_omissions, pages::CsbI4DownloadPath},
+    models::{Pdf, i4::I4},
     utils::no_cache_headers,
 };
 
@@ -20,34 +15,8 @@ pub async fn gen_i4<S: AppRequestState>(
     main_store: CsbMainStore,
     State(state): State<S>,
 ) -> Result<impl IntoResponse, AppError> {
-    let csb_registry = state.csb_store_registry();
     let election = main_store.election;
-
-    let mut found_omissions = Vec::new();
-    for store in csb_registry.stores_by_scope().await? {
-        let recoverable = store.get_recoverable_omissions();
-        if recoverable.is_empty() {
-            continue;
-        }
-
-        let mut by_district: BTreeMap<String, Vec<String>> = BTreeMap::new();
-        for omission in recoverable {
-            let district = omission.category.electoral_district(&store, &election)?;
-            by_district
-                .entry(district)
-                .or_default()
-                .push(omission.description.to_string());
-        }
-
-        let designation = store.get_appellation(crate::projection::WithCorrections::All);
-        for (district, descriptions) in by_district {
-            found_omissions.push(OmissionGroup {
-                designation: designation.clone(),
-                electoral_district: district,
-                omission_descriptions: descriptions,
-            });
-        }
-    }
+    let found_omissions = found_omissions(state.csb_store_registry(), &election).await?;
 
     let model = I4 {
         election_name: election.formal_title(ModelLocale::Nl),

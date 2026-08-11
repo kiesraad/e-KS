@@ -1,0 +1,17 @@
+[package]
+name = "module_dependency_cycles"
+version = "0.1.0"
+description = "Reject cyclic dependencies between components"
+edition = "2024"
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+dylint_linting = "=6.0.3"
+
+[workspace]
+
+[package.metadata.rust-analyzer]
+rustc_private = true

@@ -27,7 +27,6 @@ lcov.info
 **/playwright-report/
 
 /frontend/static/*
-/tools
 /bin/esbuild
 /bin/biome
 /bin/bag-service

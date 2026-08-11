@@ -16,6 +16,7 @@ legend:
   error: Niet inleverbaar
   info: Ter info
   warning: Actie vereist
+no_appellation: Geregistreerde aanduiding
 no_authorised_agent: Geen gemachtigde
 no_bsn: BSN
 no_candidate_list: Geen kandidatenlijst
@@ -23,7 +24,6 @@ no_candidates: Geen kandidaten
 no_country_of_residence: Woonland
 no_date_of_birth: Geboortedatum
 no_designation_type: Lijstaanduiding
-no_appellation: Geregistreerde aanduiding
 no_districts: Geen kieskringen
 no_initials: Initialen
 no_last_name: Achternaam

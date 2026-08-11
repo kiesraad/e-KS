@@ -76,7 +76,7 @@ pub fn create(state: AppState) -> Router<AppState> {
         .merge(auth_service::router())
         .merge(common::public_router());
 
-    let router = apply_security_headers(router)
+    let router = router
         .layer(middleware::from_fn_with_state(
             state.clone(),
             db_gate_middleware,
@@ -108,7 +108,7 @@ pub fn create(state: AppState) -> Router<AppState> {
     #[cfg(feature = "acme")]
     let router = router.merge(crate::acme::acme_challenge_router());
 
-    router
+    apply_security_headers(router)
 }
 
 /// Global fetch-metadata CSRF protection, backstopping the session
@@ -276,6 +276,32 @@ mod tests {
         // The health probe must keep answering (memory backend is reachable),
         // not be swallowed by the maintenance gate.
         assert_eq!(response.status(), StatusCode::OK);
+    }
+
+    /// The security headers are applied outermost, so they must also cover
+    /// short-circuit responses from outer middleware (the maintenance page)
+    /// and routes merged after the app router (the load balancer probe).
+    #[tokio::test]
+    async fn security_headers_cover_short_circuits_and_late_merged_routes() {
+        let state = AppState::new_for_tests().await;
+        state.db_health.mark_unavailable("test: database down");
+        let app: Router = create(state.clone()).with_state(state.clone());
+
+        for uri in ["/", crate::app::middleware::health::LbHealthPath::PATH] {
+            let request = Request::builder().uri(uri).body(Body::empty()).unwrap();
+            let response = app.clone().oneshot(request).await.expect("response");
+
+            for name in [
+                header::CONTENT_SECURITY_POLICY,
+                header::X_FRAME_OPTIONS,
+                header::X_CONTENT_TYPE_OPTIONS,
+            ] {
+                assert!(
+                    response.headers().contains_key(&name),
+                    "{uri} response must carry {name}"
+                );
+            }
+        }
     }
 
     /// The load balancer has no `x-eks-key`, so its probe must answer from

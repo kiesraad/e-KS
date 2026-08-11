@@ -130,18 +130,15 @@ impl QueryParamState {
     }
 
     pub fn redirect_url(&self) -> Option<&str> {
-        self.redirect_to
-            .as_deref()
-            .filter(|url| url.starts_with('/'))
+        self.redirect_to.as_deref().filter(|url| is_local_path(url))
     }
 
     /// Builds the redirect URL: the `redirect_to` query param if present (and a
     /// valid relative path), otherwise the default path with success query params.
     fn redirect_url_or(&self, default: impl std::fmt::Display) -> String {
-        let mut url = match &self.redirect_to {
-            Some(url) if url.starts_with('/') => url.clone(),
-            _ => default.to_string(),
-        };
+        let mut url = self
+            .redirect_url()
+            .map_or_else(|| default.to_string(), str::to_string);
 
         if !url.contains('?') {
             url.push_str("?&success=true");
@@ -179,6 +176,16 @@ impl QueryParamState {
     }
 }
 
+/// Accept only local absolute paths as redirect targets: browsers resolve a
+/// leading `//` (or `/\`) as a protocol-relative URL to another host, and
+/// control characters could split the `Location` header.
+fn is_local_path(url: &str) -> bool {
+    url.starts_with('/')
+        && !url.starts_with("//")
+        && !url.contains('\\')
+        && !url.bytes().any(|byte| byte.is_ascii_control())
+}
+
 #[cfg(test)]
 mod tests {
     use axum::http::header::LOCATION;
@@ -210,6 +217,31 @@ mod tests {
         let state = QueryParamState::initial();
         let loc = location(state.redirect_or_preserving_initial("/bar?initial=true"));
         assert_eq!(loc, "/bar?initial=true");
+    }
+
+    #[test]
+    fn redirect_rejects_non_local_targets() {
+        for evil in [
+            "https://evil.example",
+            "//evil.example",
+            "//evil.example/path",
+            "/\\evil.example",
+            "/foo\\bar",
+            "/foo\rSet-Cookie: x",
+            "foo",
+            "",
+        ] {
+            let state = QueryParamState::redirect_to(evil.to_string());
+            assert_eq!(state.redirect_url(), None, "{evil:?} must be rejected");
+            assert_eq!(
+                location(state.redirect_or("/fallback")),
+                "/fallback?&success=true",
+                "{evil:?} must fall back to the default"
+            );
+        }
+
+        let state = QueryParamState::redirect_to("/safe/path?x=1".to_string());
+        assert_eq!(state.redirect_url(), Some("/safe/path?x=1"));
     }
 
     #[test]

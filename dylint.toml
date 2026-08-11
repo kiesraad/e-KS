@@ -1,0 +1,2 @@
+[workspace.metadata.dylint]
+libraries = [{ path = "tools/dylint/module_dependency_cycles" }]
