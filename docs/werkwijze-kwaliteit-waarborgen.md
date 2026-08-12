@@ -19,12 +19,12 @@ Er is niet alleen aandacht voor de technische kwaliteit, maar ook of de gebouwde
   - DoD: issue is pas klaar als er is voldaan aan de DoD [link]
 - Kwaliteit wordt verhoogd door het **vierogenprincipe**:
   - Elke pull request wordt gereviewed door een andere ontwikkelaar voordat code gemerged mag worden
+ 
+### Continuous Integration / Continuous Delivery (CI/CD)
 
+CI/CD  helpt om risico’s  te mitigeren. Door codewijzigingen regelmatig (bij elke PR) te integreren, testen en opleveren, worden fouten eerder ontdekt en wordt de kans op problemen bij het mergen en opleveren van nieuwe code verkleind. Door een CI/CD-pipeline in te richten kunnen deze stappen geautomatiseerd worden gedaan.
 
-
-  
-### CI/CD pipeline
-De CI/CD pipeline bevat de volgende quality gates
+De CI/CD pipeline binnen e-KS bevat de volgende quality gates:
 - Testing
   - Alle playwright tests moeten slagen
   - Alle unit testen moeten slagen
@@ -73,8 +73,8 @@ Hoe:
 - Testen van functionaliteit op juridische kaders 
 
 ### externe stakeholders
-Frequentie: meerdere keren per jaar
-Wie: Zowel politieke partijen als gemeentes en waterschappen
+Frequentie: meerdere keren per jaar  
+Wie: Zowel politieke partijen als gemeentes en waterschappen  
 Doel: Vooraf en achteraf feedback ophalen  
 Hoe:   
 - Review (demo) van gebouwde functionaliteit
