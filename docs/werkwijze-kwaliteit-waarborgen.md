@@ -24,6 +24,7 @@ Er is niet alleen aandacht voor de technische kwaliteit, maar ook of de gebouwde
 
   
 ### CI/CD pipeline
+De CI/CD pipeline bevat de volgende quality gates
 - Testing
   - Alle playwright tests moeten slagen
   - Alle unit testen moeten slagen
@@ -33,7 +34,7 @@ Er is niet alleen aandacht voor de technische kwaliteit, maar ook of de gebouwde
   - Clippy geeft geen warnings
   - Geen Biome linting errors op CSS en TypeScript code
   - Geen djlint format warnings op HTML templates
-  - Lekker meta: de CI/CD pipeline configuratie mag geen zizmor linting errors bevatten
+  - De CI/CD pipeline configuratie mag geen zizmor linting errors bevatten
   - Elke bestand in het archief moet eindigen met een lijntje met een een newline ('\n') karakter
 - Algemene kwaliteit
   - Sigrid score van minimaal 3.5 ster op nieuwe code (dit is geen gate, de job faalt maar mergen mag nog steeds)
@@ -44,6 +45,13 @@ Er is niet alleen aandacht voor de technische kwaliteit, maar ook of de gebouwde
 
 ## Testen
 
+Verder uitwerken, maar alvast wat punten:
+- unit testen
+- playwright testen
+- Testen hangen aan usecases
+- Elk issue wordt functioneel getest door de Product Owner
+- Testen met eindgebruikers (frequentie: meerdere keren per jaar)
+
 ## Externe kwaliteitstoetsen
 
 SIG
@@ -52,12 +60,24 @@ SonarCube
 
 ## Juiste functionaliteit
 
-usecases 
-Testen door PO
- 
+Om tot de juist functionaliteit te komen werkt het e-KS team met use cases (gebruiksscenario's) deze zijn afgeleid van de Kieswet. Vanuit deze use cases worden de epics gemaakt en  
 
 ### interne stakeholders
+Frequentie: wekelijks  
+Wie: afdelingen "Juridische Kennis en Advies" en "Regie Kwaliteit Verkiezingsketen"  
+Doel: Vooraf en achteraf feedback ophalen  
+Hoe:   
+- Refinement van de komende functionaliteit
+- Review (demo) van gebouwde functionaliteit
+- Testen van functionaliteit op functioneel niveau
+- Testen van functionaliteit op juridische kaders 
 
 ### externe stakeholders
+Frequentie: meerdere keren per jaar
+Wie: Zowel politieke partijen als gemeentes en waterschappen
+Doel: Vooraf en achteraf feedback ophalen  
+Hoe:   
+- Review (demo) van gebouwde functionaliteit
+- Testen van functionaliteit op functioneel niveau
 
 ## Documentatie
