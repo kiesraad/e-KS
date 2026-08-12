@@ -55,6 +55,9 @@ group:
     plural: "{} BRP fouten"
     singular: 1 BRP fout
   candidate_count: "<strong>{}</strong> kandidaten"
+  confirm_delete: "Weet u zeker dat u de politieke groepering \"{}\" wilt verwijderen?"
+  delete_note: "Het is altijd mogelijk om een politieke groepering te herimporteren maar aangemaakte papieren- en ambtshalve correcties, en verzuimen zullen verloren gaan!"
+  deleted_label: verwijderd
   examine_all: Alle BRP fouten controleren
   examine_general: Basisgegevens controleren
   examine_list: Kandidatenlijst controleren

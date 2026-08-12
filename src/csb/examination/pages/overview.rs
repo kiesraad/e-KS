@@ -29,6 +29,9 @@ pub async fn overview(
     let mut unfinished_political_groups = Vec::new();
     let mut finished_political_groups = Vec::new();
     for political_group in political_groups {
+        if political_group.is_deleted {
+            continue;
+        }
         if political_group.is_examination_finished {
             finished_political_groups.push(political_group)
         } else {
@@ -61,6 +64,7 @@ mod tests {
             political_group: sample_political_group(),
             stream_id: StreamId::new(),
             is_examination_finished: false,
+            is_deleted: false,
             restoration_count: 0,
             omission_count: 0,
             first_candidate_name: None,
@@ -87,6 +91,7 @@ mod tests {
             political_group: sample_political_group(),
             stream_id: StreamId::new(),
             is_examination_finished: false,
+            is_deleted: false,
             restoration_count: 0, /* omission count should be used and > 0 */
             omission_count: 3,
             first_candidate_name: None,

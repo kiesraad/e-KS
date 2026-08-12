@@ -6,7 +6,7 @@ use parking_lot::{
 };
 
 use crate::{
-    AppError, CsbStore, PgStoreData,
+    AppError, CsbStore, Locale, PgStoreData,
     structs::{
         candidate_lists::{CandidateList, CandidateListId},
         csb::{Omission, OmissionCategory, OmissionId},
@@ -15,6 +15,7 @@ use crate::{
         persons::{Person, PersonId},
         political_groups::PoliticalGroup,
     },
+    trans,
 };
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -47,6 +48,12 @@ impl CsbStore {
         let data = self.data.read();
 
         data.is_examination_finished
+    }
+
+    pub fn is_deleted(&self) -> bool {
+        let data = self.data.read();
+
+        data.is_deleted
     }
 
     pub fn get_omission(&self, omission_id: OmissionId) -> Result<Omission, AppError> {
@@ -103,7 +110,7 @@ impl CsbStore {
     pub fn get_political_group_csb_corrections_count(&self) -> usize {
         let data = self.data.read();
 
-        match data.csb_corrected_display_name {
+        match data.csb_corrected_appellation {
             Some(_) => 1,
             None => 0,
         }
@@ -288,6 +295,26 @@ impl CsbStore {
     pub fn get_appellation(&self, corrections: WithCorrections) -> String {
         let political_group = self.get_political_group(corrections);
         political_group.csb_appellation(self.get_first_candidate_name(corrections).as_ref())
+    }
+
+    /// Short-hand to get the appellation of the political group (including special names for blank lists).
+    /// Additionally includes a deleted label when the political group has been deleted
+    pub fn get_appellation_with_deleted_label(
+        &self,
+        corrections: WithCorrections,
+        locale: Locale,
+    ) -> String {
+        let political_group = self.get_political_group(corrections);
+        let appellation =
+            political_group.csb_appellation(self.get_first_candidate_name(corrections).as_ref());
+        if self.is_deleted() {
+            format!(
+                "{appellation} ({})",
+                trans!("csb.group.deleted_label", locale)
+            )
+        } else {
+            appellation
+        }
     }
 
     /// One-based position of the candidate on the given list

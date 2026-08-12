@@ -23,6 +23,7 @@ const PER_PAGE: usize = 20;
 ///
 /// Category label translations (referenced dynamically in the template):
 /// trans!("audit_log.filter.category.import", _)
+/// trans!("audit_log.filter.category.delete", _)
 /// trans!("audit_log.filter.category.paper_correction", _)
 /// trans!("audit_log.filter.category.correction", _)
 /// trans!("audit_log.filter.category.set_finished", _)
@@ -35,6 +36,10 @@ pub const EVENT_TYPES_BY_CATEGORY: &[EventTypeCategory] = &[
     EventTypeCategory {
         key: "import",
         event_types: &["import", "create_empty"],
+    },
+    EventTypeCategory {
+        key: "delete",
+        event_types: &["delete"],
     },
     EventTypeCategory {
         key: "paper_correction",
@@ -139,7 +144,10 @@ fn collect_entries(
         filter_events(
             store.data.read().events.iter(),
             store.stream_id,
-            store.get_appellation(crate::projection::WithCorrections::All),
+            store.get_appellation_with_deleted_label(
+                crate::projection::WithCorrections::All,
+                locale,
+            ),
             locale,
             active_event_type,
             active_search,
@@ -177,7 +185,10 @@ pub async fn csb_audit_log<S: AppRequestState>(
         .map(|store| {
             (
                 store.stream_id,
-                store.get_appellation(crate::projection::WithCorrections::All),
+                store.get_appellation_with_deleted_label(
+                    crate::projection::WithCorrections::All,
+                    locale,
+                ),
             )
         })
         .collect();

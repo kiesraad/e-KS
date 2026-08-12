@@ -37,7 +37,7 @@ detail:
 documents:
   download: Download documents
   no_download: This version was not in a state where downloading documents was possible.
-empty: No events have been recorded yet.
+empty: No events have been recorded yet that meet the filter criteria.
 event:
   add_candidate_to_list: Added candidate to list
   create_candidate_list: Created list of candidates
@@ -46,6 +46,7 @@ event:
   create_omission: Created omission
   create_person: Created person
   create_substitute_submitter: Created substitute submitter of the list
+  delete: Deleted political group
   delete_candidate_list: Deleted list of candidates
   delete_name_authorisation: Deleted statutory name and authorised agent
   delete_omission: Deleted omission
@@ -95,6 +96,7 @@ filter:
     set_finished: Finished state
     substitute_submitter: Substitute submitter
     system: System
+    delete: Deleted
   csb_main_stream: Main CSB stream
   event_type: Event type
   reset: Reset

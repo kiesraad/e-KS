@@ -44,6 +44,12 @@ pub struct CsbPoliticalGroupToggleFinishPath {
 }
 
 #[derive(TypedPath, Deserialize)]
+#[typed_path("/csb/examination/{stream_id}/delete", rejection(AppError))]
+pub struct CsbPoliticalGroupDeletePath {
+    pub stream_id: StreamId,
+}
+
+#[derive(TypedPath, Deserialize)]
 #[typed_path(
     "/csb/examination/{stream_id}/general-information",
     rejection(AppError)
@@ -155,6 +161,12 @@ pub struct OmissionListQuery {
 impl CsbPoliticalGroup {
     pub fn examination_path(&self) -> impl TypedPath {
         CsbPoliticalGroupPath {
+            stream_id: self.stream_id,
+        }
+    }
+
+    pub fn delete_path(&self) -> impl TypedPath {
+        CsbPoliticalGroupDeletePath {
             stream_id: self.stream_id,
         }
     }

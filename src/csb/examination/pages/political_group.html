@@ -6,6 +6,8 @@
 {% endblock %}
 {% block page_title %}
   {{ political_group.csb_appellation() }}
+  <a class="button tertiary-destructive icon-trash"
+     href="{{ political_group.delete_path() }}">{{ "action.delete"|trans }}</a>
 {% endblock %}
 {% block header_action %}
   {% set back_url = crate::csb::examination::CsbExaminationOverviewPath %}

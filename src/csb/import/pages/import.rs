@@ -81,10 +81,11 @@ async fn do_import<S: AppRequestState>(
 
     // Reject if this source stream has already been imported.
     for store in state.csb_store_registry().stores_by_scope().await? {
-        let already_imported = store.data.read().events.first().is_some_and(|e| {
-            matches!(&e.payload, CsbEvent::Import { source_stream_id: sid, .. } if *sid == source_stream_id)
+        let already_imported_and_not_deleted = store.data.read().events.first().is_some_and(|e| {
+            matches!(&e.payload, CsbEvent::Import { source_stream_id: sid, .. } if *sid == source_stream_id) &&
+            !store.is_deleted()
         });
-        if already_imported {
+        if already_imported_and_not_deleted {
             return Err(AppError::UserError(trans!(
                 "csb.import.error.already_imported",
                 locale

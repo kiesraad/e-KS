@@ -31,6 +31,8 @@ pub enum CsbEvent {
     },
     /// Create an empty political-group store without importing from a PG stream.
     CreateEmpty,
+    /// Delete a political-group stream
+    Delete,
     /// An app event applied to the paper-corrected projection instead of a
     /// political group's own stream. Boxed to keep the event enum small.
     PaperCorrectedUpdate(Box<PgEvent>),
@@ -48,6 +50,7 @@ impl Event for CsbEvent {
         match self {
             CsbEvent::Import { .. } => "import",
             CsbEvent::CreateEmpty => "import",
+            CsbEvent::Delete => "delete",
             CsbEvent::PaperCorrectedUpdate(_) => "paper_correction",
             CsbEvent::SetFinished(_) => "set_finished",
             CsbEvent::CreateOmission(_)
@@ -61,6 +64,7 @@ impl Event for CsbEvent {
         match self {
             CsbEvent::Import { .. } => "import",
             CsbEvent::CreateEmpty => "create_empty",
+            CsbEvent::Delete => "delete",
             CsbEvent::PaperCorrectedUpdate(event) => event.key(),
             CsbEvent::SetFinished(_) => "set_finished",
             CsbEvent::CreateOmission(_) => "create_omission",
@@ -73,6 +77,7 @@ impl Event for CsbEvent {
     fn description(&self, locale: crate::Locale) -> String {
         match self {
             CsbEvent::Import { .. } => trans!("audit_log.event.import", locale),
+            CsbEvent::Delete => trans!("audit_log.event.delete", locale),
             CsbEvent::CreateEmpty => trans!("audit_log.event.create_empty", locale),
             CsbEvent::PaperCorrectedUpdate(event) => event.description(locale),
             CsbEvent::SetFinished(_) => trans!("audit_log.event.set_finished", locale),
@@ -97,6 +102,7 @@ impl Event for CsbEvent {
                     format_hash(hash, true)
                 )
             }
+            CsbEvent::Delete => String::new(),
             CsbEvent::CreateEmpty => String::new(),
             CsbEvent::PaperCorrectedUpdate(event) => event.details(),
             CsbEvent::SetFinished(value) => value.to_string(),

@@ -32,6 +32,7 @@ pub struct CsbStoreData {
     pub(crate) omissions: HashMap<OmissionId, Omission>,
     pub(crate) csb_corrected_persons: HashMap<PersonId, PersonCorrectionDelta>,
     pub(crate) csb_corrected_appellation: Option<Appellation>,
+    pub(crate) is_deleted: bool,
 }
 
 impl StoreData for CsbStoreData {
@@ -67,6 +68,7 @@ impl StoreData for CsbStoreData {
                 });
             }
             CsbEvent::CreateEmpty => {}
+            CsbEvent::Delete => self.is_deleted = true,
             CsbEvent::PaperCorrectedUpdate(payload) => {
                 // Replay the wrapped app event onto the corrected projection,
                 // keeping the CSB stream's event metadata.

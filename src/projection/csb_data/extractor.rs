@@ -27,7 +27,16 @@ impl<S: AppRequestState> FromRequestParts<S> for CsbStore {
             .await?
             .require_current_election()?;
 
-        registry.get_store(stream_id, election).await
+        match registry.get_store(stream_id, election).await {
+            Ok(store) => {
+                if store.is_deleted() {
+                    Err(AppError::GenericNotFound)
+                } else {
+                    Ok(store)
+                }
+            }
+            Err(e) => Err(e),
+        }
     }
 }
 

@@ -24,6 +24,8 @@ pub fn router<S: AppRequestState>() -> Router<S> {
         .typed_get(i4::gen_i4::<S>)
         .typed_get(political_group::overview)
         .typed_post(political_group::toggle_examination_finish)
+        .typed_get(political_group::delete)
+        .typed_post(political_group::delete_submit)
         .typed_get(general_information::overview)
         .typed_post(paper_corrections::start_paper_corrections::<S>)
         .typed_post(paper_corrections::stop_paper_corrections::<S>)
