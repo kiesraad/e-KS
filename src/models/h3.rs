@@ -1,6 +1,6 @@
-//! Model H 3: authorisation to place a designation above a candidate list.
+//! Model H 3: authorisation to place a appellation above a candidate list.
 //! Depending on the list designation this renders as H 3-1 (a single
-//! appellation) or H 3-2 (a combined designation); each variant is
+//! designation) or H 3-2 (a combined designation); each variant is
 //! its own Markdown template in `templates/`.
 
 use textris_pdf::build::Textris;

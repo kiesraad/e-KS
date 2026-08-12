@@ -17,7 +17,7 @@ const ALL_DISTRICTS: &str = "alle kieskringen";
 
 /// The submitted candidate lists per electoral district, as listed in the
 /// "Kandidatenlijsten" section of model I 1: one row per list and district,
-/// with the political group's designation, its first candidate and the number
+/// with the political group's appellation, its first candidate and the number
 /// of names on the list.
 ///
 /// A list that covers several districts contributes a row to each of them.
@@ -46,7 +46,7 @@ pub async fn submitted_lists(
 /// The rows one political group contributes to the submitted lists section,
 /// paired with the district they belong to.
 fn store_submitted_lists(store: &CsbStore) -> Vec<(ElectoralDistrict, SubmittedList)> {
-    let designation = store.get_appellation(WithCorrections::All);
+    let appellation = store.get_appellation(WithCorrections::All);
     let mut lists = store.get_candidate_lists(WithCorrections::All);
     lists.sort_unstable_by_key(|list| list.created_at);
 
@@ -63,7 +63,7 @@ fn store_submitted_lists(store: &CsbStore) -> Vec<(ElectoralDistrict, SubmittedL
             rows.push((
                 *district,
                 SubmittedList {
-                    designation: designation.clone(),
+                    appellation: appellation.clone(),
                     first_candidate_name: first_candidate_name.clone(),
                     candidate_count: list.candidates.len(),
                 },
@@ -109,10 +109,10 @@ pub async fn found_omissions(
                 .push(omission.description.to_string());
         }
 
-        let designation = store.get_appellation(WithCorrections::All);
+        let appellation = store.get_appellation(WithCorrections::All);
         for (district, descriptions) in by_district {
             found_omissions.push(OmissionGroup {
-                designation: designation.clone(),
+                appellation: appellation.clone(),
                 electoral_district: district,
                 omission_descriptions: descriptions,
             });
@@ -222,9 +222,9 @@ mod tests {
             .into()
     }
 
-    fn named_group(display_name: &str) -> PoliticalGroup {
+    fn named_group(appellation: &str) -> PoliticalGroup {
         PoliticalGroup {
-            appellation: Some(display_name.parse().unwrap()),
+            appellation: Some(appellation.parse().unwrap()),
             list_designation: Some(ListDesignation::Standalone),
             ..Default::default()
         }
@@ -491,7 +491,7 @@ mod tests {
         let rows = store_submitted_lists(&store);
 
         assert_eq!(rows.len(), 1);
-        assert_eq!(rows[0].1.designation, "Blanco (Jansen, A.B.)");
+        assert_eq!(rows[0].1.appellation, "Blanco (Jansen, A.B.)");
     }
 
     #[test]
@@ -536,7 +536,7 @@ mod tests {
         assert_eq!(districts[1].electoral_district, "13 (Bonaire)");
         for district in &districts {
             assert_eq!(district.lists.len(), 1);
-            assert_eq!(district.lists[0].designation, "Kiesraad Demo");
+            assert_eq!(district.lists[0].appellation, "Kiesraad Demo");
             assert_eq!(
                 district.lists[0].first_candidate_name,
                 person.name.display()
@@ -581,7 +581,7 @@ mod tests {
             .unwrap();
 
         assert_eq!(groups.len(), 2);
-        assert_eq!(groups[0].designation, "De Geconstateerde Partij");
+        assert_eq!(groups[0].appellation, "De Geconstateerde Partij");
         assert_eq!(groups[0].electoral_district, "alle kieskringen");
         // The store hands out its omissions unordered, so only the grouping is
         // defined, not the order within a group.
@@ -589,7 +589,7 @@ mod tests {
         descriptions.sort();
         assert_eq!(descriptions, ["Eerste verzuim", "Tweede verzuim"]);
 
-        assert_eq!(groups[1].designation, "De Geconstateerde Partij");
+        assert_eq!(groups[1].appellation, "De Geconstateerde Partij");
         assert_eq!(groups[1].electoral_district, "kieskring 13 (Bonaire)");
         assert_eq!(groups[1].omission_descriptions, ["Derde verzuim"]);
     }
@@ -617,7 +617,7 @@ mod tests {
             .unwrap();
 
         assert_eq!(groups.len(), 1);
-        assert_eq!(groups[0].designation, "Met Verzuimen");
+        assert_eq!(groups[0].appellation, "Met Verzuimen");
         assert_eq!(groups[0].omission_descriptions, ["Een herstelbaar verzuim"]);
     }
 

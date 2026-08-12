@@ -144,12 +144,12 @@ pub mod tests {
         };
 
         let result = placeholders
-            .interpolate("Kandidaat nr. {candidate_number}, {candidate_name} ... {designation}");
+            .interpolate("Kandidaat nr. {candidate_number}, {candidate_name} ... {appellation}");
 
         assert_eq!(
             result,
             // The known tokens are filled; the manual one is left in place.
-            "Kandidaat nr. 3, A.B. de Vries ... {designation}"
+            "Kandidaat nr. 3, A.B. de Vries ... {appellation}"
         );
     }
 

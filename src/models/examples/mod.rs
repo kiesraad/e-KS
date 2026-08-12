@@ -31,6 +31,7 @@ use crate::{
 
 /// A named example input, renderable to a PDF. `name` matches the former JSON
 /// file stem (e.g. `model-h1-example-1`) so the `pdf_diff` baseline lines up.
+#[derive(Debug)]
 pub struct Example {
     pub name: &'static str,
     pub filename: String,
@@ -86,14 +87,14 @@ const EVENT_ID: usize = 42;
 fn model_data(
     election_name: &str,
     election_type: ElectionType,
-    designation: &str,
+    appellation: &str,
     candidates: Vec<Candidate>,
     locale: ModelLocale,
 ) -> ModelData {
     ModelData {
         election_name: election_name.to_string(),
         election_type,
-        designation: designation.to_string(),
+        appellation: appellation.to_string(),
         candidates,
         locale,
         event_id: EVENT_ID,

@@ -63,7 +63,7 @@ impl DocumentData {
         let name_slug = if self.list_designation == ListDesignation::Blank {
             "blanco".to_string()
         } else {
-            slugify_teletex(&self.model_data.designation, true)
+            slugify_teletex(&self.model_data.appellation, true)
         };
 
         if self.model_data.locale == ModelLocale::Fry {
@@ -148,7 +148,7 @@ impl DocumentData {
         let electoral_districts = ElectoralDistricts::from(&list, &context.election, locale);
 
         let group = store.get_political_group();
-        let designation = group.pg_appellation()?;
+        let appellation = group.pg_appellation()?;
 
         let list_submitter = Self::complete_list_submitter(store)?;
 
@@ -175,7 +175,7 @@ impl DocumentData {
             model_data: ModelData {
                 election_name: election.formal_title(locale),
                 election_type: election.election_type(),
-                designation,
+                appellation,
                 candidates: ordered_candidates,
                 locale,
                 event_id,
