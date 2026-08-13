@@ -285,26 +285,25 @@ fn init_tracing() {
         .init();
 }
 
-fn run() -> Result<()> {
-    let project_dir = env::current_dir().context("Failed to get current directory")?;
-    let tmp_dir = project_dir.join(TMP_DIR_NAME);
-    let save_baseline = env::args().any(|arg| arg == "--save-baseline");
+/// Render all PDF models into the baseline directory (`--save-baseline` mode).
+fn save_baseline(tmp_dir: &Path) -> Result<()> {
+    let main_root = tmp_dir.join(MAIN_PDFS_DIR_NAME);
+    let rendered = render_all(&main_root)?;
+    info!(
+        "Saved {} baseline PDFs to {}",
+        rendered.len(),
+        main_root.display()
+    );
+    Ok(())
+}
 
-    if save_baseline {
-        let main_root = tmp_dir.join(MAIN_PDFS_DIR_NAME);
-        let rendered = render_all(&main_root)?;
-        info!(
-            "Saved {} baseline PDFs to {}",
-            rendered.len(),
-            main_root.display()
-        );
-        return Ok(());
-    }
-
+/// Render the current PDF models, diff them against the saved baseline
+/// (generating it first if missing) and write the results report.
+fn diff_against_baseline(project_dir: &Path, tmp_dir: &Path) -> Result<()> {
     ensure_diff_pdf_is_installed()?;
 
     if !tmp_dir.join(MAIN_PDFS_DIR_NAME).is_dir() {
-        generate_baseline(&project_dir)?;
+        generate_baseline(project_dir)?;
     }
 
     let current_root = tmp_dir.join(CURRENT_PDFS_DIR_NAME);
@@ -315,18 +314,34 @@ fn run() -> Result<()> {
         current_root.display()
     );
 
-    let results = compare(&project_dir, rendered)?;
+    let results = compare(project_dir, rendered)?;
     for (_, input_name, status) in &results {
         info!("  {} {input_name}: {status}", status_indicator(status));
     }
 
-    let report = build_report(&results)?;
+    write_report(tmp_dir, &results)
+}
+
+/// Write the diff results report to the results file.
+fn write_report(tmp_dir: &Path, results: &[DiffSummaryRow]) -> Result<()> {
+    let report = build_report(results)?;
     let results_path = tmp_dir.join(RESULTS_FILE_NAME);
     fs::write(&results_path, &report)
         .with_context(|| format!("Failed to write {}", results_path.display()))?;
     info!("Wrote results to {}", results_path.display());
 
     Ok(())
+}
+
+fn run() -> Result<()> {
+    let project_dir = env::current_dir().context("Failed to get current directory")?;
+    let tmp_dir = project_dir.join(TMP_DIR_NAME);
+
+    if env::args().any(|arg| arg == "--save-baseline") {
+        save_baseline(&tmp_dir)
+    } else {
+        diff_against_baseline(&project_dir, &tmp_dir)
+    }
 }
 
 /// Render the current PDF models for all example inputs and diff them against

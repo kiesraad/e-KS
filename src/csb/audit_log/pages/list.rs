@@ -118,6 +118,48 @@ fn filter_events<'a, E: Event + 'a>(
         .filter(move |e| search.is_none_or(|q| e.matches_search(q)))
 }
 
+/// Collects the filtered audit log entries of the selected stream: the import
+/// stream the `stream` filter points at, or the committee main stream.
+fn collect_entries(
+    import_stores: &[crate::projection::CsbStore],
+    main_store: &CsbMainStore,
+    filter: &CsbAuditLogFilter,
+    locale: Locale,
+) -> Result<Vec<CsbAuditLogEntry>, AppError> {
+    let active_stream = filter.stream.as_deref().filter(|s| !s.is_empty());
+    let active_event_type = filter.event_type.as_deref().filter(|s| !s.is_empty());
+    let active_search = filter.search.as_deref().filter(|s| !s.is_empty());
+
+    let entries = if let Some(stream_id) = active_stream {
+        let store = import_stores
+            .iter()
+            .find(|s| s.stream_id.to_string() == stream_id)
+            .ok_or(AppError::GenericNotFound)?;
+
+        filter_events(
+            store.data.read().events.iter(),
+            store.stream_id,
+            store.get_display_name(crate::projection::WithCorrections::All),
+            locale,
+            active_event_type,
+            active_search,
+        )
+        .collect()
+    } else {
+        filter_events(
+            main_store.data.read().events.iter(),
+            main_store.stream_id,
+            trans!("audit_log.filter.csb_main_stream", locale),
+            locale,
+            active_event_type,
+            active_search,
+        )
+        .collect()
+    };
+
+    Ok(entries)
+}
+
 pub async fn csb_audit_log<S: AppRequestState>(
     _: CsbAuditLogPath,
     context: CsbContext,
@@ -140,38 +182,7 @@ pub async fn csb_audit_log<S: AppRequestState>(
         })
         .collect();
 
-    let active_stream = filter.stream.as_deref().filter(|s| !s.is_empty());
-    let active_event_type = filter.event_type.as_deref().filter(|s| !s.is_empty());
-    let active_search = filter.search.as_deref().filter(|s| !s.is_empty());
-
-    let all_entries: Vec<CsbAuditLogEntry> = if let Some(stream_id) = active_stream {
-        // Add import stream events
-        let store = import_stores
-            .iter()
-            .find(|s| s.stream_id.to_string() == stream_id)
-            .ok_or(AppError::GenericNotFound)?;
-
-        filter_events(
-            store.data.read().events.iter(),
-            store.stream_id,
-            store.get_display_name(crate::projection::WithCorrections::All),
-            locale,
-            active_event_type,
-            active_search,
-        )
-        .collect()
-    } else {
-        // Add main stream events
-        filter_events(
-            main_store.data.read().events.iter(),
-            main_store.stream_id,
-            trans!("audit_log.filter.csb_main_stream", locale),
-            locale,
-            active_event_type,
-            active_search,
-        )
-        .collect()
-    };
+    let all_entries = collect_entries(&import_stores, &main_store, &filter, locale)?;
 
     let total = all_entries.len();
     let pagination = Pagination {

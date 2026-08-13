@@ -1,5 +1,5 @@
 [workspace]
-members = ["validate", "auth-service", "development", "tooling"]
+members = ["validate", "auth-service", "development", "tools/locales"]
 resolver = "3"
 
 # Fields shared by every crate in the workspace. Individual crates inherit these
@@ -9,6 +9,17 @@ resolver = "3"
 edition = "2024"
 license = "EUPL-1.2"
 publish = false
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.rustdoc]
+private_intra_doc_links = "allow"
+
+[workspace.lints.clippy]
+unwrap_used = "warn"
+cognitive_complexity = "warn"
+too_many_lines = "warn"
 
 # Single source of truth for third-party dependency versions and their base
 # feature set. Member crates opt in with `<dep> = { workspace = true }` and may
@@ -74,7 +85,7 @@ serde-saphyr = { version = "0.0.29", default-features = false, features = ["dese
 
 # tweedegolf
 memory-serve = "2.1.0"
-textris-pdf = { git = "https://github.com/tweedegolf/textris-pdf.git", rev = "577ea0046441c714b5ee8f6258f298215b106c40", default-features = false, features = ["markdown-parser"] }
+textris-pdf = { git = "https://github.com/tweedegolf/textris-pdf.git", tag = "v0.9.0", default-features = false, features = ["markdown-parser"] }
 bag_address_lookup = { git = "https://github.com/tweedegolf/bag-address-lookup.git", tag = "lib-v0.8.1", default-features = false, features = ["compressed_database"] }
 
 # kiesraad
@@ -177,24 +188,18 @@ x509-parser = { workspace = true, optional = true }
 zeroize = { workspace = true }
 
 [build-dependencies]
-eks-locales = { path = "tooling" }
+eks-locales = { path = "tools/locales" }
 memory-serve = { workspace = true, optional = true }
 
 [dev-dependencies]
-eks-locales = { path = "tooling" }
+eks-locales = { path = "tools/locales" }
 tower = { workspace = true }
 tracing-test = { workspace = true }
 tokio = { workspace = true, features = ["test-util"] }
 reqwest = { workspace = true, features = ["rustls"] }
 
-[lints.rust]
-unsafe_code = "forbid"
-
-[lints.rustdoc]
-# Most items are deliberately crate-private (the public API is only what the
-# binary needs), while docs are built with `--document-private-items`, so
-# doc links from public docs to internal items resolve fine.
-private_intra_doc_links = "allow"
+[lints]
+workspace = true
 
 # https://askama.readthedocs.io/en/stable/performance.html#slow-debug-recompilations
 [profile.dev.package.askama_derive]

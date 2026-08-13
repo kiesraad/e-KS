@@ -26,10 +26,7 @@ fn value_literal(value: &str) -> String {
 /// The output includes data for the hard-coded language list and emits
 /// `cargo:rerun-if-changed` for each locale file.
 pub fn load_locales(out_dir: &Path, locales_root: &Path) {
-    use std::io::Write;
-
-    let path = out_dir.join("locales.rs");
-    let mut file = std::io::BufWriter::new(std::fs::File::create(&path).unwrap());
+    let mut output = String::new();
 
     for lang in &["en", "nl"] {
         let mut map: phf_codegen::Map<String> = phf_codegen::Map::new();
@@ -37,43 +34,41 @@ pub fn load_locales(out_dir: &Path, locales_root: &Path) {
         println!("cargo:rerun-if-changed={}", locale_dir.display());
         let locale_files = collect_locale_files(&locale_dir);
 
-        writeln!(
-            file,
-            "/// Translate a literal key to a raw localized string for `{lang}`.\n#[macro_export]\nmacro_rules! inner_t_{} {{\n",
-            lang
-        )
-        .unwrap();
+        output.push_str(&format!(
+            "/// Translate a literal key to a raw localized string for `{lang}`.\n#[macro_export]\nmacro_rules! inner_t_{lang} {{\n\n"
+        ));
 
         for locale_path in locale_files {
             println!("cargo:rerun-if-changed={}", locale_path.display());
             let yaml = std::fs::read_to_string(&locale_path).expect("Failed to read locale file");
-            let key = locale_path.file_stem().unwrap().to_str().unwrap();
+            let key = locale_path
+                .file_stem()
+                .and_then(|stem| stem.to_str())
+                .expect("Locale file name is not valid UTF-8");
             let entries = naive_yaml_parse(key, &yaml);
 
             for (key, value) in entries {
                 let value = value_literal(&value);
-                writeln!(file, "    (\"{key}\") => {{ {value} }};").unwrap();
+                output.push_str(&format!("    (\"{key}\") => {{ {value} }};\n"));
                 map.entry(key, value);
             }
         }
 
-        writeln!(
-            file,
+        output.push_str(&format!(
             "($other:literal) => {{
                 concat!(\"[\", $other, \"]\")
-            }};\n}}\npub use inner_t_{} as t_{};\n",
-            lang, lang
-        )
-        .unwrap();
+            }};\n}}\npub use inner_t_{lang} as t_{lang};\n\n"
+        ));
 
-        writeln!(
-            &mut file,
-            "pub static LOCALE_{}: phf::Map<&'static str, &'static str> = {};",
+        output.push_str(&format!(
+            "pub static LOCALE_{}: phf::Map<&'static str, &'static str> = {};\n",
             lang.to_uppercase(),
             map.build()
-        )
-        .unwrap();
+        ));
     }
+
+    let path = out_dir.join("locales.rs");
+    std::fs::write(&path, output).expect("Failed to write locales.rs");
 }
 
 #[cfg(test)]

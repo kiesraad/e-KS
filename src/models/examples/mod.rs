@@ -6,6 +6,7 @@ mod h1;
 mod h3;
 mod h4;
 mod h9;
+mod i1;
 mod i4;
 
 pub use h1::{h1_example_1, h1_example_2, h1_example_3};
@@ -14,6 +15,7 @@ pub use h3::{
 };
 pub use h4::{h4_example_1, h4_example_2, h4_example_3};
 pub use h9::{h9_example_1, h9_example_2, h9_example_3};
+pub use i1::{i1_example_1, i1_example_2};
 pub use i4::{i4_example_1, i4_example_2};
 
 use textris_pdf::build::Textris;
@@ -68,6 +70,8 @@ pub fn examples() -> Vec<Example> {
         example("model-h9-example-1", h9_example_1()),
         example("model-h9-example-2", h9_example_2()),
         example("model-h9-example-3", h9_example_3()),
+        example("model-i1-example-1", i1_example_1()),
+        example("model-i1-example-2", i1_example_2()),
         example("model-i4-example-1", i4_example_1()),
         example("model-i4-example-2", i4_example_2()),
     ]

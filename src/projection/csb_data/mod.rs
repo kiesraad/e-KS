@@ -376,78 +376,24 @@ mod tests {
         let mut data = CsbStoreData::default();
         data.apply(StoreEvent::new(1, import_event_with_person(person)));
 
-        // initials
-        data.apply(StoreEvent::new(
-            2,
-            CsbEvent::UpdateCorrection(Correction::Person(
-                person_id,
-                PersonCorrection::Initials("X.Y.Z.".parse().unwrap()),
-            )),
-        ));
-        let corrected = data.csb_corrected_persons.get(&person_id).unwrap();
-        assert_eq!(
-            corrected.get_corrections(),
-            HashSet::from([PersonCorrection::Initials("X.Y.Z.".parse().unwrap())])
-        );
+        let corrections = [
+            PersonCorrection::Initials("X.Y.Z.".parse().unwrap()),
+            PersonCorrection::LastName("Bakker".parse().unwrap()),
+            PersonCorrection::DateOfBirth("15-06-1985".parse().unwrap()),
+            PersonCorrection::PlaceOfResidence(PlaceOfResidence::Known("Amsterdam".to_string())),
+        ];
 
-        // last name
-        data.apply(StoreEvent::new(
-            3,
-            CsbEvent::UpdateCorrection(Correction::Person(
-                person_id,
-                PersonCorrection::LastName("Bakker".parse().unwrap()),
-            )),
-        ));
-        let corrected = data.csb_corrected_persons.get(&person_id).unwrap();
-        assert_eq!(
-            corrected.get_corrections(),
-            HashSet::from([
-                PersonCorrection::Initials("X.Y.Z.".parse().unwrap()),
-                PersonCorrection::LastName("Bakker".parse().unwrap())
-            ])
-        );
+        // After each event the accumulated set contains all corrections so far.
+        let mut expected = HashSet::new();
+        for (i, correction) in corrections.into_iter().enumerate() {
+            data.apply(StoreEvent::new(
+                i + 2,
+                CsbEvent::UpdateCorrection(Correction::Person(person_id, correction.clone())),
+            ));
+            expected.insert(correction);
 
-        // date of birth
-        data.apply(StoreEvent::new(
-            4,
-            CsbEvent::UpdateCorrection(Correction::Person(
-                person_id,
-                PersonCorrection::DateOfBirth("15-06-1985".parse().unwrap()),
-            )),
-        ));
-
-        let corrected = data.csb_corrected_persons.get(&person_id).unwrap();
-        assert_eq!(
-            corrected.get_corrections(),
-            HashSet::from([
-                PersonCorrection::Initials("X.Y.Z.".parse().unwrap()),
-                PersonCorrection::LastName("Bakker".parse().unwrap()),
-                PersonCorrection::DateOfBirth("15-06-1985".parse().unwrap())
-            ])
-        );
-
-        // place of residence
-        data.apply(StoreEvent::new(
-            5,
-            CsbEvent::UpdateCorrection(Correction::Person(
-                person_id,
-                PersonCorrection::PlaceOfResidence(PlaceOfResidence::Known(
-                    "Amsterdam".to_string(),
-                )),
-            )),
-        ));
-
-        let corrected = data.csb_corrected_persons.get(&person_id).unwrap();
-        assert_eq!(
-            corrected.get_corrections(),
-            HashSet::from([
-                PersonCorrection::Initials("X.Y.Z.".parse().unwrap()),
-                PersonCorrection::LastName("Bakker".parse().unwrap()),
-                PersonCorrection::DateOfBirth("15-06-1985".parse().unwrap()),
-                PersonCorrection::PlaceOfResidence(PlaceOfResidence::Known(
-                    "Amsterdam".to_string()
-                ))
-            ])
-        );
+            let corrected = data.csb_corrected_persons.get(&person_id).unwrap();
+            assert_eq!(corrected.get_corrections(), expected);
+        }
     }
 }

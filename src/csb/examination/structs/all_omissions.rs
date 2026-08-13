@@ -48,45 +48,33 @@ impl CsbStore {
         for omission in omissions {
             match omission.category {
                 OmissionCategory::PoliticalGroup => general.push(OmissionWithPath {
-                    omission: omission.clone(),
                     path: general_path(political_group),
+                    omission,
                 }),
                 OmissionCategory::CandidateList(ref lists) => {
                     let list_id = lists.first().ok_or(AppError::InternalServerError)?;
                     candidate_lists.push(OmissionWithPath {
-                        omission: omission.clone(),
-                        path: political_group
-                            .manage_candidate_list_omissions_path(list_id)
-                            .with_query_params(QueryParamState::redirect_to(
-                                political_group.all_restorations_path().to_string(),
-                            ))
-                            .to_string(),
+                        path: candidate_list_path(political_group, list_id),
+                        omission,
                     })
                 }
                 OmissionCategory::DeclarationsOfSupport(_) => {
                     declarations_of_support.push(OmissionWithPath {
-                        omission: omission.clone(),
-                        path: political_group
-                            .manage_declarations_of_support_omissions_path()
-                            .with_query_params(QueryParamState::redirect_to(
-                                political_group.all_restorations_path().to_string(),
-                            ))
-                            .to_string(),
+                        path: declarations_of_support_path(political_group),
+                        omission,
                     })
                 }
                 OmissionCategory::Candidate { person, ref lists } => {
                     let list = lists.first().ok_or(AppError::InternalServerError)?;
+                    let with_path = OmissionWithPath {
+                        path: candidate_path(political_group, &person, list),
+                        omission: omission.clone(),
+                    };
                     if let Some(candidate) = candidates.iter_mut().find(|c| c.person.id == person) {
-                        candidate.omissions.push(OmissionWithPath {
-                            path: candidate_path(political_group, &person, list),
-                            omission: omission.clone(),
-                        })
+                        candidate.omissions.push(with_path)
                     } else {
                         candidates.push(CandidateOmissions {
-                            omissions: vec![OmissionWithPath {
-                                path: candidate_path(political_group, &person, list),
-                                omission,
-                            }],
+                            omissions: vec![with_path],
                             person: self
                                 .get_person(person, crate::projection::WithCorrections::All)
                                 .ok_or(AppError::InternalServerError)?,
@@ -107,6 +95,24 @@ impl CsbStore {
 fn general_path(political_group: &CsbPoliticalGroup) -> String {
     political_group
         .manage_political_group_omissions_path()
+        .with_query_params(QueryParamState::redirect_to(
+            political_group.all_restorations_path().to_string(),
+        ))
+        .to_string()
+}
+
+fn candidate_list_path(political_group: &CsbPoliticalGroup, list_id: &CandidateListId) -> String {
+    political_group
+        .manage_candidate_list_omissions_path(list_id)
+        .with_query_params(QueryParamState::redirect_to(
+            political_group.all_restorations_path().to_string(),
+        ))
+        .to_string()
+}
+
+fn declarations_of_support_path(political_group: &CsbPoliticalGroup) -> String {
+    political_group
+        .manage_declarations_of_support_omissions_path()
         .with_query_params(QueryParamState::redirect_to(
             political_group.all_restorations_path().to_string(),
         ))
