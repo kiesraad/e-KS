@@ -2,6 +2,7 @@ import { expect } from "@playwright/test";
 import { test } from "./fixtures.ts";
 import type { ListSubmitter } from "./models/listSubmitter.ts";
 import type { NameAuthorisation } from "./models/nameAuthorisation.ts";
+import { CandidateListsOverviewPage } from "./pages/candidateListsOverviewPage.ts";
 import { ListDesignationPage } from "./pages/listDesignationPage.ts";
 import { ListSubmittersPage } from "./pages/listSubmittersPage.ts";
 import { NameAuthorisationPage } from "./pages/nameAuthorisationPage.ts";
@@ -184,5 +185,28 @@ test.describe("provide general information for political group", async () => {
         name: "Eerste Kamerverkiezing der Staten-Generaal 2027",
       }),
     ).toBeVisible();
+  });
+
+  test("provide general information for party with less than 16 seats", async ({
+    login: page,
+  }) => {
+    const listDesignationPage = new ListDesignationPage(page);
+    await page.goto("/political-group");
+    await listDesignationPage.selectStandalone.check();
+    await listDesignationPage.buttonSaveAndNext.click();
+    await page.waitForURL("/political-group/information");
+
+    const politicalGroupPage = new PoliticalGroupPage(page);
+    await politicalGroupPage.selectLessThan16Seats.check();
+    await politicalGroupPage.buttonSaveAndNext.click();
+    await page.waitForURL("/political-group/name-authorisation");
+
+    await page.goto("/political-group/information");
+    await expect(politicalGroupPage.selectLessThan16Seats).toBeChecked();
+    await politicalGroupPage.linkCandidateLists.click();
+    const candidateListsOverviewPage = new CandidateListsOverviewPage(page);
+    await expect(page.getByText("55 / 50 kandidaten").first()).toBeVisible();
+    await candidateListsOverviewPage.linkFinalize.click();
+    await expect(page.getByText("5 kandidaten te veel").first()).toBeVisible();
   });
 });
