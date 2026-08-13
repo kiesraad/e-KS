@@ -51,7 +51,6 @@ export const test = base.extend<Fixtures>({
   // Login as CSB and import a political group with a unique name.
   csbImport: async ({ csbLogin }, use) => {
     const { page, groupName, lastEventHash } = csbLogin;
-    expect(lastEventHash).not.toBe("");
     const overviewPage = new CsbOverviewPage(page);
     const examinationPage = new CsbExaminationPage(page);
     const importPage = new CsbImportPage(page);

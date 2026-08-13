@@ -104,14 +104,14 @@ test.describe("check general information and add corrections and omissions", asy
     await pcPoliticalGroupPage.buttonSaveAndNext.click();
 
     const authorisationOne: NameAuthorisation = {
-      initials: "K",
+      initials: "K.J.",
       lastNamePrefix: "van",
       lastName: "Veen",
       legalName: "Eerste Partij",
     };
 
     const authorisationTwo: NameAuthorisation = {
-      initials: "D",
+      initials: "D.F.",
       lastNamePrefix: "de",
       lastName: "Boer",
       legalName: "Tweede Partij",
@@ -142,6 +142,8 @@ test.describe("check general information and add corrections and omissions", asy
     for (const text of [
       "Eerste Partij",
       "Tweede Partij",
+      "K.J.",
+      "D.F.",
       "van Veen",
       "de Boer",
     ]) {
