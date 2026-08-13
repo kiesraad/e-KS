@@ -1,10 +1,12 @@
 import type { Locator, Page } from "@playwright/test";
 
-export class csbOmissionsPartyPage {
+export class csbOmissionsListPage {
   readonly linkAdd: Locator;
   readonly linkOverview: Locator;
-  readonly buttonRegisterAppelation: Locator;
-  readonly buttonRegisterCombination: Locator;
+  readonly buttonAuthoriseAppelation: Locator;
+  readonly buttonAuthoriseCombination: Locator;
+  readonly buttonAuthorisedAgent: Locator;
+  readonly buttonAuthorisedAgentCombination: Locator;
   readonly textfieldTitle: Locator;
   readonly textfieldDescription: Locator;
   readonly textfieldLetter: Locator;
@@ -16,11 +18,17 @@ export class csbOmissionsPartyPage {
   constructor(protected readonly page: Page) {
     this.linkAdd = this.page.getByRole("link", { name: "Verzuimen toevoegen" });
     this.linkOverview = this.page.getByRole("link", { name: "Overzicht" });
-    this.buttonRegisterAppelation = this.page.getByRole("button", {
-      name: "De aanduiding is niet geregistreerd",
+    this.buttonAuthoriseAppelation = this.page.getByRole("button", {
+      name: "De machtiging aanduiding ontbreekt",
     });
-    this.buttonRegisterCombination = this.page.getByRole("button", {
-      name: "De aanduiding(en) is/zijn niet geregistreerd",
+    this.buttonAuthoriseCombination = this.page.getByRole("button", {
+      name: "De machtiging samenvoeging ontbreekt",
+    });
+    this.buttonAuthorisedAgent = this.page.getByRole("button", {
+      name: "De gemachtigde is niet geregistreerd",
+    });
+    this.buttonAuthorisedAgentCombination = this.page.getByRole("button", {
+      name: "De gemachtigde(n) is/zijn niet geregistreerd",
     });
     this.textfieldTitle = this.page.getByRole("textbox", {
       name: "Titel Verzuim",

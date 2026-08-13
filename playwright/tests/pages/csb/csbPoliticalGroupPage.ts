@@ -8,6 +8,7 @@ export class csbPoliticalGroupPage {
   readonly buttonPaperCorrections: Locator;
   readonly linkGeneralInformation: Locator;
   readonly linkSupportDeclarations: Locator;
+  readonly linkCandidateList: Locator;
 
   constructor(protected readonly page: Page) {
     this.switchFinalize = this.page.getByLabel(
@@ -30,6 +31,9 @@ export class csbPoliticalGroupPage {
     });
     this.linkSupportDeclarations = this.page.getByRole("link", {
       name: "Verzuimen beheren",
+    });
+    this.linkCandidateList = this.page.getByRole("link", {
+      name: "Kandidatenlijst controleren",
     });
   }
 
