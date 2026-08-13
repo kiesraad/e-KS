@@ -1,7 +1,11 @@
 use axum::response::Redirect;
 use axum_extra::{TypedHeader, headers};
 
-use crate::{PgEvent, PgStore, common::HideDownloadWarningPath};
+use crate::{
+    PgEvent, PgStore,
+    common::{HideDownloadWarningPath, PgIndexPath},
+    redirect_to_referer,
+};
 
 pub async fn hide_download_warning(
     _: HideDownloadWarningPath,
@@ -9,7 +13,10 @@ pub async fn hide_download_warning(
     store: PgStore,
 ) -> Result<Redirect, crate::AppError> {
     store.update(PgEvent::HideDownloadWarning).await?;
-    Ok(Redirect::to(&referer.to_string()))
+
+    // Back to the page the banner was dismissed on, never off-site (see
+    // [`redirect_to_referer`]).
+    Ok(redirect_to_referer(&referer, PgIndexPath))
 }
 
 #[cfg(test)]
@@ -81,11 +88,12 @@ mod tests {
 
         let response = app.oneshot(request).await.expect("response");
 
-        // we should be redirected and the warning should no longer show
+        // we should be redirected and the warning should no longer show. Only
+        // the referrer's path survives, so the redirect stays on this origin.
         assert_eq!(response.status(), StatusCode::SEE_OTHER);
         assert_eq!(
             response.headers().get(header::LOCATION).unwrap(),
-            "https://example.com/candidate-lists",
+            "/candidate-lists",
         );
         assert!(!store.should_show_download_warning());
     }

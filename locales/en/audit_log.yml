@@ -59,6 +59,8 @@ event:
   hide_download_warning: Dismissed download warning
   import: Imported political group
   import_csv: Imported CSV
+  login: Signed in
+  logout: Signed out
   paper_correction: Paper corrections
   remove_candidate_from_list: Removed candidate from list
   set_finished: Set finished state

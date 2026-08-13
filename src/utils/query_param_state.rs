@@ -179,7 +179,7 @@ impl QueryParamState {
 /// Accept only local absolute paths as redirect targets: browsers resolve a
 /// leading `//` (or `/\`) as a protocol-relative URL to another host, and
 /// control characters could split the `Location` header.
-fn is_local_path(url: &str) -> bool {
+pub(crate) fn is_local_path(url: &str) -> bool {
     url.starts_with('/')
         && !url.starts_with("//")
         && !url.contains('\\')

@@ -55,10 +55,13 @@ pub fn create(state: AppState) -> Router<AppState> {
     // These routes need a session but NOT store middleware: select-election runs
     // before a stream_id is chosen, and /language must stay reachable for CSB
     // (committee) sessions that store_middleware redirects off app routes.
-    // The session middleware also verifies the CSRF token of every mutating
+    // `bag::router()` joins them: scanning the embedded BAG database is too
+    // expensive to expose anonymously, and it is only called from a logged-in
+    // form. The session middleware also verifies the CSRF token of every mutating
     // request (see `auth::csrf_guard`), so no handler can forget the check.
     let app_router = app_router
         .merge(common::session_only_router())
+        .merge(bag::router())
         .merge(csb_router)
         .layer(middleware::from_fn_with_state(
             state.clone(),
@@ -72,7 +75,6 @@ pub fn create(state: AppState) -> Router<AppState> {
     let router = app_router;
 
     let router = router
-        .merge(bag::router())
         .merge(auth_service::router())
         .merge(common::public_router());
 
@@ -137,19 +139,43 @@ fn app_feature_router() -> Router<AppState> {
         .merge(substitute_list_submitters::router())
 }
 
+/// Deny every powerful browser feature; the app uses none. Unknown directives
+/// are ignored, so naming retired and proposed features costs nothing.
+const PERMISSIONS_POLICY: &str = concat!(
+    "accelerometer=(), ambient-light-sensor=(), attribution-reporting=(), autoplay=(), ",
+    "battery=(), bluetooth=(), browsing-topics=(), camera=(), captured-surface-control=(), ",
+    "clipboard-read=(), clipboard-write=(), compute-pressure=(), deferred-fetch=(), ",
+    "deferred-fetch-minimal=(), digital-credentials-get=(), display-capture=(), ",
+    "document-domain=(), encrypted-media=(), fullscreen=(), gamepad=(), geolocation=(), ",
+    "gyroscope=(), hid=(), identity-credentials-get=(), idle-detection=(), interest-cohort=(), ",
+    "join-ad-interest-group=(), keyboard-map=(), local-fonts=(), magnetometer=(), microphone=(), ",
+    "midi=(), otp-credentials=(), payment=(), picture-in-picture=(), private-aggregation=(), ",
+    "private-state-token-issuance=(), private-state-token-redemption=(), ",
+    "publickey-credentials-create=(), publickey-credentials-get=(), run-ad-auction=(), ",
+    "screen-wake-lock=(), serial=(), speaker-selection=(), storage-access=(), sync-xhr=(), ",
+    "unload=(), usb=(), web-share=(), window-management=(), xr-spatial-tracking=()",
+);
+
+/// Fetch directives `default-src 'none'` already covers are spelled out anyway,
+/// so a change to a browser's fallback chain cannot widen the policy. Trusted
+/// Types is enforced because the bundle assigns to no injection sink.
+const CONTENT_SECURITY_POLICY: &str = concat!(
+    "default-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'; ",
+    "script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src 'self'; ",
+    "object-src 'none'; media-src 'none'; frame-src 'none'; child-src 'none'; ",
+    "worker-src 'none'; manifest-src 'none'; ",
+    "require-trusted-types-for 'script'; trusted-types 'none'",
+);
+
 /// Static security response headers shared by every response. HSTS is added
 /// separately on the TLS listener (see `core::server`), only over https.
 fn apply_security_headers(mut router: Router<AppState>) -> Router<AppState> {
-    // Deny all powerful browser features by default; the app uses none.
-    const PERMISSIONS_POLICY: &str = "accelerometer=(), autoplay=(), camera=(), display-capture=(), encrypted-media=(), fullscreen=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), midi=(), payment=(), picture-in-picture=(), publickey-credentials-get=(), screen-wake-lock=(), sync-xhr=(), usb=(), xr-spatial-tracking=()";
-
-    let headers: [(HeaderName, &'static str); 7] = [
-        (
-            header::CONTENT_SECURITY_POLICY,
-            "default-src 'none'; base-uri 'none'; connect-src 'self'; form-action 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none';",
-        ),
+    let headers: [(HeaderName, &'static str); 10] = [
+        (header::CONTENT_SECURITY_POLICY, CONTENT_SECURITY_POLICY),
         (header::X_FRAME_OPTIONS, "DENY"),
         (header::X_CONTENT_TYPE_OPTIONS, "nosniff"),
+        // Not `no-referrer`: the language switch and the download-warning
+        // dismissal navigate back to the referring page.
         (header::REFERRER_POLICY, "same-origin"),
         (
             HeaderName::from_static("cross-origin-opener-policy"),
@@ -159,6 +185,17 @@ fn apply_security_headers(mut router: Router<AppState>) -> Router<AppState> {
             HeaderName::from_static("cross-origin-resource-policy"),
             "same-origin",
         ),
+        // Every subresource is same-origin, so requiring an opt-in from
+        // cross-origin ones costs nothing.
+        (
+            HeaderName::from_static("cross-origin-embedder-policy"),
+            "require-corp",
+        ),
+        (
+            HeaderName::from_static("x-permitted-cross-domain-policies"),
+            "none",
+        ),
+        (HeaderName::from_static("origin-agent-cluster"), "?1"),
         (
             HeaderName::from_static("permissions-policy"),
             PERMISSIONS_POLICY,
@@ -166,7 +203,8 @@ fn apply_security_headers(mut router: Router<AppState>) -> Router<AppState> {
     ];
 
     for (name, value) in headers {
-        router = router.layer(SetResponseHeaderLayer::if_not_present(
+        // `overriding`, not `if_not_present`: no handler may weaken these.
+        router = router.layer(SetResponseHeaderLayer::overriding(
             name,
             HeaderValue::from_static(value),
         ));
@@ -174,9 +212,23 @@ fn apply_security_headers(mut router: Router<AppState>) -> Router<AppState> {
     router
 }
 
+/// `Cache-Control: no-store` for every dynamic response: pages carry personal
+/// data and must reach neither a shared cache nor a browser's disk cache.
+/// `if_not_present`, so the download handlers keep their own value.
+fn apply_no_store(router: Router<AppState>) -> Router<AppState> {
+    router.layer(SetResponseHeaderLayer::if_not_present(
+        header::CACHE_CONTROL,
+        HeaderValue::from_static("no-store"),
+    ))
+}
+
 /// Mount the cache-busted `/static` asset routes: served from the embedded
 /// bundle in release builds, proxied to the dev asset server otherwise.
+///
+/// [`apply_no_store`] runs first, so these cache-busted assets stay cacheable
+/// while every page above them does not.
 fn mount_static_assets(router: Router<AppState>) -> Router<AppState> {
+    let router = apply_no_store(router);
     let code = crate::filters::cache_buster();
     let index_js = format!("/{code}-index.js");
     let index_css = format!("/{code}-index.css");
@@ -292,16 +344,148 @@ mod tests {
             let response = app.clone().oneshot(request).await.expect("response");
 
             for name in [
-                header::CONTENT_SECURITY_POLICY,
-                header::X_FRAME_OPTIONS,
-                header::X_CONTENT_TYPE_OPTIONS,
+                "content-security-policy",
+                "x-frame-options",
+                "x-content-type-options",
+                "referrer-policy",
+                "cross-origin-opener-policy",
+                "cross-origin-resource-policy",
+                "cross-origin-embedder-policy",
+                "x-permitted-cross-domain-policies",
+                "origin-agent-cluster",
+                "permissions-policy",
             ] {
                 assert!(
-                    response.headers().contains_key(&name),
+                    response.headers().contains_key(name),
                     "{uri} response must carry {name}"
                 );
             }
         }
+    }
+
+    /// Pins the values of the headers that are easy to weaken by accident: the
+    /// CSP must stay closed by default with no inline escape hatch, and the
+    /// cross-origin trio must stay at its strictest setting.
+    #[tokio::test]
+    async fn security_header_values_stay_strict() {
+        let state = AppState::new_for_tests().await;
+        let app: Router = create(state.clone()).with_state(state.clone());
+
+        let request = Request::builder()
+            .uri("/login")
+            .body(Body::empty())
+            .unwrap();
+        let response = app.oneshot(request).await.expect("response");
+        let headers = response.headers();
+
+        let csp = headers
+            .get(header::CONTENT_SECURITY_POLICY)
+            .expect("csp")
+            .to_str()
+            .unwrap();
+        for directive in [
+            "default-src 'none'",
+            "base-uri 'none'",
+            "form-action 'self'",
+            "frame-ancestors 'none'",
+            "object-src 'none'",
+            "require-trusted-types-for 'script'",
+        ] {
+            assert!(
+                csp.contains(directive),
+                "CSP must keep `{directive}`: {csp}"
+            );
+        }
+        assert!(
+            !csp.contains("unsafe-inline") && !csp.contains("unsafe-eval"),
+            "CSP must not allow inline or eval: {csp}"
+        );
+
+        for (name, value) in [
+            ("cross-origin-opener-policy", "same-origin"),
+            ("cross-origin-resource-policy", "same-origin"),
+            ("cross-origin-embedder-policy", "require-corp"),
+            ("x-permitted-cross-domain-policies", "none"),
+            ("origin-agent-cluster", "?1"),
+            ("x-frame-options", "DENY"),
+            ("x-content-type-options", "nosniff"),
+        ] {
+            assert_eq!(headers.get(name).unwrap(), value, "{name}");
+        }
+
+        // A missing feature name is a policy that silently allows it, so keep a
+        // sample of the less obvious ones covered.
+        let permissions = headers
+            .get("permissions-policy")
+            .expect("permissions policy")
+            .to_str()
+            .unwrap();
+        for feature in [
+            "browsing-topics=()",
+            "camera=()",
+            "clipboard-read=()",
+            "document-domain=()",
+            "geolocation=()",
+            "microphone=()",
+            "storage-access=()",
+        ] {
+            assert!(
+                permissions.contains(feature),
+                "Permissions-Policy must deny `{feature}`: {permissions}"
+            );
+        }
+    }
+
+    /// Pages hold personal data, so no cache may keep them; the cache-busted
+    /// asset bundle is mounted outside that layer and stays cacheable.
+    #[tokio::test]
+    async fn dynamic_responses_are_not_stored_but_static_assets_stay_cacheable() {
+        let state = AppState::new_for_tests().await;
+        let app: Router = create(state.clone()).with_state(state.clone());
+
+        for uri in ["/login", "/", "/missing"] {
+            let request = Request::builder().uri(uri).body(Body::empty()).unwrap();
+            let response = app.clone().oneshot(request).await.expect("response");
+
+            assert_eq!(
+                response.headers().get(header::CACHE_CONTROL).unwrap(),
+                "no-store",
+                "{uri} must not be stored by any cache"
+            );
+        }
+
+        let request = Request::builder()
+            .uri("/static/index.js")
+            .body(Body::empty())
+            .unwrap();
+        let response = app.oneshot(request).await.expect("response");
+        assert_ne!(
+            response
+                .headers()
+                .get(header::CACHE_CONTROL)
+                .map(|v| v.to_str().unwrap().to_string()),
+            Some("no-store".to_string()),
+            "cache-busted assets must stay cacheable"
+        );
+    }
+
+    /// Signing out must also clear what the session left in the browser.
+    #[tokio::test]
+    async fn logged_out_page_clears_site_data() {
+        let state = AppState::new_for_tests().await;
+        let app: Router = create(state.clone()).with_state(state.clone());
+
+        let request = Request::builder()
+            .uri("/logged-out")
+            .body(Body::empty())
+            .unwrap();
+        let response = app.oneshot(request).await.expect("response");
+
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(
+            response.headers().get("clear-site-data").unwrap(),
+            "\"cache\", \"storage\""
+        );
     }
 
     /// The load balancer has no `x-eks-key`, so its probe must answer from
@@ -384,6 +568,26 @@ mod tests {
         let response = app.oneshot(request).await.expect("response");
 
         assert_ne!(response.status(), StatusCode::FORBIDDEN);
+    }
+
+    /// The BAG address lookup is expensive to answer, so it must sit behind the
+    /// session middleware rather than being reachable anonymously.
+    #[tokio::test]
+    async fn bag_lookup_requires_a_session() {
+        let state = AppState::new_for_tests().await;
+        let app: Router = create(state.clone()).with_state(state.clone());
+
+        for uri in ["/lookup?pc=1234AB&n=1", "/suggest?wp=Amsterdam"] {
+            let request = Request::builder().uri(uri).body(Body::empty()).unwrap();
+            let response = app.clone().oneshot(request).await.expect("response");
+
+            assert_eq!(
+                response.status(),
+                StatusCode::SEE_OTHER,
+                "{uri} must not answer without a session"
+            );
+            assert_eq!(response.headers().get(header::LOCATION).unwrap(), "/login");
+        }
     }
 
     /// robots.txt and security.txt must answer requests without a session

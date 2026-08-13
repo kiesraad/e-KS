@@ -7,8 +7,10 @@ use axum::{
 };
 use axum_extra::extract::CookieJar;
 
+use tracing::{error, info, warn};
+
 use crate::{
-    AppError, AppState, Locale, Session, StreamId,
+    AppError, AppState, Locale, PgEvent, PgStore, Session, StreamId,
     auth::session_extractor::{
         SESSION_COOKIE_NAME, build_removal_cookie, build_session_cookie, user_agent_hash,
     },
@@ -32,9 +34,28 @@ impl AppState {
         else {
             return Ok(false);
         };
-        self.store_for_stream(stream_id, election, false).await?;
+        let store = self.store_for_stream(stream_id, election, false).await?;
+        PgStore::own(store).update(PgEvent::Login).await?;
         session.set_current_election(election);
         Ok(true)
+    }
+
+    /// Record `event` on the session's stream, if it has one. Without an election
+    /// there is no partition to write to, and the log is the only record.
+    async fn record_on_session_stream(&self, session: &Session, event: PgEvent) {
+        let (Some(stream_id), Some(election)) = (session.stream_id, session.current_election)
+        else {
+            return;
+        };
+
+        let recorded = match self.store_for_stream(stream_id, election, false).await {
+            Ok(store) => PgStore::own(store).update(event).await,
+            Err(err) => Err(err),
+        };
+
+        if let Err(err) = recorded {
+            error!("failed to record session event on stream: {err}");
+        }
     }
 
     /// Remove the current session (if any) from the store and return a jar with
@@ -79,6 +100,13 @@ impl AuthState for AppState {
         self.sessions.cleanup_expired().await;
         self.sessions.insert(session.clone()).await;
 
+        info!(
+            event = "auth.login",
+            stream_id = %stream_id,
+            scope = session.scope.as_str(),
+            "user authenticated"
+        );
+
         (
             jar.add(build_session_cookie(&session)),
             Redirect::to(&redirect_to),
@@ -90,11 +118,20 @@ impl AuthState for AppState {
         // Drop the session (if any) and always clear the cookie; `Some` means
         // a session was active.
         let name_id = match jar.get(SESSION_COOKIE_NAME).map(|c| c.value().to_string()) {
-            Some(token) => self
-                .sessions
-                .remove(&token)
-                .await
-                .map(|session| session.saml_name_id),
+            Some(token) => match self.sessions.remove(&token).await {
+                Some(session) => {
+                    self.record_on_session_stream(&session, PgEvent::Logout)
+                        .await;
+                    info!(
+                        event = "auth.logout",
+                        stream_id = ?session.stream_id,
+                        scope = session.scope.as_str(),
+                        "user signed out"
+                    );
+                    Some(session.saml_name_id)
+                }
+                None => None,
+            },
             None => None,
         };
         (jar.remove(build_removal_cookie()), name_id)
@@ -107,10 +144,17 @@ impl AuthState for AppState {
         headers: &HeaderMap,
     ) -> Response {
         // TVS L10: end any existing local session before showing the page, so a
-        // failed re-authentication never leaves a stale session behind. The
-        // auth-service already logged the technical detail.
+        // failed re-authentication never leaves a stale session behind.
         let jar = self.clear_session_cookie(jar).await;
         let locale = Locale::from_headers(headers);
+
+        // No session and no stream, so the log is the only place this can land.
+        warn!(
+            event = "auth.failed",
+            reason = ?failure,
+            "authentication failed"
+        );
+
         (jar, auth_failure_response(failure, locale)).into_response()
     }
 

@@ -10,6 +10,11 @@ use serde::{Serialize, de::DeserializeOwned};
 
 use crate::{AppError, Locale, OptionStringExt, trans, utils::no_cache_headers};
 
+/// Most errors reported for one upload. Every failing row becomes a translated
+/// message held in memory and rendered, so a file of nothing but broken rows
+/// would amplify a few megabytes into hundreds.
+const MAX_ERRORS: usize = 50;
+
 pub enum CsvError {
     FormatError {
         line_number: usize,
@@ -20,6 +25,8 @@ pub enum CsvError {
         field_name: String,
         message: String,
     },
+    /// Parsing stopped after [`MAX_ERRORS`]; more rows may be wrong.
+    TooManyErrors { reported: usize },
 }
 
 impl Display for CsvError {
@@ -50,6 +57,11 @@ impl CsvError {
                 line_number,
                 translated_field_name(field_name, locale),
                 message
+            ),
+            CsvError::TooManyErrors { reported } => trans!(
+                "candidate_list.import_errors.too_many_errors",
+                locale,
+                reported
             ),
         }
     }
@@ -283,20 +295,30 @@ fn detect_delimiter(data: &[u8]) -> u8 {
 }
 
 impl<T: DeserializeOwned> Csv<T> {
+    /// Deserialize every row, or report what went wrong. Reading stops at
+    /// [`MAX_ERRORS`] failures and says so.
     pub fn from_bytes(data: &[u8]) -> Result<Vec<T>, Vec<CsvError>> {
         let mut records = vec![];
         let mut errors = vec![];
 
-        reader_from_bytes(data)
-            .deserialize::<T>()
-            .enumerate()
-            .for_each(|(index, res)| match res {
+        for (index, res) in reader_from_bytes(data).deserialize::<T>().enumerate() {
+            match res {
                 Ok(record) => records.push(record),
-                Err(error) => errors.push(CsvError::FormatError {
-                    line_number: index + 2,
-                    message: error.into_kind(),
-                }),
-            });
+                Err(error) => {
+                    if errors.len() == MAX_ERRORS {
+                        errors.push(CsvError::TooManyErrors {
+                            reported: MAX_ERRORS,
+                        });
+                        break;
+                    }
+                    errors.push(CsvError::FormatError {
+                        line_number: index + 2,
+                        message: error.into_kind(),
+                    });
+                }
+            }
+        }
+
         if errors.is_empty() {
             Ok(records)
         } else {
@@ -477,6 +499,43 @@ mod tests {
                 voorletters: "H.".to_string(),
                 achternaam: "Jansen".to_string(),
             }]
+        );
+    }
+
+    /// A file that fails on every row reports at most `MAX_ERRORS` failures
+    /// plus the marker, however large it is, and stops parsing there.
+    #[test]
+    fn from_bytes_caps_the_error_list() {
+        let mut data = b"value\n".to_vec();
+        for _ in 0..(MAX_ERRORS * 20) {
+            data.extend_from_slice(b"abc\n");
+        }
+
+        let errors = Csv::<TestRecord>::from_bytes(&data).expect_err("every row is invalid");
+
+        assert_eq!(errors.len(), MAX_ERRORS + 1);
+        assert!(matches!(
+            errors.last(),
+            Some(CsvError::TooManyErrors { reported }) if *reported == MAX_ERRORS
+        ));
+        assert!(
+            errors[0..MAX_ERRORS]
+                .iter()
+                .all(|error| matches!(error, CsvError::FormatError { .. }))
+        );
+    }
+
+    /// A file with fewer failures than the cap gets no truncation marker.
+    #[test]
+    fn from_bytes_reports_every_error_below_the_cap() {
+        let errors =
+            Csv::<TestRecord>::from_bytes(b"value\nabc\n1\ndef\n").expect_err("two invalid rows");
+
+        assert_eq!(errors.len(), 2);
+        assert!(
+            errors
+                .iter()
+                .all(|error| matches!(error, CsvError::FormatError { .. }))
         );
     }
 
