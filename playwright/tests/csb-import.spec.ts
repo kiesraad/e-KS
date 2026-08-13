@@ -1,5 +1,8 @@
 import { expect } from "@playwright/test";
 import { test } from "./fixtures.ts";
+import { CsbExaminationPage } from "./pages/csbExaminationPage.ts";
+import { CsbImportPage } from "./pages/csbImportPage.ts";
+import { CsbOverviewPage } from "./pages/csbOverviewPage.ts";
 
 test("import a political group in the CSB dashboard by hash", async ({
   csbLogin,
@@ -7,10 +10,17 @@ test("import a political group in the CSB dashboard by hash", async ({
   const { page, groupName, lastEventHash } = csbLogin;
   expect(lastEventHash).not.toBe("");
 
-  await page.goto("/csb/import");
-  await page
-    .getByLabel("Voer het begin van de hash code in")
-    .fill(lastEventHash);
+  const overviewPage = new CsbOverviewPage(page);
+  const examinationPage = new CsbExaminationPage(page);
+  const importPage = new CsbImportPage(page);
+
+  await expect(overviewPage.headerElection).toBeVisible();
+  await overviewPage.linkExamination.click();
+
+  await expect(examinationPage.headerExamination).toBeVisible();
+  await examinationPage.linkAddPoliticalGroup.click();
+  await expect(importPage.headerImport).toBeVisible();
+  await importPage.textfieldHashcode.fill(lastEventHash);
 
   await Promise.all([
     page.waitForURL(/\/csb\/examination\/[^/]+/),
