@@ -51,4 +51,22 @@ test.describe("download documents", async () => {
     expect(download2.suggestedFilename()).toMatch(/^[a-z0-9-]+-v\d+-fry\.zip$/);
     expect((await stat(await download2.path())).size).toBeGreaterThan(1024);
   });
+
+  test("download and edit", async ({ deleteExistingCandidateLists: page }) => {
+    await setupCandidateList(page, "Gelderland");
+    await page.goto("/finalise");
+
+    const downloadPromise = page.waitForEvent("download");
+    const finalisePage = new FinalisePage(page);
+    await finalisePage.linkDownloadNl.click();
+    const download = await downloadPromise;
+
+    expect(download.suggestedFilename()).toMatch(/^[a-z0-9-]+-v\d+\.zip$/);
+    expect((await stat(await download.path())).size).toBeGreaterThan(1024);
+
+    await finalisePage.linkCandidateList.click();
+    await expect(
+      page.getByText("Let op: de documenten zijn al gedownload."),
+    ).toBeVisible();
+  });
 });
