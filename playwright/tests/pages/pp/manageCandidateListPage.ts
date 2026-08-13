@@ -1,5 +1,5 @@
 import type { Locator, Page } from "@playwright/test";
-import type { Candidate } from "../models/candidate";
+import type { Candidate } from "../../models/candidate";
 
 export class ManageCandidateListPage {
   readonly buttonAddExistingCandidate: Locator;

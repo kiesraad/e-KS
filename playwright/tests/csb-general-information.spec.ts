@@ -1,14 +1,14 @@
 import { expect } from "@playwright/test";
 import { test } from "./fixtures.ts";
 import type { NameAuthorisation } from "./models/nameAuthorisation.ts";
-import { csbCorrectionsPage } from "./pages/csbCorrectionsPage.ts";
-import { CsbGeneralInformationPage } from "./pages/csbGeneralInformationPage.ts";
-import { csbOmissionsPartyPage } from "./pages/csbOmissionsPartyPage.ts";
-import { csbPoliticalGroupPage } from "./pages/csbPoliticalGroupPage.ts";
-import { ListDesignationPage } from "./pages/listDesignationPage.ts";
-import { NameAuthorisationPage } from "./pages/nameAuthorisationPage.ts";
-import { OverviewPage } from "./pages/overviewPage.ts";
-import { PoliticalGroupPage } from "./pages/politicalGroupPage.ts";
+import { csbCorrectionsPage } from "./pages/csb/csbCorrectionsPage.ts";
+import { CsbGeneralInformationPage } from "./pages/csb/csbGeneralInformationPage.ts";
+import { csbOmissionsPartyPage } from "./pages/csb/csbOmissionsPartyPage.ts";
+import { csbPoliticalGroupPage } from "./pages/csb/csbPoliticalGroupPage.ts";
+import { ListDesignationPage } from "./pages/pp/listDesignationPage.ts";
+import { NameAuthorisationPage } from "./pages/pp/nameAuthorisationPage.ts";
+import { OverviewPage } from "./pages/pp/overviewPage.ts";
+import { PoliticalGroupPage } from "./pages/pp/politicalGroupPage.ts";
 
 test.describe("check general information and add corrections and omissions", async () => {
   test("for standalone political group", async ({ csbImport }) => {

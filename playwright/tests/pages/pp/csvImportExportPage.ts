@@ -49,6 +49,8 @@ export class CsvImportExportPage {
       .catch(() => {});
 
     const fileChooser = await fileChooserPromise;
-    await fileChooser.setFiles(path.join(__dirname, "../testdata", filePath));
+    await fileChooser.setFiles(
+      path.join(__dirname, "../../testdata", filePath),
+    );
   }
 }

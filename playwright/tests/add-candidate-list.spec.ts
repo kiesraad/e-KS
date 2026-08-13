@@ -1,9 +1,9 @@
 import { expect } from "@playwright/test";
 import { test } from "./fixtures.ts";
 import type { Candidate } from "./models/candidate";
-import { CandidateListsOverviewPage } from "./pages/candidateListsOverviewPage";
-import { EditListDetailsPage } from "./pages/editListDetailsPage.ts";
-import { ManageCandidateListPage } from "./pages/manageCandidateListPage";
+import { CandidateListsOverviewPage } from "./pages/pp/candidateListsOverviewPage";
+import { EditListDetailsPage } from "./pages/pp/editListDetailsPage.ts";
+import { ManageCandidateListPage } from "./pages/pp/manageCandidateListPage";
 import { randomName } from "./utils/random";
 
 test.describe("add candidate list", async () => {

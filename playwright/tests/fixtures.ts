@@ -1,10 +1,10 @@
 import { test as base, type Page } from "@playwright/test";
-import { CandidateListsOverviewPage } from "./pages/candidateListsOverviewPage";
-import { CsbExaminationPage } from "./pages/csbExaminationPage.ts";
-import { CsbImportPage } from "./pages/csbImportPage.ts";
-import { CsbOverviewPage } from "./pages/csbOverviewPage.ts";
-import { ManageCandidateListPage } from "./pages/manageCandidateListPage";
-import { SelectElectionPage } from "./pages/selectElectionPage";
+import { CsbExaminationPage } from "./pages/csb/csbExaminationPage.ts";
+import { CsbImportPage } from "./pages/csb/csbImportPage.ts";
+import { CsbOverviewPage } from "./pages/csb/csbOverviewPage.ts";
+import { CandidateListsOverviewPage } from "./pages/pp/candidateListsOverviewPage.ts";
+import { ManageCandidateListPage } from "./pages/pp/manageCandidateListPage.ts";
+import { SelectElectionPage } from "./pages/pp/selectElectionPage.ts";
 
 type CsbLogin = {
   page: Page;

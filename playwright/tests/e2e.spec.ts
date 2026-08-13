@@ -4,16 +4,16 @@ import { test } from "./fixtures.ts";
 import type { Candidate } from "./models/candidate.ts";
 import type { ListSubmitter } from "./models/listSubmitter.ts";
 import type { NameAuthorisation } from "./models/nameAuthorisation.ts";
-import { CandidateListsOverviewPage } from "./pages/candidateListsOverviewPage.ts";
-import { CsvImportExportPage } from "./pages/csvImportExportPage.ts";
-import { FinalisePage } from "./pages/finalisePage.ts";
-import { ListDesignationPage } from "./pages/listDesignationPage.ts";
-import { ListSubmittersPage } from "./pages/listSubmittersPage.ts";
-import { ManageCandidateListPage } from "./pages/manageCandidateListPage.ts";
-import { NameAuthorisationPage } from "./pages/nameAuthorisationPage.ts";
-import { OverviewPage } from "./pages/overviewPage.ts";
-import { PoliticalGroupPage } from "./pages/politicalGroupPage.ts";
-import { SubstituteSubmittersPage } from "./pages/substituteSubmittersPage.ts";
+import { CandidateListsOverviewPage } from "./pages/pp/candidateListsOverviewPage.ts";
+import { CsvImportExportPage } from "./pages/pp/csvImportExportPage.ts";
+import { FinalisePage } from "./pages/pp/finalisePage.ts";
+import { ListDesignationPage } from "./pages/pp/listDesignationPage.ts";
+import { ListSubmittersPage } from "./pages/pp/listSubmittersPage.ts";
+import { ManageCandidateListPage } from "./pages/pp/manageCandidateListPage.ts";
+import { NameAuthorisationPage } from "./pages/pp/nameAuthorisationPage.ts";
+import { OverviewPage } from "./pages/pp/overviewPage.ts";
+import { PoliticalGroupPage } from "./pages/pp/politicalGroupPage.ts";
+import { SubstituteSubmittersPage } from "./pages/pp/substituteSubmittersPage.ts";
 
 test.describe("End-to-end", () => {
   // These walk the entire application flow (~20+ navigations, a CSV upload and

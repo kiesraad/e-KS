@@ -1,8 +1,8 @@
 import { expect } from "@playwright/test";
 import { test } from "./fixtures.ts";
-import { CandidateListsOverviewPage } from "./pages/candidateListsOverviewPage.ts";
-import { CsvImportExportPage } from "./pages/csvImportExportPage.ts";
-import { ManageCandidateListPage } from "./pages/manageCandidateListPage.ts";
+import { CandidateListsOverviewPage } from "./pages/pp/candidateListsOverviewPage.ts";
+import { CsvImportExportPage } from "./pages/pp/csvImportExportPage.ts";
+import { ManageCandidateListPage } from "./pages/pp/manageCandidateListPage.ts";
 
 test.describe("import and export candidates with csv file", () => {
   test.beforeEach("navigate to csv page", async ({ login: page }) => {
