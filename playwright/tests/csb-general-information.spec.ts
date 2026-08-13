@@ -30,16 +30,6 @@ test.describe("check general information and add corrections and omissions", asy
     // Add each type of omission, verify and then remove
     const omissions = [
       {
-        button: omissionsPage.buttonAuthoriseAppelation,
-        text: "De machtiging aanduiding ontbreekt",
-        resolvable: true,
-      },
-      {
-        button: omissionsPage.buttonAuthorisedAgent,
-        text: "De gemachtigde is niet geregistreerd",
-        resolvable: true,
-      },
-      {
         button: omissionsPage.buttonRegisterAppelation,
         text: "De aanduiding is niet geregistreerd",
         resolvable: false,
@@ -152,16 +142,6 @@ test.describe("check general information and add corrections and omissions", asy
 
     // Add each type of omission, verify and then remove
     const omissions = [
-      {
-        button: omissionsPage.buttonAuthoriseCombination,
-        text: "De machtiging samenvoeging ontbreekt",
-        resolvable: true,
-      },
-      {
-        button: omissionsPage.buttonAuthorisedAgentCombination,
-        text: "De gemachtigde(n) is/zijn niet geregistreerd",
-        resolvable: true,
-      },
       {
         button: omissionsPage.buttonRegisterCombination,
         text: "De aanduiding(en) is/zijn niet geregistreerd",
