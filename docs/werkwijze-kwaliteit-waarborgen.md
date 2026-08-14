@@ -4,6 +4,13 @@ Dit document beschrijft de werkwijze van het e-KS team en hoe er kwaliteit wordt
 
 Er is aandacht voor de technische kwaliteit en functionele kwaliteit. Functionele kwaliteit wordt gewaarborgd door de applicatie te toetsen aan wetgeving en gebruikersbehoeftes.
 
+De belangrijkste kwaliteitsattributen voor de ontwikkeling van e-KS zijn:
+- Betrouwbaarheid: Kan je de software vertrouwen?
+- Bruikbaarheid: Is de software makkelijk te gebruiken (voor alle bedoelde gebruikers)?
+- Beveiliging: Biedt de software voldoende bescherming tegen ongewenst gebruik?
+- Testbaarheid: Is het eenvoudig om de software te testen en controleren?
+- Onderhoudbaarheid: Kan de software eenvoudig worden onderhouden en aangepast?
+- Beheerbaarheid: Is de software eenvoudig te installeren, ondersteunen en onderhouden?
 
 ## Ontwikkeling
 
@@ -45,24 +52,9 @@ De CI/CD pipeline binnen e-KS bevat de volgende quality gates:
   - Er mogen geen Rust crates worden toegevoegd die niet aan onze kwaliteit/licensing standaarden voldoen (zie deny.toml voor exacte configuratie)
   - Cyclic dependencies op top level Rust modules zijn niet toegestaan (wordt afgedwongen door dylint)
 
-## Testen
-
-Verder uitwerken, maar alvast wat punten:
-- unit testen
-- playwright testen
-- Testen hangen aan usecases
-- Elk issue wordt functioneel getest door de Product Owner
-- Testen met eindgebruikers (frequentie: meerdere keren per jaar)
-
-## Externe kwaliteitstoetsen
-
-SIG
-
-SonarCube
-
 ## Juiste functionaliteit
 
-Om tot de juist functionaliteit te komen werkt het e-KS team met use cases (gebruiksscenario's) deze zijn afgeleid van de Kieswet. Vanuit deze use cases worden de epics gemaakt en  
+Om tot de juist functionaliteit te komen werkt het e-KS team met use cases (gebruiksscenario's) deze zijn afgeleid van de Kieswet. Vanuit deze use cases worden de epics gemaakt en issues....................
 
 ### interne stakeholders
 Frequentie: wekelijks  
@@ -82,4 +74,23 @@ Hoe:
 - Review (demo) van gebouwde functionaliteit
 - Testen van functionaliteit op functioneel niveau
 
-## Documentatie
+## Testen
+
+De volgende tests worden uitgevoerd om de kwaliteit van de software te borgen:
+
+- Rust unit testen: Testen onderdelen van de back-end. Alle code wordt afgedekt met unit tests.
+- Playwright testen: Testen de front-end. Twee soorten testen:
+  - 1) Testen gekoppeld aan use cases
+  - 2) End-to-end tests vanuit het gebruikersperspectief, op epic-niveau.
+- Functioneel testen door de Product Owner (PO): elk issue wordt getest door de PO om te kijken of de gewenste functionaliteit is ontwikkeld.
+- Testen met eindgebruikers: Meerdere keren per jaar wordt er getest met eindgebruikers. Er wordt dan gekeken of de software voldoet aan hun behoeftes.
+- Exploratief testen: Vanuit gebruikersperspectief testen we per issue of er bugs of verbeterpunten zijn.
+
+## Externe kwaliteitstoetsen
+
+SIG en SonarQube worden ingezet voor geautomatiseerde analyse en borging van de (technische) kwaliteit van de code. Ze analyseren de code onder andere op onderhoudbaarheid, architectuur, beveiliging, voorspelbaarheid. SIG en SonarQube zijn geïntegreerd in de CI/CD pipeline.
+
+
+
+
+
