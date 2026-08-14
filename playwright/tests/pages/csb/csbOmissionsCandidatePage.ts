@@ -1,12 +1,20 @@
 import { expect, type Locator, type Page } from "@playwright/test";
 
-export class csbOmissionsListPage {
+export class csbOmissionsCandidatePage {
   readonly linkAdd: Locator;
   readonly linkOverview: Locator;
-  readonly buttonAuthoriseAppelation: Locator;
-  readonly buttonAuthoriseCombination: Locator;
-  readonly buttonAuthorisedAgent: Locator;
-  readonly buttonAuthorisedAgentCombination: Locator;
+  readonly buttonWrongAppelation: Locator;
+  readonly buttonWrongGender: Locator;
+  readonly buttonDifferenceH1: Locator;
+  readonly buttonAuthorisedPerson: Locator;
+  readonly buttonMissingSupportDeclaration: Locator;
+  readonly buttonMissingCopyID: Locator;
+  readonly buttonMissingAddress: Locator;
+  readonly buttonDifferentSignature: Locator;
+  readonly buttonIncorrectSignature: Locator;
+  readonly buttonIncorrectDate: Locator;
+  readonly buttonMissingDate: Locator;
+  readonly buttonMissingSignature: Locator;
   readonly textfieldTitle: Locator;
   readonly textfieldDescription: Locator;
   readonly textfieldLetter: Locator;
@@ -19,17 +27,41 @@ export class csbOmissionsListPage {
   constructor(protected readonly page: Page) {
     this.linkAdd = this.page.getByRole("link", { name: "Verzuimen toevoegen" });
     this.linkOverview = this.page.getByRole("link", { name: "Overzicht" });
-    this.buttonAuthoriseAppelation = this.page.getByRole("button", {
-      name: "De machtiging aanduiding ontbreekt",
+    this.buttonWrongAppelation = this.page.getByRole("button", {
+      name: "Kandidaat onjuist vermeld",
     });
-    this.buttonAuthoriseCombination = this.page.getByRole("button", {
-      name: "De machtiging samenvoeging ontbreekt",
+    this.buttonWrongGender = this.page.getByRole("button", {
+      name: "Bij kandidaat is het onjuiste geslacht (x) vermeld",
     });
-    this.buttonAuthorisedAgent = this.page.getByRole("button", {
-      name: "De gemachtigde is niet geregistreerd",
+    this.buttonDifferenceH1 = this.page.getByRole("button", {
+      name: "De kandidatenlijst op Model H 1 en op de instemmingsverklaring komen niet overeen",
     });
-    this.buttonAuthorisedAgentCombination = this.page.getByRole("button", {
-      name: "De gemachtigde(n) is/zijn niet geregistreerd",
+    this.buttonAuthorisedPerson = this.page.getByRole("button", {
+      name: "Gemachtigde kandidaat ontbreekt",
+    });
+    this.buttonMissingSupportDeclaration = this.page.getByRole("button", {
+      name: "Verklaring en kopie ID ontbreken",
+    });
+    this.buttonMissingCopyID = this.page.getByRole("button", {
+      name: "Kopie ID ontbreekt",
+    });
+    this.buttonMissingAddress = this.page.getByRole("button", {
+      name: "Geen (volledig) adres opgegeven op de instemmingsverklaring",
+    });
+    this.buttonIncorrectSignature = this.page.getByRole("button", {
+      name: "De handtekening onder de instemmingsverklaring is niet correct",
+    });
+    this.buttonDifferentSignature = this.page.getByRole("button", {
+      name: "De handtekening onder de instemmingsverklaring en op het kopie ID komen niet overeen",
+    });
+    this.buttonIncorrectDate = this.page.getByRole("button", {
+      name: "Datum van ondertekening is niet correct",
+    });
+    this.buttonMissingDate = this.page.getByRole("button", {
+      name: "Datum ondertekening ontbreekt",
+    });
+    this.buttonMissingSignature = this.page.getByRole("button", {
+      name: "Handtekening ontbreekt",
     });
     this.textfieldTitle = this.page.getByRole("textbox", {
       name: "Titel Verzuim",

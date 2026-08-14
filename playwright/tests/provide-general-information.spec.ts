@@ -12,7 +12,6 @@
 // De politieke groepering vult één samengevoegde aanduiding in
 // De politieke groepering vult voor elke partij een gemachtigde in
 
-
 import { expect } from "@playwright/test";
 import { test } from "./fixtures.ts";
 import type { ListSubmitter } from "./models/listSubmitter.ts";

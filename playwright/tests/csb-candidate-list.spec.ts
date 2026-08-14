@@ -1,53 +1,70 @@
 import { expect } from "@playwright/test";
 import { test } from "./fixtures.ts";
-import type { NameAuthorisation } from "./models/nameAuthorisation.ts";
-import { csbCorrectionsPage } from "./pages/csb/csbCorrectionsPage.ts";
-import { CsbGeneralInformationPage } from "./pages/csb/csbGeneralInformationPage.ts";
-import { csbOmissionsPartyPage } from "./pages/csb/csbOmissionsPartyPage.ts";
+import { CsbCandidateListPage } from "./pages/csb/csbCandidateListPage.ts";
+import { csbOmissionsListPage } from "./pages/csb/csbOmissionsListPage.ts";
 import { csbPoliticalGroupPage } from "./pages/csb/csbPoliticalGroupPage.ts";
-import { ListDesignationPage } from "./pages/pp/listDesignationPage.ts";
-import { NameAuthorisationPage } from "./pages/pp/nameAuthorisationPage.ts";
-import { OverviewPage } from "./pages/pp/overviewPage.ts";
-import { PoliticalGroupPage } from "./pages/pp/politicalGroupPage.ts";
 
 test.describe("check candidate list and add corrections and omissions", async () => {
-  test("for standalone political group", async ({ csbImport }) => {
+  test("for single list", async ({ csbImport }) => {
     const { page, groupName } = csbImport;
     const politicalGroupPage = new csbPoliticalGroupPage(page);
-    const generalInformationPage = new CsbGeneralInformationPage(page);
-    const correctionsPage = new csbCorrectionsPage(page);
-    const omissionsPage = new csbOmissionsPartyPage(page);
+    const omissionsPage = new csbOmissionsListPage(page);
+    const candidateListPage = new CsbCandidateListPage(page);
 
     await politicalGroupPage.selectedGroup(groupName);
     await politicalGroupPage.linkCandidateList.first().click();
 
-    await expect(generalInformationPage.headerGeneralInformation).toBeVisible();
-    await generalInformationPage.linkRegisteredDesignation.click();
+    await expect(candidateListPage.headerCandidateList).toBeVisible();
 
-    await correctionsPage.addCorrection("KDP");
-    await expect(generalInformationPage.textCorrectedName).toHaveText("KDP");
+    // Get the electoral district from the candidate list page
+    const districts = ["Drenthe", "Groningen", "Overijssel"];
+    const selectedDistrict = await candidateListPage.getElectoralDistrict(
+      page,
+      districts,
+    );
 
     // Add each type of omission, verify and then remove
     const omissions = [
       {
-        button: omissionsPage.buttonRegisterAppelation,
-        text: "De aanduiding is niet geregistreerd",
-        resolvable: false,
+        button: omissionsPage.buttonAuthoriseAppelation,
+        text: "De machtiging aanduiding ontbreekt",
+        resolvable: true,
+      },
+      {
+        button: omissionsPage.buttonAuthorisedAgent,
+        text: "De gemachtigde is niet geregistreerd",
+        resolvable: true,
+      },
+      {
+        button: omissionsPage.buttonAuthoriseCombination,
+        text: "De machtiging samenvoeging ontbreekt",
+        resolvable: true,
+      },
+      {
+        button: omissionsPage.buttonAuthorisedAgentCombination,
+        text: "De gemachtigde(n) is/zijn niet geregistreerd",
+        resolvable: true,
       },
     ];
 
     for (const { button, text, resolvable } of omissions) {
-      await generalInformationPage.linkAddOmission.click();
+      await candidateListPage.linkAddOmission.click();
       await expect(
-        page.getByRole("heading", { name: "Verzuimen - Basisgegevens (KDP)" }),
+        page.getByRole("heading", { name: "Verzuimen - Kandidatenlijst" }),
       ).toBeVisible();
+      await omissionsPage.expectOnlySelectedDistrictChecked(
+        page,
+        districts,
+        selectedDistrict,
+      );
       await button.click();
       if (resolvable) {
         await expect(omissionsPage.checkboxRecoverable).toBeChecked();
         await omissionsPage.textfieldLetter.fill("Testtoevoeging");
       }
       await omissionsPage.buttonAddAndClose.click();
-      await generalInformationPage.linkManageOmissions.click();
+      await expect(page.locator('[role="dialog"]')).toBeHidden(); 
+      await candidateListPage.linkManageOmissions.click();
       await expect(page.getByText(text)).toBeVisible();
       if (resolvable) {
         await expect(page.getByText("Testtoevoeging")).toBeVisible();
@@ -57,7 +74,97 @@ test.describe("check candidate list and add corrections and omissions", async ()
           page.getByText("Onherstelbaar", { exact: true }),
         ).toBeVisible();
       }
+      await omissionsPage.expectOnlySelectedDistrictAdded(
+        page,
+        districts,
+        selectedDistrict,
+      );
       await omissionsPage.buttonRemoveOmission.click();
+      // Wait for the omission to be removed to improve flakiness of the test.
+      await expect(
+        page.getByText("Er zijn nog geen verzuimen toegevoegd.")
+        ).toBeVisible({ timeout: 10000 }); 
       await omissionsPage.linkClose.click();
     }
   });
+
+  test("for multiple lists", async ({ csbImport }) => {
+    const { page, groupName } = csbImport;
+    const politicalGroupPage = new csbPoliticalGroupPage(page);
+    const omissionsPage = new csbOmissionsListPage(page);
+    const candidateListPage = new CsbCandidateListPage(page);
+
+    await politicalGroupPage.selectedGroup(groupName);
+    await politicalGroupPage.linkCandidateList.first().click();
+
+    await expect(candidateListPage.headerCandidateList).toBeVisible();
+
+    // Get the electoral district from the candidate list page
+    const districts = ["Drenthe", "Groningen", "Overijssel"];
+    const selectedDistrict = await candidateListPage.getElectoralDistrict(
+      page,
+      districts,
+    );
+
+    // Add each type of omission, verify and then remove
+    const omissions = [
+      {
+        button: omissionsPage.buttonAuthoriseAppelation,
+        text: "De machtiging aanduiding ontbreekt",
+        resolvable: true,
+      },
+      {
+        button: omissionsPage.buttonAuthorisedAgent,
+        text: "De gemachtigde is niet geregistreerd",
+        resolvable: true,
+      },
+      {
+        button: omissionsPage.buttonAuthoriseCombination,
+        text: "De machtiging samenvoeging ontbreekt",
+        resolvable: true,
+      },
+      {
+        button: omissionsPage.buttonAuthorisedAgentCombination,
+        text: "De gemachtigde(n) is/zijn niet geregistreerd",
+        resolvable: true,
+      },
+    ];
+
+    for (const { button, text, resolvable } of omissions) {
+      await candidateListPage.linkAddOmission.click();
+      await expect(
+        page.getByRole("heading", { name: "Verzuimen - Kandidatenlijst" }),
+      ).toBeVisible();
+      await omissionsPage.expectOnlySelectedDistrictChecked(
+        page,
+        districts,
+        selectedDistrict,
+      );
+      await omissionsPage.checkboxAllLists.check();
+      await button.click();
+      if (resolvable) {
+        await expect(omissionsPage.checkboxRecoverable).toBeChecked();
+        await omissionsPage.textfieldLetter.fill("Testtoevoeging");
+      }
+      await omissionsPage.buttonAddAndClose.click();
+      await expect(page.locator('[role="dialog"]')).toBeHidden(); 
+      await candidateListPage.linkManageOmissions.click();
+      await expect(page.getByText(text)).toBeVisible();
+      if (resolvable) {
+        await expect(page.getByText("Testtoevoeging")).toBeVisible();
+        await expect(page.getByText("Herstelbaar")).toBeVisible();
+      } else {
+        await expect(
+          page.getByText("Onherstelbaar", { exact: true }),
+        ).toBeVisible();
+      }
+      await omissionsPage.expectAllDistrictsAdded(page, districts);
+      await omissionsPage.buttonRemoveOmission.click();
+      // Wait for the omission to be removed to improve flakiness of the test.
+      await expect(
+        page.getByText("Er zijn nog geen verzuimen toegevoegd.")
+        ).toBeVisible({ timeout: 10000 }); 
+      await omissionsPage.linkClose.click();
+    }
+  });
+});

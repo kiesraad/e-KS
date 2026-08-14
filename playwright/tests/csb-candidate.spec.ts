@@ -1,0 +1,257 @@
+import { expect } from "@playwright/test";
+import { test } from "./fixtures.ts";
+import { CsbCandidateListPage } from "./pages/csb/csbCandidateListPage.ts";
+import { CsbCandidatePage } from "./pages/csb/csbCandidatePage.ts";
+import { csbCorrectionsPage } from "./pages/csb/csbCorrectionsPage.ts";
+import { csbOmissionsCandidatePage } from "./pages/csb/csbOmissionsCandidatePage.ts";
+import { csbPoliticalGroupPage } from "./pages/csb/csbPoliticalGroupPage.ts";
+
+test.describe("check candidate and add corrections and omissions", async () => {
+  test("add corrections", async ({ csbImport }) => {
+    const { page, groupName } = csbImport;
+    const politicalGroupPage = new csbPoliticalGroupPage(page);
+    const candidateListPage = new CsbCandidateListPage(page);
+    const correctionsPage = new csbCorrectionsPage(page);
+    const candidatePage = new CsbCandidatePage(page);
+
+    await politicalGroupPage.selectedGroup(groupName);
+    await politicalGroupPage.linkCandidateList.first().click();
+
+    await expect(candidateListPage.headerCandidateList).toBeVisible();
+    await page
+      .getByRole("cell", { name: "Peereboom, P. (Patricia) (v)" })
+      .click();
+    await expect(
+      page.getByRole("heading", { name: "Peereboom, P. (Patricia)" }),
+    ).toBeVisible();
+    await candidatePage.linkInitials.click();
+    await correctionsPage.addCorrection("Z");
+    await expect(candidatePage.textCorrectedInitials).toHaveText("Z.");
+    await candidatePage.linkLastName.click();
+    await correctionsPage.addCorrection("Pereboom");
+    await expect(candidatePage.textCorrectedLastName).toHaveText("Pereboom");
+    await candidatePage.linkDateOfBirth.click();
+    await correctionsPage.addCorrection("12");
+    await expect(candidatePage.textCorrectedDateOfBirth).toHaveText(
+      "12-02-1983",
+    );
+    await candidatePage.linkPlaceOfResidence.first().click();
+    await correctionsPage.addCorrection("Amsterdam");
+    await expect(
+      candidatePage.textCorrectedPlaceOfResidence.first(),
+    ).toHaveText("Amsterdam");
+  });
+
+  test("for single list", async ({ csbImport }) => {
+    const { page, groupName } = csbImport;
+    const politicalGroupPage = new csbPoliticalGroupPage(page);
+    const candidateListPage = new CsbCandidateListPage(page);
+    const candidatePage = new CsbCandidatePage(page);
+    const omissionsPage = new csbOmissionsCandidatePage(page);
+
+    await politicalGroupPage.selectedGroup(groupName);
+    await politicalGroupPage.linkCandidateList.first().click();
+
+    await expect(candidateListPage.headerCandidateList).toBeVisible();
+    await page
+      .getByRole("cell", { name: "Peereboom, P. (Patricia) (v)" })
+      .click();
+    await expect(
+      page.getByRole("heading", { name: "Peereboom, P. (Patricia)" }),
+    ).toBeVisible();
+
+    // Get the electoral district from the candidate list page
+    const districts = ["Drenthe", "Groningen", "Overijssel"];
+    const selectedDistrict = await candidatePage.getElectoralDistrict(
+      page,
+      districts,
+    );
+
+    // Add each type of omission, verify and then remove
+    const omissions = [
+      {
+        button: omissionsPage.buttonWrongAppelation,
+        text: "Kandidaat onjuist vermeld",
+        resolvable: true,
+      },
+      {
+        button: omissionsPage.buttonWrongGender,
+        text: "Bij kandidaat is het onjuiste geslacht (x) vermeld",
+        resolvable: true,
+      },
+      {
+        button: omissionsPage.buttonDifferenceH1,
+        text: "De kandidatenlijst op Model H 1 en op de instemmingsverklaring komen niet overeen",
+        resolvable: true,
+      },
+      {
+        button: omissionsPage.buttonAuthorisedPerson,
+        text: "Gemachtigde kandidaat ontbreekt",
+        resolvable: true,
+      },
+      {
+        button: omissionsPage.buttonMissingSupportDeclaration,
+        text: "Verklaring en kopie ID ontbreken",
+        resolvable: true,
+      },
+      {
+        button: omissionsPage.buttonMissingCopyID,
+        text: "Kopie ID ontbreekt",
+        resolvable: true,
+      },
+      {
+        button: omissionsPage.buttonMissingAddress,
+        text: "Geen (volledig) adres opgegeven op de instemmingsverklaring",
+        resolvable: true,
+      },
+      {
+        button: omissionsPage.buttonDifferentSignature,
+        text: "De handtekening onder de instemmingsverklaring en op het kopie ID komen niet overeen",
+        resolvable: true,
+      },
+      {
+        button: omissionsPage.buttonIncorrectSignature,
+        text: "De handtekening onder de instemmingsverklaring is niet correct",
+        resolvable: true,
+      },
+      {
+        button: omissionsPage.buttonIncorrectDate,
+        text: "Datum van ondertekening is niet correct",
+        resolvable: true,
+      },
+      {
+        button: omissionsPage.buttonMissingDate,
+        text: "Datum ondertekening ontbreekt",
+        resolvable: true,
+      },
+      {
+        button: omissionsPage.buttonMissingSignature,
+        text: "Handtekening ontbreekt",
+        resolvable: true,
+      },
+    ];
+
+    for (const { button, text, resolvable } of omissions) {
+      await candidatePage.linkAddOmission.click();
+      await expect(
+        page.getByRole("heading", {
+          name: "Verzuimen - Peereboom, P. (Patricia)",
+        }),
+      ).toBeVisible();
+      await omissionsPage.expectOnlySelectedDistrictChecked(
+        page,
+        districts,
+        selectedDistrict,
+      );
+      await button.click();
+      if (resolvable) {
+        await expect(omissionsPage.checkboxRecoverable).toBeChecked();
+        await omissionsPage.textfieldLetter.fill("Testtoevoeging");
+      }
+      await omissionsPage.buttonAddAndClose.click();
+      // Wait for page to be closed to improve flakiness of the test.
+      await expect(page.locator('[role="dialog"]')).toBeHidden(); 
+      await candidatePage.linkManageOmissions.click();
+      await expect(page.getByText(text).first()).toBeVisible();
+      if (resolvable) {
+        await expect(page.getByText("Testtoevoeging")).toBeVisible();
+        await expect(page.getByText("Herstelbaar")).toBeVisible();
+      } else {
+        await expect(
+          page.getByText("Onherstelbaar", { exact: true }),
+        ).toBeVisible();
+      }
+      await omissionsPage.expectOnlySelectedDistrictAdded(
+        page,
+        districts,
+        selectedDistrict,
+      );
+      await omissionsPage.buttonRemoveOmission.click();
+    // Wait for the omission to be removed to improve flakiness of the test.
+    await expect(
+        page.getByText("Er zijn nog geen verzuimen toegevoegd.")
+        ).toBeVisible({ timeout: 10000 }); 
+    await omissionsPage.linkClose.click();
+    }
+  });
+
+  test("for multiple lists", async ({ csbImport }) => {
+    const { page, groupName } = csbImport;
+    const politicalGroupPage = new csbPoliticalGroupPage(page);
+    const candidateListPage = new CsbCandidateListPage(page);
+    const candidatePage = new CsbCandidatePage(page);
+    const omissionsPage = new csbOmissionsCandidatePage(page);
+
+    await politicalGroupPage.selectedGroup(groupName);
+    await politicalGroupPage.linkCandidateList.first().click();
+
+    await expect(candidateListPage.headerCandidateList).toBeVisible();
+    await page
+      .getByRole("cell", { name: "Peereboom, P. (Patricia) (v)" })
+      .click();
+    await expect(
+      page.getByRole("heading", { name: "Peereboom, P. (Patricia)" }),
+    ).toBeVisible();
+
+    // Get the electoral district from the candidate list page
+    const districts = ["Drenthe", "Groningen", "Overijssel"];
+    const selectedDistrict = await candidatePage.getElectoralDistrict(
+      page,
+      districts,
+    );
+
+    // Add each type of omission, verify and then remove
+    const omissions = [
+      {
+        button: omissionsPage.buttonDifferenceH1,
+        text: "De kandidatenlijst op Model H 1 en op de instemmingsverklaring komen niet overeen",
+        resolvable: true,
+      },
+      {
+        button: omissionsPage.buttonMissingCopyID,
+        text: "Kopie ID ontbreekt",
+        resolvable: true,
+      },
+    ];
+
+    for (const { button, text, resolvable } of omissions) {
+      await candidatePage.linkAddOmission.click();
+      await expect(
+        page.getByRole("heading", {
+          name: "Verzuimen - Peereboom, P. (Patricia)",
+        }),
+      ).toBeVisible();
+      await omissionsPage.expectOnlySelectedDistrictChecked(
+        page,
+        districts,
+        selectedDistrict,
+      );
+      await omissionsPage.checkboxAllLists.check();
+      await button.click();
+      if (resolvable) {
+        await expect(omissionsPage.checkboxRecoverable).toBeChecked();
+        await omissionsPage.textfieldLetter.fill("Testtoevoeging");
+      }
+      await omissionsPage.buttonAddAndClose.click();
+    // Wait for page to be closed to improve flakiness of the test.
+        await expect(page.locator('[role="dialog"]')).toBeHidden(); 
+      await candidatePage.linkManageOmissions.click();
+      await expect(page.getByText(text).first()).toBeVisible();
+      if (resolvable) {
+        await expect(page.getByText("Testtoevoeging")).toBeVisible();
+        await expect(page.getByText("Herstelbaar")).toBeVisible();
+      } else {
+        await expect(
+          page.getByText("Onherstelbaar", { exact: true }),
+        ).toBeVisible();
+      }
+      await omissionsPage.expectAllDistrictsAdded(page, districts);
+       await omissionsPage.buttonRemoveOmission.click();
+    // Wait for the omission to be removed to improve flakiness of the test.
+    await expect(
+        page.getByText("Er zijn nog geen verzuimen toegevoegd.")
+        ).toBeVisible({ timeout: 10000 }); 
+    await omissionsPage.linkClose.click();
+    }
+  });
+});

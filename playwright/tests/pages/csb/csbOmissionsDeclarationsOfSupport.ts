@@ -1,12 +1,13 @@
 import { expect, type Locator, type Page } from "@playwright/test";
 
-export class csbOmissionsListPage {
+export class csbOmissionsDeclarationsOfSupportPage {
+  readonly headerDeclarationsOfSupport: Locator;
   readonly linkAdd: Locator;
   readonly linkOverview: Locator;
-  readonly buttonAuthoriseAppelation: Locator;
-  readonly buttonAuthoriseCombination: Locator;
-  readonly buttonAuthorisedAgent: Locator;
-  readonly buttonAuthorisedAgentCombination: Locator;
+  readonly buttonMissingOneDistrict: Locator;
+  readonly buttonMissingAllDistricts: Locator;
+  readonly buttonMissingMultipleDistricts: Locator;
+  readonly buttonDeclarationsNotValid: Locator;
   readonly textfieldTitle: Locator;
   readonly textfieldDescription: Locator;
   readonly textfieldLetter: Locator;
@@ -17,19 +18,22 @@ export class csbOmissionsListPage {
   readonly checkboxAllLists: Locator;
 
   constructor(protected readonly page: Page) {
+    this.headerDeclarationsOfSupport = this.page.getByRole("heading", {
+      name: "Verzuimen - Ondersteuningsverklaringen",
+    });
     this.linkAdd = this.page.getByRole("link", { name: "Verzuimen toevoegen" });
     this.linkOverview = this.page.getByRole("link", { name: "Overzicht" });
-    this.buttonAuthoriseAppelation = this.page.getByRole("button", {
-      name: "De machtiging aanduiding ontbreekt",
+    this.buttonMissingOneDistrict = this.page.getByRole("button", {
+      name: "Voor één kieskring ontbreken ondersteuningsverklaringen",
     });
-    this.buttonAuthoriseCombination = this.page.getByRole("button", {
-      name: "De machtiging samenvoeging ontbreekt",
+    this.buttonMissingAllDistricts = this.page.getByRole("button", {
+      name: "Voor alle kieskringen ontbreken ondersteuningsverklaringen",
     });
-    this.buttonAuthorisedAgent = this.page.getByRole("button", {
-      name: "De gemachtigde is niet geregistreerd",
+    this.buttonMissingMultipleDistricts = this.page.getByRole("button", {
+      name: "Voor meerdere kieskringen ontbreken ondersteuningsverklaringen",
     });
-    this.buttonAuthorisedAgentCombination = this.page.getByRole("button", {
-      name: "De gemachtigde(n) is/zijn niet geregistreerd",
+    this.buttonDeclarationsNotValid = this.page.getByRole("button", {
+      name: "Geen geldige ondersteuningsverklaringen ingeleverd",
     });
     this.textfieldTitle = this.page.getByRole("textbox", {
       name: "Titel Verzuim",
@@ -53,22 +57,6 @@ export class csbOmissionsListPage {
     this.checkboxAllLists = this.page.getByRole("checkbox", {
       name: "Selecteer alle kandidatenlijsten",
     });
-  }
-
-  // verifies that the electoral district for the selected list is checked and districts for other lists are not checked
-  async expectOnlySelectedDistrictChecked(
-    page: Page,
-    districts: string[],
-    checkedDistrict: string,
-  ) {
-    for (const district of districts) {
-      const checkbox = page.getByRole("checkbox", { name: district });
-      if (district === checkedDistrict) {
-        await expect(checkbox).toBeChecked();
-      } else {
-        await expect(checkbox).not.toBeChecked();
-      }
-    }
   }
 
   // verifies that the omission is only added for the selected electoral district

@@ -47,6 +47,7 @@ test.describe("check general information and add corrections and omissions", asy
         await omissionsPage.textfieldLetter.fill("Testtoevoeging");
       }
       await omissionsPage.buttonAddAndClose.click();
+      await expect(page.locator('[role="dialog"]')).toBeHidden(); 
       await generalInformationPage.linkManageOmissions.click();
       await expect(page.getByText(text)).toBeVisible();
       if (resolvable) {
@@ -58,6 +59,10 @@ test.describe("check general information and add corrections and omissions", asy
         ).toBeVisible();
       }
       await omissionsPage.buttonRemoveOmission.click();
+      // Wait for the omission to be removed to improve flakiness of the test.
+      await expect(
+        page.getByText("Er zijn nog geen verzuimen toegevoegd.")
+        ).toBeVisible({ timeout: 10000 }); 
       await omissionsPage.linkClose.click();
     }
   });
@@ -162,6 +167,7 @@ test.describe("check general information and add corrections and omissions", asy
         await omissionsPage.textfieldLetter.fill("Testtoevoeging");
       }
       await omissionsPage.buttonAddAndClose.click();
+      await expect(page.locator('[role="dialog"]')).toBeHidden(); 
       await generalInformationPage.linkManageOmissions.click();
       await expect(page.getByText(text)).toBeVisible();
       if (resolvable) {
@@ -173,6 +179,10 @@ test.describe("check general information and add corrections and omissions", asy
         ).toBeVisible();
       }
       await omissionsPage.buttonRemoveOmission.click();
+      // Wait for the omission to be removed to improve flakiness of the test.
+      await expect(
+        page.getByText("Er zijn nog geen verzuimen toegevoegd.")
+        ).toBeVisible({ timeout: 10000 }); 
       await omissionsPage.linkClose.click();
     }
   });
