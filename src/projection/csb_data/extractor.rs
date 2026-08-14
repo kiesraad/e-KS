@@ -27,16 +27,14 @@ impl<S: AppRequestState> FromRequestParts<S> for CsbStore {
             .await?
             .require_current_election()?;
 
-        match registry.get_store(stream_id, election).await {
-            Ok(store) => {
-                if store.is_deleted() {
-                    Err(AppError::GenericNotFound)
-                } else {
-                    Ok(store)
-                }
-            }
-            Err(e) => Err(e),
+        let result = registry.get_store(stream_id, election).await;
+
+        if let Ok(store) = &result
+            && store.is_deleted()
+        {
+            return Err(AppError::NotFound("Stream deleted".to_string()));
         }
+        result
     }
 }
 
@@ -147,5 +145,40 @@ mod tests {
             <CsbStoreData as crate::store::StoreData>::scope(),
             crate::Scope::ImportedByCsb
         );
+    }
+
+    #[tokio::test]
+    async fn returns_not_found_for_a_deleted_stream() -> Result<(), AppError> {
+        let state = AppState::new_for_tests().await;
+        let stream_id = StreamId::new();
+        // create a new store
+        let csb_store = state
+            .csb_store_for_stream(stream_id, ElectionConfig::EK27)
+            .await?;
+
+        let response = request_store(
+            state.clone(),
+            format!("/csb/examination/{stream_id}"),
+            ElectionConfig::EK27,
+        )
+        .await;
+
+        // store exists && !deleted => OK
+        assert_eq!(response.status(), StatusCode::OK);
+
+        // delete the store
+        csb_store.update(CsbEvent::Delete).await?;
+
+        let response = request_store(
+            state,
+            format!("/csb/examination/{stream_id}"),
+            ElectionConfig::EK27,
+        )
+        .await;
+
+        // store exists && deleted => Not Found
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
+
+        Ok(())
     }
 }

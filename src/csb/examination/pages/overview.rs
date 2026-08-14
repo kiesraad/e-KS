@@ -86,6 +86,33 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn overview_skips_deleted_political_group_names() {
+        let groups = CsbPoliticalGroups(vec![CsbPoliticalGroup {
+            political_group: sample_political_group(),
+            stream_id: StreamId::new(),
+            is_examination_finished: false,
+            is_deleted: true,
+            restoration_count: 0,
+            omission_count: 0,
+            first_candidate_name: None,
+        }]);
+
+        let response = overview(
+            CsbExaminationOverviewPath {},
+            CsbContext::new_test(),
+            groups,
+        )
+        .await
+        .unwrap()
+        .into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        // The seeded group's appellation is not rendered as it is deleted.
+        let body = response_body_string(response).await;
+        assert!(!body.contains("Kiesraad Demo"));
+    }
+
+    #[tokio::test]
     async fn overview_renders_omission_count_badge() {
         let groups = CsbPoliticalGroups(vec![CsbPoliticalGroup {
             political_group: sample_political_group(),

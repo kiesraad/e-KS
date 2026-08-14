@@ -86,6 +86,7 @@ filter:
   category:
     candidate_list: Candidate list
     correction: Corrections
+    delete: Deleted
     import: Import
     list_submitter: List submitter
     name_authorisation: Statutory name and authorised agent
@@ -96,7 +97,6 @@ filter:
     set_finished: Finished state
     substitute_submitter: Substitute submitter
     system: System
-    delete: Deleted
   csb_main_stream: Main CSB stream
   event_type: Event type
   reset: Reset

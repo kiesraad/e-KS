@@ -1,18 +1,16 @@
 use askama::Template;
 use axum::{
     extract::Query,
-    response::{IntoResponse, Redirect, Response},
+    response::{IntoResponse, Response},
 };
 
 use crate::{
     AppError, Context, CsbContext,
     CsbEvent::{self},
-    CsbStore, HtmlTemplate, Overlay, QueryParamState,
+    CsbStore, HtmlTemplate, QueryParamState,
     csb::examination::{
-        CsbExaminationOverviewPath,
         extractors::CsbPoliticalGroup,
         pages::{CsbPoliticalGroupPath, CsbPoliticalGroupToggleFinishPath},
-        paths::CsbPoliticalGroupDeletePath,
         structs::{CsbCandidateList, RestorationStatus},
     },
     filters,
@@ -27,14 +25,6 @@ struct CsbPoliticalGroupTemplate {
     political_group_status: RestorationStatus,
     declarations_of_support_status: RestorationStatus,
     declarations_of_support_card_path: String,
-}
-
-#[derive(Template)]
-#[template(path = "csb/examination/pages/delete.html")]
-struct CsbPoliticalGroupDeleteTemplate {
-    political_group: CsbPoliticalGroup,
-    overlay: Overlay,
-    close_action: String,
 }
 
 /// Render the placeholder political group overview page.
@@ -98,33 +88,6 @@ pub async fn toggle_examination_finish(
     let finished = store.is_examination_finished();
     store.update(CsbEvent::SetFinished(!finished)).await?;
     Ok(query.redirect_or(CsbPoliticalGroup::new_from_csb_store(&store).examination_path()))
-}
-
-pub async fn delete(
-    _: CsbPoliticalGroupDeletePath,
-    context: CsbContext,
-    Query(query): Query<QueryParamState>,
-    store: CsbStore,
-) -> Result<Response, AppError> {
-    let political_group = CsbPoliticalGroup::new_from_csb_store(&store);
-    let close_action = political_group.examination_path().to_string();
-    Ok(HtmlTemplate(
-        CsbPoliticalGroupDeleteTemplate {
-            close_action,
-            political_group,
-            overlay: Overlay::new(&query),
-        },
-        context,
-    )
-    .into_response())
-}
-
-pub async fn delete_submit(
-    _: CsbPoliticalGroupDeletePath,
-    store: CsbStore,
-) -> Result<Response, AppError> {
-    store.update(CsbEvent::Delete).await?;
-    Ok(Redirect::to(&CsbExaminationOverviewPath.to_string()).into_response())
 }
 
 #[cfg(test)]
