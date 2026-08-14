@@ -2,23 +2,25 @@
 
 Dit document beschrijft de werkwijze van het e-KS team en hoe er kwaliteit wordt gewaarborgd. Kwaliteit is hierbij geen aparte stap aan het einde van het ontwikkelproces, maar een geïntegreerd onderdeel van de werkwijze. 
 
-Er is niet alleen aandacht voor de technische kwaliteit, maar ook of de gebouwde functionaliteit voldoet aan wetgeving en de behoeftes ondersteunt. 
+Er is aandacht voor de technische kwaliteit en functionele kwaliteit. Functionele kwaliteit wordt gewaarborgd door de applicatie te toetsen aan wetgeving en gebruikersbehoeftes.
 
 
 ## Ontwikkeling
 
 ### Algemene werkwijze
 - Er wordt gezorgd voor continue kwaliteit door **iteratief te ontwikkelen**:
-  - Het e-KS team werkt in twee wekelijkse sprints, inclusief alle sprintevents.  
-  - Refinement wordt gedaan vlak voordat er wordt begonnen met de ontwikkeling van nieuwe functionaliteit
+  - Het e-KS werkt [agile](https://agilemanifesto.org/) door middel van [Scrum](https://www.scrum.org/)
+  - Het e-KS team werkt in twee wekelijkse sprints, inclusief alle Scrum ceremonies.
+  - Refinement wordt deels gedaan tijdens de sprint planning en deels ad hoc voordat er wordt begonnen met de ontwikkeling van nieuwe functionaliteit
   - De Product Owner stemt zowel voor als na de ontwikkeling de functionaliteit af met interne stakeholders
-  - Playwright tests worden gelijktijdig met de ontwikkeling geschreven
-  - Na elke pull request worden de CI/CD pipeline, met quality gates, afgetrapt
+  - Systeem testen worden gelijktijdig met de ontwikkeling geïmplementeerd met [Playwright](https://playwright.dev/)
+  - Nieuwe features worden ingediend door middel van Pull Requests
+  - Pull Requests worden pas geaccepteerd in de main branch zodra:
+     - De CI/CD pipeline, met quality gates, slaagt
+     - De wijziging door minstens één andere ontwikkelaar is gereviewd en goedgekeurd (vierogenprincipe)
 - Er wordt gezorgd voor een gezamenlijk en objectief kwaliteitsniveau door de **Definition of Ready (DoR) en Definition of Done (DoD)**:
-  - DoR: issue mag alleen worden opgepakt als er is voldaan aan de DoR [link]
-  - DoD: issue is pas klaar als er is voldaan aan de DoD [link]
-- Kwaliteit wordt verhoogd door het **vierogenprincipe**:
-  - Elke pull request wordt gereviewed door een andere ontwikkelaar voordat code gemerged mag worden
+  - DoR: issue mag alleen worden opgepakt als er is voldaan aan de [DoR](docs/definition-of-ready.md)
+  - DoD: issue is pas klaar als er is voldaan aan de [DoD](docs/definition-of-done.md)
  
 ### Continuous Integration / Continuous Delivery (CI/CD)
 
@@ -35,7 +37,7 @@ De CI/CD pipeline binnen e-KS bevat de volgende quality gates:
   - Geen Biome linting errors op CSS en TypeScript code
   - Geen djlint format warnings op HTML templates
   - De CI/CD pipeline configuratie mag geen zizmor linting errors bevatten
-  - Elke bestand in het archief moet eindigen met een lijntje met een een newline ('\n') karakter
+  - Elke bestand in het archief moet eindigen met een witregel
 - Algemene kwaliteit
   - Sigrid score van minimaal 3.5 ster op nieuwe code (dit is geen gate, de job faalt maar mergen mag nog steeds)
   - SonarQube quality gate moet slagen op nieuwe code (we gebruiken hiervoor de default "sonarway" configuratie)
