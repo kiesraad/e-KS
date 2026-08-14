@@ -54,9 +54,9 @@ De CI/CD pipeline binnen e-KS bevat de volgende quality gates:
 
 ## Juiste functionaliteit
 
-Om tot de juist functionaliteit te komen werkt het e-KS team met use cases (gebruiksscenario's) deze zijn afgeleid van de Kieswet. Vanuit deze use cases worden de epics gemaakt en issues....................
+Om tot de juist functionaliteit te komen werkt het e-KS team met use cases (gebruiksscenario's) deze zijn afgeleid van de Kieswet. Vanuit deze use cases worden de epics gemaakt. Vanuit de epics worden issues aangemaakt die door de ontwikkelaars worden opgepakt. Vervolgens worden de issues getest door de Product Owner. Daarnaast wordt de applicatie getest door interne en externe stakeholders.
 
-### interne stakeholders
+### Interne stakeholders
 Frequentie: wekelijks  
 Wie: afdelingen "Juridische Kennis en Advies" en "Regie Kwaliteit Verkiezingsketen"  
 Doel: Vooraf en achteraf feedback ophalen  
@@ -66,7 +66,7 @@ Hoe:
 - Testen van functionaliteit op functioneel niveau
 - Testen van functionaliteit op juridische kaders 
 
-### externe stakeholders
+### Externe stakeholders
 Frequentie: meerdere keren per jaar  
 Wie: Zowel politieke partijen als gemeentes en waterschappen  
 Doel: Vooraf en achteraf feedback ophalen  
