@@ -19,7 +19,7 @@ export class csbPoliticalGroupPage {
     this.buttonRectifications = this.page.getByRole("button", {
       name: "Alle herstelacties",
     });
-    this.buttonBack = this.page.getByRole("button", {
+    this.buttonBack = this.page.getByRole("link", {
       name: "Terug",
     });
     this.linkAllErrors = this.page.getByRole("link", {
