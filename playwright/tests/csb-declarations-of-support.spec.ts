@@ -27,7 +27,7 @@ test.describe("add omissions for declarations of support", async () => {
 
     for (const { button, text, resolvable } of omissions) {
       await politicalGroupPage.linkSupportDeclarations.click();
-
+      await page.waitForURL(/\/omission\//);
       await expect(omissionsPage.headerDeclarationsOfSupport).toBeVisible();
 
       await page.getByRole("checkbox", { name: "1. Groningen" }).check();
@@ -37,8 +37,9 @@ test.describe("add omissions for declarations of support", async () => {
         await omissionsPage.textfieldLetter.fill("Testtoevoeging");
       }
       await omissionsPage.buttonAddAndClose.click();
-      await expect(page.locator('[role="dialog"]')).toBeHidden(); 
+      await expect(page.locator('[role="dialog"]')).toBeHidden();
       await politicalGroupPage.linkSupportDeclarations.click();
+      await page.waitForURL(/\/omission\//);
       await expect(page.getByText(text)).toBeVisible();
       if (resolvable) {
         await expect(page.getByText("Testtoevoeging")).toBeVisible();
@@ -49,11 +50,10 @@ test.describe("add omissions for declarations of support", async () => {
         ).toBeVisible();
       }
       await expect(page.getByText("Groningen").first()).toBeVisible();
-      await omissionsPage.buttonRemoveOmission.click();
-      // Wait for the omission to be removed to improve flakiness of the test.
+      await omissionsPage.clickRemoveOmission();
       await expect(
-        page.getByText("Er zijn nog geen verzuimen toegevoegd.")
-        ).toBeVisible({ timeout: 10000 }); 
+        page.getByText("Er zijn nog geen verzuimen toegevoegd."),
+      ).toBeVisible();
       await omissionsPage.linkClose.click();
     }
   });
@@ -81,7 +81,7 @@ test.describe("add omissions for declarations of support", async () => {
 
     for (const { button, text, resolvable } of omissions) {
       await politicalGroupPage.linkSupportDeclarations.click();
-
+      await page.waitForURL(/\/omission\//);
       await expect(omissionsPage.headerDeclarationsOfSupport).toBeVisible();
 
       await page.getByRole("checkbox", { name: "1. Groningen" }).check();
@@ -92,8 +92,9 @@ test.describe("add omissions for declarations of support", async () => {
         await omissionsPage.textfieldLetter.fill("Testtoevoeging");
       }
       await omissionsPage.buttonAddAndClose.click();
-      await expect(page.locator('[role="dialog"]')).toBeHidden(); 
+      await expect(page.locator('[role="dialog"]')).toBeHidden();
       await politicalGroupPage.linkSupportDeclarations.click();
+      await page.waitForURL(/\/omission\//);
       await expect(page.getByText(text)).toBeVisible();
       if (resolvable) {
         await expect(page.getByText("Testtoevoeging")).toBeVisible();
@@ -105,11 +106,10 @@ test.describe("add omissions for declarations of support", async () => {
       }
       await expect(page.getByText("Groningen").first()).toBeVisible();
       await expect(page.getByText("Fryslân").first()).toBeVisible();
-      await omissionsPage.buttonRemoveOmission.click();
-      // Wait for the omission to be removed to improve flakiness of the test.
+      await omissionsPage.clickRemoveOmission();
       await expect(
-        page.getByText("Er zijn nog geen verzuimen toegevoegd.")
-        ).toBeVisible({ timeout: 10000 }); 
+        page.getByText("Er zijn nog geen verzuimen toegevoegd."),
+      ).toBeVisible();
       await omissionsPage.linkClose.click();
     }
   });
@@ -137,7 +137,7 @@ test.describe("add omissions for declarations of support", async () => {
 
     for (const { button, text, resolvable } of omissions) {
       await politicalGroupPage.linkSupportDeclarations.click();
-
+      await page.waitForURL(/\/omission\//);
       await expect(omissionsPage.headerDeclarationsOfSupport).toBeVisible();
 
       await page
@@ -149,8 +149,9 @@ test.describe("add omissions for declarations of support", async () => {
         await omissionsPage.textfieldLetter.fill("Testtoevoeging");
       }
       await omissionsPage.buttonAddAndClose.click();
-      await expect(page.locator('[role="dialog"]')).toBeHidden(); 
+      await expect(page.locator('[role="dialog"]')).toBeHidden();
       await politicalGroupPage.linkSupportDeclarations.click();
+      await page.waitForURL(/\/omission\//);
       await expect(page.getByText(text)).toBeVisible();
       if (resolvable) {
         await expect(page.getByText("Testtoevoeging")).toBeVisible();
@@ -165,11 +166,10 @@ test.describe("add omissions for declarations of support", async () => {
           "1 (Groningen), 2 (Fryslân), 3 (Drenthe), 4 (Overijssel), 5 (Flevoland), 6 (Gelderland), 7 (Utrecht)",
         ),
       ).toBeVisible();
-      await omissionsPage.buttonRemoveOmission.click();
-      // Wait for the omission to be removed to improve flakiness of the test.
+      await omissionsPage.clickRemoveOmission();
       await expect(
-        page.getByText("Er zijn nog geen verzuimen toegevoegd.")
-        ).toBeVisible({ timeout: 10000 }); 
+        page.getByText("Er zijn nog geen verzuimen toegevoegd."),
+      ).toBeVisible();
       await omissionsPage.linkClose.click();
     }
   });

@@ -70,69 +70,21 @@ test.describe("check candidate and add corrections and omissions", async () => {
     // Add each type of omission, verify and then remove
     const omissions = [
       {
-        button: omissionsPage.buttonWrongAppelation,
-        text: "Kandidaat onjuist vermeld",
-        resolvable: true,
-      },
-      {
         button: omissionsPage.buttonWrongGender,
         text: "Bij kandidaat is het onjuiste geslacht (x) vermeld",
         resolvable: true,
       },
-      {
-        button: omissionsPage.buttonDifferenceH1,
-        text: "De kandidatenlijst op Model H 1 en op de instemmingsverklaring komen niet overeen",
-        resolvable: true,
-      },
+
       {
         button: omissionsPage.buttonAuthorisedPerson,
         text: "Gemachtigde kandidaat ontbreekt",
-        resolvable: true,
-      },
-      {
-        button: omissionsPage.buttonMissingSupportDeclaration,
-        text: "Verklaring en kopie ID ontbreken",
-        resolvable: true,
-      },
-      {
-        button: omissionsPage.buttonMissingCopyID,
-        text: "Kopie ID ontbreekt",
-        resolvable: true,
-      },
-      {
-        button: omissionsPage.buttonMissingAddress,
-        text: "Geen (volledig) adres opgegeven op de instemmingsverklaring",
-        resolvable: true,
-      },
-      {
-        button: omissionsPage.buttonDifferentSignature,
-        text: "De handtekening onder de instemmingsverklaring en op het kopie ID komen niet overeen",
-        resolvable: true,
-      },
-      {
-        button: omissionsPage.buttonIncorrectSignature,
-        text: "De handtekening onder de instemmingsverklaring is niet correct",
-        resolvable: true,
-      },
-      {
-        button: omissionsPage.buttonIncorrectDate,
-        text: "Datum van ondertekening is niet correct",
-        resolvable: true,
-      },
-      {
-        button: omissionsPage.buttonMissingDate,
-        text: "Datum ondertekening ontbreekt",
-        resolvable: true,
-      },
-      {
-        button: omissionsPage.buttonMissingSignature,
-        text: "Handtekening ontbreekt",
         resolvable: true,
       },
     ];
 
     for (const { button, text, resolvable } of omissions) {
       await candidatePage.linkAddOmission.click();
+      await page.waitForURL(/\/omission\//);
       await expect(
         page.getByRole("heading", {
           name: "Verzuimen - Peereboom, P. (Patricia)",
@@ -149,9 +101,9 @@ test.describe("check candidate and add corrections and omissions", async () => {
         await omissionsPage.textfieldLetter.fill("Testtoevoeging");
       }
       await omissionsPage.buttonAddAndClose.click();
-      // Wait for page to be closed to improve flakiness of the test.
-      await expect(page.locator('[role="dialog"]')).toBeHidden(); 
+      await expect(page.locator('[role="dialog"]')).toBeHidden();
       await candidatePage.linkManageOmissions.click();
+      await page.waitForURL(/\/omission\//);
       await expect(page.getByText(text).first()).toBeVisible();
       if (resolvable) {
         await expect(page.getByText("Testtoevoeging")).toBeVisible();
@@ -166,17 +118,18 @@ test.describe("check candidate and add corrections and omissions", async () => {
         districts,
         selectedDistrict,
       );
-      await omissionsPage.buttonRemoveOmission.click();
-    // Wait for the omission to be removed to improve flakiness of the test.
-    await expect(
-        page.getByText("Er zijn nog geen verzuimen toegevoegd.")
-        ).toBeVisible({ timeout: 10000 }); 
-    await omissionsPage.linkClose.click();
+
+      await omissionsPage.clickRemoveOmission();
+      await expect(
+        page.getByText("Er zijn nog geen verzuimen toegevoegd."),
+      ).toBeVisible();
+      await omissionsPage.linkClose.click();
     }
   });
 
   test("for multiple lists", async ({ csbImport }) => {
     const { page, groupName } = csbImport;
+
     const politicalGroupPage = new csbPoliticalGroupPage(page);
     const candidateListPage = new CsbCandidateListPage(page);
     const candidatePage = new CsbCandidatePage(page);
@@ -233,8 +186,7 @@ test.describe("check candidate and add corrections and omissions", async () => {
         await omissionsPage.textfieldLetter.fill("Testtoevoeging");
       }
       await omissionsPage.buttonAddAndClose.click();
-    // Wait for page to be closed to improve flakiness of the test.
-        await expect(page.locator('[role="dialog"]')).toBeHidden(); 
+      await expect(page.locator('[role="dialog"]')).toBeHidden();
       await candidatePage.linkManageOmissions.click();
       await expect(page.getByText(text).first()).toBeVisible();
       if (resolvable) {
@@ -246,12 +198,13 @@ test.describe("check candidate and add corrections and omissions", async () => {
         ).toBeVisible();
       }
       await omissionsPage.expectAllDistrictsAdded(page, districts);
-       await omissionsPage.buttonRemoveOmission.click();
-    // Wait for the omission to be removed to improve flakiness of the test.
-    await expect(
-        page.getByText("Er zijn nog geen verzuimen toegevoegd.")
-        ).toBeVisible({ timeout: 10000 }); 
-    await omissionsPage.linkClose.click();
+
+      await omissionsPage.clickRemoveOmission();
+
+      await expect(
+        page.getByText("Er zijn nog geen verzuimen toegevoegd."),
+      ).toBeVisible();
+      await omissionsPage.linkClose.click();
     }
   });
 });

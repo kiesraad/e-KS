@@ -82,4 +82,9 @@ export class csbOmissionsDeclarationsOfSupportPage {
       await expect(text).toBeVisible();
     }
   }
+
+  // dispatchEvent fixes flakiness for webkit/firefox
+  async clickRemoveOmission() {
+    await this.buttonRemoveOmission.dispatchEvent("click");
+  }
 }

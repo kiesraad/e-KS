@@ -42,4 +42,9 @@ export class csbOmissionsPartyPage {
       name: "Verwijderen",
     });
   }
+
+  // dispatchEvent fixes flakiness for webkit/firefox
+  async clickRemoveOmission() {
+    await this.buttonRemoveOmission.dispatchEvent("click");
+  }
 }

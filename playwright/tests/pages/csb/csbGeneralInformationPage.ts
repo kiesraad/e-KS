@@ -7,6 +7,7 @@ export class CsbGeneralInformationPage {
   readonly linkRegisteredDesignation: Locator;
   readonly textCorrectedName: Locator;
   readonly textCorrectedType: Locator;
+  readonly linkBack: Locator;
 
   constructor(readonly page: Page) {
     this.headerGeneralInformation = this.page.getByRole("heading", {
@@ -27,5 +28,6 @@ export class CsbGeneralInformationPage {
     this.textCorrectedType = this.page
       .getByRole("row", { name: "Type lijstaanduiding:" })
       .getByRole("strong");
+    this.linkBack = this.page.getByRole("link", { name: "Terug" });
   }
 }

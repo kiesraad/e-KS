@@ -35,20 +35,11 @@ test.describe("check candidate list and add corrections and omissions", async ()
         text: "De gemachtigde is niet geregistreerd",
         resolvable: true,
       },
-      {
-        button: omissionsPage.buttonAuthoriseCombination,
-        text: "De machtiging samenvoeging ontbreekt",
-        resolvable: true,
-      },
-      {
-        button: omissionsPage.buttonAuthorisedAgentCombination,
-        text: "De gemachtigde(n) is/zijn niet geregistreerd",
-        resolvable: true,
-      },
     ];
 
     for (const { button, text, resolvable } of omissions) {
       await candidateListPage.linkAddOmission.click();
+      await page.waitForURL(/\/omission\//);
       await expect(
         page.getByRole("heading", { name: "Verzuimen - Kandidatenlijst" }),
       ).toBeVisible();
@@ -63,8 +54,9 @@ test.describe("check candidate list and add corrections and omissions", async ()
         await omissionsPage.textfieldLetter.fill("Testtoevoeging");
       }
       await omissionsPage.buttonAddAndClose.click();
-      await expect(page.locator('[role="dialog"]')).toBeHidden(); 
+      await expect(page.locator('[role="dialog"]')).toBeHidden();
       await candidateListPage.linkManageOmissions.click();
+      await page.waitForURL(/\/omission\//);
       await expect(page.getByText(text)).toBeVisible();
       if (resolvable) {
         await expect(page.getByText("Testtoevoeging")).toBeVisible();
@@ -79,11 +71,10 @@ test.describe("check candidate list and add corrections and omissions", async ()
         districts,
         selectedDistrict,
       );
-      await omissionsPage.buttonRemoveOmission.click();
-      // Wait for the omission to be removed to improve flakiness of the test.
+      await omissionsPage.clickRemoveOmission();
       await expect(
-        page.getByText("Er zijn nog geen verzuimen toegevoegd.")
-        ).toBeVisible({ timeout: 10000 }); 
+        page.getByText("Er zijn nog geen verzuimen toegevoegd."),
+      ).toBeVisible();
       await omissionsPage.linkClose.click();
     }
   });
@@ -109,16 +100,6 @@ test.describe("check candidate list and add corrections and omissions", async ()
     // Add each type of omission, verify and then remove
     const omissions = [
       {
-        button: omissionsPage.buttonAuthoriseAppelation,
-        text: "De machtiging aanduiding ontbreekt",
-        resolvable: true,
-      },
-      {
-        button: omissionsPage.buttonAuthorisedAgent,
-        text: "De gemachtigde is niet geregistreerd",
-        resolvable: true,
-      },
-      {
         button: omissionsPage.buttonAuthoriseCombination,
         text: "De machtiging samenvoeging ontbreekt",
         resolvable: true,
@@ -132,6 +113,7 @@ test.describe("check candidate list and add corrections and omissions", async ()
 
     for (const { button, text, resolvable } of omissions) {
       await candidateListPage.linkAddOmission.click();
+      await page.waitForURL(/\/omission\//);
       await expect(
         page.getByRole("heading", { name: "Verzuimen - Kandidatenlijst" }),
       ).toBeVisible();
@@ -147,8 +129,9 @@ test.describe("check candidate list and add corrections and omissions", async ()
         await omissionsPage.textfieldLetter.fill("Testtoevoeging");
       }
       await omissionsPage.buttonAddAndClose.click();
-      await expect(page.locator('[role="dialog"]')).toBeHidden(); 
+      await expect(page.locator('[role="dialog"]')).toBeHidden();
       await candidateListPage.linkManageOmissions.click();
+      await page.waitForURL(/\/omission\//);
       await expect(page.getByText(text)).toBeVisible();
       if (resolvable) {
         await expect(page.getByText("Testtoevoeging")).toBeVisible();
@@ -159,11 +142,10 @@ test.describe("check candidate list and add corrections and omissions", async ()
         ).toBeVisible();
       }
       await omissionsPage.expectAllDistrictsAdded(page, districts);
-      await omissionsPage.buttonRemoveOmission.click();
-      // Wait for the omission to be removed to improve flakiness of the test.
+      await omissionsPage.clickRemoveOmission();
       await expect(
-        page.getByText("Er zijn nog geen verzuimen toegevoegd.")
-        ).toBeVisible({ timeout: 10000 }); 
+        page.getByText("Er zijn nog geen verzuimen toegevoegd."),
+      ).toBeVisible();
       await omissionsPage.linkClose.click();
     }
   });

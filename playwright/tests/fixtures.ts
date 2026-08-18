@@ -21,6 +21,7 @@ type Fixtures = {
   waterAuthorityElection: Page;
   csbLogin: CsbLogin;
   csbImport: CsbLogin;
+  csbOnlyImport: CsbLogin;
 };
 
 export const test = base.extend<Fixtures>({
@@ -48,8 +49,28 @@ export const test = base.extend<Fixtures>({
     await use({ page, groupName, lastEventHash });
   },
 
-  // Login as CSB and import a political group with a unique name.
+  //Login as CSB and import a political group with a unique name. Teardown deletes the imported group
   csbImport: async ({ csbLogin }, use) => {
+    const { page, groupName, lastEventHash } = csbLogin;
+    const overviewPage = new CsbOverviewPage(page);
+    const examinationPage = new CsbExaminationPage(page);
+    const importPage = new CsbImportPage(page);
+    await overviewPage.linkExamination.click();
+    await examinationPage.linkAddPoliticalGroup.click();
+    await importPage.textfieldHashcode.fill(lastEventHash);
+    await Promise.all([
+      page.waitForURL(/\/csb\/examination\/[^/]+/),
+      page.getByRole("button", { name: "Importeren" }).click(),
+    ]);
+    await use({ page, groupName, lastEventHash });
+    await page.goto("/csb/examination");
+    await page.getByRole("cell", { name: groupName }).click();
+    await page.getByRole("link", { name: "Verwijderen" }).click();
+    await page.getByRole("button", { name: "Verwijderen" }).click();
+  },
+
+  // Login as CSB and import a political group with a unique name, but no cleanup after
+  csbOnlyImport: async ({ csbLogin }, use) => {
     const { page, groupName, lastEventHash } = csbLogin;
     const overviewPage = new CsbOverviewPage(page);
     const examinationPage = new CsbExaminationPage(page);

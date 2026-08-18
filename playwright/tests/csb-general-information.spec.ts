@@ -11,8 +11,8 @@ import { OverviewPage } from "./pages/pg/overviewPage.ts";
 import { PoliticalGroupPage } from "./pages/pg/politicalGroupPage.ts";
 
 test.describe("check general information and add corrections and omissions", async () => {
-  test("for standalone political group", async ({ csbImport }) => {
-    const { page, groupName } = csbImport;
+  test("for standalone political group", async ({ csbOnlyImport }) => {
+    const { page, groupName } = csbOnlyImport;
     const politicalGroupPage = new csbPoliticalGroupPage(page);
     const generalInformationPage = new CsbGeneralInformationPage(page);
     const correctionsPage = new csbCorrectionsPage(page);
@@ -26,7 +26,6 @@ test.describe("check general information and add corrections and omissions", asy
 
     await correctionsPage.addCorrection("KDP");
     await expect(generalInformationPage.textCorrectedName).toHaveText("KDP");
-
     // Add each type of omission, verify and then remove
     const omissions = [
       {
@@ -38,6 +37,7 @@ test.describe("check general information and add corrections and omissions", asy
 
     for (const { button, text, resolvable } of omissions) {
       await generalInformationPage.linkAddOmission.click();
+      await page.waitForURL(/\/omission\//);
       await expect(
         page.getByRole("heading", { name: "Verzuimen - Basisgegevens (KDP)" }),
       ).toBeVisible();
@@ -47,8 +47,9 @@ test.describe("check general information and add corrections and omissions", asy
         await omissionsPage.textfieldLetter.fill("Testtoevoeging");
       }
       await omissionsPage.buttonAddAndClose.click();
-      await expect(page.locator('[role="dialog"]')).toBeHidden(); 
+      await expect(page.locator('[role="dialog"]')).toBeHidden();
       await generalInformationPage.linkManageOmissions.click();
+      await page.waitForURL(/\/omission\//);
       await expect(page.getByText(text)).toBeVisible();
       if (resolvable) {
         await expect(page.getByText("Testtoevoeging")).toBeVisible();
@@ -58,17 +59,20 @@ test.describe("check general information and add corrections and omissions", asy
           page.getByText("Onherstelbaar", { exact: true }),
         ).toBeVisible();
       }
-      await omissionsPage.buttonRemoveOmission.click();
-      // Wait for the omission to be removed to improve flakiness of the test.
+      await omissionsPage.clickRemoveOmission();
       await expect(
-        page.getByText("Er zijn nog geen verzuimen toegevoegd.")
-        ).toBeVisible({ timeout: 10000 }); 
+        page.getByText("Er zijn nog geen verzuimen toegevoegd."),
+      ).toBeVisible();
       await omissionsPage.linkClose.click();
     }
+
+    // delete political group
+    await generalInformationPage.linkBack.click();
+    await politicalGroupPage.deleteGroup();
   });
 
-  test("for combination", async ({ csbImport }) => {
-    const { page, groupName } = csbImport;
+  test("for combination", async ({ csbOnlyImport }) => {
+    const { page, groupName } = csbOnlyImport;
     const politicalGroupPage = new csbPoliticalGroupPage(page);
     const generalInformationPage = new CsbGeneralInformationPage(page);
     const omissionsPage = new csbOmissionsPartyPage(page);
@@ -156,6 +160,7 @@ test.describe("check general information and add corrections and omissions", asy
 
     for (const { button, text, resolvable } of omissions) {
       await generalInformationPage.linkAddOmission.click();
+      await page.waitForURL(/\/omission\//);
       await expect(
         page.getByRole("heading", {
           name: "Verzuimen - Basisgegevens (TP/TP2)",
@@ -167,8 +172,9 @@ test.describe("check general information and add corrections and omissions", asy
         await omissionsPage.textfieldLetter.fill("Testtoevoeging");
       }
       await omissionsPage.buttonAddAndClose.click();
-      await expect(page.locator('[role="dialog"]')).toBeHidden(); 
+      await expect(page.locator('[role="dialog"]')).toBeHidden();
       await generalInformationPage.linkManageOmissions.click();
+      await page.waitForURL(/\/omission\//);
       await expect(page.getByText(text)).toBeVisible();
       if (resolvable) {
         await expect(page.getByText("Testtoevoeging")).toBeVisible();
@@ -178,12 +184,15 @@ test.describe("check general information and add corrections and omissions", asy
           page.getByText("Onherstelbaar", { exact: true }),
         ).toBeVisible();
       }
-      await omissionsPage.buttonRemoveOmission.click();
-      // Wait for the omission to be removed to improve flakiness of the test.
+      await omissionsPage.clickRemoveOmission();
       await expect(
-        page.getByText("Er zijn nog geen verzuimen toegevoegd.")
-        ).toBeVisible({ timeout: 10000 }); 
+        page.getByText("Er zijn nog geen verzuimen toegevoegd."),
+      ).toBeVisible();
       await omissionsPage.linkClose.click();
     }
+
+    // delete political group
+    await generalInformationPage.linkBack.click();
+    await politicalGroupPage.deleteGroup();
   });
 });

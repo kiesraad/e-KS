@@ -9,6 +9,8 @@ export class csbPoliticalGroupPage {
   readonly linkGeneralInformation: Locator;
   readonly linkSupportDeclarations: Locator;
   readonly linkCandidateList: Locator;
+  readonly linkDelete: Locator;
+  readonly buttonDeleteConfirm: Locator;
 
   constructor(protected readonly page: Page) {
     this.switchFinalize = this.page.getByLabel(
@@ -35,11 +37,20 @@ export class csbPoliticalGroupPage {
     this.linkCandidateList = this.page.getByRole("link", {
       name: "Kandidatenlijst controleren",
     });
+    this.linkDelete = this.page.getByRole("link", { name: "Verwijderen" });
+    this.buttonDeleteConfirm = this.page.getByRole("button", {
+      name: "Verwijderen",
+    });
   }
 
   async selectedGroup(politicalgroup: string) {
     await expect(
       this.page.getByRole("heading", { name: politicalgroup }),
     ).toBeVisible();
+  }
+
+  async deleteGroup() {
+    await this.linkDelete.click();
+    await this.buttonDeleteConfirm.click();
   }
 }
