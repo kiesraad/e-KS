@@ -15,12 +15,12 @@ De belangrijkste kwaliteitsattributen voor de ontwikkeling van e-KS zijn:
 ## Ontwikkeling
 
 ### Algemene werkwijze
-- Er wordt gezorgd voor continue kwaliteit door **iteratief te ontwikkelen**:
+- Er wordt gezorgd voor continue kwaliteit door **iteratief en incrementeel te ontwikkelen**:
   - Het e-KS werkt [agile](https://agilemanifesto.org/) door middel van [Scrum](https://www.scrum.org/)
   - Het e-KS team werkt in twee wekelijkse sprints, inclusief alle Scrum ceremonies.
   - Refinement wordt deels gedaan tijdens de sprint planning en deels ad hoc voordat er wordt begonnen met de ontwikkeling van nieuwe functionaliteit
   - De Product Owner stemt zowel voor als na de ontwikkeling de functionaliteit af met interne stakeholders
-  - Systeem testen worden gelijktijdig met de ontwikkeling geïmplementeerd met [Playwright](https://playwright.dev/)
+  - Testen worden gelijktijdig met de ontwikkeling gemaakt en uitgevoerd.
   - Nieuwe features worden ingediend door middel van Pull Requests
   - Pull Requests worden pas geaccepteerd in de main branch zodra:
      - De CI/CD pipeline, met quality gates, slaagt
@@ -29,7 +29,7 @@ De belangrijkste kwaliteitsattributen voor de ontwikkeling van e-KS zijn:
   - DoR: issue mag alleen worden opgepakt als er is voldaan aan de [DoR](docs/definition-of-ready.md)
   - DoD: issue is pas klaar als er is voldaan aan de [DoD](docs/definition-of-done.md)
  
-### Continuous Integration / Continuous Delivery (CI/CD)
+### Continuous Integration / Continuous Delivery (CI/CD) pipeline
 
 CI/CD  helpt om risico’s  te mitigeren. Door codewijzigingen regelmatig (bij elke PR) te integreren, testen en opleveren, worden fouten eerder ontdekt en wordt de kans op problemen bij het mergen en opleveren van nieuwe code verkleind. Door een CI/CD-pipeline in te richten kunnen deze stappen geautomatiseerd worden gedaan.
 
@@ -38,13 +38,10 @@ De CI/CD pipeline binnen e-KS bevat de volgende quality gates:
   - Alle playwright tests moeten slagen
   - Alle unit testen moeten slagen
   - Er moet een unit test coverage van >80% zijn op nieuwe code
-- Code style
-  - Rust format geeft geen warning
-  - Clippy geeft geen warnings
-  - Geen Biome linting errors op CSS en TypeScript code
+  - Code style
+  - Linters geven geen errors of warnings
   - Geen djlint format warnings op HTML templates
   - De CI/CD pipeline configuratie mag geen zizmor linting errors bevatten
-  - Elke bestand in het archief moet eindigen met een witregel
 - Algemene kwaliteit
   - Sigrid score van minimaal 3.5 ster op nieuwe code (dit is geen gate, de job faalt maar mergen mag nog steeds)
   - SonarQube quality gate moet slagen op nieuwe code (we gebruiken hiervoor de default "sonarway" configuratie)
@@ -78,13 +75,15 @@ Hoe:
 
 De volgende tests worden uitgevoerd om de kwaliteit van de software te borgen:
 
+- Exploratief testen: Testen per issue of er bugs of verbeterpunten zijn.
 - Rust unit testen: Testen onderdelen van de back-end. Alle code wordt afgedekt met unit tests.
-- Playwright testen: Testen de front-end. Twee soorten testen:
-  - 1) Testen gekoppeld aan use cases
+- Playwright testen: Testen applicatie als geheel. Twee soorten testen:
+  - 1) Testen gekoppeld aan use cases, use cases gekoppeld aan wetgeving.
   - 2) End-to-end tests vanuit het gebruikersperspectief, op epic-niveau.
-- Functioneel testen door de Product Owner (PO): elk issue wordt getest door de PO om te kijken of de gewenste functionaliteit is ontwikkeld.
+- Playwright-unit testen: Testen de front-end scripts.
+- Testen door de Product Owner (PO): elk issue wordt getest door de PO om te kijken of de gewenste functionaliteit is ontwikkeld.
 - Testen met eindgebruikers: Meerdere keren per jaar wordt er getest met eindgebruikers. Er wordt dan gekeken of de software voldoet aan hun behoeftes.
-- Exploratief testen: Vanuit gebruikersperspectief testen we per issue of er bugs of verbeterpunten zijn.
+
 
 ## Externe kwaliteitstoetsen
 
