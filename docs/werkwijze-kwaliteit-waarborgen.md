@@ -33,6 +33,8 @@ De belangrijkste kwaliteitsattributen voor de ontwikkeling van e-KS zijn:
 
 CI/CD  helpt om risico’s  te mitigeren. Door codewijzigingen regelmatig (bij elke PR) te integreren, testen en opleveren, worden fouten eerder ontdekt en wordt de kans op problemen bij het mergen en opleveren van nieuwe code verkleind. Door een CI/CD-pipeline in te richten kunnen deze stappen geautomatiseerd worden gedaan.
 
+SIG en SonarQube worden ingezet voor geautomatiseerde analyse en borging van de (technische) kwaliteit van de code. Ze analyseren de code onder andere op onderhoudbaarheid, architectuur, beveiliging, voorspelbaarheid. SIG en SonarQube zijn geïntegreerd in de CI/CD pipeline.
+
 De CI/CD pipeline binnen e-KS bevat de volgende quality gates:
 - Testing
   - Alle playwright tests moeten slagen
@@ -87,7 +89,8 @@ De volgende tests worden uitgevoerd om de kwaliteit van de software te borgen:
 
 ## Externe kwaliteitstoetsen
 
-SIG en SonarQube worden ingezet voor geautomatiseerde analyse en borging van de (technische) kwaliteit van de code. Ze analyseren de code onder andere op onderhoudbaarheid, architectuur, beveiliging, voorspelbaarheid. SIG en SonarQube zijn geïntegreerd in de CI/CD pipeline.
+- DigiD audit
+
 
 
 
