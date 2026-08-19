@@ -4,7 +4,7 @@
   {% let election = "election"|election_value %}
   {% if !election.has_only_one_district() %}
     <a href="{{ full_list.list.update_path() }}"
-       class="button tertiary icon-edit">{{ "candidate_list.actions.edit"|trans }}</a>
+       class="button secondary icon-edit">{{ "candidate_list.actions.edit"|trans }}</a>
   {% endif %}
 {% endblock %}
 {% block candidate_lists_nav_class %}active{% endblock %}
