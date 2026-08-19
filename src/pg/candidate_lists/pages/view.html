@@ -77,11 +77,12 @@
     {% else %}
       {% let max_candidates = "max_candidates"|integer_value %}
       {% include "pg/candidate_lists/components/candidates_table.html" %}
-      {% if !("paper_correction_mode"|value_true) %}
-        <p class="mt-xl">
-          <a href="{{ crate::finalise::FinalisePath{} }}" class="button">{{ "common.continue_to_finalise"|trans }}</a>
-        </p>
-      {% endif %}
+      <p class="mt-xl">
+        <a href="/" class="button">{{ "common.continue_to_home"|trans }}</a>
+        <a href="{{ CandidateList::list_path() }}" class="button secondary">
+          {{ "candidate_list.actions.back_to_list"|trans }}
+        </a>
+      </p>
     {% endif %}
   </section>
 {% endblock %}
