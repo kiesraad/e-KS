@@ -393,7 +393,7 @@ Recipient = DV or LC
 - Elements without an EncryptedKey intended for the decrypting recipient MAY be ignored.
 - EncryptedKeys for other recipients of encrypted elements SHOULD be ignored.
 
-##### 7.6.3.4.4 EncryptedID
+##### 7.6.3.4.4   
 
 - Identifiers (NameID) are contained in SAML `<EncryptedID>` elements in all cases.
 - The specific type of identifier is communicated through a @NameQualifier attribute within the `<NameID>`.

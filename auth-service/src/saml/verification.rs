@@ -34,8 +34,8 @@ const ALLOWED_DIGEST_METHODS: &[&str] = &[
     "http://www.w3.org/2001/04/xmlenc#sha256",
     "http://www.w3.org/2001/04/xmldsig-more#sha384",
     "http://www.w3.org/2001/04/xmlenc#sha384",
-    "http://www.w3.org/2001/04/xmlenc#sha512",
     "http://www.w3.org/2001/04/xmldsig-more#sha512",
+    "http://www.w3.org/2001/04/xmlenc#sha512",
 ];
 
 // eID §9.1: "Canonicalization MUST be carried out according to the exclusive

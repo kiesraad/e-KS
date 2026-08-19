@@ -7,7 +7,7 @@ use crate::saml::{
     loa::LevelOfAssurance,
     subject::SubjectId,
     xml_parser::{
-        NodeId, descendants_by_tag_pruned, direct_text, find_child, find_descendant,
+        Document, NodeId, descendants_by_tag_pruned, direct_text, find_child, find_descendant,
         find_descendant_pruned,
     },
 };
@@ -80,7 +80,7 @@ pub struct ValidateAssertionOpts<'a> {
 ///
 /// [`validate_artifact_response_at`]: super::validate_artifact_response_at
 pub fn validate_assertion_at(
-    doc: &crate::saml::xml_parser::Document,
+    doc: &Document,
     root: NodeId,
     opts: &ValidateAssertionOpts<'_>,
     errors: &mut Vec<String>,

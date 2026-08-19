@@ -66,11 +66,7 @@ pub async fn logout(_: LogoutPath, session: Session) -> Response {
 
 /// POST `/logout`: starts SP-initiated logout (eID §7.7.1); the session
 /// middleware has already verified the CSRF token.
-pub async fn logout_submit<S>(
-    _: LogoutPath,
-    State(state): State<S>,
-    jar: CookieJar,
-) -> Response
+pub async fn logout_submit<S>(_: LogoutPath, State(state): State<S>, jar: CookieJar) -> Response
 where
     S: AppRequestState + AuthState,
     AuthServiceState: FromRef<S>,
