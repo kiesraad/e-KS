@@ -18,8 +18,8 @@ export class CsbExaminationPage {
       name: "Onderzoek",
       exact: true,
     });
-    this.buttonI1 = this.page.getByRole("button", {name: "Print I 1"});
-    this.buttonI4 = this.page.getByRole("button", {name: "Print I 4"});
+    this.buttonI1 = this.page.getByRole("button", { name: "Print I 1" });
+    this.buttonI4 = this.page.getByRole("button", { name: "Print I 4" });
   }
 
   async selectPoliticalGroup(politicalgroup: string) {
