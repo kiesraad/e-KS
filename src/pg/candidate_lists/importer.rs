@@ -520,7 +520,7 @@ mod tests {
         let mut csv = format!("{}\r\n", csv_headers());
         for index in 0..(MAX_CANDIDATES + 5) {
             csv.push_str(&format!(
-                "H.A.H.A.,Henk,,Jansen{index},Juinen,NL,kandidaat heeft geen BSN,01-02-1990,v,1234AB,10,A,Stationsstraat,Juinen,,,,,,,,,\r\n"
+                "H.A.H.A.,Henk,,Jansen{index},Juinen,NL,kandidaat heeft geen BSN,01-02-1990,v,1234AB,10,A,Stationsstraat,Juinen,,,,,,,,\r\n"
             ));
         }
 
@@ -558,8 +558,8 @@ mod tests {
         let csv = format!(
             "{}\r\n{}{}",
             csv_headers(),
-            "H.A.H.A.,Henk,,Jansen,Amsterdam,NL,kandidaat heeft geen BSN,01-02-1990,v,1012JS,1,,Dam,Amsterdam,,,,,,,,,\r\n",
-            "H.A.H.A.,Piet,,Pietersen,Juinen,NL,kandidaat heeft geen BSN,01-02-1990,v,1234AB,10,A,Stationsstraat,Juinen,,,,,,,,,\r\n"
+            "H.A.H.A.,Henk,,Jansen,Amsterdam,NL,kandidaat heeft geen BSN,01-02-1990,v,1012JS,1,,Dam,Amsterdam,,,,,,,,\r\n",
+            "H.A.H.A.,Piet,,Pietersen,Juinen,NL,kandidaat heeft geen BSN,01-02-1990,v,1234AB,10,A,Stationsstraat,Juinen,,,,,,,,\r\n"
         );
 
         import_candidate_list_csv(
@@ -594,7 +594,7 @@ mod tests {
         let csv = format!(
             "{}\r\n{}",
             csv_headers(),
-            "H.A.H.A.,Henk,,Jansen,Antwerp,BE,kandidaat heeft geen BSN,01-02-1990,v,,,,,,P.,Pietje,,Puk,1012JS,1,,Dam,Amsterdam\r\n"
+            "H.A.H.A.,Henk,,Jansen,Antwerp,BE,kandidaat heeft geen BSN,01-02-1990,v,,,,,,P.,,Puk,1012JS,1,,Dam,Amsterdam\r\n"
         );
 
         import_candidate_list_csv(
@@ -660,7 +660,7 @@ mod tests {
         format!(
             "{}\r\n{}",
             csv_headers(),
-            "H.A.H.A.,Henk,,Jansen,Juinen,NL,kandidaat heeft geen BSN,01-02-1990,v,1234AB,10,A,Stationsstraat,Juinen,,,,,,,,,\r\n"
+            "H.A.H.A.,Henk,,Jansen,Juinen,NL,kandidaat heeft geen BSN,01-02-1990,v,1234AB,10,A,Stationsstraat,Juinen,,,,,,,,\r\n"
         )
     }
 
@@ -668,7 +668,7 @@ mod tests {
         format!(
             "{}\r\n{}",
             csv_headers(),
-            "H.A.H.A.,Henk,,Jansen,Juinen,NL,,01-02-1990,v,1234AB,10,A,Stationsstraat,Juinen,,,,,,,,,\r\n"
+            "H.A.H.A.,Henk,,Jansen,Juinen,NL,,01-02-1990,v,1234AB,10,A,Stationsstraat,Juinen,,,,,,,,\r\n"
         )
     }
 
@@ -676,8 +676,8 @@ mod tests {
         format!(
             "{}\r\n{}{}",
             csv_headers(),
-            "H.A.H.A.,Henk,,Jansen,Juinen,NL,123456782,01-02-1990,v,1234AB,10,A,Stationsstraat,Juinen,,,,,,,,,\r\n",
-            "H.A.H.A.,Hendrik,,Jansen,Juinen,NL,,01-02-1990,v,1234AB,10,A,Stationsstraat,Juinen,,,,,,,,,\r\n"
+            "H.A.H.A.,Henk,,Jansen,Juinen,NL,123456782,01-02-1990,v,1234AB,10,A,Stationsstraat,Juinen,,,,,,,,\r\n",
+            "H.A.H.A.,Hendrik,,Jansen,Juinen,NL,,01-02-1990,v,1234AB,10,A,Stationsstraat,Juinen,,,,,,,,\r\n"
         )
     }
 
@@ -685,8 +685,8 @@ mod tests {
         format!(
             "{}\r\n{}{}",
             csv_headers(),
-            "H.A.H.A.,Henk,,Jansen,Juinen,NL,,01-02-1990,v,1234AB,10,A,Stationsstraat,Juinen,,,,,,,,,\r\n",
-            "H.A.H.A.,Hendrik,,Jansen,Juinen,NL,,01-02-1990,v,1234AB,10,A,Stationsstraat,Juinen,,,,,,,,,\r\n"
+            "H.A.H.A.,Henk,,Jansen,Juinen,NL,,01-02-1990,v,1234AB,10,A,Stationsstraat,Juinen,,,,,,,,\r\n",
+            "H.A.H.A.,Hendrik,,Jansen,Juinen,NL,,01-02-1990,v,1234AB,10,A,Stationsstraat,Juinen,,,,,,,,\r\n"
         )
     }
 
@@ -694,8 +694,8 @@ mod tests {
         format!(
             "{}\r\n{}{}",
             csv_headers(),
-            "H.A.H.A.,Henk,,Jansen,Juinen,NL,123456782,01-02-1990,v,1234AB,10,A,Stationsstraat,Juinen,,,,,,,,,\r\n",
-            "H.A.H.A.,Hendrik,,Jansen,Juinen,NL,123456782,01-02-1990,v,1234AB,10,A,Stationsstraat,Juinen,,,,,,,,,\r\n"
+            "H.A.H.A.,Henk,,Jansen,Juinen,NL,123456782,01-02-1990,v,1234AB,10,A,Stationsstraat,Juinen,,,,,,,,\r\n",
+            "H.A.H.A.,Hendrik,,Jansen,Juinen,NL,123456782,01-02-1990,v,1234AB,10,A,Stationsstraat,Juinen,,,,,,,,\r\n"
         )
     }
 
@@ -703,8 +703,8 @@ mod tests {
         format!(
             "{}\r\n{}{}",
             csv_headers(),
-            ",Henk,,Jansen,Juinen,NL,kandidaat heeft geen BSN,01-02-1990,v,1234AB,10,A,Stationsstraat,Juinen,,,,,,,,,\r\n",
-            "H.A.H.A.,Henk,,,Juinen,NL,kandidaat heeft geen BSN,01-02-1990,v,1234AB,10,A,Stationsstraat,Juinen,,,,,,,,,\r\n"
+            ",Henk,,Jansen,Juinen,NL,kandidaat heeft geen BSN,01-02-1990,v,1234AB,10,A,Stationsstraat,Juinen,,,,,,,,\r\n",
+            "H.A.H.A.,Henk,,,Juinen,NL,kandidaat heeft geen BSN,01-02-1990,v,1234AB,10,A,Stationsstraat,Juinen,,,,,,,,\r\n"
         )
     }
 }

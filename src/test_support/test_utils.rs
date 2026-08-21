@@ -208,7 +208,7 @@ pub fn sample_address_form() -> AddressForm {
 
 pub fn sample_representative_form() -> RepresentativeForm {
     RepresentativeForm {
-        name: sample_full_name_form("", "Bakker", "", "A.B."),
+        name: sample_minimal_name_form("Bakker", "", "A.B."),
         address: sample_dutch_address_form("Juinen", "1234 AB", "10", "A", "Stationsstraat"),
     }
 }
