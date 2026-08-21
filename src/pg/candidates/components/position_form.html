@@ -8,6 +8,9 @@
            value="{{ form.data.position }}"
            required>
     {% for error in form|error("position") %}<span class="error">{{ error }}</span>{% endfor %}
+    {% if let Some(position_warning) = position_warning %}
+      <span class="warning">{{ "common.warning_prefix"|trans }}: {{ "problems.position_warning"|trans(&position_warning.max_candidates.to_string() ) }}</span>
+    {% endif %}
   </p>
   <div id="position-preview-container">
     <table class="table" id="position-preview">
