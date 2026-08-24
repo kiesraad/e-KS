@@ -47,6 +47,10 @@ impl RestorationStatus {
     pub fn has_corrections(&self) -> bool {
         self.has_corrections
     }
+
+    pub fn has_changes(&self) -> bool {
+        self.has_omissions || self.has_corrections
+    }
 }
 
 #[cfg(test)]
@@ -135,7 +139,7 @@ mod tests {
         store.add_candidate_list(sample_candidate_list(list_id1));
         store.add_candidate_list(sample_candidate_list(list_id2));
 
-        // add omission beloning to another list
+        // add omission belonging to another list
         store
             .update(CsbEvent::CreateOmission(sample_omission(
                 OmissionCategory::CandidateList(vec![list_id2]),
@@ -227,8 +231,8 @@ mod tests {
         list2.candidates.push(person_id);
 
         store.add_person(sample_person(person_id));
-        store.add_candidate_list(sample_candidate_list(list_id1));
-        store.add_candidate_list(sample_candidate_list(list_id2));
+        store.add_candidate_list(list1);
+        store.add_candidate_list(list2);
 
         // add omission for only 1 of the lists
         store
@@ -257,14 +261,13 @@ mod tests {
 
         let person_id = PersonId::new();
 
-        let mut list1 = sample_candidate_list(list_id);
+        let mut list = sample_candidate_list(list_id);
 
-        list1.candidates.push(person_id);
+        list.candidates.push(person_id);
 
         store.add_person(sample_person(person_id));
-        store.add_candidate_list(sample_candidate_list(list_id));
+        store.add_candidate_list(list);
 
-        // add omission for only 1 of the lists
         store
             .update(CsbEvent::CreateOmission(sample_omission(
                 OmissionCategory::Candidate {
@@ -281,7 +284,6 @@ mod tests {
             )))
             .await?;
 
-        // retrieve status for the other list
         let status = RestorationStatus::for_candidate(&store, person_id, list_id);
 
         assert!(status.has_omissions());

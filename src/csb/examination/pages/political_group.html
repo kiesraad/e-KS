@@ -116,7 +116,9 @@
                   <a class="error" href="#">{{ "csb.group.brp_errors.plural"|trans(&candidate_list.brp_error_count.to_string() ) }}</a>
                 {% endif %}
               </li>
-              {{ omission_badge(candidate_list.restoration_status) }}
+              {% if candidate_list.restoration_status.has_changes() %}
+                <li>{{ omission_badge(candidate_list.restoration_status) }}</li>
+              {% endif %}
             </ul>
             <p>{{ "csb.group.candidate_count"|trans(&candidate_list.list.candidates.len().to_string())|safe }}</p>
             {% if !election.has_only_one_district() %}
