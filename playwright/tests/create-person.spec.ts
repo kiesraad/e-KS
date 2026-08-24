@@ -2,11 +2,11 @@ import { expect } from "@playwright/test";
 import { test } from "./fixtures.ts";
 import type { AuthorisedPerson } from "./models/authorisedPerson";
 import type { Candidate } from "./models/candidate";
-import { AuthorisedPersonPage } from "./pages/pp/authorisedPersonPage";
-import { CandidateListsOverviewPage } from "./pages/pp/candidateListsOverviewPage";
-import { CorrespondenceAddressPage } from "./pages/pp/correspondenceAddressPage";
-import { CreatePersonPage } from "./pages/pp/createPersonPage";
-import { PersonsPage } from "./pages/pp/personsPage";
+import { AuthorisedPersonPage } from "./pages/pg/authorisedPersonPage";
+import { CandidateListsOverviewPage } from "./pages/pg/candidateListsOverviewPage";
+import { CorrespondenceAddressPage } from "./pages/pg/correspondenceAddressPage";
+import { CreatePersonPage } from "./pages/pg/createPersonPage";
+import { PersonsPage } from "./pages/pg/personsPage";
 import { randomName } from "./utils/random";
 
 test.describe("create new person", async () => {

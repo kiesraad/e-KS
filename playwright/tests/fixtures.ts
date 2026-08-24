@@ -2,9 +2,9 @@ import { test as base, type Page } from "@playwright/test";
 import { CsbExaminationPage } from "./pages/csb/csbExaminationPage.ts";
 import { CsbImportPage } from "./pages/csb/csbImportPage.ts";
 import { CsbOverviewPage } from "./pages/csb/csbOverviewPage.ts";
-import { CandidateListsOverviewPage } from "./pages/pp/candidateListsOverviewPage.ts";
-import { ManageCandidateListPage } from "./pages/pp/manageCandidateListPage.ts";
-import { SelectElectionPage } from "./pages/pp/selectElectionPage.ts";
+import { CandidateListsOverviewPage } from "./pages/pg/candidateListsOverviewPage.ts";
+import { ManageCandidateListPage } from "./pages/pg/manageCandidateListPage.ts";
+import { SelectElectionPage } from "./pages/pg/selectElectionPage.ts";
 
 type CsbLogin = {
   page: Page;

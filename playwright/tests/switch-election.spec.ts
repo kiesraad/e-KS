@@ -1,10 +1,10 @@
 import { expect } from "@playwright/test";
 import { test } from "./fixtures.ts";
-import { CandidateListsOverviewPage } from "./pages/pp/candidateListsOverviewPage.ts";
-import { EditListDetailsPage } from "./pages/pp/editListDetailsPage.ts";
-import { ManageCandidateListPage } from "./pages/pp/manageCandidateListPage.ts";
-import { OverviewPage } from "./pages/pp/overviewPage.ts";
-import { SwitchElectionPage } from "./pages/pp/switchElectionPage.ts";
+import { CandidateListsOverviewPage } from "./pages/pg/candidateListsOverviewPage.ts";
+import { EditListDetailsPage } from "./pages/pg/editListDetailsPage.ts";
+import { ManageCandidateListPage } from "./pages/pg/manageCandidateListPage.ts";
+import { OverviewPage } from "./pages/pg/overviewPage.ts";
+import { SwitchElectionPage } from "./pages/pg/switchElectionPage.ts";
 
 test.describe("switch election", () => {
   test.beforeEach(

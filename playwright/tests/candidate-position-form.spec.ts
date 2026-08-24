@@ -1,8 +1,8 @@
 import { expect } from "@playwright/test";
 import { test } from "./fixtures.ts";
-import { CandidateListsOverviewPage } from "./pages/pp/candidateListsOverviewPage";
-import { EditListDetailsPage } from "./pages/pp/editListDetailsPage";
-import { ManageCandidateListPage } from "./pages/pp/manageCandidateListPage";
+import { CandidateListsOverviewPage } from "./pages/pg/candidateListsOverviewPage";
+import { EditListDetailsPage } from "./pages/pg/editListDetailsPage";
+import { ManageCandidateListPage } from "./pages/pg/manageCandidateListPage";
 
 test.describe("candidate position form", () => {
   test("pressing Enter in the position field saves instead of removing the candidate", async ({

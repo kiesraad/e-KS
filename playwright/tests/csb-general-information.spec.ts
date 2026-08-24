@@ -5,10 +5,10 @@ import { csbCorrectionsPage } from "./pages/csb/csbCorrectionsPage.ts";
 import { CsbGeneralInformationPage } from "./pages/csb/csbGeneralInformationPage.ts";
 import { csbOmissionsPartyPage } from "./pages/csb/csbOmissionsPartyPage.ts";
 import { csbPoliticalGroupPage } from "./pages/csb/csbPoliticalGroupPage.ts";
-import { ListDesignationPage } from "./pages/pp/listDesignationPage.ts";
-import { NameAuthorisationPage } from "./pages/pp/nameAuthorisationPage.ts";
-import { OverviewPage } from "./pages/pp/overviewPage.ts";
-import { PoliticalGroupPage } from "./pages/pp/politicalGroupPage.ts";
+import { ListDesignationPage } from "./pages/pg/listDesignationPage.ts";
+import { NameAuthorisationPage } from "./pages/pg/nameAuthorisationPage.ts";
+import { OverviewPage } from "./pages/pg/overviewPage.ts";
+import { PoliticalGroupPage } from "./pages/pg/politicalGroupPage.ts";
 
 test.describe("check general information and add corrections and omissions", async () => {
   test("for standalone political group", async ({ csbImport }) => {

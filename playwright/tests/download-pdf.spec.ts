@@ -1,10 +1,10 @@
 import { stat } from "node:fs/promises";
 import { expect, type Page } from "@playwright/test";
 import { test } from "./fixtures.ts";
-import { CandidateListsOverviewPage } from "./pages/pp/candidateListsOverviewPage.ts";
-import { EditListDetailsPage } from "./pages/pp/editListDetailsPage.ts";
-import { FinalisePage } from "./pages/pp/finalisePage.ts";
-import { ManageCandidateListPage } from "./pages/pp/manageCandidateListPage.ts";
+import { CandidateListsOverviewPage } from "./pages/pg/candidateListsOverviewPage.ts";
+import { EditListDetailsPage } from "./pages/pg/editListDetailsPage.ts";
+import { FinalisePage } from "./pages/pg/finalisePage.ts";
+import { ManageCandidateListPage } from "./pages/pg/manageCandidateListPage.ts";
 
 test.describe("download documents", async () => {
   const existingCandidates = ["Akwasi", "Braber"];
