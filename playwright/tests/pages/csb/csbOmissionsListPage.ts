@@ -1,6 +1,6 @@
 import { expect, type Locator, type Page } from "@playwright/test";
 
-export class csbOmissionsListPage {
+export class CsbOmissionsListPage {
   readonly linkAdd: Locator;
   readonly linkOverview: Locator;
   readonly buttonAuthoriseAppelation: Locator;
@@ -93,10 +93,5 @@ export class csbOmissionsListPage {
       const text = page.getByText(district);
       await expect(text).toBeVisible();
     }
-  }
-
-  // dispatchEvent fixes flakiness for webkit/firefox
-  async clickRemoveOmission() {
-    await this.buttonRemoveOmission.dispatchEvent("click");
   }
 }

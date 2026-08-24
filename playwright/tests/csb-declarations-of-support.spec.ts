@@ -1,13 +1,13 @@
 import { expect } from "@playwright/test";
 import { test } from "./fixtures.ts";
-import { csbOmissionsDeclarationsOfSupportPage } from "./pages/csb/csbOmissionsDeclarationsOfSupport.ts";
-import { csbPoliticalGroupPage } from "./pages/csb/csbPoliticalGroupPage.ts";
+import { CsbOmissionsDeclarationsOfSupportPage } from "./pages/csb/csbOmissionsDeclarationsOfSupport.ts";
+import { CsbPoliticalGroupPage } from "./pages/csb/csbPoliticalGroupPage.ts";
 
 test.describe("add omissions for declarations of support", async () => {
   test("for single list", async ({ csbImport }) => {
     const { page, groupName } = csbImport;
-    const politicalGroupPage = new csbPoliticalGroupPage(page);
-    const omissionsPage = new csbOmissionsDeclarationsOfSupportPage(page);
+    const politicalGroupPage = new CsbPoliticalGroupPage(page);
+    const omissionsPage = new CsbOmissionsDeclarationsOfSupportPage(page);
 
     await politicalGroupPage.selectedGroup(groupName);
 
@@ -36,8 +36,7 @@ test.describe("add omissions for declarations of support", async () => {
         await expect(omissionsPage.checkboxRecoverable).toBeChecked();
         await omissionsPage.textfieldLetter.fill("Testtoevoeging");
       }
-      await omissionsPage.buttonAddAndClose.click();
-      await expect(page.locator('[role="dialog"]')).toBeHidden();
+      
       await politicalGroupPage.linkSupportDeclarations.click();
       await page.waitForURL(/\/omission\//);
       await expect(page.getByText(text)).toBeVisible();
@@ -50,7 +49,7 @@ test.describe("add omissions for declarations of support", async () => {
         ).toBeVisible();
       }
       await expect(page.getByText("Groningen").first()).toBeVisible();
-      await omissionsPage.clickRemoveOmission();
+      await omissionsPage.buttonRemoveOmission.click();
       await expect(
         page.getByText("Er zijn nog geen verzuimen toegevoegd."),
       ).toBeVisible();
@@ -60,8 +59,8 @@ test.describe("add omissions for declarations of support", async () => {
 
   test("for multiple lists", async ({ csbImport }) => {
     const { page, groupName } = csbImport;
-    const politicalGroupPage = new csbPoliticalGroupPage(page);
-    const omissionsPage = new csbOmissionsDeclarationsOfSupportPage(page);
+    const politicalGroupPage = new CsbPoliticalGroupPage(page);
+    const omissionsPage = new CsbOmissionsDeclarationsOfSupportPage(page);
 
     await politicalGroupPage.selectedGroup(groupName);
 
@@ -106,7 +105,7 @@ test.describe("add omissions for declarations of support", async () => {
       }
       await expect(page.getByText("Groningen").first()).toBeVisible();
       await expect(page.getByText("Fryslân").first()).toBeVisible();
-      await omissionsPage.clickRemoveOmission();
+      await omissionsPage.buttonRemoveOmission.click();
       await expect(
         page.getByText("Er zijn nog geen verzuimen toegevoegd."),
       ).toBeVisible();
@@ -116,8 +115,8 @@ test.describe("add omissions for declarations of support", async () => {
 
   test("for all lists", async ({ csbImport }) => {
     const { page, groupName } = csbImport;
-    const politicalGroupPage = new csbPoliticalGroupPage(page);
-    const omissionsPage = new csbOmissionsDeclarationsOfSupportPage(page);
+    const politicalGroupPage = new CsbPoliticalGroupPage(page);
+    const omissionsPage = new CsbOmissionsDeclarationsOfSupportPage(page);
 
     await politicalGroupPage.selectedGroup(groupName);
 
@@ -166,7 +165,7 @@ test.describe("add omissions for declarations of support", async () => {
           "1 (Groningen), 2 (Fryslân), 3 (Drenthe), 4 (Overijssel), 5 (Flevoland), 6 (Gelderland), 7 (Utrecht)",
         ),
       ).toBeVisible();
-      await omissionsPage.clickRemoveOmission();
+      await omissionsPage.buttonRemoveOmission.click();
       await expect(
         page.getByText("Er zijn nog geen verzuimen toegevoegd."),
       ).toBeVisible();

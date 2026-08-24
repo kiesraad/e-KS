@@ -1,10 +1,10 @@
 import { expect } from "@playwright/test";
 import { test } from "./fixtures.ts";
 import type { NameAuthorisation } from "./models/nameAuthorisation.ts";
-import { csbCorrectionsPage } from "./pages/csb/csbCorrectionsPage.ts";
+import { CsbCorrectionsPage } from "./pages/csb/csbCorrectionsPage.ts";
 import { CsbGeneralInformationPage } from "./pages/csb/csbGeneralInformationPage.ts";
-import { csbOmissionsPartyPage } from "./pages/csb/csbOmissionsPartyPage.ts";
-import { csbPoliticalGroupPage } from "./pages/csb/csbPoliticalGroupPage.ts";
+import { CsbOmissionsPartyPage } from "./pages/csb/csbOmissionsPartyPage.ts";
+import { CsbPoliticalGroupPage } from "./pages/csb/csbPoliticalGroupPage.ts";
 import { ListDesignationPage } from "./pages/pg/listDesignationPage.ts";
 import { NameAuthorisationPage } from "./pages/pg/nameAuthorisationPage.ts";
 import { OverviewPage } from "./pages/pg/overviewPage.ts";
@@ -13,10 +13,10 @@ import { PoliticalGroupPage } from "./pages/pg/politicalGroupPage.ts";
 test.describe("check general information and add corrections and omissions", async () => {
   test("for standalone political group", async ({ csbOnlyImport }) => {
     const { page, groupName } = csbOnlyImport;
-    const politicalGroupPage = new csbPoliticalGroupPage(page);
+    const politicalGroupPage = new CsbPoliticalGroupPage(page);
     const generalInformationPage = new CsbGeneralInformationPage(page);
-    const correctionsPage = new csbCorrectionsPage(page);
-    const omissionsPage = new csbOmissionsPartyPage(page);
+    const correctionsPage = new CsbCorrectionsPage(page);
+    const omissionsPage = new CsbOmissionsPartyPage(page);
 
     await politicalGroupPage.selectedGroup(groupName);
     await politicalGroupPage.linkGeneralInformation.click();
@@ -59,7 +59,7 @@ test.describe("check general information and add corrections and omissions", asy
           page.getByText("Onherstelbaar", { exact: true }),
         ).toBeVisible();
       }
-      await omissionsPage.clickRemoveOmission();
+      await omissionsPage.buttonRemoveOmission.click();
       await expect(
         page.getByText("Er zijn nog geen verzuimen toegevoegd."),
       ).toBeVisible();
@@ -73,9 +73,9 @@ test.describe("check general information and add corrections and omissions", asy
 
   test("for combination", async ({ csbOnlyImport }) => {
     const { page, groupName } = csbOnlyImport;
-    const politicalGroupPage = new csbPoliticalGroupPage(page);
+    const politicalGroupPage = new CsbPoliticalGroupPage(page);
     const generalInformationPage = new CsbGeneralInformationPage(page);
-    const omissionsPage = new csbOmissionsPartyPage(page);
+    const omissionsPage = new CsbOmissionsPartyPage(page);
 
     await politicalGroupPage.selectedGroup(groupName);
 
@@ -184,7 +184,7 @@ test.describe("check general information and add corrections and omissions", asy
           page.getByText("Onherstelbaar", { exact: true }),
         ).toBeVisible();
       }
-      await omissionsPage.clickRemoveOmission();
+      await omissionsPage.buttonRemoveOmission.click();
       await expect(
         page.getByText("Er zijn nog geen verzuimen toegevoegd."),
       ).toBeVisible();

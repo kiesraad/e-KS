@@ -49,7 +49,7 @@ export const test = base.extend<Fixtures>({
     await use({ page, groupName, lastEventHash });
   },
 
-  //Login as CSB and import a political group with a unique name. Teardown deletes the imported group
+  // Login as CSB and import a political group with a unique name. Deletes group after test is done
   csbImport: async ({ csbLogin }, use) => {
     const { page, groupName, lastEventHash } = csbLogin;
     const overviewPage = new CsbOverviewPage(page);

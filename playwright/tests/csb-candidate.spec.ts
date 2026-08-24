@@ -119,7 +119,7 @@ test.describe("check candidate and add corrections and omissions", async () => {
         selectedDistrict,
       );
 
-      await omissionsPage.clickRemoveOmission();
+      await omissionsPage.buttonRemoveOmission.click();
       await expect(
         page.getByText("Er zijn nog geen verzuimen toegevoegd."),
       ).toBeVisible();
@@ -199,7 +199,7 @@ test.describe("check candidate and add corrections and omissions", async () => {
       }
       await omissionsPage.expectAllDistrictsAdded(page, districts);
 
-      await omissionsPage.clickRemoveOmission();
+      await omissionsPage.buttonRemoveOmission.click();
 
       await expect(
         page.getByText("Er zijn nog geen verzuimen toegevoegd."),

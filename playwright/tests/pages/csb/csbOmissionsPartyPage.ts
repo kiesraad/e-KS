@@ -1,6 +1,6 @@
 import type { Locator, Page } from "@playwright/test";
 
-export class csbOmissionsPartyPage {
+export class CsbOmissionsPartyPage {
   readonly linkAdd: Locator;
   readonly linkOverview: Locator;
   readonly buttonRegisterAppelation: Locator;
@@ -41,10 +41,5 @@ export class csbOmissionsPartyPage {
     this.buttonRemoveOmission = this.page.getByRole("button", {
       name: "Verwijderen",
     });
-  }
-
-  // dispatchEvent fixes flakiness for webkit/firefox
-  async clickRemoveOmission() {
-    await this.buttonRemoveOmission.dispatchEvent("click");
   }
 }

@@ -1,6 +1,6 @@
 import { expect, type Locator, type Page } from "@playwright/test";
 
-export class csbPoliticalGroupPage {
+export class CsbPoliticalGroupPage {
   readonly switchFinalize: Locator;
   readonly buttonRectifications: Locator;
   readonly buttonBack: Locator;
