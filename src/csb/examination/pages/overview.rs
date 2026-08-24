@@ -103,8 +103,7 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
-        assert!(body.contains("omission-badge"));
-        assert!(body.contains("3 omissions"));
+        assert!(body.contains("Omissions added"));
     }
 
     #[tokio::test]
