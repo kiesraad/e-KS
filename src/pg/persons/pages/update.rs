@@ -1,4 +1,4 @@
-use crate::structs::persons::Person;
+use crate::structs::{common::PlaceOfResidence, persons::Person};
 use askama::Template;
 use axum::{
     extract::Query,
@@ -18,6 +18,7 @@ struct PersonUpdateTemplate {
     person: Person,
     form: FormData<PersonalDataForm>,
     overlay: Overlay,
+    locality_unknown: bool,
 }
 
 pub async fn update_person(
@@ -30,6 +31,9 @@ pub async fn update_person(
         PersonUpdateTemplate {
             form: FormData::new_with_data(PersonalDataForm::from(person.clone())),
             overlay: Overlay::new(&query),
+            locality_unknown: PlaceOfResidence::is_unknown_opt(
+                &person.personal_data.place_of_residence,
+            ),
             person,
         },
         context,
@@ -47,6 +51,9 @@ pub async fn update_person_submit(
     match form.validate_update_with_checks(&person, &store) {
         Err(form_data) => Ok(HtmlTemplate(
             PersonUpdateTemplate {
+                locality_unknown: PlaceOfResidence::is_unknown_opt(
+                    &person.personal_data.place_of_residence,
+                ),
                 person,
                 form: *form_data,
                 overlay: Overlay::new(&query),
@@ -202,6 +209,36 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
         assert!(body.contains("Candidate too young to participate in election"));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn unknown_bag_locality_renders_warning() -> Result<(), AppError> {
+        let store = PgStore::new_for_test();
+        let person_id = PersonId::new();
+        let person = sample_person(person_id);
+
+        person.create(&store).await?;
+
+        let context = Context::new_test_without_db();
+        let mut form = sample_person_form();
+        form.personal_data.place_of_residence = "Fantasy City".to_string();
+
+        let response = update_person_submit(
+            UpdatePersonPath { person_id },
+            context,
+            store,
+            person,
+            Query(QueryParamState::default()),
+            Form(form),
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        assert!(body.contains("Place of residence not found in the BAG"));
 
         Ok(())
     }

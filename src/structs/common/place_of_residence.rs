@@ -76,6 +76,12 @@ impl std::str::FromStr for PlaceOfResidence {
     }
 }
 
+impl PlaceOfResidence {
+    pub fn is_unknown_opt(por: &Option<Self>) -> bool {
+        matches!(por, Some(PlaceOfResidence::Unknown(_)))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

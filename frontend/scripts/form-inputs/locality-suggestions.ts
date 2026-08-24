@@ -13,6 +13,9 @@ export default function localitySuggestions() {
   const input = document.getElementById("locality") as HTMLInputElement | null;
   const suggestion = document.getElementById("locality-suggestion");
   const suggestionName = document.getElementById("locality-suggestion-name");
+  const localityWarning = document.getElementById(
+    "unknown-locality",
+  ) as HTMLElement | null;
 
   if (!input || !suggestion || !suggestionName) {
     return;
@@ -42,6 +45,7 @@ export default function localitySuggestions() {
   const runUpdate = async (warn: boolean) => {
     if (!isNl()) {
       suggestion.classList.add("hidden");
+      localityWarning?.classList.add("hidden");
       field?.classList.remove("warning");
       return;
     }
@@ -80,6 +84,7 @@ export default function localitySuggestions() {
 
     if (exactMatch) {
       suggestion.classList.add("hidden");
+      localityWarning?.classList.add("hidden");
       return;
     }
 
@@ -91,6 +96,7 @@ export default function localitySuggestions() {
 
     suggestionName.textContent = name;
     suggestion.classList.remove("hidden");
+    localityWarning?.classList.remove("hidden");
   };
 
   let debounceTimer: ReturnType<typeof setTimeout> | undefined;
@@ -107,6 +113,7 @@ export default function localitySuggestions() {
   suggestionName.addEventListener("click", () => {
     input.value = suggestionName.textContent ?? "";
     suggestion.classList.add("hidden");
+    localityWarning?.classList.add("hidden");
     field?.classList.remove("warning", "error");
     runUpdate(true);
   });
