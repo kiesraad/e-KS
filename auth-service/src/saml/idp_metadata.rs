@@ -231,11 +231,9 @@ fn subject_oin(leaf_der: &[u8]) -> Option<String> {
     // Build the OID from the same `const_oid` version that `x509_cert` exposes on
     // `atv.oid`; a direct `const_oid` dep can resolve to a different major version.
     let serial_number_oid = x509_cert::der::asn1::ObjectIdentifier::new_unwrap("2.5.4.5");
-    cert.tbs_certificate
-        .subject
-        .0
+    cert.tbs_certificate()
+        .subject()
         .iter()
-        .flat_map(|rdn| rdn.0.iter())
         .find(|atv| atv.oid == serial_number_oid)
         // The serialNumber value is a DER string (Printable/UTF8/IA5); its content
         // bytes are the ASCII OIN regardless of the exact string type.

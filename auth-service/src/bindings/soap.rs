@@ -9,7 +9,12 @@ use crate::{
         xml_parser::{Document, NodeId, find_descendant},
     },
 };
-use std::{fs, path::PathBuf, sync::Mutex, time::Duration};
+use std::{
+    fs,
+    path::PathBuf,
+    sync::{Mutex, PoisonError},
+    time::Duration,
+};
 use tracing::debug;
 
 /// Connection-establishment ceiling for the mTLS back-channel.
@@ -38,7 +43,7 @@ static MTLS_CLIENT: Mutex<Option<(PathBuf, PathBuf, reqwest::Client)>> = Mutex::
 
 /// The mTLS client for `tls`, built once and then reused across requests.
 fn mtls_client(tls: &TlsConfig) -> Result<reqwest::Client> {
-    let mut cache = MTLS_CLIENT.lock().unwrap_or_else(|e| e.into_inner());
+    let mut cache = MTLS_CLIENT.lock().unwrap_or_else(PoisonError::into_inner);
     if let Some((cert, key, client)) = cache.as_ref()
         && *cert == tls.client_cert
         && *key == tls.client_key

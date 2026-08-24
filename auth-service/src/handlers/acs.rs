@@ -65,7 +65,7 @@ where
 
     let jar = match confirm_pending_request(&state, &auth_state, &claims, jar, &headers).await {
         Ok(jar) => jar,
-        Err(response) => return response,
+        Err(jar) => return fail_redirect(AuthFailure::Error, jar),
     };
 
     // SECURITY: never log decrypted SubjectID values; they are PII (BSN /
@@ -96,7 +96,8 @@ where
 }
 
 /// Require the validated assertion to answer an AuthnRequest this DV issued
-/// from this browser, or return the failure redirect.
+/// from this browser. `Err` carries the cleared jar for the caller's failure
+/// redirect (TVS L10); every rejection here is an `AuthFailure::Error`.
 ///
 /// eID §7.6.3.5 rule 4 / §9.7: the Assertion must be a response to an
 /// AuthnRequest this DV actually issued, and the matched ID is consumed in the
@@ -111,10 +112,10 @@ async fn confirm_pending_request<S: AuthState>(
     claims: &Claims,
     jar: CookieJar,
     headers: &HeaderMap,
-) -> Result<CookieJar, Response> {
+) -> Result<CookieJar, CookieJar> {
     let Some(in_response_to) = claims.in_response_to.clone() else {
         warn!("[ACS] Assertion has no InResponseTo: cannot correlate to a pending AuthnRequest");
-        return Err(fail_redirect(AuthFailure::Error, jar));
+        return Err(jar);
     };
 
     // Login-CSRF / forced-login defense: this ACS callback MUST come from the
@@ -132,7 +133,7 @@ async fn confirm_pending_request<S: AuthState>(
             "[ACS] SSO flow cookie missing or not bound to this AuthnRequest/User-Agent: \
              rejecting (possible login CSRF / forced login)"
         );
-        return Err(fail_redirect(AuthFailure::Error, jar));
+        return Err(jar);
     }
 
     if !state.consume_if_pending(in_response_to).await {
@@ -140,7 +141,7 @@ async fn confirm_pending_request<S: AuthState>(
             "[ACS] InResponseTo did not match an outstanding AuthnRequest \
              (unknown, expired, or replayed): rejecting"
         );
-        return Err(fail_redirect(AuthFailure::Error, jar));
+        return Err(jar);
     }
     Ok(jar)
 }

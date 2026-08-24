@@ -2,7 +2,10 @@
 
 use super::helpers::Validator;
 use crate::saml::{
-    constants::*,
+    constants::{
+        EID_ACTING_SUBJECT_ID, EID_LEGAL_SUBJECT_ID, EID_SERVICE_UUID, NAMEID_PERSISTENT,
+        NAMEID_TRANSIENT, NS_SAML, SUBJECT_CONFIRMATION_BEARER,
+    },
     decryption::{DecryptedNameId, decrypt_encrypted_id},
     loa::LevelOfAssurance,
     subject::SubjectId,

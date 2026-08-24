@@ -4,7 +4,7 @@ use super::helpers::{Validator, child_element};
 use crate::{
     keys::KeyPair,
     saml::{
-        constants::*,
+        constants::{NS_SAMLP, STATUS_SUCCESS},
         verification::{ExpectedRoot, verify_xml_signature},
         xml_parser::{Document, NodeId, children_by_tag},
     },

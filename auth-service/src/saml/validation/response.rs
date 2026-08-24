@@ -2,7 +2,7 @@
 
 use super::helpers::{Validator, child_element};
 use crate::saml::{
-    constants::*,
+    constants::{NS_SAML, STATUS_SUCCESS},
     xml_parser::{Document, NodeId, children_by_tag, find_descendant},
 };
 use tracing::debug;
@@ -120,7 +120,7 @@ impl Validator<'_, '_> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::saml::xml_parser::parse;
+    use crate::saml::{constants::NS_SAMLP, xml_parser::parse};
     use chrono::Utc;
 
     /// A SAML timestamp `offset` from now, for the mandatory `@IssueInstant`.
