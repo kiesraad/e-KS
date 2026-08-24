@@ -66,6 +66,7 @@ test.describe("fix submit warnings", async () => {
   });
 
   test("candidate lists", async ({ login: page }) => {
+    const overviewPage = new OverviewPage(page);
     const finalisePage = new FinalisePage(page);
     const manageCandidateListPage = new ManageCandidateListPage(page);
 
@@ -78,12 +79,15 @@ test.describe("fix submit warnings", async () => {
       "Smit",
       "Bruin",
     ]);
-    await manageCandidateListPage.buttonFinalise.click();
+    await manageCandidateListPage.buttonOverviewPage.click();
+    await page.waitForURL("/");
+    await overviewPage.linkFinalise.click();
     await page.waitForURL("/finalise");
     await expect(finalisePage.linkTooManyCandidates).not.toBeVisible();
   });
 
   test("csv import", async ({ deleteExistingCandidateLists: page }) => {
+    const overviewPage = new OverviewPage(page);
     await page.goto("/candidate-lists");
     await new CandidateListsOverviewPage(page).buttonAddList.click();
     await new EditListDetailsPage(page).addDistricts(["Saba"]);
@@ -95,7 +99,9 @@ test.describe("fix submit warnings", async () => {
     await expect(
       await manageCandidateListPage.getCandidateLocator("Smit"),
     ).toBeVisible();
-    await manageCandidateListPage.buttonFinalise.click();
+    await manageCandidateListPage.buttonOverviewPage.click();
+    await page.waitForURL("/");
+    await overviewPage.linkFinalise.click();
     await page.waitForURL("/finalise");
     const finalisePage = new FinalisePage(page);
     await expect(finalisePage.linkBSN).toBeVisible();
