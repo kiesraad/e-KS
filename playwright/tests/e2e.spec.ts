@@ -1,5 +1,5 @@
-import { expect } from "@playwright/test";
 import { stat } from "node:fs/promises";
+import { expect } from "@playwright/test";
 import { test } from "./fixtures.ts";
 import type { Candidate } from "./models/candidate.ts";
 import type { ListSubmitter } from "./models/listSubmitter.ts";
