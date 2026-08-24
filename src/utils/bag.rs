@@ -13,6 +13,8 @@ use bagatel::{DEFAULT_SUGGEST_LIMIT, DEFAULT_SUGGEST_THRESHOLD, DatabaseHandle};
 use serde::Deserialize;
 use serde_json::json;
 
+use crate::utils::locality_aliases::replace_locality_alias;
+
 /// Lazily-decoded handle to the BAG database embedded in `bagatel`.
 ///
 /// Initialised on first `/lookup` or `/suggest` request and reused for the
@@ -100,6 +102,10 @@ async fn suggest(Query(params): Query<SuggestQuery>) -> impl IntoResponse {
             Json(json!({"error": "missing wp"})),
         );
     };
+
+    if let Some(suggestion) = replace_locality_alias(&query) {
+        return (StatusCode::OK, Json(json!([suggestion])));
+    }
 
     let limit = params.limit.unwrap_or(DEFAULT_SUGGEST_LIMIT);
 

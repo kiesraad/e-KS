@@ -143,7 +143,7 @@ const LOCALITY_ALIASES: &[(&str, &str)] = &[
 pub fn replace_locality_alias(input: &str) -> Option<String> {
     LOCALITY_ALIASES
         .iter()
-        .find(|(alias, _)| *alias == input)
+        .find(|(alias, _)| *alias.to_lowercase() == input.to_lowercase())
         .map(|(_, official)| (*official).to_string())
 }
 
