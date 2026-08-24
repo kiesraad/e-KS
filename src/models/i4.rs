@@ -110,7 +110,7 @@ pub struct ValidListCandidate {
 
 #[derive(Debug)]
 pub struct NumberedOnVotes {
-    /// [None] when the number is still to be determined (rendered blank).
+    /// `None` when the number is still to be determined (rendered blank).
     pub position: Option<usize>,
     pub appellation: String,
     pub previous_votes: u64,
@@ -118,7 +118,7 @@ pub struct NumberedOnVotes {
 
 #[derive(Debug)]
 pub struct NumberedOnDistricts {
-    /// [None] when the number is still to be determined (rendered blank).
+    /// `None` when the number is still to be determined (rendered blank).
     pub position: Option<usize>,
     pub appellation: String,
     pub districts: u64,
