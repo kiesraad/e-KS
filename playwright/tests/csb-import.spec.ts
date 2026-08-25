@@ -1,8 +1,8 @@
 import { expect } from "@playwright/test";
 import { test } from "./fixtures.ts";
-import { CsbExaminationPage } from "./pages/csbExaminationPage.ts";
-import { CsbImportPage } from "./pages/csbImportPage.ts";
-import { CsbOverviewPage } from "./pages/csbOverviewPage.ts";
+import { CsbExaminationPage } from "./pages/csb/csbExaminationPage.ts";
+import { CsbImportPage } from "./pages/csb/csbImportPage.ts";
+import { CsbOverviewPage } from "./pages/csb/csbOverviewPage.ts";
 
 test("import a political group in the CSB dashboard by hash", async ({
   csbLogin,

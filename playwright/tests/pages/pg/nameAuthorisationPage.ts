@@ -1,5 +1,5 @@
 import type { Locator, Page } from "@playwright/test";
-import type { NameAuthorisation } from "../models/nameAuthorisation";
+import type { NameAuthorisation } from "../../models/nameAuthorisation";
 
 export class NameAuthorisationPage {
   readonly textfieldLegalName: Locator;

@@ -1,5 +1,5 @@
 import { expect, type Locator, type Page } from "@playwright/test";
-import type { AuthorisedPerson } from "../models/authorisedPerson";
+import type { AuthorisedPerson } from "../../models/authorisedPerson";
 
 export class AuthorisedPersonPage {
   readonly textfieldInitials: Locator;

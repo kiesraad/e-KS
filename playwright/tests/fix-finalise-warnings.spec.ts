@@ -1,16 +1,16 @@
 import { expect } from "@playwright/test";
 import { test } from "./fixtures.ts";
 import type { NameAuthorisation } from "./models/nameAuthorisation.ts";
-import { CandidateListsOverviewPage } from "./pages/candidateListsOverviewPage.ts";
-import { CreatePersonPage } from "./pages/createPersonPage.ts";
-import { CsvImportExportPage } from "./pages/csvImportExportPage.ts";
-import { EditListDetailsPage } from "./pages/editListDetailsPage.ts";
-import { FinalisePage } from "./pages/finalisePage.ts";
-import { ListSubmittersPage } from "./pages/listSubmittersPage.ts";
-import { ManageCandidateListPage } from "./pages/manageCandidateListPage.ts";
-import { NameAuthorisationPage } from "./pages/nameAuthorisationPage.ts";
-import { OverviewPage } from "./pages/overviewPage.ts";
-import { PoliticalGroupPage } from "./pages/politicalGroupPage.ts";
+import { CandidateListsOverviewPage } from "./pages/pg/candidateListsOverviewPage.ts";
+import { CreatePersonPage } from "./pages/pg/createPersonPage.ts";
+import { CsvImportExportPage } from "./pages/pg/csvImportExportPage.ts";
+import { EditListDetailsPage } from "./pages/pg/editListDetailsPage.ts";
+import { FinalisePage } from "./pages/pg/finalisePage.ts";
+import { ListSubmittersPage } from "./pages/pg/listSubmittersPage.ts";
+import { ManageCandidateListPage } from "./pages/pg/manageCandidateListPage.ts";
+import { NameAuthorisationPage } from "./pages/pg/nameAuthorisationPage.ts";
+import { OverviewPage } from "./pages/pg/overviewPage.ts";
+import { PoliticalGroupPage } from "./pages/pg/politicalGroupPage.ts";
 
 test.describe("fix submit warnings", async () => {
   test("general information", async ({ noExistingData: page }) => {

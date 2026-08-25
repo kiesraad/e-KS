@@ -1,5 +1,5 @@
 import { expect, type Locator, type Page } from "@playwright/test";
-import type { Candidate } from "../models/candidate";
+import type { Candidate } from "../../models/candidate";
 
 export class CorrespondenceAddressPage {
   readonly textfieldPostalCode: Locator;

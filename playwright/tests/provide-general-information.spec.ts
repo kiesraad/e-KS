@@ -2,12 +2,12 @@ import { expect } from "@playwright/test";
 import { test } from "./fixtures.ts";
 import type { ListSubmitter } from "./models/listSubmitter.ts";
 import type { NameAuthorisation } from "./models/nameAuthorisation.ts";
-import { CandidateListsOverviewPage } from "./pages/candidateListsOverviewPage.ts";
-import { ListDesignationPage } from "./pages/listDesignationPage.ts";
-import { ListSubmittersPage } from "./pages/listSubmittersPage.ts";
-import { NameAuthorisationPage } from "./pages/nameAuthorisationPage.ts";
-import { PoliticalGroupPage } from "./pages/politicalGroupPage.ts";
-import { SubstituteSubmittersPage } from "./pages/substituteSubmittersPage.ts";
+import { CandidateListsOverviewPage } from "./pages/pg/candidateListsOverviewPage.ts";
+import { ListDesignationPage } from "./pages/pg/listDesignationPage.ts";
+import { ListSubmittersPage } from "./pages/pg/listSubmittersPage.ts";
+import { NameAuthorisationPage } from "./pages/pg/nameAuthorisationPage.ts";
+import { PoliticalGroupPage } from "./pages/pg/politicalGroupPage.ts";
+import { SubstituteSubmittersPage } from "./pages/pg/substituteSubmittersPage.ts";
 import { randomName } from "./utils/random.ts";
 
 test.describe("provide general information for political group", async () => {
