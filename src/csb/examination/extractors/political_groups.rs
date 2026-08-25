@@ -9,6 +9,7 @@ pub struct CsbPoliticalGroup {
     pub political_group: PoliticalGroup,
     pub stream_id: StreamId,
     pub is_examination_finished: bool,
+    pub is_deleted: bool,
     pub restoration_count: usize,
     pub omission_count: usize,
     pub first_candidate_name: Option<FullName>,
@@ -16,10 +17,11 @@ pub struct CsbPoliticalGroup {
 
 impl CsbPoliticalGroup {
     pub fn new_from_csb_store(store: &CsbStore) -> Self {
-        CsbPoliticalGroup {
+        Self {
             political_group: store.get_political_group(crate::projection::WithCorrections::All),
             stream_id: store.stream_id,
             is_examination_finished: store.is_examination_finished(),
+            is_deleted: store.is_deleted(),
             restoration_count: store.get_restoration_count(),
             omission_count: store.get_omission_count(),
             first_candidate_name: store
@@ -127,6 +129,7 @@ mod tests {
             },
             stream_id: StreamId::new(),
             is_examination_finished: false,
+            is_deleted: false,
             restoration_count: 0,
             omission_count: 0,
             first_candidate_name: None,
@@ -144,6 +147,7 @@ mod tests {
             },
             stream_id: StreamId::new(),
             is_examination_finished: false,
+            is_deleted: false,
             restoration_count: 0,
             omission_count: 0,
             first_candidate_name: Some(FullName {
@@ -165,6 +169,7 @@ mod tests {
             },
             stream_id: StreamId::new(),
             is_examination_finished: false,
+            is_deleted: false,
             restoration_count: 0,
             omission_count: 0,
             first_candidate_name: None,

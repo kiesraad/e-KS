@@ -9,6 +9,7 @@ mod all_restorations;
 mod candidate;
 mod candidate_list;
 mod correction;
+mod delete;
 mod general_information;
 mod i1;
 mod i4;
@@ -24,6 +25,8 @@ pub fn router<S: AppRequestState>() -> Router<S> {
         .typed_get(i4::gen_i4::<S>)
         .typed_get(political_group::overview)
         .typed_post(political_group::toggle_examination_finish)
+        .typed_get(delete::delete)
+        .typed_post(delete::delete_submit)
         .typed_get(general_information::overview)
         .typed_post(paper_corrections::start_paper_corrections::<S>)
         .typed_post(paper_corrections::stop_paper_corrections::<S>)

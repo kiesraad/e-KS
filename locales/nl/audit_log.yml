@@ -37,7 +37,7 @@ detail:
 documents:
   download: Documenten downloaden
   no_download: In deze versie was het downloaden van documenten niet mogelijk.
-empty: Er zijn nog geen gebeurtenissen vastgelegd.
+empty: Er zijn nog geen gebeurtenissen vastgelegd die voldoen aan de filter criteria.
 event:
   add_candidate_to_list: Kandidaat aan lijst toegevoegd
   create_candidate_list: Kandidatenlijst aangemaakt
@@ -46,6 +46,7 @@ event:
   create_omission: Verzuim aangemaakt
   create_person: Persoon aangemaakt
   create_substitute_submitter: Vervanger herstel verzuim aangemaakt
+  delete: Politieke groepering verwijderd
   delete_candidate_list: Kandidatenlijst verwijderd
   delete_name_authorisation: Statutaire naam en gemachtigde verwijderd
   delete_omission: Verzuim verwijderd
@@ -85,6 +86,7 @@ filter:
   category:
     candidate_list: Kandidatenlijst
     correction: Ambtshalve correcties
+    delete: Verwijderd
     import: Import
     list_submitter: Lijstinleveraar
     name_authorisation: Statutaire naam en gemachtigde

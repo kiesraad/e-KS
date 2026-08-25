@@ -60,7 +60,7 @@ mod tests {
     use crate::{
         CsbEvent, ElectoralDistrict,
         structs::{
-            common::{DisplayName, Initials},
+            common::{Appellation, Initials},
             csb::{Correction, OmissionCategory, PersonCorrection, sample_omission},
         },
         test_utils::{sample_candidate_list, sample_person},
@@ -88,8 +88,8 @@ mod tests {
             )))
             .await?;
         store
-            .update(CsbEvent::UpdateCorrection(Correction::DisplayName(
-                DisplayName::from_str("Correction Party").unwrap(),
+            .update(CsbEvent::UpdateCorrection(Correction::Appellation(
+                Appellation::from_str("Correction Party").unwrap(),
             )))
             .await?;
 

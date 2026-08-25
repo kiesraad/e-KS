@@ -55,6 +55,9 @@ group:
     plural: "{} BRP errors"
     singular: 1 BRP error
   candidate_count: "<strong>{}</strong> candidates"
+  confirm_delete: "Are you sure you want to delete the political group “{}“?"
+  delete_note: "It is always possible to re-import a political group but any created (paper) corrections, and omissions will be lost!"
+  deleted_label: deleted
   examine_all: Examine all BRP errors
   examine_general: Examine general information
   examine_list: Examine candidate list
