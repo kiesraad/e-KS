@@ -2,12 +2,12 @@ detail:
   field: Veld
   fields:
     address_type: Adrestype
+    appellation: Geregistreerde aanduiding
     bsn: Burgerservicenummer (BSN)
     candidates: Kandidaten
     country: Landcode
     created_persons: Aangemaakte kandidaten
     date_of_birth: Geboortedatum
-    display_name: Geregistreerde aanduiding
     download_path: Downloadpad
     electoral_districts: Kieskringen
     file_name: Bestandsnaam

@@ -2,12 +2,12 @@ detail:
   field: Field
   fields:
     address_type: Address type
+    appellation: Appellation
     bsn: Social security number (BSN)
     candidates: Candidates
     country: Country code
     created_persons: Created candidates
     date_of_birth: Date of birth
-    display_name: Registered designation
     download_path: Download path
     electoral_districts: Electoral districts
     file_name: File name

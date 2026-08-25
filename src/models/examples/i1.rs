@@ -17,12 +17,12 @@ fn i1_session() -> PublicSession {
 }
 
 fn submitted_list(
-    designation: &str,
+    appellation: &str,
     first_candidate_name: &str,
     candidate_count: usize,
 ) -> SubmittedList {
     SubmittedList {
-        designation: designation.to_string(),
+        appellation: appellation.to_string(),
         first_candidate_name: first_candidate_name.to_string(),
         candidate_count,
     }
@@ -53,7 +53,7 @@ fn i1_submitted_lists() -> Vec<DistrictLists> {
 fn i1_found_omissions() -> Vec<OmissionGroup> {
     vec![
         OmissionGroup {
-            designation: "De Geconstateerde Partij".to_string(),
+            appellation: "De Geconstateerde Partij".to_string(),
             electoral_district: "kieskring 20 (Bonaire)".to_string(),
             omission_descriptions: strings(&[
                 "Ten aanzien van kandidaat nr. 3 J. Altena ontbreekt de verklaring dat deze instemt met kandidaatstelling op de lijst.",
@@ -61,7 +61,7 @@ fn i1_found_omissions() -> Vec<OmissionGroup> {
             ]),
         },
         OmissionGroup {
-            designation: "Kiesraad Demo 3".to_string(),
+            appellation: "Kiesraad Demo 3".to_string(),
             electoral_district: "alle kieskringen".to_string(),
             omission_descriptions: strings(&[
                 "Bij de lijst zijn niet voldoende geldige verklaringen van ondersteuning ingeleverd voor alle kieskringen.",

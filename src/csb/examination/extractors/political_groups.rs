@@ -27,9 +27,9 @@ impl CsbPoliticalGroup {
         }
     }
 
-    pub fn csb_display_name(&self) -> String {
+    pub fn csb_appellation(&self) -> String {
         self.political_group
-            .csb_display_name(self.first_candidate_name.as_ref())
+            .csb_appellation(self.first_candidate_name.as_ref())
     }
 }
 
@@ -118,10 +118,10 @@ mod tests {
     }
 
     #[test]
-    fn csb_display_name_returns_display_name_for_normal_list() {
+    fn csb_appellation_returns_appellation_for_normal_list() {
         let group = CsbPoliticalGroup {
             political_group: PoliticalGroup {
-                display_name: Some("Kiesraad Demo".parse().unwrap()),
+                appellation: Some("Kiesraad Demo".parse().unwrap()),
                 list_designation: Some(ListDesignation::Standalone),
                 ..Default::default()
             },
@@ -132,11 +132,11 @@ mod tests {
             first_candidate_name: None,
         };
 
-        assert_eq!(group.csb_display_name(), "Kiesraad Demo");
+        assert_eq!(group.csb_appellation(), "Kiesraad Demo");
     }
 
     #[test]
-    fn csb_display_name_blank_list_with_candidate_uses_first_candidate_name() {
+    fn csb_appellation_blank_list_with_candidate_uses_first_candidate_name() {
         let group = CsbPoliticalGroup {
             political_group: PoliticalGroup {
                 list_designation: Some(ListDesignation::Blank),
@@ -153,11 +153,11 @@ mod tests {
             }),
         };
 
-        assert_eq!(group.csb_display_name(), "Blanco (Jansen, A.B.)");
+        assert_eq!(group.csb_appellation(), "Blanco (Jansen, A.B.)");
     }
 
     #[test]
-    fn csb_display_name_blank_list_without_candidates_uses_blanco_fallback() {
+    fn csb_appellation_blank_list_without_candidates_uses_blanco_fallback() {
         let group = CsbPoliticalGroup {
             political_group: PoliticalGroup {
                 list_designation: Some(ListDesignation::Blank),
@@ -170,6 +170,6 @@ mod tests {
             first_candidate_name: None,
         };
 
-        assert_eq!(group.csb_display_name(), "Blanco");
+        assert_eq!(group.csb_appellation(), "Blanco");
     }
 }

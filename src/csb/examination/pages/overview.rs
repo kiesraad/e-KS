@@ -76,7 +76,7 @@ mod tests {
         .into_response();
 
         assert_eq!(response.status(), StatusCode::OK);
-        // The seeded group's display name is rendered in the "added" table.
+        // The seeded group's appellation is rendered in the "added" table.
         let body = response_body_string(response).await;
         assert!(body.contains("Kiesraad Demo"));
     }

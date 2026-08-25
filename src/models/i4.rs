@@ -20,8 +20,8 @@ pub struct I4 {
     pub recovered_omissions: Vec<OmissionGroup>,
     pub invalid_lists: Vec<OmissionGroup>,
     pub removed_candidates: Vec<RemovedCandidates>,
-    pub removed_designations: Vec<RemovedDesignation>,
-    pub corrected_designations: Vec<CorrectedDesignation>,
+    pub removed_appellations: Vec<RemovedAppellation>,
+    pub corrected_appellations: Vec<CorrectedAppellation>,
     pub valid_lists: Vec<DistrictLists>,
     pub numbered_based_on_votes: Vec<NumberedOnVotes>,
     pub numbered_based_on_districts: Vec<NumberedOnDistricts>,
@@ -51,17 +51,17 @@ impl From<election::PublicSession> for PublicSession {
     }
 }
 
-/// Omissions for one list, identified by its designation and district(s).
+/// Omissions for one list, identified by its appellation and district(s).
 #[derive(Debug)]
 pub struct OmissionGroup {
-    pub designation: String,
+    pub appellation: String,
     pub electoral_district: String,
     pub omission_descriptions: Vec<String>,
 }
 
 #[derive(Debug)]
 pub struct RemovedCandidates {
-    pub designation: String,
+    pub appellation: String,
     pub electoral_district: String,
     pub candidates: Vec<RemovedCandidate>,
 }
@@ -73,19 +73,19 @@ pub struct RemovedCandidate {
 }
 
 #[derive(Debug)]
-pub struct RemovedDesignation {
-    pub designation: String,
+pub struct RemovedAppellation {
+    pub appellation: String,
     pub electoral_district: String,
     pub first_candidate_name: String,
     pub reason: String,
 }
 
 #[derive(Debug)]
-pub struct CorrectedDesignation {
+pub struct CorrectedAppellation {
     pub first_candidate_name: String,
     pub electoral_district: String,
-    pub submitted_designation: String,
-    pub edited_designation: String,
+    pub submitted_appellation: String,
+    pub edited_appellation: String,
 }
 
 #[derive(Debug)]
@@ -96,7 +96,7 @@ pub struct DistrictLists {
 
 #[derive(Debug)]
 pub struct ValidList {
-    pub designation: String,
+    pub appellation: String,
     pub candidates: Vec<ValidListCandidate>,
 }
 
@@ -112,7 +112,7 @@ pub struct ValidListCandidate {
 pub struct NumberedOnVotes {
     /// `None` when the number is still to be determined (rendered blank).
     pub position: Option<usize>,
-    pub designation: String,
+    pub appellation: String,
     pub previous_votes: u64,
 }
 
@@ -120,7 +120,7 @@ pub struct NumberedOnVotes {
 pub struct NumberedOnDistricts {
     /// `None` when the number is still to be determined (rendered blank).
     pub position: Option<usize>,
-    pub designation: String,
+    pub appellation: String,
     pub districts: u64,
 }
 

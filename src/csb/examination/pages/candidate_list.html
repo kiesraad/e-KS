@@ -2,7 +2,7 @@
 {% import "csb/components/paper_corrected.html" as paper_corrected %}
 {% block breadcrumbs %}
   {{ breadcrumb(crate::csb::examination::CsbExaminationOverviewPath, "csb.examination") }}
-  {{ breadcrumb(political_group.examination_path() , political_group.csb_display_name(), is_translatable=false) }}
+  {{ breadcrumb(political_group.examination_path() , political_group.csb_appellation(), is_translatable=false) }}
   {{ breadcrumb(political_group.candidate_list_path(list_id) , "candidate_list.title_single") }}
 {% endblock %}
 {% block page_title %}

@@ -125,10 +125,10 @@ pub struct CsbAllRestorationsPath {
 
 #[derive(TypedPath, Deserialize)]
 #[typed_path(
-    "/csb/examination/{stream_id}/correction/display-name",
+    "/csb/examination/{stream_id}/correction/appellation",
     rejection(AppError)
 )]
-pub struct CsbDisplayNameCorrectionPath {
+pub struct CsbAppellationCorrectionPath {
     pub stream_id: StreamId,
 }
 
@@ -293,9 +293,9 @@ impl CsbPoliticalGroup {
         }
     }
 
-    /// Path to the correction overlay for the political group display name.
-    pub fn correction_display_name_path(&self) -> impl TypedPath {
-        CsbDisplayNameCorrectionPath {
+    /// Path to the correction overlay for the political group appellation.
+    pub fn correction_appellation_path(&self) -> impl TypedPath {
+        CsbAppellationCorrectionPath {
             stream_id: self.stream_id,
         }
     }

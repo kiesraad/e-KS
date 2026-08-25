@@ -105,7 +105,7 @@ mod tests {
         let person = sample_person(PersonId::new());
         let mut snapshot = PgStoreData {
             political_group: PoliticalGroup {
-                display_name: Some("Kiesraad Demo".parse().unwrap()),
+                appellation: Some("Kiesraad Demo".parse().unwrap()),
                 list_designation: Some(ListDesignation::Standalone),
                 ..Default::default()
             },

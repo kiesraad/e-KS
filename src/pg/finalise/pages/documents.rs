@@ -138,7 +138,7 @@ mod tests {
             setup_documents_test_state(1, 1, true, true, ElectionConfig::EK27).await?;
 
         let mut political_group = store.get_political_group();
-        political_group.display_name = None;
+        political_group.appellation = None;
         political_group.update(&store).await?;
 
         let result = gen_documents(

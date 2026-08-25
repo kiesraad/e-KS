@@ -72,7 +72,7 @@ impl CsbStore {
             .values()
             .map(|p| p.get_corrections().len())
             .sum::<usize>()
-            + data.csb_corrected_display_name.as_ref().map_or(0, |_| 1)
+            + data.csb_corrected_appellation.as_ref().map_or(0, |_| 1)
     }
 
     /// get the total number of CSB corrections and omissions
@@ -213,9 +213,9 @@ impl CsbStore {
         let mut pg = self.read(corrections).political_group.clone();
 
         if corrections == WithCorrections::All
-            && let Some(correction) = self.data.read().csb_corrected_display_name.clone()
+            && let Some(correction) = self.data.read().csb_corrected_appellation.clone()
         {
-            pg.display_name = Some(correction);
+            pg.appellation = Some(correction);
         }
 
         pg
@@ -284,10 +284,10 @@ impl CsbStore {
             .map(|p| p.name)
     }
 
-    /// Short-hand to get the display name of the political group (including special names for blank lists)
-    pub fn get_display_name(&self, corrections: WithCorrections) -> String {
+    /// Short-hand to get the appellation of the political group (including special names for blank lists)
+    pub fn get_appellation(&self, corrections: WithCorrections) -> String {
         let political_group = self.get_political_group(corrections);
-        political_group.csb_display_name(self.get_first_candidate_name(corrections).as_ref())
+        political_group.csb_appellation(self.get_first_candidate_name(corrections).as_ref())
     }
 
     /// One-based position of the candidate on the given list
@@ -551,22 +551,19 @@ mod tests {
     }
 
     #[test]
-    fn csb_display_name_standalone_list_uses_display_name() {
+    fn csb_appellation_standalone_list_uses_appellation() {
         let store = CsbStore::new_for_test();
         store.set_political_group(PoliticalGroup {
-            display_name: Some("Kiesraad Demo".parse().unwrap()),
+            appellation: Some("Kiesraad Demo".parse().unwrap()),
             list_designation: Some(ListDesignation::Standalone),
             ..Default::default()
         });
 
-        assert_eq!(
-            store.get_display_name(WithCorrections::All),
-            "Kiesraad Demo"
-        );
+        assert_eq!(store.get_appellation(WithCorrections::All), "Kiesraad Demo");
     }
 
     #[test]
-    fn csb_display_name_blank_list_with_candidate_uses_first_candidate_name() {
+    fn csb_appellation_blank_list_with_candidate_uses_first_candidate_name() {
         let store = CsbStore::new_for_test();
         store.set_political_group(PoliticalGroup {
             list_designation: Some(ListDesignation::Blank),
@@ -583,19 +580,19 @@ mod tests {
         store.add_candidate_list(list);
 
         assert_eq!(
-            store.get_display_name(WithCorrections::All),
+            store.get_appellation(WithCorrections::All),
             "Blanco (Jansen, A.B.)"
         );
     }
 
     #[test]
-    fn csb_display_name_blank_list_without_candidates_uses_blanco_fallback() {
+    fn csb_appellation_blank_list_without_candidates_uses_blanco_fallback() {
         let store = CsbStore::new_for_test();
         store.set_political_group(PoliticalGroup {
             list_designation: Some(ListDesignation::Blank),
             ..Default::default()
         });
 
-        assert_eq!(store.get_display_name(WithCorrections::All), "Blanco");
+        assert_eq!(store.get_appellation(WithCorrections::All), "Blanco");
     }
 }

@@ -34,8 +34,8 @@ pub fn router<S: AppRequestState>() -> Router<S> {
         .typed_get(omission::overview)
         .typed_post(omission::delete_omission)
         .typed_get(all_restorations::all_restorations)
-        .typed_get(correction::display_name_correction)
-        .typed_post(correction::display_name_correction_submit)
+        .typed_get(correction::appellation_name_correction)
+        .typed_post(correction::appellation_correction_submit)
         .typed_get(correction::person_correction)
         .typed_post(correction::person_correction_submit)
 }

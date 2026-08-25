@@ -145,8 +145,8 @@ mod tests {
         input.recovered_omissions.clear();
         input.invalid_lists.clear();
         input.removed_candidates.clear();
-        input.removed_designations.clear();
-        input.corrected_designations.clear();
+        input.removed_appellations.clear();
+        input.corrected_appellations.clear();
         input.objections = Some(Vec::new());
         input.response_objections = None;
         assert_pdf(&render(input), "i4 empty sections");

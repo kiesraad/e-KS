@@ -14,7 +14,7 @@ use crate::{
 };
 
 pub use views::{
-    display_name_correction, display_name_correction_submit, person_correction,
+    appellation_correction_submit, appellation_name_correction, person_correction,
     person_correction_submit,
 };
 

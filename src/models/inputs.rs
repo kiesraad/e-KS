@@ -24,7 +24,7 @@ use crate::{
 pub struct ModelData {
     pub election_name: String,
     pub election_type: ElectionType,
-    pub designation: String,
+    pub appellation: String,
     pub candidates: Vec<Candidate>,
     pub locale: ModelLocale,
     pub event_id: usize,

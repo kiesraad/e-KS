@@ -286,7 +286,7 @@ mod tests {
     }
 
     #[test]
-    fn display_name_shows_first_name_when_present() {
+    fn appellation_shows_first_name_when_present() {
         let mut person =
             sample_person_with(PersonId::new(), Some("Anne"), "Dijk", Some("van"), "A.B.");
         assert_eq!(person.name.display(), "van Dijk, A.B. (Anne)");

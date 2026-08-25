@@ -55,7 +55,7 @@ impl CsbStore {
         });
 
         let general = self
-            .get_display_name_correction(political_group, locale)
+            .get_appellation_correction(political_group, locale)
             .into_iter()
             .collect();
 
@@ -142,24 +142,24 @@ impl CsbStore {
             .unwrap_or_default()
     }
 
-    fn get_display_name_correction(
+    fn get_appellation_correction(
         &self,
         political_group: &CsbPoliticalGroup,
         locale: Locale,
     ) -> Option<PaperCorrectedField> {
         // Bound to a local so the read guard is released before
-        // `get_display_name` takes the lock again.
-        let corrected_display_name = self.data.read().csb_corrected_display_name.clone();
+        // `get_appellation` takes the lock again.
+        let corrected_appellation = self.data.read().csb_corrected_appellation.clone();
 
-        corrected_display_name.map(|name| PaperCorrectedField {
-            label: trans!("political_group.display_name", locale),
+        corrected_appellation.map(|name| PaperCorrectedField {
+            label: trans!("political_group.appellation", locale),
             corrected: PaperCorrected::new(
-                self.get_display_name(WithCorrections::None),
-                self.get_display_name(WithCorrections::Paper),
+                self.get_appellation(WithCorrections::None),
+                self.get_appellation(WithCorrections::Paper),
             )
             .with_csb_correction(Some(name.to_string())),
             edit_path: political_group
-                .correction_display_name_path()
+                .correction_appellation_path()
                 .with_query_params(QueryParamState::redirect_to(
                     political_group.all_restorations_path().to_string(),
                 ))
@@ -176,7 +176,7 @@ mod tests {
         AppError,
         CsbEvent::{self},
         structs::{
-            common::{DisplayName, Initials, LastName, PlaceOfResidence},
+            common::{Appellation, Initials, LastName, PlaceOfResidence},
             csb::Correction,
         },
         test_utils::{sample_person, sample_person_with},
@@ -314,11 +314,11 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn get_all_corrections_display_name() -> Result<(), AppError> {
+    async fn get_all_corrections_appellation() -> Result<(), AppError> {
         let store = CsbStore::new_for_test();
 
-        store.data.write().csb_corrected_display_name =
-            Some(DisplayName::from_str("Gecorrigeerde Partij").unwrap());
+        store.data.write().csb_corrected_appellation =
+            Some(Appellation::from_str("Gecorrigeerde Partij").unwrap());
 
         let corrections = all_corrections(&store);
 
@@ -334,7 +334,7 @@ mod tests {
         assert_eq!(
             correction.edit_path,
             format!(
-                "/csb/examination/{}/correction/display-name?&redirect_to=%2Fcsb%2Fexamination%2F{}%2Fomissions",
+                "/csb/examination/{}/correction/appellation?&redirect_to=%2Fcsb%2Fexamination%2F{}%2Fomissions",
                 store.stream_id, store.stream_id
             )
         );

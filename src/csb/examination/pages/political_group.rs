@@ -101,7 +101,7 @@ mod tests {
     };
 
     #[tokio::test]
-    async fn political_group_renders_imported_display_name() {
+    async fn political_group_renders_imported_appellation() {
         let store = CsbStore::new_for_test();
         store.set_political_group(sample_political_group());
         let stream_id = store.stream_id;
@@ -116,7 +116,7 @@ mod tests {
         .into_response();
 
         assert_eq!(response.status(), StatusCode::OK);
-        // The display name is used as the page title.
+        // The appellation is used as the page title.
         let body = response_body_string(response).await;
         assert!(body.contains("Kiesraad Demo"));
         // The paper corrections card posts to the start route.
