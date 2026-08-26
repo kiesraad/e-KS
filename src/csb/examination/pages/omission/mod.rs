@@ -76,12 +76,22 @@ impl OmissionTarget {
             .then(|| views::available_electoral_districts(store))
             .filter(|options| options.len() > 1)
             .unwrap_or_default();
-        let available_candidate_lists = self
-            .omission_type
-            .needs_candidate_lists()
-            .then(|| views::candidate_list_options(store, context.session.locale))
-            .filter(|options| options.len() > 1)
-            .unwrap_or_default();
+        let available_candidate_lists = match self.omission_type {
+            OmissionType::CandidateList => Some(views::candidate_list_options(
+                store,
+                context.session.locale,
+                None,
+            )),
+            OmissionType::Candidate => Some(views::candidate_list_options(
+                store,
+                context.session.locale,
+                Some(PersonId::from(self.reference)),
+            )),
+            OmissionType::PoliticalGroup | OmissionType::DeclarationsOfSupport => None,
+        }
+        .filter(|options| options.len() > 1)
+        .unwrap_or_default();
+
         let political_group = CsbPoliticalGroup::new_from_csb_store(store);
         Ok(HtmlTemplate(
             CsbAddOmissionTemplate {
@@ -231,7 +241,7 @@ pub async fn add_omission_submit(
         target.omission_type.needs_candidate_lists(),
         &form.candidate_lists,
         || {
-            views::candidate_list_options(&store, context.session.locale)
+            views::candidate_list_options(&store, context.session.locale, None)
                 .into_iter()
                 .map(|o| o.id)
                 .collect()
@@ -487,10 +497,54 @@ mod tests {
         // With only one list the selector is hidden
         let body = render(store.clone()).await;
         assert!(!body.contains(&format!("omission_candidate_list_{list_id}")));
-        // A second list shows the selector
-        store.set_paper_corrected_candidate_list(sample_candidate_list(CandidateListId::new()));
+        // A second list this candidate is also on shows the selector
+        let second_list_id = CandidateListId::new();
+        let mut second_list = sample_candidate_list(second_list_id);
+        second_list.candidates = vec![person_id];
+        store.set_paper_corrected_candidate_list(second_list);
         let body = render(store.clone()).await;
         assert!(body.contains(&format!("omission_candidate_list_{list_id}")));
+        assert!(body.contains(&format!("omission_candidate_list_{second_list_id}")));
+    }
+
+    #[tokio::test]
+    async fn candidate_dialog_excludes_lists_the_candidate_is_not_on() {
+        use crate::test_utils::{sample_candidate_list, sample_person};
+
+        let store = CsbStore::new_for_test();
+        let stream_id = store.stream_id;
+        let person = sample_person(PersonId::new());
+        let person_id = person.id;
+        store.add_person(person);
+        let list_id = CandidateListId::new();
+        let mut list = sample_candidate_list(list_id);
+        list.candidates = vec![person_id];
+        store.add_candidate_list(list);
+        // A second list this candidate does not appear on.
+        let other_list_id = CandidateListId::new();
+        store.add_candidate_list(sample_candidate_list(other_list_id));
+
+        let response = add_omission(
+            CsbAddOmissionPath {
+                stream_id,
+                omission_type: OmissionType::Candidate,
+                reference: person_id.into(),
+            },
+            CsbContext::new_test(),
+            store,
+            Query(QueryParamState::default()),
+            Query(OmissionListQuery::default()),
+        )
+        .await
+        .unwrap()
+        .into_response();
+        let body = response_body_string(response).await;
+
+        // Only one list actually has this candidate, so the selector stays
+        // hidden (nothing to choose between) and the other list is never
+        // offered as an option.
+        assert!(!body.contains(&format!("omission_candidate_list_{list_id}")));
+        assert!(!body.contains(&format!("omission_candidate_list_{other_list_id}")));
     }
 
     #[tokio::test]
