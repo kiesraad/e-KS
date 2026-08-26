@@ -113,12 +113,18 @@ fn placeholders_for(target: &OmissionTarget, store: &CsbStore) -> OmissionPlaceh
     }
 }
 
-/// All paper-corrected candidate lists of the political group for the
-/// candidate omission form
-pub(super) fn candidate_list_options(store: &CsbStore, locale: Locale) -> Vec<CandidateListOption> {
+/// Candidate lists of the political group, optionally filtered to those
+/// containing a specific candidate. When `person_id` is `None`, returns all
+/// lists; when `Some`, returns only lists this candidate appears on.
+pub(super) fn candidate_list_options(
+    store: &CsbStore,
+    locale: Locale,
+    person_filter: Option<PersonId>,
+) -> Vec<CandidateListOption> {
     store
         .get_candidate_lists(WithCorrections::All)
         .into_iter()
+        .filter(|l| person_filter.is_none_or(|id| l.candidates.contains(&id)))
         .map(|l| CandidateListOption {
             id: l.id,
             label: l.districts_name(locale.into()),
