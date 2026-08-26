@@ -76,21 +76,19 @@ impl OmissionTarget {
             .then(|| views::available_electoral_districts(store))
             .filter(|options| options.len() > 1)
             .unwrap_or_default();
-        let available_candidate_lists = match self.omission_type {
-            OmissionType::CandidateList => Some(views::candidate_list_options(
-                store,
-                context.session.locale,
-                None,
-            )),
-            OmissionType::Candidate => Some(views::candidate_list_options(
-                store,
-                context.session.locale,
-                Some(PersonId::from(self.reference)),
-            )),
-            OmissionType::PoliticalGroup | OmissionType::DeclarationsOfSupport => None,
-        }
-        .filter(|options| options.len() > 1)
-        .unwrap_or_default();
+        let available_candidate_lists = self
+            .omission_type
+            .needs_candidate_lists()
+            .then(|| {
+                views::candidate_list_options(
+                    store,
+                    context.session.locale,
+                    (self.omission_type == OmissionType::Candidate)
+                        .then(|| PersonId::from(self.reference)),
+                )
+            })
+            .filter(|options| options.len() > 1)
+            .unwrap_or_default();
 
         let political_group = CsbPoliticalGroup::new_from_csb_store(store);
         Ok(HtmlTemplate(
