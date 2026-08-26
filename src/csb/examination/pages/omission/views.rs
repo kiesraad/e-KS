@@ -119,12 +119,12 @@ fn placeholders_for(target: &OmissionTarget, store: &CsbStore) -> OmissionPlaceh
 pub(super) fn candidate_list_options(
     store: &CsbStore,
     locale: Locale,
-    person_id: Option<PersonId>,
+    person_filter: Option<PersonId>,
 ) -> Vec<CandidateListOption> {
     store
         .get_candidate_lists(WithCorrections::All)
         .into_iter()
-        .filter(|l| person_id.is_none_or(|id| l.candidates.contains(&id)))
+        .filter(|l| person_filter.is_none_or(|id| l.candidates.contains(&id)))
         .map(|l| CandidateListOption {
             id: l.id,
             label: l.districts_name(locale.into()),
