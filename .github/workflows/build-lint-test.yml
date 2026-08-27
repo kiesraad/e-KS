@@ -179,7 +179,7 @@ jobs:
       # Builds the lint libraries in dylint.toml with their pinned nightly,
       # then type-checks the crate with them enabled.
       - name: Run dylint
-        run: cargo dylint --all
+        run: cargo dylint --all -- --locked
 
   deploy-docs:
     name: Deploy Rustdocs to GitHub Pages
@@ -348,7 +348,7 @@ jobs:
 
       - uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25
         with:
-          arguments: --workspace --all-features
+          arguments: --workspace --all-features --locked
 
   zizmor:
     name: Lint workflow files with zizmor

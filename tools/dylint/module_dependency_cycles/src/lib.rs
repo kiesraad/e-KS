@@ -13,6 +13,7 @@ use rustc_lint::{LateContext, LateLintPass, LintContext};
 use rustc_span::{FileName, Span, def_id::LOCAL_CRATE};
 use std::{
     collections::{BTreeMap, BTreeSet},
+    ffi::OsStr,
     path::{Component as PathComponent, Path as FilePath, PathBuf},
 };
 
@@ -256,7 +257,7 @@ fn component_of(path: &FilePath) -> Option<String> {
 }
 
 fn is_test_code(path: &FilePath) -> bool {
-    let Some(name) = path.file_name().and_then(|name| name.to_str()) else {
+    let Some(name) = path.file_name().and_then(OsStr::to_str) else {
         return false;
     };
 

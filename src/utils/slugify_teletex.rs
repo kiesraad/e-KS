@@ -97,7 +97,7 @@ pub fn slugify_teletex(input: &str, only_lowercase: bool) -> String {
     let output = output.split("-").filter(|s| !s.is_empty());
     if only_lowercase {
         output
-            .map(|s| s.to_ascii_lowercase())
+            .map(str::to_ascii_lowercase)
             .collect::<Vec<_>>()
             .join("-")
     } else {

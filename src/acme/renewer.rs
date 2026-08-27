@@ -121,7 +121,7 @@ impl Renewal<'_> {
 
         let current_cert = CertificateDer::pem_slice_iter(current_cert_pem)
             .next()
-            .and_then(|cert| cert.ok());
+            .and_then(Result::ok);
         if let Some(cert) = &current_cert {
             match CertificateIdentifier::try_from(cert) {
                 Ok(cert_id) => {

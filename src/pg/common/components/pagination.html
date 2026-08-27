@@ -4,12 +4,12 @@
        rel="prev"
        class="button secondary">&lt;</a>
   {% else %}
-    <a class="button disabled" disabled aria-disabled="true">&lt;</a>
+    <span class="button disabled" aria-disabled="true">&lt;</span>
   {% endif %}
   {% for link in pagination.links %}
     {% if let Some(number) = link.number %}
       {% if link.current %}
-        <a class="button disabled" disabled aria-current="page">{{ number }}</a>
+        <span class="button disabled" aria-current="page">{{ number }}</span>
       {% else %}
         <a href="{{ pagination.goto(number) }}{{ suffix }}"
            class="button secondary">{{ number }}</a>
@@ -23,6 +23,6 @@
        rel="next"
        class="button secondary">&gt;</a>
   {% else %}
-    <a class="button disabled" disabled aria-disabled="true">&gt;</a>
+    <span class="button disabled" aria-disabled="true">&gt;</span>
   {% endif %}
 </nav>

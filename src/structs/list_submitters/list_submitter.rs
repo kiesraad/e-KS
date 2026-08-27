@@ -1,8 +1,8 @@
 use crate::{
     id_newtype,
     structs::common::{
-        Address, FullName, InternationalAddress, InternationalPostalCode, PostalCode, Problematic,
-        Problems, Severity,
+        Address, CountryCode, FullName, InternationalAddress, InternationalPostalCode, PostalCode,
+        Problematic, Problems, Severity,
     },
 };
 use serde::{Deserialize, Serialize};
@@ -21,7 +21,7 @@ impl From<ListSubmitterData> for ListSubmitter {
             .address
             .country
             .as_ref()
-            .is_none_or(|country| country.is_nl());
+            .is_none_or(CountryCode::is_nl);
 
         let address = if is_dutch {
             try_into_dutch_address(&value.address)

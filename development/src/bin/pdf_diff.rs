@@ -142,7 +142,7 @@ fn compare(project_dir: &Path, rendered: Vec<String>) -> Result<Vec<DiffSummaryR
     fs::create_dir_all(&diffs_root).context("Failed to create tmp/diffs")?;
 
     let baseline: BTreeSet<String> = fs::read_dir(&main_root)?
-        .filter_map(|entry| entry.ok())
+        .filter_map(Result::ok)
         .filter_map(|entry| entry.file_name().into_string().ok())
         .filter(|name| name.ends_with(".pdf"))
         .collect();

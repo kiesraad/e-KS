@@ -33,7 +33,9 @@ pub async fn session_middleware(
         return next.run(request).await;
     }
 
-    let token = jar.get(SESSION_COOKIE_NAME).map(|cookie| cookie.value());
+    let token = jar
+        .get(SESSION_COOKIE_NAME)
+        .map(axum_extra::extract::cookie::Cookie::value);
 
     let mut session = match state.sessions.get_existing(token).await {
         Ok(Some(session)) => session,

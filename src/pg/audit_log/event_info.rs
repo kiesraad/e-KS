@@ -5,7 +5,7 @@
 //! subject entity URL, and the primary subject ID).
 
 use crate::{
-    Event, Locale, PgEvent,
+    ElectoralDistrict, Event, Locale, PgEvent,
     candidate_lists::ViewCandidateListPath,
     persons::UpdatePersonPath,
     political_groups::PoliticalGroupUpdatePath,
@@ -88,7 +88,7 @@ fn event_details(event: &PgEvent) -> String {
     fn district_codes(districts: &[crate::ElectoralDistrict]) -> String {
         districts
             .iter()
-            .map(|d| d.code())
+            .map(ElectoralDistrict::code)
             .collect::<Vec<_>>()
             .join(", ")
     }
@@ -97,7 +97,7 @@ fn event_details(event: &PgEvent) -> String {
         PgEvent::UpdatePoliticalGroup(pg) => pg
             .appellation
             .as_ref()
-            .map(|n| n.to_string())
+            .map(ToString::to_string)
             .unwrap_or_default(),
         PgEvent::CreatePerson(p) | PgEvent::UpdatePerson(p) => p.name.display(),
         PgEvent::CreatePersonPersonalData { name, .. }

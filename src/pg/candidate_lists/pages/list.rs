@@ -8,7 +8,7 @@ use crate::{
     filters,
     structs::{
         candidate_lists::CandidateListWithProblems,
-        common::{HasSeverity, Problematic},
+        common::{HasSeverity, Problematic, Severity},
         persons::Person,
     },
 };
@@ -44,7 +44,7 @@ pub async fn list_candidate_lists(
     let person_problem_severity = problem_severities
         .iter()
         .max()
-        .map(|severity| severity.class())
+        .map(Severity::class)
         .unwrap_or_default();
 
     Ok(HtmlTemplate(

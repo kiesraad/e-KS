@@ -25,7 +25,7 @@ where
 
         while let Some(field) = multipart.next_field().await? {
             if field.name() == Some("file_data") {
-                let content_type = field.content_type().map(|s| s.to_string());
+                let content_type = field.content_type().map(ToString::to_string);
                 form.file_name = sanitize_file_name(field.file_name());
                 let bytes = field.bytes().await?;
                 tracing::info!(

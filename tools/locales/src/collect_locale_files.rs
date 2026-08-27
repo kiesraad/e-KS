@@ -10,7 +10,7 @@ pub fn collect_locale_files(dir: &std::path::Path) -> Vec<std::path::PathBuf> {
             let entry = entry.expect("Failed to read locale directory entry");
             let path = entry.path();
 
-            if path.extension().and_then(|ext| ext.to_str()) == Some("yml") {
+            if path.extension().and_then(std::ffi::OsStr::to_str) == Some("yml") {
                 locale_files.push(path);
             }
         }

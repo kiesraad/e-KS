@@ -26,16 +26,16 @@ done
 
 echo "==> Rust checks"
 if [ "$FULL" = true ]; then
-    cargo check --workspace --all-features
+    cargo check --locked --workspace --all-features
     cargo +nightly fmt --all -- --config imports_granularity="Crate"
-    cargo clippy --all-targets --workspace --all-features -- -D warnings
-    cargo test --workspace --all-features
-    cargo doc --workspace --no-deps --all-features --document-private-items
-    cargo dylint --all
+    cargo clippy --locked --all-targets --workspace --all-features -- -D warnings
+    cargo test --locked --workspace --all-features
+    cargo doc --locked --workspace --no-deps --all-features --document-private-items
+    cargo dylint --all -- --locked
 else
     cargo +nightly fmt --all -- --config imports_granularity="Crate"
-    cargo clippy --all-targets -- -D warnings
-    cargo test
+    cargo clippy --locked --all-targets -- -D warnings
+    cargo test --locked
 fi
 
 # typescript

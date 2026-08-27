@@ -12,7 +12,7 @@ fn collect_files_recursively(
         let path = entry.path();
         if path.is_dir() {
             collect_files_recursively(&path, extension, files);
-        } else if path.extension().and_then(|ext| ext.to_str()) == Some(extension) {
+        } else if path.extension().and_then(std::ffi::OsStr::to_str) == Some(extension) {
             files.push(path);
         }
     }

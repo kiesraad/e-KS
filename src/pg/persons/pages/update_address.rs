@@ -199,7 +199,7 @@ mod tests {
 
         let updated = store.get_person(person_id)?;
         assert_eq!(
-            updated.address.locality.as_deref().map(|v| v.to_string()),
+            updated.address.locality.as_deref().map(ToString::to_string),
             Some("Juinen".to_string())
         );
 
@@ -270,7 +270,7 @@ mod tests {
         // The international address should be removed because `lives_in_nl` is true
         let updated = store.get_person(person_id)?;
         assert_eq!(
-            updated.address.locality.as_deref().map(|v| v.to_string()),
+            updated.address.locality.as_deref().map(ToString::to_string),
             Some("Juinen".to_string())
         );
         assert_eq!(
@@ -282,7 +282,7 @@ mod tests {
                 .address
                 .house_number
                 .as_deref()
-                .map(|v| v.to_string()),
+                .map(ToString::to_string),
             Some("10".to_string())
         );
         assert_eq!(
@@ -290,7 +290,7 @@ mod tests {
                 .address
                 .house_number_addition
                 .as_deref()
-                .map(|v| v.to_string()),
+                .map(ToString::to_string),
             Some("A".to_string())
         );
         assert_eq!(
@@ -298,7 +298,7 @@ mod tests {
                 .address
                 .street_name
                 .as_deref()
-                .map(|v| v.to_string()),
+                .map(ToString::to_string),
             Some("Stationsstraat".to_string())
         );
 

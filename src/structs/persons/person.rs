@@ -226,7 +226,7 @@ mod tests {
 
         let updated = store.get_person(id)?;
         assert_eq!(
-            updated.address.locality.as_deref().map(|v| v.to_string()),
+            updated.address.locality.as_deref().map(ToString::to_string),
             Some("Nieuwegein".to_string())
         );
         assert_eq!(
@@ -238,7 +238,7 @@ mod tests {
                 .address
                 .house_number
                 .as_deref()
-                .map(|v| v.to_string()),
+                .map(ToString::to_string),
             Some("99".to_string())
         );
         assert_eq!(updated.address.house_number_addition, None);
@@ -247,7 +247,7 @@ mod tests {
                 .address
                 .street_name
                 .as_deref()
-                .map(|v| v.to_string()),
+                .map(ToString::to_string),
             Some("Nieuweweg".to_string())
         );
 

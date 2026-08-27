@@ -11,7 +11,7 @@ use crate::{
     },
     projection::WithCorrections,
     structs::{
-        csb::PersonCorrection,
+        csb::{PersonCorrection, PersonCorrectionDelta},
         persons::{Person, PersonId},
     },
     trans,
@@ -138,7 +138,7 @@ impl CsbStore {
             .read()
             .csb_corrected_persons
             .get(person)
-            .map(|delta| delta.get_corrections())
+            .map(PersonCorrectionDelta::get_corrections)
             .unwrap_or_default()
     }
 

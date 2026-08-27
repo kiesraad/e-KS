@@ -46,7 +46,7 @@ impl From<election::PublicSession> for PublicSession {
             date: session.formatted_date(),
             time: session.formatted_time(),
             chair: session.chair.to_string(),
-            members: session.members.iter().map(|m| m.to_string()).collect(),
+            members: session.members.iter().map(ToString::to_string).collect(),
         }
     }
 }

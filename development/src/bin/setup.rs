@@ -24,13 +24,12 @@ async fn main() -> Result<()> {
     let args: Vec<String> = std::env::args().collect();
     if args.len() == 2 {
         let tool_name = &args[1];
-        if let Some(tool) = config.tools.iter().find(|t| &t.name == tool_name) {
-            tool.verify_installed(&platform, bin_dir).await?;
-
-            return Ok(());
-        } else {
+        let Some(tool) = config.tools.iter().find(|t| &t.name == tool_name) else {
             anyhow::bail!("unknown tool: {}", tool_name);
-        }
+        };
+        tool.verify_installed(&platform, bin_dir).await?;
+
+        return Ok(());
     }
 
     for tool in config.tools {

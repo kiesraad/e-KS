@@ -15,7 +15,7 @@ pub fn display<T: std::fmt::Display>(
     value: &Option<T>,
     _: &dyn askama::Values,
 ) -> askama::Result<String> {
-    Ok(value.as_ref().map(|v| v.to_string()).unwrap_or_default())
+    Ok(value.as_ref().map(ToString::to_string).unwrap_or_default())
 }
 
 /// Format a UTC timestamp in the default timezone with the given format.
@@ -189,7 +189,7 @@ pub fn trans(
         crate::Locale::En => crate::translate::LOCALE_EN.get(key),
         crate::Locale::Nl => crate::translate::LOCALE_NL.get(key),
     }
-    .map(|s| s.to_string())
+    .map(ToString::to_string)
     .unwrap_or_else(|| {
         tracing::warn!("Undefined translation key: [{key}]");
 

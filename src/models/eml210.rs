@@ -140,7 +140,7 @@ impl From<&Address> for QualifyingAddress {
             address
                 .locality()
                 .as_ref()
-                .map(|loc| loc.to_string())
+                .map(ToString::to_string)
                 .unwrap_or_default(),
         )
         .with_postal_code_option(address.postal_code())
@@ -156,7 +156,7 @@ impl From<&DutchAddress> for eml_nl::documents::nomination::LivingAddress {
             address
                 .locality
                 .as_ref()
-                .map(|loc| loc.to_string())
+                .map(ToString::to_string)
                 .unwrap_or_default(),
         )
     }

@@ -2,7 +2,10 @@ use crate::AppRequestState;
 use axum::Router;
 use axum_extra::routing::RouterExt;
 
-use super::paths::*;
+use super::paths::{
+    DeletePersonPath, PersonsCreatePath, PersonsPath, UpdatePersonAddressPath, UpdatePersonPath,
+    UpdateRepresentativePath,
+};
 
 mod create;
 mod delete;

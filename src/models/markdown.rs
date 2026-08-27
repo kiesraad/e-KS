@@ -27,7 +27,7 @@ impl askama::filters::Escaper for MarkdownEscaper {
 /// Filters for the escaping contexts the flow auto-escaper does not cover,
 /// plus the shared `display` filter for optional values.
 pub mod filters {
-    use super::*;
+    use super::{DEFAULT_DATE_FORMAT, NaiveDate, Safe, markdown};
 
     pub use crate::filters::display;
 
