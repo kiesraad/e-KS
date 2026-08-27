@@ -187,7 +187,7 @@ mod tests {
             .find(|p| p.id == person.id)
             .expect("updated person");
         assert_eq!(
-            updated.address.locality.as_deref().map(|v| v.to_string()),
+            updated.address.locality.as_deref().map(ToString::to_string),
             Some("Rotterdam".to_string())
         );
 

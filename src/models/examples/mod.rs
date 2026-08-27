@@ -198,5 +198,5 @@ fn brief_candidates(first_locality: &str) -> Vec<Candidate> {
 }
 
 fn strings(items: &[&str]) -> Vec<String> {
-    items.iter().map(|item| item.to_string()).collect()
+    items.iter().map(ToString::to_string).collect()
 }

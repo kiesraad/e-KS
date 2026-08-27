@@ -20,6 +20,7 @@ fi
 cp frontend/favicon.svg frontend/static/favicon.svg
 
 cargo build \
+    --locked \
     --features "${CARGO_SET_FEATURES:-memory-serve,database,migrations,tls,acme,fixtures}" \
     --no-default-features \
     --release \

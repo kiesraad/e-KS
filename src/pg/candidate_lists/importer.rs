@@ -308,7 +308,7 @@ mod tests {
                 .name
                 .first_name
                 .as_deref()
-                .map(|value| value.to_string()),
+                .map(ToString::to_string),
             Some("Henk".to_string())
         );
 
@@ -440,7 +440,7 @@ mod tests {
                 .name
                 .first_name
                 .as_deref()
-                .map(|value| value.to_string()),
+                .map(ToString::to_string),
             Some("Hendrik".to_string())
         );
 
@@ -476,7 +476,7 @@ mod tests {
                 .name
                 .first_name
                 .as_deref()
-                .map(|value| value.to_string()),
+                .map(ToString::to_string),
             Some("Hendrik".to_string())
         );
 

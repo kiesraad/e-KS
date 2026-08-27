@@ -1,6 +1,7 @@
 button.button,
 a.button,
-label.button {
+label.button,
+span.button {
   color: var(--base-white);
   border-radius: var(--rounded-md);
   border: var(--button-border-width) solid var(--button-color-primary);

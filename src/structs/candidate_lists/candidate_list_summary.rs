@@ -316,7 +316,6 @@ mod tests {
     }
 
     #[tokio::test]
-
     async fn empty_list_problems() -> Result<(), AppError> {
         let (store, ids) = make_store_with_candidates(Vec::new()).await?;
         let problems = create_summary_and_get_problems(ids, &store, Vec::new(), Vec::new()).await?;

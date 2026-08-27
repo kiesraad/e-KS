@@ -56,7 +56,7 @@ impl HasSeverity for Problems {
     fn highest_severity(&self) -> Option<Severity> {
         self.potential_problems
             .iter()
-            .map(|p| p.severity())
+            .map(PotentialProblems::severity)
             .max()
             .or_else(|| (!self.info_problems.is_empty()).then_some(Severity::Info))
     }

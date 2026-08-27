@@ -14,6 +14,7 @@ export MEMORY_SERVE_QUIET=1
     --public-path=/static/
 
 cargo build \
+    --locked \
     --no-default-features \
     --features memory-serve,fixtures,dev-features,tvs-mock \
     --release \

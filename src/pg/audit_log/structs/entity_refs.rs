@@ -3,7 +3,7 @@
 //! human-readable description.
 
 use crate::{
-    PgStoreData,
+    ElectoralDistrict, PgStoreData,
     structs::{audit_log::EntityRef, candidate_lists::CandidateListId, persons::PersonId},
 };
 
@@ -79,7 +79,7 @@ fn describe_entity(kind: &EntityKind, id_str: &str, state: &PgStoreData) -> Stri
             .map(|cl| {
                 cl.electoral_districts
                     .iter()
-                    .map(|d| d.code())
+                    .map(ElectoralDistrict::code)
                     .collect::<Vec<_>>()
                     .join(", ")
             })

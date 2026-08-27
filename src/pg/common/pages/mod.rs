@@ -2,7 +2,9 @@ use auth_service::{AuthServiceState, AuthState};
 use axum::{Router, extract::FromRef, routing::get};
 use axum_extra::routing::{RouterExt, TypedPath};
 
-use super::paths::*;
+use super::paths::{
+    LoggedOutPath, LoginStartPath, LogoutPath, SelectElectionPath, SwitchElectionPath,
+};
 
 mod auth;
 mod hide_download_warning;

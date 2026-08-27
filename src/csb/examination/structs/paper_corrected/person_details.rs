@@ -2,7 +2,7 @@ use super::PaperCorrected;
 use crate::{
     Locale,
     structs::{
-        common::DateOfBirth,
+        common::{BsnOrNoneConfirmed, DateOfBirth},
         persons::{Person, Representative},
     },
 };
@@ -58,7 +58,7 @@ impl PaperCorrectedPersonDetails {
                 p.personal_data
                     .bsn
                     .as_ref()
-                    .map(|bsn| bsn.to_exposed_string())
+                    .map(BsnOrNoneConfirmed::to_exposed_string)
                     .unwrap_or_default()
             }),
             place_of_residence: csb_field(|p| opt_display(&p.personal_data.place_of_residence)),
@@ -102,5 +102,5 @@ fn representative_field(
 }
 
 fn opt_display<T: std::fmt::Display>(value: &Option<T>) -> String {
-    value.as_ref().map(|v| v.to_string()).unwrap_or_default()
+    value.as_ref().map(ToString::to_string).unwrap_or_default()
 }

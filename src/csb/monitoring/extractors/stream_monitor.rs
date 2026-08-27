@@ -52,7 +52,7 @@ impl<S: AppRequestState> FromRequestParts<S> for StreamMonitor {
                             .political_group
                             .appellation
                             .as_ref()
-                            .map(|name| name.to_string());
+                            .map(ToString::to_string);
                         let until = data.events.last().map(|e| e.event_id).unwrap_or(0);
                         (name, Some(until))
                     }

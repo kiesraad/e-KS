@@ -32,4 +32,5 @@ children:
       - locales
       - --exec
       - run
+      - --locked
     wait_for_postgres: true

@@ -3,7 +3,11 @@ use axum_extra::routing::RouterExt;
 
 use crate::AppRequestState;
 
-use super::paths::*;
+use super::paths::{
+    AddCandidatePath, CandidateListDeletePersonPath, CandidateListUpdateAddressPath,
+    CandidateListUpdatePersonPath, CreateCandidatePath, UpdateCandidatePositionPath,
+    UpdateRepresentativePath,
+};
 
 mod add;
 mod create;

@@ -340,7 +340,7 @@ impl AllProblems {
 impl HasSeverity for AllProblems {
     fn highest_severity(&self) -> Option<Severity> {
         self.flatten_problems()
-            .map(|p| p.severity())
+            .map(PotentialProblems::severity)
             .max()
             .or_else(|| (!self.info_problems.is_empty()).then_some(Severity::Info))
     }

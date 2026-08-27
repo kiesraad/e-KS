@@ -64,7 +64,7 @@ impl Problematic<ElectionConfig> for PersonalData {
 
 impl PersonalData {
     pub fn lives_in_nl(&self) -> bool {
-        self.country.as_ref().is_none_or(|country| country.is_nl())
+        self.country.as_ref().is_none_or(CountryCode::is_nl)
     }
 
     pub fn locality(&self) -> Option<String> {

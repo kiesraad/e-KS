@@ -158,7 +158,7 @@ fn format_districts(districts: &[ElectoralDistrict], election: &ElectionConfig) 
         ALL_DISTRICTS.to_string()
     } else {
         let mut sorted = districts.to_vec();
-        sorted.sort_by_key(|d| d.region_number());
+        sorted.sort_by_key(ElectoralDistrict::region_number);
         let parts: Vec<String> = sorted
             .iter()
             .map(|d| format!("{} ({})", d.region_number(), d.title(AnyLocale::Nl)))

@@ -32,7 +32,7 @@ impl CandidateCorrectionField {
                 .personal_data
                 .place_of_residence
                 .as_ref()
-                .map(|p| p.to_string())
+                .map(ToString::to_string)
                 .unwrap_or_default(),
         }
     }

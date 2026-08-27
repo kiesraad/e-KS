@@ -200,7 +200,7 @@ mod tests {
             Some(PreviousElectionResults::OneToFifteenSeats)
         );
         assert_eq!(
-            updated.appellation.as_deref().map(|v| v.to_string()),
+            updated.appellation.as_deref().map(ToString::to_string),
             Some("a".repeat(Appellation::MAX_CHAR_COUNT))
         );
 

@@ -5,7 +5,7 @@
 use axum::{
     body::Body,
     extract::Request,
-    http::{StatusCode, Uri},
+    http::{StatusCode, Uri, uri::PathAndQuery},
     response::{IntoResponse, Response},
 };
 use hyper_util::rt::TokioExecutor;
@@ -39,7 +39,7 @@ pub fn proxy_handler(
             let path_query = req
                 .uri()
                 .path_and_query()
-                .map(|v| v.as_str())
+                .map(PathAndQuery::as_str)
                 .unwrap_or(path);
 
             let rewritten = rewrites

@@ -4,7 +4,7 @@ use axum_extra::routing::TypedPath;
 use crate::{
     AppError, PgStore, QueryParamState,
     structs::{
-        common::{HasSeverity, Problematic, Severity},
+        common::{HasSeverity, PotentialProblems, Problematic, Severity},
         list_submitters::ListSubmitter,
         name_authorisations::NameAuthorisation,
         political_groups::PoliticalGroup,
@@ -81,7 +81,7 @@ impl PoliticalGroupSteps {
         let size_severity =
             NameAuthorisation::get_size_problems(list_designation, name_authorisations.len())
                 .iter()
-                .map(|p| p.severity())
+                .map(PotentialProblems::severity)
                 .max();
 
         match name_authorisations

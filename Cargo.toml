@@ -20,6 +20,10 @@ private_intra_doc_links = "allow"
 unwrap_used = "warn"
 cognitive_complexity = "warn"
 too_many_lines = "warn"
+empty_line_after_outer_attr = "warn"
+redundant_closure_for_method_calls = "warn"
+redundant_else = "warn"
+wildcard_imports = "warn"
 
 # Single source of truth for third-party dependency versions and their base
 # feature set. Member crates opt in with `<dep> = { workspace = true }` and may

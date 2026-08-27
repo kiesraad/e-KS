@@ -3,7 +3,13 @@ use axum_extra::routing::RouterExt;
 
 use crate::AppRequestState;
 
-use super::paths::*;
+use super::paths::{
+    CsbAddOmissionPath, CsbAllRestorationsPath, CsbAppellationCorrectionPath, CsbCandidateListPath,
+    CsbCandidatePath, CsbDeleteOmissionPath, CsbExaminationOverviewPath, CsbGeneralInformationPath,
+    CsbI1DownloadPath, CsbI4DownloadPath, CsbOmissionOverviewPath, CsbPaperCorrectionsStartPath,
+    CsbPaperCorrectionsStopPath, CsbPersonCorrectionPath, CsbPoliticalGroupPath,
+    CsbPoliticalGroupToggleFinishPath, OmissionListQuery, PgIndexPath,
+};
 
 mod all_restorations;
 mod candidate;

@@ -336,7 +336,11 @@ mod tests {
         let person = record.validate_create().unwrap();
 
         assert_eq!(
-            person.personal_data.country.as_ref().map(|v| v.to_string()),
+            person
+                .personal_data
+                .country
+                .as_ref()
+                .map(ToString::to_string),
             Some("NL".to_string())
         );
     }

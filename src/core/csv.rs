@@ -5,7 +5,7 @@ use axum::{
     http::{HeaderValue, Response},
     response::IntoResponse,
 };
-use csv::{Reader, ReaderBuilder, Writer, WriterBuilder};
+use csv::{IntoInnerError, Reader, ReaderBuilder, Writer, WriterBuilder};
 use serde::{Serialize, de::DeserializeOwned};
 
 use crate::{AppError, Locale, OptionStringExt, trans, utils::no_cache_headers};
@@ -226,7 +226,7 @@ where
         .has_headers(false)
         .from_writer(Vec::new());
     staging.serialize(record)?;
-    let bytes = staging.into_inner().map_err(|err| err.into_error())?;
+    let bytes = staging.into_inner().map_err(IntoInnerError::into_error)?;
 
     let mut reader = ReaderBuilder::new()
         .has_headers(false)
@@ -234,7 +234,7 @@ where
     if let Some(row) = reader.records().next() {
         let row = row?;
         let escaped: Vec<Cow<'_, str>> = row.iter().map(escape_csv_formula).collect();
-        writer.write_record(escaped.iter().map(|cell| cell.as_ref()))?;
+        writer.write_record(escaped.iter().map(AsRef::as_ref))?;
     }
     Ok(())
 }

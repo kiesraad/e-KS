@@ -1,6 +1,7 @@
 use std::{
     borrow::Cow,
     collections::{BTreeMap, BTreeSet, HashSet},
+    ffi::OsStr,
     path::Path,
 };
 
@@ -303,7 +304,7 @@ fn process_locale_file(file: &Path, used_keys: &[String], stats: &mut LocaleStat
     stats.files_processed += 1;
     let basename = file
         .file_stem()
-        .and_then(|s| s.to_str())
+        .and_then(OsStr::to_str)
         .context("Failed to get locale file stem")?;
 
     let mut node = parse_locale_root(file)?;

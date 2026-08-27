@@ -3,7 +3,7 @@ use axum_extra::routing::RouterExt;
 
 use crate::AppRequestState;
 
-use super::paths::*;
+use super::paths::{CsbAuditLogDetailPath, CsbAuditLogPath};
 
 mod detail;
 mod list;

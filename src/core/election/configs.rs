@@ -297,7 +297,7 @@ mod tests {
     fn type_options_contains_one_per_election_code() {
         let options = ElectionConfig::type_options();
 
-        let codes: Vec<&str> = options.iter().map(|e| e.code()).collect();
+        let codes: Vec<&str> = options.iter().map(ElectionConfig::code).collect();
         assert_eq!(codes, vec!["EK27", "PS27", "WS27"]);
 
         // No duplicate codes — each election type appears at most once.
