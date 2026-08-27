@@ -296,6 +296,53 @@ fn write_districts_file(out_dir: &Path, districts: &Districts<'_>) {
         quote! { Self::#id => #number, }
     });
 
+    let committee_arms = all.iter().map(|e| {
+        let id = format_ident!("{}", e.variant);
+
+        // Group this region's committees by election category, preserving the
+        // order they appear in MasterElectionTree.xml.
+        let mut by_category: Vec<(String, Vec<TokenStream>)> = Vec::new();
+        for c in &e.region.committees {
+            let committee_category = format_ident!("{}", format!("{:?}", c.committee.category));
+            let mut committee = quote! {
+                eml_nl::common::Committee::new(eml_nl::utils::CommitteeCategory::#committee_category)
+            };
+            if let Some(name) = c.committee.name.as_deref() {
+                committee = quote! { #committee.with_name(#name) };
+            }
+            if let Some(accept) = c.committee.accept_central_submissions {
+                committee = quote! { #committee.with_accept_central_submissions(#accept) };
+            }
+
+            let election_category_name = format!("{:?}", c.election_category);
+            match by_category
+                .iter_mut()
+                .find(|(name, _)| *name == election_category_name)
+            {
+                Some((_, committees)) => committees.push(committee),
+                None => by_category.push((election_category_name, vec![committee])),
+            }
+        }
+
+        if by_category.is_empty() {
+            return quote! { Self::#id => Vec::new(), };
+        }
+
+        let category_arms = by_category.into_iter().map(|(election_category, committees)| {
+            let election_category = format_ident!("{election_category}");
+            quote! {
+                eml_nl::utils::ElectionCategory::#election_category => vec![#(#committees),*],
+            }
+        });
+
+        quote! {
+            Self::#id => match election_category {
+                #(#category_arms)*
+                _ => Vec::new(),
+            },
+        }
+    });
+
     let ek_variants: Vec<_> = districts
         .ek
         .iter()
@@ -393,6 +440,16 @@ fn write_districts_file(out_dir: &Path, districts: &Districts<'_>) {
 
             pub fn region_number(&self) -> u16 {
                 match self { #(#region_number_arms)* }
+            }
+
+            /// The committees active in this region for the given election category,
+            /// as defined by the Kiesraad master election tree.
+            #[allow(clippy::match_same_arms, clippy::cognitive_complexity)]
+            pub fn committees(
+                &self,
+                election_category: eml_nl::utils::ElectionCategory,
+            ) -> Vec<eml_nl::common::Committee> {
+                match self { #(#committee_arms)* }
             }
 
             pub fn ek_districts() -> &'static [Self] {

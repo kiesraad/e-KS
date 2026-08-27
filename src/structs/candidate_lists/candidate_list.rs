@@ -26,7 +26,7 @@ impl CandidateList {
     pub fn districts_name(&self) -> String {
         self.electoral_districts
             .iter()
-            .map(|d| d.title())
+            .map(ElectoralDistrict::title)
             .collect::<Vec<&str>>()
             .join(", ")
     }

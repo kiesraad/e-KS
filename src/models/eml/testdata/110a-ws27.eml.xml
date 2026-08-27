@@ -24,6 +24,8 @@
                 </kr:Region>
                 <kr:Region RegionNumber="1" RegionCategory="KIESKRING" SuperiorRegionNumber="2" SuperiorRegionCategory="WATERSCHAP">
                     <kr:RegionName>Fryslân</kr:RegionName>
+                    <kr:Committee CommitteeCategory="CSB"/>
+                    <kr:Committee CommitteeCategory="HSB"/>
                 </kr:Region>
                 <kr:Region RegionNumber="59" RegionCategory="GEMEENTE" FrysianExportAllowed="true" SuperiorRegionNumber="1" SuperiorRegionCategory="KIESKRING">
                     <kr:RegionName>Achtkarspelen</kr:RegionName>

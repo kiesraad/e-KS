@@ -24,51 +24,68 @@
                 </kr:Region>
                 <kr:Region RegionNumber="1" RegionCategory="PROVINCIE" SuperiorRegionCategory="STAAT">
                     <kr:RegionName>Groningen</kr:RegionName>
+                    <kr:Committee CommitteeCategory="PROV_SB"/>
                 </kr:Region>
                 <kr:Region RegionNumber="2" RegionCategory="PROVINCIE" FrysianExportAllowed="true" SuperiorRegionCategory="STAAT">
                     <kr:RegionName>Fryslân</kr:RegionName>
+                    <kr:Committee CommitteeCategory="PROV_SB"/>
                 </kr:Region>
                 <kr:Region RegionNumber="3" RegionCategory="PROVINCIE" SuperiorRegionCategory="STAAT">
                     <kr:RegionName>Drenthe</kr:RegionName>
+                    <kr:Committee CommitteeCategory="PROV_SB"/>
                 </kr:Region>
                 <kr:Region RegionNumber="4" RegionCategory="PROVINCIE" SuperiorRegionCategory="STAAT">
                     <kr:RegionName>Overijssel</kr:RegionName>
+                    <kr:Committee CommitteeCategory="PROV_SB"/>
                 </kr:Region>
                 <kr:Region RegionNumber="5" RegionCategory="PROVINCIE" SuperiorRegionCategory="STAAT">
                     <kr:RegionName>Flevoland</kr:RegionName>
+                    <kr:Committee CommitteeCategory="PROV_SB"/>
                 </kr:Region>
                 <kr:Region RegionNumber="6" RegionCategory="PROVINCIE" SuperiorRegionCategory="STAAT">
                     <kr:RegionName>Gelderland</kr:RegionName>
+                    <kr:Committee CommitteeCategory="PROV_SB"/>
                 </kr:Region>
                 <kr:Region RegionNumber="7" RegionCategory="PROVINCIE" SuperiorRegionCategory="STAAT">
                     <kr:RegionName>Utrecht</kr:RegionName>
+                    <kr:Committee CommitteeCategory="PROV_SB"/>
                 </kr:Region>
                 <kr:Region RegionNumber="8" RegionCategory="PROVINCIE" SuperiorRegionCategory="STAAT">
                     <kr:RegionName>Noord-Holland</kr:RegionName>
+                    <kr:Committee CommitteeCategory="PROV_SB"/>
                 </kr:Region>
                 <kr:Region RegionNumber="9" RegionCategory="PROVINCIE" SuperiorRegionCategory="STAAT">
                     <kr:RegionName>Zuid-Holland</kr:RegionName>
+                    <kr:Committee CommitteeCategory="CSB" CommitteeName="De Kiesraad" AcceptCentralSubmissions="true"/>
+                    <kr:Committee CommitteeCategory="PROV_SB"/>
                 </kr:Region>
                 <kr:Region RegionNumber="10" RegionCategory="PROVINCIE" SuperiorRegionCategory="STAAT">
                     <kr:RegionName>Zeeland</kr:RegionName>
+                    <kr:Committee CommitteeCategory="PROV_SB"/>
                 </kr:Region>
                 <kr:Region RegionNumber="11" RegionCategory="PROVINCIE" SuperiorRegionCategory="STAAT">
                     <kr:RegionName>Noord-Brabant</kr:RegionName>
+                    <kr:Committee CommitteeCategory="PROV_SB"/>
                 </kr:Region>
                 <kr:Region RegionNumber="12" RegionCategory="PROVINCIE" SuperiorRegionCategory="STAAT">
                     <kr:RegionName>Limburg</kr:RegionName>
+                    <kr:Committee CommitteeCategory="PROV_SB"/>
                 </kr:Region>
                 <kr:Region RegionNumber="13" RegionCategory="PROVINCIE" SuperiorRegionCategory="STAAT">
                     <kr:RegionName>Bonaire</kr:RegionName>
+                    <kr:Committee CommitteeCategory="PROV_SB"/>
                 </kr:Region>
                 <kr:Region RegionNumber="14" RegionCategory="PROVINCIE" SuperiorRegionCategory="STAAT">
                     <kr:RegionName>Sint Eustatius</kr:RegionName>
+                    <kr:Committee CommitteeCategory="PROV_SB"/>
                 </kr:Region>
                 <kr:Region RegionNumber="15" RegionCategory="PROVINCIE" SuperiorRegionCategory="STAAT">
                     <kr:RegionName>Saba</kr:RegionName>
+                    <kr:Committee CommitteeCategory="PROV_SB"/>
                 </kr:Region>
                 <kr:Region RegionNumber="16" RegionCategory="PROVINCIE" SuperiorRegionCategory="STAAT">
                     <kr:RegionName>Buitenland</kr:RegionName>
+                    <kr:Committee CommitteeCategory="PROV_SB"/>
                 </kr:Region>
                 <kr:Region RegionNumber="1" RegionCategory="STEMBUREAU" SuperiorRegionNumber="1" SuperiorRegionCategory="PROVINCIE">
                     <kr:RegionName>Groningen</kr:RegionName>

@@ -24,6 +24,8 @@
                 </kr:Region>
                 <kr:Region RegionNumber="1" RegionCategory="KIESKRING" SuperiorRegionNumber="1" SuperiorRegionCategory="PROVINCIE">
                     <kr:RegionName>Groningen</kr:RegionName>
+                    <kr:Committee CommitteeCategory="CSB"/>
+                    <kr:Committee CommitteeCategory="HSB"/>
                 </kr:Region>
                 <kr:Region RegionNumber="14" RegionCategory="GEMEENTE" SuperiorRegionNumber="1" SuperiorRegionCategory="KIESKRING">
                     <kr:RegionName>Groningen</kr:RegionName>

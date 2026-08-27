@@ -24,9 +24,12 @@
                 </kr:Region>
                 <kr:Region RegionNumber="1" RegionCategory="KIESKRING" RomanNumerals="true" SuperiorRegionNumber="12" SuperiorRegionCategory="PROVINCIE">
                     <kr:RegionName>Maastricht</kr:RegionName>
+                    <kr:Committee CommitteeCategory="CSB"/>
+                    <kr:Committee CommitteeCategory="HSB" AcceptCentralSubmissions="true"/>
                 </kr:Region>
                 <kr:Region RegionNumber="2" RegionCategory="KIESKRING" RomanNumerals="true" SuperiorRegionNumber="12" SuperiorRegionCategory="PROVINCIE">
                     <kr:RegionName>Venlo</kr:RegionName>
+                    <kr:Committee CommitteeCategory="HSB"/>
                 </kr:Region>
                 <kr:Region RegionNumber="888" RegionCategory="GEMEENTE" SuperiorRegionNumber="1" SuperiorRegionCategory="KIESKRING">
                     <kr:RegionName>Beek</kr:RegionName>
