@@ -440,7 +440,7 @@ dependencies = [
 [[package]]
 name = "bag_address_lookup"
 version = "0.8.1"
-source = "git+https://github.com/tweedegolf/bag-address-lookup.git?tag=lib-v0.8.1#e58060b03ed9bd321a829ea82e6299743d7f8ebe"
+source = "git+https://github.com/tweedegolf/bag-address-lookup.git?rev=e58060b03ed9bd321a829ea82e6299743d7f8ebe#e58060b03ed9bd321a829ea82e6299743d7f8ebe"
 dependencies = [
  "zstd",
 ]
@@ -3247,7 +3247,7 @@ dependencies = [
 [[package]]
 name = "textris-pdf"
 version = "0.9.0"
-source = "git+https://github.com/tweedegolf/textris-pdf.git?tag=v0.9.0#4560b774438e7eca0c17b58481145935fedb1eee"
+source = "git+https://github.com/tweedegolf/textris-pdf.git?rev=4560b774438e7eca0c17b58481145935fedb1eee#4560b774438e7eca0c17b58481145935fedb1eee"
 dependencies = [
  "harfrust",
  "krilla",
