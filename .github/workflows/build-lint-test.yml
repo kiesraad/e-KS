@@ -110,6 +110,20 @@ jobs:
           djlint \
           djlint --lint --check --configuration=djlint.toml templates
 
+  lockfile:
+    name: Cargo.lock up to date
+    permissions:
+      contents: read
+    if: ${{ needs.changes.outputs.changed == 'true' }}
+    needs: changes
+    runs-on: ubuntu-24.04
+    steps:
+      - *checkout
+      - *setup-stable-rust
+
+      - name: Check Cargo.lock against Cargo.toml
+        run: cargo tree --locked --depth 0 > /dev/null
+
   rust-lint:
     name: Rust lint & test
     permissions:
