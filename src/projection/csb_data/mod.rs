@@ -15,7 +15,7 @@ use crate::{
     PgStoreData, Scope,
     store::{StoreData, StoreEvent},
     structs::{
-        common::{DisplayName, UtcDateTime},
+        common::{Appellation, UtcDateTime},
         csb::{Correction, Omission, OmissionId, PersonCorrection, PersonCorrectionDelta},
         persons::PersonId,
     },
@@ -31,7 +31,8 @@ pub struct CsbStoreData {
     pub(crate) is_examination_finished: bool,
     pub(crate) omissions: HashMap<OmissionId, Omission>,
     pub(crate) csb_corrected_persons: HashMap<PersonId, PersonCorrectionDelta>,
-    pub(crate) csb_corrected_display_name: Option<DisplayName>,
+    pub(crate) csb_corrected_appellation: Option<Appellation>,
+    pub(crate) is_deleted: bool,
 }
 
 impl StoreData for CsbStoreData {
@@ -67,6 +68,7 @@ impl StoreData for CsbStoreData {
                 });
             }
             CsbEvent::CreateEmpty => {}
+            CsbEvent::Delete => self.is_deleted = true,
             CsbEvent::PaperCorrectedUpdate(payload) => {
                 // Replay the wrapped app event onto the corrected projection,
                 // keeping the CSB stream's event metadata.
@@ -110,14 +112,14 @@ impl CsbStoreData {
     /// the paper-corrected projection undoes the correction instead.
     fn apply_correction(&mut self, correction: Correction) {
         match correction {
-            Correction::DisplayName(display_name) => {
-                let display_name = Some(display_name);
+            Correction::Appellation(appellation) => {
+                let appellation = Some(appellation);
 
-                self.csb_corrected_display_name =
-                    if self.paper_corrected_data.political_group.display_name == display_name {
+                self.csb_corrected_appellation =
+                    if self.paper_corrected_data.political_group.appellation == appellation {
                         None
                     } else {
-                        display_name
+                        appellation
                     };
             }
             Correction::Person(person_id, correction) => {
@@ -245,8 +247,8 @@ mod tests {
         data.apply(StoreEvent::new(1, import_event()));
 
         assert_eq!(
-            data.paper_corrected_data.political_group.display_name,
-            sample_political_group().display_name
+            data.paper_corrected_data.political_group.appellation,
+            sample_political_group().appellation
         );
     }
 
@@ -256,7 +258,7 @@ mod tests {
         data.apply(StoreEvent::new(1, import_event()));
 
         let mut corrected_group = sample_political_group();
-        corrected_group.display_name = Some("Gecorrigeerde Naam".parse().unwrap());
+        corrected_group.appellation = Some("Gecorrigeerde Naam".parse().unwrap());
         data.apply(StoreEvent::new(
             2,
             CsbEvent::PaperCorrectedUpdate(Box::new(PgEvent::UpdatePoliticalGroup(
@@ -265,13 +267,13 @@ mod tests {
         ));
 
         assert_eq!(
-            data.paper_corrected_data.political_group.display_name,
-            corrected_group.display_name
+            data.paper_corrected_data.political_group.appellation,
+            corrected_group.appellation
         );
         // The imported snapshot stays untouched.
         assert_eq!(
-            data.imported_data.political_group.display_name,
-            sample_political_group().display_name
+            data.imported_data.political_group.appellation,
+            sample_political_group().appellation
         );
     }
 
@@ -337,35 +339,35 @@ mod tests {
     }
 
     #[test]
-    fn undoing_csb_correction_on_display_name_removes_csb_correction() {
+    fn undoing_csb_correction_on_appellation_removes_csb_correction() {
         let mut data = CsbStoreData::default();
-        data.paper_corrected_data.political_group.display_name =
-            Some(DisplayName::from_str("Partij").unwrap());
-        data.csb_corrected_display_name =
-            Some(DisplayName::from_str("Gecorrigeerde Partij").unwrap());
+        data.paper_corrected_data.political_group.appellation =
+            Some(Appellation::from_str("Partij").unwrap());
+        data.csb_corrected_appellation =
+            Some(Appellation::from_str("Gecorrigeerde Partij").unwrap());
 
         data.apply(StoreEvent::new(
             1,
-            CsbEvent::UpdateCorrection(Correction::DisplayName(
-                DisplayName::from_str("Partij").unwrap(),
+            CsbEvent::UpdateCorrection(Correction::Appellation(
+                Appellation::from_str("Partij").unwrap(),
             )),
         ));
 
-        assert_eq!(data.csb_corrected_display_name, None);
+        assert_eq!(data.csb_corrected_appellation, None);
     }
 
     #[test]
-    fn correction_display_name_sets_corrected_display_name() {
+    fn correction_appellation_sets_corrected_appellation() {
         let mut data = CsbStoreData::default();
         data.apply(StoreEvent::new(1, import_event()));
 
-        let display_name: DisplayName = "Gecorrigeerde Naam".parse().unwrap();
+        let appellation: Appellation = "Gecorrigeerde Naam".parse().unwrap();
         data.apply(StoreEvent::new(
             2,
-            CsbEvent::UpdateCorrection(Correction::DisplayName(display_name.clone())),
+            CsbEvent::UpdateCorrection(Correction::Appellation(appellation.clone())),
         ));
 
-        assert_eq!(data.csb_corrected_display_name, Some(display_name));
+        assert_eq!(data.csb_corrected_appellation, Some(appellation));
     }
 
     #[test]

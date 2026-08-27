@@ -198,7 +198,7 @@ fn translate_field_name(field: &str, locale: Locale) -> String {
         // Political group fields
         "long_list_allowed" => trans!("audit_log.detail.fields.long_list_allowed", locale),
         "legal_name" => trans!("audit_log.detail.fields.legal_name", locale),
-        "display_name" => trans!("audit_log.detail.fields.display_name", locale),
+        "appellation" => trans!("audit_log.detail.fields.appellation", locale),
         // Candidate list fields
         "electoral_districts" => trans!("audit_log.detail.fields.electoral_districts", locale),
         "candidates" => trans!("audit_log.detail.fields.candidates", locale),

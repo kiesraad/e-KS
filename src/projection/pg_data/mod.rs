@@ -680,12 +680,12 @@ mod tests {
 
         // Reads serve a snapshot of the corrected projection.
         assert_eq!(
-            store.get_political_group().display_name,
-            sample_political_group().display_name
+            store.get_political_group().appellation,
+            sample_political_group().appellation
         );
 
         let mut corrected_group = sample_political_group();
-        corrected_group.display_name = Some("Gecorrigeerde Naam".parse().unwrap());
+        corrected_group.appellation = Some("Gecorrigeerde Naam".parse().unwrap());
         store
             .update(PgEvent::UpdatePoliticalGroup(corrected_group.clone()))
             .await?;
@@ -699,20 +699,20 @@ mod tests {
                     if matches!(**inner, PgEvent::UpdatePoliticalGroup(_))
             ));
             assert_eq!(
-                data.paper_corrected_data.political_group.display_name,
-                corrected_group.display_name
+                data.paper_corrected_data.political_group.appellation,
+                corrected_group.appellation
             );
             // The imported snapshot stays untouched.
             assert_eq!(
-                data.imported_data.political_group.display_name,
-                sample_political_group().display_name
+                data.imported_data.political_group.appellation,
+                sample_political_group().appellation
             );
         }
 
         // The request-local snapshot observes the correction right away.
         assert_eq!(
-            store.get_political_group().display_name,
-            corrected_group.display_name
+            store.get_political_group().appellation,
+            corrected_group.appellation
         );
 
         Ok(())

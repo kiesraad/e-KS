@@ -2,12 +2,12 @@ detail:
   field: Field
   fields:
     address_type: Address type
+    appellation: Appellation
     bsn: Social security number (BSN)
     candidates: Candidates
     country: Country code
     created_persons: Created candidates
     date_of_birth: Date of birth
-    display_name: Registered designation
     download_path: Download path
     electoral_districts: Electoral districts
     file_name: File name
@@ -37,7 +37,7 @@ detail:
 documents:
   download: Download documents
   no_download: This version was not in a state where downloading documents was possible.
-empty: No events have been recorded yet.
+empty: No events have been recorded yet that meet the filter criteria.
 event:
   add_candidate_to_list: Added candidate to list
   create_candidate_list: Created list of candidates
@@ -46,6 +46,7 @@ event:
   create_omission: Created omission
   create_person: Created person
   create_substitute_submitter: Created substitute submitter of the list
+  delete: Deleted political group
   delete_candidate_list: Deleted list of candidates
   delete_name_authorisation: Deleted statutory name and authorised agent
   delete_omission: Deleted omission
@@ -85,6 +86,7 @@ filter:
   category:
     candidate_list: Candidate list
     correction: Corrections
+    delete: Deleted
     import: Import
     list_submitter: List submitter
     name_authorisation: Statutory name and authorised agent

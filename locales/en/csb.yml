@@ -55,6 +55,9 @@ group:
     plural: "{} BRP errors"
     singular: 1 BRP error
   candidate_count: "<strong>{}</strong> candidates"
+  confirm_delete: "Are you sure you want to delete the political group “{}“?"
+  delete_note: "It is always possible to re-import a political group but any created (paper) corrections, and omissions will be lost!"
+  deleted_label: deleted
   examine_all: Examine all BRP errors
   examine_general: Examine general information
   examine_list: Examine candidate list
@@ -112,9 +115,6 @@ omission:
     manage: Manage omissions
   add:
     title: Add
-  count:
-    plural: "{} omissions"
-    singular: 1 omission
   form:
     applies_to: "This omission applies to:"
     description_label: Add I 1 omission
@@ -143,6 +143,7 @@ paper_corrections:
 progress: Progress
 status:
   approved: Approved
+  correction: Corrections added
   in_progress: In progress
   name: Status
-  omission: Defect added
+  omission: Omissions added

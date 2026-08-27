@@ -2,7 +2,7 @@
 {% import "csb/components/paper_corrected.html" as paper_corrected %}
 {% block breadcrumbs %}
   {{ breadcrumb(crate::csb::examination::CsbExaminationOverviewPath, "csb.examination") }}
-  {{ breadcrumb(political_group.examination_path() , political_group.csb_display_name(), is_translatable=false) }}
+  {{ breadcrumb(political_group.examination_path() , political_group.csb_appellation(), is_translatable=false) }}
   {{ breadcrumb(political_group.general_information_path() , "common.general_information") }}
 {% endblock %}
 {% block page_title %}
@@ -80,10 +80,10 @@
       {{ paper_corrected::columns_head("common.general_information"|trans) }}
       <tbody>
         <tr class="clickable">
-          <td>{{ "political_group.display_name"|trans }}: {{ paper_corrected::value(group_info.display_name) }}</td>
+          <td>{{ "political_group.appellation"|trans }}: {{ paper_corrected::value(group_info.appellation) }}</td>
           <td></td>
           <td class="actions">
-            <a href="{{ political_group.correction_display_name_path() }}"
+            <a href="{{ political_group.correction_appellation_path() }}"
                aria-label="{{ "action.edit"|trans }}"></a>
           </td>
         </tr>

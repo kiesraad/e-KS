@@ -25,7 +25,7 @@ jobs:
           persist-credentials: false
 
       - name: Sigrid CI
-        uses: Software-Improvement-Group/sigridci@43db8e59cdda5f92e640b3c6f6aa1646e870d633 # main
+        uses: Software-Improvement-Group/sigridci@49ea84c5a1f67cd72c8f61533f7b00e0a5f9bee8 # main
         with:
           customer: kiesraad
           system: e-ks

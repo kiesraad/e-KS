@@ -81,10 +81,11 @@ async fn do_import<S: AppRequestState>(
 
     // Reject if this source stream has already been imported.
     for store in state.csb_store_registry().stores_by_scope().await? {
-        let already_imported = store.data.read().events.first().is_some_and(|e| {
-            matches!(&e.payload, CsbEvent::Import { source_stream_id: sid, .. } if *sid == source_stream_id)
+        let already_imported_and_not_deleted = store.data.read().events.first().is_some_and(|e| {
+            matches!(&e.payload, CsbEvent::Import { source_stream_id: sid, .. } if *sid == source_stream_id) &&
+            !store.is_deleted()
         });
-        if already_imported {
+        if already_imported_and_not_deleted {
             return Err(AppError::UserError(trans!(
                 "csb.import.error.already_imported",
                 locale
@@ -147,8 +148,8 @@ mod tests {
     use axum::http::StatusCode;
 
     use crate::{
-        AppState, CsbContext, ElectionConfig, PgEvent, test_utils::response_body_string,
-        utils::format_hash,
+        AppState, CsbContext, CsbEvent::Delete, ElectionConfig, PgEvent,
+        test_utils::response_body_string, utils::format_hash,
     };
 
     /// Populate a political-group stream with a single event in the (in-memory)
@@ -313,6 +314,63 @@ mod tests {
             CsbEvent::CreateEmpty
         ));
 
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn reimport_deleted_allowed() -> Result<(), AppError> {
+        let state = AppState::new_for_tests().await;
+        let (_, hash) = seed_source_event(&state).await?;
+
+        let context = CsbContext::new_test();
+        let response = import_submit(
+            CsbImportPath {},
+            State(state.clone()),
+            context,
+            Form(ImportForm { hash: hash.clone() }),
+        )
+        .await?
+        .into_response();
+        // First import succeeds (redirects away from import page)
+        assert_eq!(response.status(), StatusCode::SEE_OTHER);
+
+        let csb_stores = state.csb_store_registry().stores_by_scope().await?;
+        assert_eq!(csb_stores.len(), 1);
+
+        // mark imported store as deleted
+        csb_stores[0].update(Delete).await?;
+
+        // Re-importing the same source stream is rejected against the cached CSB
+        // store (the in-memory backend persists nothing, so the duplicate check
+        // must consult the live registry).
+        let context = CsbContext::new_test();
+        let response = import_submit(
+            CsbImportPath {},
+            State(state.clone()),
+            context,
+            Form(ImportForm { hash: hash.clone() }),
+        )
+        .await?
+        .into_response();
+
+        dbg!(&response);
+
+        // second import succeeds too as first import got deleted
+        assert_eq!(response.status(), StatusCode::SEE_OTHER);
+
+        let csb_stores = state.csb_store_registry().stores_by_scope().await?;
+        assert_eq!(csb_stores.iter().filter(|s| s.is_deleted()).count(), 1);
+        assert_eq!(csb_stores.iter().filter(|s| !s.is_deleted()).count(), 1);
+        for store in csb_stores {
+            if let CsbEvent::Import {
+                hash: import_hash, ..
+            } = store.data.read().events.first().unwrap().payload
+            {
+                assert_eq!(hash.clone(), format_hash(&import_hash, false));
+            } else {
+                panic!("No import")
+            }
+        }
         Ok(())
     }
 }

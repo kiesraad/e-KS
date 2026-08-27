@@ -44,6 +44,12 @@ pub struct CsbPoliticalGroupToggleFinishPath {
 }
 
 #[derive(TypedPath, Deserialize)]
+#[typed_path("/csb/examination/{stream_id}/delete", rejection(AppError))]
+pub struct CsbPoliticalGroupDeletePath {
+    pub stream_id: StreamId,
+}
+
+#[derive(TypedPath, Deserialize)]
 #[typed_path(
     "/csb/examination/{stream_id}/general-information",
     rejection(AppError)
@@ -125,10 +131,10 @@ pub struct CsbAllRestorationsPath {
 
 #[derive(TypedPath, Deserialize)]
 #[typed_path(
-    "/csb/examination/{stream_id}/correction/display-name",
+    "/csb/examination/{stream_id}/correction/appellation",
     rejection(AppError)
 )]
-pub struct CsbDisplayNameCorrectionPath {
+pub struct CsbAppellationCorrectionPath {
     pub stream_id: StreamId,
 }
 
@@ -155,6 +161,12 @@ pub struct OmissionListQuery {
 impl CsbPoliticalGroup {
     pub fn examination_path(&self) -> impl TypedPath {
         CsbPoliticalGroupPath {
+            stream_id: self.stream_id,
+        }
+    }
+
+    pub fn delete_path(&self) -> impl TypedPath {
+        CsbPoliticalGroupDeletePath {
             stream_id: self.stream_id,
         }
     }
@@ -293,9 +305,9 @@ impl CsbPoliticalGroup {
         }
     }
 
-    /// Path to the correction overlay for the political group display name.
-    pub fn correction_display_name_path(&self) -> impl TypedPath {
-        CsbDisplayNameCorrectionPath {
+    /// Path to the correction overlay for the political group appellation.
+    pub fn correction_appellation_path(&self) -> impl TypedPath {
+        CsbAppellationCorrectionPath {
             stream_id: self.stream_id,
         }
     }

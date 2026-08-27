@@ -57,7 +57,7 @@ pub async fn session_middleware(
     };
 
     session.last_activity = Utc::now();
-    state.sessions.insert(session.clone()).await;
+    state.sessions.touch(&session).await;
 
     request.extensions_mut().insert(session);
 

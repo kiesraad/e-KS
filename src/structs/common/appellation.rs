@@ -11,15 +11,15 @@ use crate::{
 };
 
 transparent_string! {
-    pub struct DisplayName(String);
+    pub struct Appellation(String);
 }
 
-impl DisplayName {
-    /// The maximum number of character a display name can consist of (excluding spaces)
+impl Appellation {
+    /// The maximum number of character a appellation can consist of (excluding spaces)
     pub const MAX_CHAR_COUNT: usize = 35;
 }
 
-impl FromStr for DisplayName {
+impl FromStr for Appellation {
     type Err = ValidationError;
 
     fn from_str(value: &str) -> Result<Self, Self::Err> {
@@ -38,15 +38,15 @@ impl FromStr for DisplayName {
             ));
         }
         validate_teletex_chars(&trimmed_value)?;
-        Ok(DisplayName(trimmed_value))
+        Ok(Appellation(trimmed_value))
     }
 }
 
-impl Problematic<Option<ListDesignation>> for Option<DisplayName> {
+impl Problematic<Option<ListDesignation>> for Option<Appellation> {
     fn get_problems(&self, list_designation: Option<ListDesignation>) -> Problems {
         let potential_problems =
             if list_designation != Some(ListDesignation::Blank) && self.is_empty_or_none() {
-                vec![PotentialProblems::NoDisplayName]
+                vec![PotentialProblems::NoAppellation]
             } else {
                 Vec::new()
             };
@@ -64,21 +64,21 @@ mod tests {
     #[test]
     fn valid_name() {
         assert_eq!(
-            Ok(DisplayName("De Tegen Partij".to_string())),
-            DisplayName::from_str("De Tegen Partij")
+            Ok(Appellation("De Tegen Partij".to_string())),
+            Appellation::from_str("De Tegen Partij")
         );
     }
 
     #[test]
     fn valid_name_with_extra_spaces() {
         assert_eq!(
-            Ok(DisplayName("De Tegen Partij".to_string())),
-            DisplayName::from_str("\t  De  \t  Tegen   Partij ")
+            Ok(Appellation("De Tegen Partij".to_string())),
+            Appellation::from_str("\t  De  \t  Tegen   Partij ")
         );
 
         assert_eq!(
-            Ok(DisplayName("De Tegen Partij".to_string())),
-            DisplayName::from_str("\t  De  \t  Tegen   Partij \t")
+            Ok(Appellation("De Tegen Partij".to_string())),
+            Appellation::from_str("\t  De  \t  Tegen   Partij \t")
         );
     }
 
@@ -86,7 +86,7 @@ mod tests {
     fn too_long() {
         assert_eq!(
             Err(ValidationError::ValueTooLong(36, 35)),
-            DisplayName::from_str("a string of exactly 36 chars long ex. spaces")
+            Appellation::from_str("a string of exactly 36 chars long ex. spaces")
         );
     }
 
@@ -94,12 +94,12 @@ mod tests {
     fn too_short() {
         assert_eq!(
             Err(ValidationError::ValueTooShort(0, 1)),
-            DisplayName::from_str("        ")
+            Appellation::from_str("        ")
         );
     }
 
     #[test]
     fn single_char_is_valid() {
-        assert_eq!(Ok(DisplayName("A".to_string())), DisplayName::from_str("A"));
+        assert_eq!(Ok(Appellation("A".to_string())), Appellation::from_str("A"));
     }
 }

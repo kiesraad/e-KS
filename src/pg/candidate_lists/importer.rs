@@ -38,9 +38,15 @@ pub(crate) async fn import_candidate_list_csv(
     file_size: usize,
 ) -> Result<ImportOutcome, ImportCandidateListError> {
     ensure_expected_headers(csv_data, locale)?;
-    let records = parse_records(csv_data, locale)?;
+    let mut records = parse_records(csv_data, locale)?;
+
+    let capped = records.len() > MAX_CANDIDATES;
+    records.truncate(MAX_CANDIDATES);
+
     let persons = collect_persons(records, store.get_persons(), locale)?;
-    emit_import_event(list, store, persons, file_name, file_size).await
+    emit_import_event(list, store, persons, file_name, file_size).await?;
+
+    Ok(ImportOutcome { capped })
 }
 
 /// Information about a successful import that the caller surfaces to the user.
@@ -232,10 +238,8 @@ async fn emit_import_event(
     persons: Vec<PreparedPerson>,
     file_name: String,
     file_size: usize,
-) -> Result<ImportOutcome, ImportCandidateListError> {
-    let mut candidates = persons.iter().map(|p| p.person.id).collect::<Vec<_>>();
-    let capped = candidates.len() > MAX_CANDIDATES;
-    candidates.truncate(MAX_CANDIDATES);
+) -> Result<(), ImportCandidateListError> {
+    let candidates = persons.iter().map(|p| p.person.id).collect::<Vec<_>>();
 
     let mut created_persons = Vec::new();
     let mut updated_persons = Vec::new();
@@ -260,7 +264,7 @@ async fn emit_import_event(
 
     *list = store.get_candidate_list(list.id)?;
 
-    Ok(ImportOutcome { capped })
+    Ok(())
 }
 
 #[cfg(test)]
@@ -536,6 +540,9 @@ mod tests {
             store.get_candidate_list(list_id)?.candidates.len(),
             MAX_CANDIDATES
         );
+        // Rows past the cap are dropped entirely: no person records may be
+        // persisted for them.
+        assert_eq!(store.get_person_count(), MAX_CANDIDATES);
 
         Ok(())
     }

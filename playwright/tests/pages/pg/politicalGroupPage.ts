@@ -8,6 +8,7 @@ export class PoliticalGroupPage {
   readonly textfieldRegisteredDesignation: Locator;
   readonly textfieldCombinedDesignation: Locator;
   readonly buttonSaveAndNext: Locator;
+  readonly linkCandidateLists: Locator;
 
   constructor(protected readonly page: Page) {
     this.headerGeneralInformation = this.page.getByRole("heading", {
@@ -30,6 +31,9 @@ export class PoliticalGroupPage {
     });
     this.textfieldCombinedDesignation = this.page.getByRole("textbox", {
       name: "Samengevoegde aanduiding",
+    });
+    this.linkCandidateLists = this.page.getByRole("link", {
+      name: "Kandidatenlijsten",
     });
   }
 

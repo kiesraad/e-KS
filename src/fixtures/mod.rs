@@ -1,10 +1,10 @@
-use crate::{AppError, PgStore, structs::common::DisplayName};
+use crate::{AppError, PgStore, structs::common::Appellation};
 
 mod candidate_list;
 mod persons;
 mod political_groups;
 
-pub async fn load(store: &PgStore, display_name: Option<DisplayName>) -> Result<(), AppError> {
+pub async fn load(store: &PgStore, appellation: Option<Appellation>) -> Result<(), AppError> {
     let person_count = store.get_person_count();
     let candidate_list_count = store.get_candidate_list_count();
 
@@ -16,7 +16,7 @@ pub async fn load(store: &PgStore, display_name: Option<DisplayName>) -> Result<
 
     persons::load(store).await?;
     candidate_list::load(store).await?;
-    political_groups::load(store, display_name).await?;
+    political_groups::load(store, appellation).await?;
 
     Ok(())
 }

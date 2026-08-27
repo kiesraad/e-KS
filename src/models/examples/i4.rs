@@ -2,18 +2,18 @@
 
 use super::strings;
 use crate::models::i4::{
-    CorrectedDesignation, DistrictLists, I4, NumberedOnDistricts, NumberedOnVotes, OmissionGroup,
-    PublicSession, RemovedCandidate, RemovedCandidates, RemovedDesignation, ValidList,
+    CorrectedAppellation, DistrictLists, I4, NumberedOnDistricts, NumberedOnVotes, OmissionGroup,
+    PublicSession, RemovedAppellation, RemovedCandidate, RemovedCandidates, ValidList,
     ValidListCandidate,
 };
 
 fn omission_group(
-    designation: &str,
+    appellation: &str,
     electoral_district: &str,
     descriptions: &[&str],
 ) -> OmissionGroup {
     OmissionGroup {
-        designation: designation.to_string(),
+        appellation: appellation.to_string(),
         electoral_district: electoral_district.to_string(),
         omission_descriptions: strings(descriptions),
     }
@@ -106,7 +106,7 @@ fn i4_invalid_lists() -> Vec<OmissionGroup> {
 fn i4_removed_candidates() -> Vec<RemovedCandidates> {
     vec![
         RemovedCandidates {
-            designation: "De Geschrapte Kandidaten Partij".to_string(),
+            appellation: "De Geschrapte Kandidaten Partij".to_string(),
             electoral_district: "kieskring 20 (Bonaire)".to_string(),
             candidates: vec![RemovedCandidate {
                 name: "Vermeulen, H. (Henk) (m)".to_string(),
@@ -114,7 +114,7 @@ fn i4_removed_candidates() -> Vec<RemovedCandidates> {
             }],
         },
         RemovedCandidates {
-            designation: "Kiesraad Demo 6".to_string(),
+            appellation: "Kiesraad Demo 6".to_string(),
             electoral_district: "alle kieskringen".to_string(),
             candidates: vec![
                 RemovedCandidate {
@@ -130,27 +130,27 @@ fn i4_removed_candidates() -> Vec<RemovedCandidates> {
     ]
 }
 
-fn i4_removed_designations() -> Vec<RemovedDesignation> {
-    vec![RemovedDesignation {
-        designation: "De Geschrapte Aanduiding Partij".to_string(),
+fn i4_removed_appellations() -> Vec<RemovedAppellation> {
+    vec![RemovedAppellation {
+        appellation: "De Geschrapte Aanduiding Partij".to_string(),
         electoral_district: "kieskring 20 (Bonaire)".to_string(),
         first_candidate_name: "Nagelhout, H. (Hubertus) (m)".to_string(),
         reason: "De aanduiding stemt niet overeen met de bij het Centraal Stembureau geregistreerde naam van de politieke groepering.".to_string(),
     }]
 }
 
-fn i4_corrected_designations() -> Vec<CorrectedDesignation> {
-    vec![CorrectedDesignation {
+fn i4_corrected_appellations() -> Vec<CorrectedAppellation> {
+    vec![CorrectedAppellation {
         first_candidate_name: "Nagelhout, H. (Hubertus) (m)".to_string(),
         electoral_district: "alle kieskringen".to_string(),
-        submitted_designation: "AAP".to_string(),
-        edited_designation: "De Aangepaste Aanduiding Partij (AAP)".to_string(),
+        submitted_appellation: "AAP".to_string(),
+        edited_appellation: "De Aangepaste Aanduiding Partij (AAP)".to_string(),
     }]
 }
 
 fn i4_valid_lists() -> Vec<DistrictLists> {
     let correcte_partij = || ValidList {
-        designation: "De Correcte Partij".to_string(),
+        appellation: "De Correcte Partij".to_string(),
         candidates: vec![
             valid_list_candidate("Akwasi", "M. (v)", "Ede", 1),
             valid_list_candidate("Altena", "J. (m)", "'s-Gravenhage", 2),
@@ -158,7 +158,7 @@ fn i4_valid_lists() -> Vec<DistrictLists> {
         ],
     };
     let kiesraad_demo = || ValidList {
-        designation: "Kiesraad Demo".to_string(),
+        appellation: "Kiesraad Demo".to_string(),
         candidates: vec![
             valid_list_candidate("Nagelhout", "M. (v)", "Ede", 1),
             valid_list_candidate("Meerman", "J. (m)", "'s-Gravenhage", 2),
@@ -172,7 +172,7 @@ fn i4_valid_lists() -> Vec<DistrictLists> {
                 correcte_partij(),
                 kiesraad_demo(),
                 ValidList {
-                    designation: "Blanco (Nagelhout, H.)".to_string(),
+                    appellation: "Blanco (Nagelhout, H.)".to_string(),
                     candidates: vec![valid_list_candidate("Nagelhout", "H. (v)", "Ede", 1)],
                 },
             ],
@@ -188,12 +188,12 @@ fn i4_numbered_based_on_votes() -> Vec<NumberedOnVotes> {
     vec![
         NumberedOnVotes {
             position: Some(1),
-            designation: "Kiesraad Demo".to_string(),
+            appellation: "Kiesraad Demo".to_string(),
             previous_votes: 37092,
         },
         NumberedOnVotes {
             position: Some(2),
-            designation: "De Herstelde Partij".to_string(),
+            appellation: "De Herstelde Partij".to_string(),
             previous_votes: 1621,
         },
     ]
@@ -214,8 +214,8 @@ fn i4_example(
         recovered_omissions: i4_recovered_omissions(),
         invalid_lists: i4_invalid_lists(),
         removed_candidates: i4_removed_candidates(),
-        removed_designations: i4_removed_designations(),
-        corrected_designations: i4_corrected_designations(),
+        removed_appellations: i4_removed_appellations(),
+        corrected_appellations: i4_corrected_appellations(),
         valid_lists: i4_valid_lists(),
         numbered_based_on_votes: i4_numbered_based_on_votes(),
         numbered_based_on_districts,
@@ -229,12 +229,12 @@ pub fn i4_example_1() -> I4 {
         vec![
             NumberedOnDistricts {
                 position: Some(3),
-                designation: "De Correcte Partij".to_string(),
+                appellation: "De Correcte Partij".to_string(),
                 districts: 2,
             },
             NumberedOnDistricts {
                 position: Some(4),
-                designation: "Blanco (Nagelhout, H.)".to_string(),
+                appellation: "Blanco (Nagelhout, H.)".to_string(),
                 districts: 1,
             },
         ],
@@ -252,12 +252,12 @@ pub fn i4_example_2() -> I4 {
         vec![
             NumberedOnDistricts {
                 position: None,
-                designation: "De Correcte Partij".to_string(),
+                appellation: "De Correcte Partij".to_string(),
                 districts: 2,
             },
             NumberedOnDistricts {
                 position: None,
-                designation: "Blanco (Nagelhout, H.)".to_string(),
+                appellation: "Blanco (Nagelhout, H.)".to_string(),
                 districts: 2,
             },
         ],

@@ -4,6 +4,8 @@ actions:
 add_legal_name: Statutaire naam toevoegen
 add_list_submitter: Lijstinleveraar toevoegen
 add_substitute_submitter: Vervanger voor het herstel van verzuimen
+appellation: Geregistreerde aanduiding
+appellation_combined: Samengevoegde aanduiding
 authorised_agent: Gemachtigde
 authorised_agent_data: Gegevens (plv.) gemachtigde
 authorised_agent_info: Voeg hier de statutaire naam met bijbehorende gemachtigde toe. Bij het centraal stembureau is een gemachtigde of plaatsvervangend gemachtigde voor de aanduiding geregistreerd. Deze persoon geeft de lijstinleveraar toestemming om de naam van de partij boven de kandidatenlijst te plaatsen. Dit gebeurt met formulier H 3-1 of H 3-2.
@@ -11,8 +13,6 @@ basic_information_political_group: Gegevens politieke groepering
 blank_list_warning: U gebruikt een blanco lijst. Wijzigingen die u hier maakt hebben geen effect.
 delete_name_authorisation_warning_text: Weet u zeker dat u de machtiging voor deze statutaire naam wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.
 delete_substitute_submitter_warning_text: Weet u zeker dat u deze vervanger voor het herstel van verzuimen wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.
-display_name: Geregistreerde aanduiding
-display_name_combined: Samengevoegde aanduiding
 edit_legal_name: Statutaire naam en gemachtigde aanpassen
 edit_list_submitter: Gegevens lijstinleveraar aanpassen
 edit_substitute_submitter: Gegevens vervangers voor het herstel van verzuimen aanpassen
@@ -36,10 +36,10 @@ substitute_submitter_data: Gegevens vervanger
 substitute_submitters_data: Gegevens vervangers voor het herstel van verzuimen
 substitute_submitters_info: Alleen de lijstinleveraar en de vervangers voor het herstel van verzuimen mogen verzuimen herstellen bij het centraal stembureau. Wij adviseren om tenminste één vervanger op te geven.
 type:
+  appellation_combined_hint: "Een samengevoegde aanduiding bestaat uit de geregistreerde aanduidingen, gescheiden door een “-“ of “/”. Het is toegestaan om aanduidingen af te korten. De samengevoegde aanduiding bestaat uit maximaal 35 tekens (exclusief leestekens, verbindings\u00ADstreepjes, haakjes en spaties). Het is niet toegestaan om letters of andere tekens toe te voegen die geen onderdeel zijn van de geregistreerde aanduidingen."
+  appellation_hint: De naam die is geregistreerd bij het centraal stembureau. Deze komt op het stembiljet te staan.
   blank_name: Blanco lijst
   blank_name_hint: Er is geen geregistreerde aanduiding.
-  display_name_combined_hint: "Een samengevoegde aanduiding bestaat uit de geregistreerde aanduidingen, gescheiden door een “-“ of “/”. Het is toegestaan om aanduidingen af te korten. De samengevoegde aanduiding bestaat uit maximaal 35 tekens (exclusief leestekens, verbindings\u00ADstreepjes, haakjes en spaties). Het is niet toegestaan om letters of andere tekens toe te voegen die geen onderdeel zijn van de geregistreerde aanduidingen."
-  display_name_hint: De naam die is geregistreerd bij het centraal stembureau. Deze komt op het stembiljet te staan.
   legal_name_hint: De naam die is vastgelegd in de notariële akte en bij de Kamer van Koophandel.
   name_combination: Combinatie van meerdere geregistreerde namen
   name_combination_hint: De partij heeft een samenwerkings\u00ADverband met één of meer andere geregistreerde partijen. Samen leveren zij alle kandidaten voor de kandidatenlijst.

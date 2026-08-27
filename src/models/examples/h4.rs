@@ -6,7 +6,7 @@ use crate::{
     models::h4::H4,
 };
 
-/// All H 4 examples share the designation and candidates; only the election
+/// All H 4 examples share the appellation and candidates; only the election
 /// and the locale vary.
 fn h4_example(election_name: &str, election_type: ElectionType, locale: ModelLocale) -> H4 {
     H4 {

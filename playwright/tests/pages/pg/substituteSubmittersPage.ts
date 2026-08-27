@@ -1,5 +1,5 @@
 import type { Locator, Page } from "@playwright/test";
-import type { ListSubmitter } from "../models/listSubmitter";
+import type { ListSubmitter } from "../../models/listSubmitter";
 
 export class SubstituteSubmittersPage {
   readonly buttonDelete: Locator;

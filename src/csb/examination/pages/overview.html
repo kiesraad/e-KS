@@ -51,10 +51,12 @@
           <tbody>
             {% for pg in unfinished_political_groups %}
               <tr class="clickable">
-                <td>{{ pg.csb_display_name() }}</td>
+                <td>{{ pg.csb_appellation() }}</td>
                 <td>
                   <div class="status in-progress">{{ "csb.status.in_progress"|trans }}</div>
-                  {{ omission_count_badge(pg.omission_count) }}
+                  {% if pg.omission_count > 0 %}
+                    <div class="status omission">{{ "csb.status.omission"|trans }}</div>
+                  {% endif %}
                 </td>
                 <td>
                   <ul class="tags-list">
@@ -88,10 +90,9 @@
           <tbody>
             {% for pg in finished_political_groups %}
               <tr class="clickable">
-                <td>{{ pg.csb_display_name() }}</td>
+                <td>{{ pg.csb_appellation() }}</td>
                 <td>
                   <div class="status approved">{{ "csb.status.approved"|trans }}</div>
-                  {{ omission_count_badge(pg.omission_count) }}
                 </td>
                 <td>
                   <ul class="tags-list">
@@ -106,22 +107,6 @@
                 </td>
               </tr>
             {% endfor %}
-            <tr class="clickable">
-              <td>Kiesraad Demo Kiesraad Demo Kiesraa</td>
-              <td>
-                <div class="status omission">{{ "csb.status.omission"|trans }}</div>
-              </td>
-              <td>
-                <ul class="tags-list">
-                  <li class="tag link width-md">
-                    <a class="error" href="#">{{ "csb.brp.errors"|trans }}</a>
-                  </li>
-                </ul>
-              </td>
-              <td>
-                <a href="#" title="{{ "csb.action.examine"|trans }}"></a>
-              </td>
-            </tr>
           </tbody>
         </table>
       {% endif %}

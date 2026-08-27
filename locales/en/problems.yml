@@ -16,14 +16,14 @@ legend:
   error: Not submittable
   info: Informative
   warning: Action required
+no_appellation: Appellation
 no_authorised_agent: No authorised agent
 no_bsn: BSN
 no_candidate_list: No candidate list
 no_candidates: No candidates
 no_country_of_residence: Country of residence
 no_date_of_birth: Date of birth
-no_designation_type: Designation type
-no_display_name: Registered designation
+no_designation_type: Appellation type
 no_districts: No districts
 no_initials: Initials
 no_last_name: Last name

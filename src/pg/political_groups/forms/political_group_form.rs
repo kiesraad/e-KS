@@ -4,7 +4,7 @@ use validate::Validate;
 use crate::{
     OptionStringExt,
     structs::{
-        common::{DisplayName, PreviousElectionResults},
+        common::{Appellation, PreviousElectionResults},
         political_groups::PoliticalGroup,
     },
 };
@@ -15,8 +15,8 @@ use crate::{
 pub struct PoliticalGroupForm {
     #[validate(parse = "PreviousElectionResults", optional)]
     pub previous_election_results: String,
-    #[validate(parse = "DisplayName", optional)]
-    pub display_name: String,
+    #[validate(parse = "Appellation", optional)]
+    pub appellation: String,
 }
 
 impl From<PoliticalGroup> for PoliticalGroupForm {
@@ -26,7 +26,7 @@ impl From<PoliticalGroup> for PoliticalGroupForm {
                 .previous_election_results
                 .map(|r| r.to_string())
                 .unwrap_or_default(),
-            display_name: value.display_name.to_string_or_default(),
+            appellation: value.appellation.to_string_or_default(),
         }
     }
 }

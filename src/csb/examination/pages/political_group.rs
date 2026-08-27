@@ -11,7 +11,7 @@ use crate::{
     csb::examination::{
         extractors::CsbPoliticalGroup,
         pages::{CsbPoliticalGroupPath, CsbPoliticalGroupToggleFinishPath},
-        structs::CsbCandidateList,
+        structs::{CsbCandidateList, RestorationStatus},
     },
     filters,
 };
@@ -22,8 +22,8 @@ struct CsbPoliticalGroupTemplate {
     political_group: CsbPoliticalGroup,
     all_brp_error_count: usize,
     candidate_lists: Vec<CsbCandidateList>,
-    political_group_omission_count: usize,
-    declarations_of_support_omission_count: usize,
+    political_group_status: RestorationStatus,
+    declarations_of_support_status: RestorationStatus,
     declarations_of_support_card_path: String,
 }
 
@@ -36,36 +36,33 @@ pub async fn overview(
     let political_group = CsbPoliticalGroup::new_from_csb_store(&store);
 
     let imported_lists = store.get_candidate_lists(crate::projection::WithCorrections::None);
-    let candidate_lists = store
-        .get_candidate_lists(crate::projection::WithCorrections::All)
-        .into_iter()
-        .map(|list| {
-            // TODO: This is a placeholder value, the real value should be calculated based on the candidate list data.
-            let brp_error_count = (list.id.uuid().as_u128() % 3) as usize;
+    let mut candidate_lists = Vec::new();
+    for list in store.get_candidate_lists(crate::projection::WithCorrections::All) {
+        // TODO: This is a placeholder value, the real value should be calculated based on the candidate list data.
+        let brp_error_count = (list.id.uuid().as_u128() % 3) as usize;
 
-            let from_original_import = imported_lists.iter().any(|l| l.id == list.id);
-            CsbCandidateList {
-                list,
-                brp_error_count,
-                is_paper_added: !from_original_import,
-            }
-        })
-        .collect::<Vec<_>>();
+        let from_original_import = imported_lists.iter().any(|l| l.id == list.id);
+        candidate_lists.push(CsbCandidateList {
+            restoration_status: RestorationStatus::for_candidate_list(&store, list.id)?,
+            list,
+            brp_error_count,
+            is_paper_added: !from_original_import,
+        });
+    }
 
     let all_brp_error_count = candidate_lists
         .iter()
         .map(|cl| cl.brp_error_count)
         .sum::<usize>();
-    let political_group_omission_count = store.get_political_group_omissions().len();
-    let declarations_of_support_omission_count =
-        store.get_all_declarations_of_support_omissions().len();
-    let declarations_of_support_card_path = if declarations_of_support_omission_count == 0 {
+    let political_group_status = RestorationStatus::for_political_group(&store);
+    let declarations_of_support_status = RestorationStatus::for_declarations_of_support(&store);
+    let declarations_of_support_card_path = if declarations_of_support_status.has_omissions() {
         political_group
-            .add_declarations_of_support_omission_path()
+            .manage_declarations_of_support_omissions_path()
             .to_string()
     } else {
         political_group
-            .manage_declarations_of_support_omissions_path()
+            .add_declarations_of_support_omission_path()
             .to_string()
     };
 
@@ -74,8 +71,8 @@ pub async fn overview(
             political_group,
             all_brp_error_count,
             candidate_lists,
-            political_group_omission_count,
-            declarations_of_support_omission_count,
+            political_group_status,
+            declarations_of_support_status,
             declarations_of_support_card_path,
         },
         context,
@@ -104,7 +101,7 @@ mod tests {
     };
 
     #[tokio::test]
-    async fn political_group_renders_imported_display_name() {
+    async fn political_group_renders_imported_appellation() {
         let store = CsbStore::new_for_test();
         store.set_political_group(sample_political_group());
         let stream_id = store.stream_id;
@@ -119,7 +116,7 @@ mod tests {
         .into_response();
 
         assert_eq!(response.status(), StatusCode::OK);
-        // The display name is used as the page title.
+        // The appellation is used as the page title.
         let body = response_body_string(response).await;
         assert!(body.contains("Kiesraad Demo"));
         // The paper corrections card posts to the start route.
@@ -289,8 +286,7 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
-        assert!(body.contains("omission-badge"));
-        assert!(body.contains("1 omission"));
+        assert!(body.contains("Omissions added"));
     }
 
     #[tokio::test]

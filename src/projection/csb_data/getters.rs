@@ -1,10 +1,12 @@
+use std::collections::HashSet;
+
 use parking_lot::{
     RawRwLock,
     lock_api::{MappedRwLockReadGuard, RwLockReadGuard},
 };
 
 use crate::{
-    AppError, CsbStore, PgStoreData,
+    AppError, CsbStore, Locale, PgStoreData,
     structs::{
         candidate_lists::{CandidateList, CandidateListId},
         csb::{Omission, OmissionCategory, OmissionId},
@@ -13,6 +15,7 @@ use crate::{
         persons::{Person, PersonId},
         political_groups::PoliticalGroup,
     },
+    trans,
 };
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -47,6 +50,12 @@ impl CsbStore {
         data.is_examination_finished
     }
 
+    pub fn is_deleted(&self) -> bool {
+        let data = self.data.read();
+
+        data.is_deleted
+    }
+
     pub fn get_omission(&self, omission_id: OmissionId) -> Result<Omission, AppError> {
         let data = self.data.read();
 
@@ -70,7 +79,7 @@ impl CsbStore {
             .values()
             .map(|p| p.get_corrections().len())
             .sum::<usize>()
-            + data.csb_corrected_display_name.as_ref().map_or(0, |_| 1)
+            + data.csb_corrected_appellation.as_ref().map_or(0, |_| 1)
     }
 
     /// get the total number of CSB corrections and omissions
@@ -98,6 +107,15 @@ impl CsbStore {
             .collect()
     }
 
+    pub fn get_political_group_csb_corrections_count(&self) -> usize {
+        let data = self.data.read();
+
+        match data.csb_corrected_appellation {
+            Some(_) => 1,
+            None => 0,
+        }
+    }
+
     pub fn get_candidate_omissions(&self, person_id: PersonId) -> Vec<Omission> {
         let data = self.data.read();
 
@@ -106,6 +124,26 @@ impl CsbStore {
             .filter(|o| matches!(&o.category, OmissionCategory::Candidate { person, .. } if *person == person_id))
             .cloned()
             .collect()
+    }
+
+    /// Whether a candidate has omissions for a specific list
+    pub fn has_candidate_omissions(&self, person_id: PersonId, list_id: CandidateListId) -> bool {
+        self.get_candidate_omissions(person_id).iter().any(|o| {
+            if let OmissionCategory::Candidate {
+                person: _person,
+                lists,
+            } = o.category.clone()
+            {
+                lists.contains(&list_id)
+            } else {
+                false
+            }
+        })
+    }
+
+    /// Whether a candidate has csb corrections
+    pub fn has_candidate_csb_corrections(&self, person_id: PersonId) -> bool {
+        self.get_all_csb_corrected_persons().contains(&person_id)
     }
 
     /// Return all candidate-list omissions that reference the given list.
@@ -133,6 +171,41 @@ impl CsbStore {
             .collect())
     }
 
+    /// Returns if the candidate list or any of its candidates has omissions
+    pub fn has_candidate_list_omissions(&self, list_id: CandidateListId) -> Result<bool, AppError> {
+        if !self.get_candidate_list_omissions(list_id)?.is_empty() {
+            return Ok(true);
+        }
+        for candidate in self
+            .get_candidate_list(list_id, WithCorrections::All)
+            .ok_or(AppError::GenericNotFound)?
+            .candidates
+        {
+            if self.has_candidate_omissions(candidate, list_id) {
+                return Ok(true);
+            }
+        }
+        Ok(false)
+    }
+
+    /// Returns if the candidate list has any candidates with csb corrections
+    pub fn has_candidate_list_csb_corrections(
+        &self,
+        list_id: CandidateListId,
+    ) -> Result<bool, AppError> {
+        let candidates_on_list = self
+            .get_candidate_list(list_id, WithCorrections::All)
+            .ok_or(AppError::GenericNotFound)?
+            .candidates
+            .into_iter()
+            .collect::<HashSet<_>>();
+        let candidates_with_correction = self
+            .get_all_csb_corrected_persons()
+            .into_iter()
+            .collect::<HashSet<_>>();
+        Ok(!candidates_on_list.is_disjoint(&candidates_with_correction))
+    }
+
     pub fn get_all_declarations_of_support_omissions(&self) -> Vec<Omission> {
         let data = self.data.read();
 
@@ -147,9 +220,9 @@ impl CsbStore {
         let mut pg = self.read(corrections).political_group.clone();
 
         if corrections == WithCorrections::All
-            && let Some(correction) = self.data.read().csb_corrected_display_name.clone()
+            && let Some(correction) = self.data.read().csb_corrected_appellation.clone()
         {
-            pg.display_name = Some(correction);
+            pg.appellation = Some(correction);
         }
 
         pg
@@ -218,10 +291,30 @@ impl CsbStore {
             .map(|p| p.name)
     }
 
-    /// Short-hand to get the display name of the political group (including special names for blank lists)
-    pub fn get_display_name(&self, corrections: WithCorrections) -> String {
+    /// Short-hand to get the appellation of the political group (including special names for blank lists)
+    pub fn get_appellation(&self, corrections: WithCorrections) -> String {
         let political_group = self.get_political_group(corrections);
-        political_group.csb_display_name(self.get_first_candidate_name(corrections).as_ref())
+        political_group.csb_appellation(self.get_first_candidate_name(corrections).as_ref())
+    }
+
+    /// Short-hand to get the appellation of the political group (including special names for blank lists).
+    /// Additionally includes a deleted label when the political group has been deleted
+    pub fn get_appellation_with_deleted_label(
+        &self,
+        corrections: WithCorrections,
+        locale: Locale,
+    ) -> String {
+        let political_group = self.get_political_group(corrections);
+        let appellation =
+            political_group.csb_appellation(self.get_first_candidate_name(corrections).as_ref());
+        if self.is_deleted() {
+            format!(
+                "{appellation} ({})",
+                trans!("csb.group.deleted_label", locale)
+            )
+        } else {
+            appellation
+        }
     }
 
     /// One-based position of the candidate on the given list
@@ -485,22 +578,19 @@ mod tests {
     }
 
     #[test]
-    fn csb_display_name_standalone_list_uses_display_name() {
+    fn csb_appellation_standalone_list_uses_appellation() {
         let store = CsbStore::new_for_test();
         store.set_political_group(PoliticalGroup {
-            display_name: Some("Kiesraad Demo".parse().unwrap()),
+            appellation: Some("Kiesraad Demo".parse().unwrap()),
             list_designation: Some(ListDesignation::Standalone),
             ..Default::default()
         });
 
-        assert_eq!(
-            store.get_display_name(WithCorrections::All),
-            "Kiesraad Demo"
-        );
+        assert_eq!(store.get_appellation(WithCorrections::All), "Kiesraad Demo");
     }
 
     #[test]
-    fn csb_display_name_blank_list_with_candidate_uses_first_candidate_name() {
+    fn csb_appellation_blank_list_with_candidate_uses_first_candidate_name() {
         let store = CsbStore::new_for_test();
         store.set_political_group(PoliticalGroup {
             list_designation: Some(ListDesignation::Blank),
@@ -517,19 +607,19 @@ mod tests {
         store.add_candidate_list(list);
 
         assert_eq!(
-            store.get_display_name(WithCorrections::All),
+            store.get_appellation(WithCorrections::All),
             "Blanco (Jansen, A.B.)"
         );
     }
 
     #[test]
-    fn csb_display_name_blank_list_without_candidates_uses_blanco_fallback() {
+    fn csb_appellation_blank_list_without_candidates_uses_blanco_fallback() {
         let store = CsbStore::new_for_test();
         store.set_political_group(PoliticalGroup {
             list_designation: Some(ListDesignation::Blank),
             ..Default::default()
         });
 
-        assert_eq!(store.get_display_name(WithCorrections::All), "Blanco");
+        assert_eq!(store.get_appellation(WithCorrections::All), "Blanco");
     }
 }

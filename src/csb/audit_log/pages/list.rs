@@ -23,6 +23,7 @@ const PER_PAGE: usize = 20;
 ///
 /// Category label translations (referenced dynamically in the template):
 /// trans!("audit_log.filter.category.import", _)
+/// trans!("audit_log.filter.category.delete", _)
 /// trans!("audit_log.filter.category.paper_correction", _)
 /// trans!("audit_log.filter.category.correction", _)
 /// trans!("audit_log.filter.category.set_finished", _)
@@ -35,6 +36,10 @@ pub const EVENT_TYPES_BY_CATEGORY: &[EventTypeCategory] = &[
     EventTypeCategory {
         key: "import",
         event_types: &["import", "create_empty"],
+    },
+    EventTypeCategory {
+        key: "delete",
+        event_types: &["delete"],
     },
     EventTypeCategory {
         key: "paper_correction",
@@ -139,7 +144,10 @@ fn collect_entries(
         filter_events(
             store.data.read().events.iter(),
             store.stream_id,
-            store.get_display_name(crate::projection::WithCorrections::All),
+            store.get_appellation_with_deleted_label(
+                crate::projection::WithCorrections::All,
+                locale,
+            ),
             locale,
             active_event_type,
             active_search,
@@ -177,7 +185,10 @@ pub async fn csb_audit_log<S: AppRequestState>(
         .map(|store| {
             (
                 store.stream_id,
-                store.get_display_name(crate::projection::WithCorrections::All),
+                store.get_appellation_with_deleted_label(
+                    crate::projection::WithCorrections::All,
+                    locale,
+                ),
             )
         })
         .collect();
@@ -219,8 +230,13 @@ pub async fn csb_audit_log<S: AppRequestState>(
 
 #[cfg(test)]
 mod tests {
+    use std::str::FromStr;
+
     use super::*;
-    use crate::projection::CSB_MAIN_STREAM_ID;
+    use crate::{
+        projection::{CSB_MAIN_STREAM_ID, WithCorrections},
+        structs::common::Appellation,
+    };
     use axum::{
         extract::{Query, State},
         http::StatusCode,
@@ -316,6 +332,39 @@ mod tests {
 
         let body = response_body_string(response).await;
         assert!(body.contains("<td>Set finished state</td>"));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn renders_import_stream_events_from_deleted_stream() -> Result<(), AppError> {
+        let state = AppState::new_for_tests().await;
+        let import_stream_id = StreamId::new();
+        let csb_store = state
+            .csb_store_for_stream(import_stream_id, ElectionConfig::EK27)
+            .await?;
+        let mut pg = csb_store.get_political_group(WithCorrections::All);
+        pg.appellation = Appellation::from_str("Test Partij").ok();
+        csb_store.set_political_group(pg);
+        csb_store.update(CsbEvent::Delete).await?;
+
+        let response = call(
+            CsbMainStore::new_for_test(),
+            state,
+            Query(CsbAuditLogFilter {
+                stream: Some(import_stream_id.to_string()),
+                ..Default::default()
+            }),
+        )
+        .await?;
+
+        let body = response_body_string(response).await;
+        assert!(
+            body.chars()
+                .filter(|c| !c.is_whitespace())
+                .collect::<String>()
+                .contains(">TestPartij(deleted)</option>")
+        );
 
         Ok(())
     }

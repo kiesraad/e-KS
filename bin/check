@@ -45,7 +45,13 @@ echo "==> Typescript checks"
 
 # html
 echo "==> Html checks"
-docker run --rm -v ./src:/work/templates djlint
+# fix for devs that use docker rootless
+if docker info -f '{{.SecurityOptions}}' | grep -q rootless; then
+  DOCKER_USER="0:0"
+else
+  DOCKER_USER="$(id -u):$(id -g)"
+fi
+docker run --rm -v ./src:/work/templates --user "$DOCKER_USER" djlint
 
 # generic
 ./bin/check_newline

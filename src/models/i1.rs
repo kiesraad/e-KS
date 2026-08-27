@@ -39,8 +39,8 @@ pub struct DistrictLists {
 /// [`DistrictLists::lists`], so the template can number the rows itself.
 #[derive(Debug)]
 pub struct SubmittedList {
-    /// The designation printed above the candidate list.
-    pub designation: String,
+    /// The appellation printed above the candidate list.
+    pub appellation: String,
     /// Name and initials of the first candidate, e.g. `van Dijk, A.B. (Anne)`.
     /// Empty when the list has no candidates.
     pub first_candidate_name: String,

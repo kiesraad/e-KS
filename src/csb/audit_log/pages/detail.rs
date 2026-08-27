@@ -79,7 +79,10 @@ pub async fn csb_audit_log_detail<S: AppRequestState>(
         CsbEventDetail::find(
             &data.events,
             event_id,
-            store.get_display_name(crate::projection::WithCorrections::All),
+            store.get_appellation_with_deleted_label(
+                crate::projection::WithCorrections::All,
+                context.session.locale,
+            ),
             locale,
         )?
     };
