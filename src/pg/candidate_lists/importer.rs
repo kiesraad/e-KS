@@ -1,5 +1,5 @@
 use crate::{
-    AppError, Locale, MAX_CANDIDATES, PgEvent, PgStore,
+    AppError, Locale, PgEvent, PgStore,
     candidate_lists::{CSV_HEADERS, CandidateRecord, CandidateRecordCsv},
     core::{Csv, CsvError},
     form::FieldErrors,
@@ -40,8 +40,8 @@ pub(crate) async fn import_candidate_list_csv(
     ensure_expected_headers(csv_data, locale)?;
     let mut records = parse_records(csv_data, locale)?;
 
-    let capped = records.len() > MAX_CANDIDATES;
-    records.truncate(MAX_CANDIDATES);
+    let capped = records.len() > store.candidate_limit();
+    records.truncate(store.candidate_limit());
 
     let persons = collect_persons(records, store.get_persons(), locale)?;
     emit_import_event(list, store, persons, file_name, file_size).await?;
@@ -52,8 +52,8 @@ pub(crate) async fn import_candidate_list_csv(
 /// Information about a successful import that the caller surfaces to the user.
 #[derive(Debug)]
 pub(crate) struct ImportOutcome {
-    /// The number of candidates in the file exceeded [`MAX_CANDIDATES`] and the
-    /// list was truncated to the maximum.
+    /// The number of candidates in the file exceeded the store's candidate
+    /// limit and the list was truncated to that maximum.
     pub capped: bool,
 }
 
@@ -272,6 +272,7 @@ mod tests {
     use super::*;
 
     use crate::{
+        MAX_CANDIDATES,
         structs::{candidate_lists::CandidateListId, persons::PersonId},
         test_utils::{sample_candidate_list, sample_person, sample_person_with},
     };

@@ -34,6 +34,9 @@ pub struct Context {
     pub election: ElectionConfig,
     /// Maximum number of candidates allowed for this political group.
     pub max_candidates: usize,
+    /// Hard cap on the number of candidates a list may hold. Unlimited
+    /// (`usize::MAX`) while correcting paper documents.
+    pub candidate_limit: usize,
     /// Multiple candidate lists present
     pub multiple_candidate_lists: bool,
     /// Whether to show the success alert based on the request query.
@@ -59,6 +62,7 @@ impl Context {
         let election = store.get_election();
         let political_group = store.get_political_group();
         let max_candidates = political_group.get_max_candidates();
+        let candidate_limit = store.candidate_limit();
         let multiple_candidate_lists = store.get_candidate_list_count() > 1;
 
         let general_information_path = political_group.general_information_path(store);
@@ -77,6 +81,7 @@ impl Context {
         Self {
             election,
             max_candidates,
+            candidate_limit,
             multiple_candidate_lists,
             show_success_alert: false,
             show_download_warning: false,
@@ -111,6 +116,7 @@ impl askama::Values for Context {
             "csrf_token" => Some(&self.session.csrf_token().0 as &dyn std::any::Any),
             "election" => Some(&self.election as &dyn std::any::Any),
             "max_candidates" => Some(&self.max_candidates as &dyn std::any::Any),
+            "candidate_limit" => Some(&self.candidate_limit as &dyn std::any::Any),
             "show_success_alert" => Some(&self.show_success_alert as &dyn std::any::Any),
             "show_download_warning" => Some(&self.show_download_warning as &dyn std::any::Any),
             "multiple_candidate_lists" => {

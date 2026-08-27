@@ -3,8 +3,8 @@ use askama::Template;
 use axum::response::{IntoResponse, Redirect, Response};
 
 use crate::{
-    AppError, Context, Form, HtmlTemplate, MAX_CANDIDATES, Overlay, PgStore, filters,
-    form::FormData, persons::PersonalDataForm, structs::candidate_lists::FullCandidateList,
+    AppError, Context, Form, HtmlTemplate, Overlay, PgStore, filters, form::FormData,
+    persons::PersonalDataForm, structs::candidate_lists::FullCandidateList,
 };
 
 use super::CreateCandidatePath;
@@ -50,7 +50,7 @@ pub async fn create_person_candidate_list_submit(
         )
         .into_response()),
         Ok(person) => {
-            if full_list.list.candidates.len() >= MAX_CANDIDATES {
+            if full_list.list.candidates.len() >= store.candidate_limit() {
                 return Ok(
                     Redirect::to(&full_list.list.max_candidates_reached_path().to_string())
                         .into_response(),
@@ -75,11 +75,11 @@ mod tests {
     use super::*;
 
     use crate::{
-        Context, Form, PgStore,
+        Context, Form, MAX_CANDIDATES, PgStore,
         structs::{candidate_lists::CandidateListId, persons::PersonId},
         test_utils::{
-            response_body_string, sample_candidate_list, sample_person_form,
-            sample_person_with_last_name,
+            paper_corrections_store, response_body_string, sample_candidate_list,
+            sample_person_form, sample_person_with_last_name,
         },
     };
     use axum::{
@@ -191,6 +191,51 @@ mod tests {
         assert_eq!(
             store.get_candidate_list(list_id)?.candidates.len(),
             MAX_CANDIDATES
+        );
+
+        Ok(())
+    }
+
+    /// Paper corrections record the list as handed in, so an 81st candidate
+    /// must be enterable there instead of bouncing off the hard maximum.
+    #[tokio::test]
+    async fn create_person_candidate_list_allows_extra_candidate_while_correcting()
+    -> Result<(), AppError> {
+        let store = paper_corrections_store().await?;
+        let list_id = CandidateListId::new();
+        let mut list = sample_candidate_list(list_id);
+
+        let mut full = Vec::new();
+        for index in 0..MAX_CANDIDATES {
+            let person = sample_person_with_last_name(PersonId::new(), &format!("Bakker{index}"));
+            person.create(&store).await?;
+            full.push(person.id);
+        }
+        list.candidates = full;
+        list.create(&store).await?;
+
+        let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
+
+        let response = create_person_candidate_list_submit(
+            CreateCandidatePath { list_id },
+            Context::new_test_from_store(&store),
+            full_list,
+            store.clone(),
+            Form(sample_person_form()),
+        )
+        .await?;
+
+        assert_eq!(response.status(), StatusCode::SEE_OTHER);
+        let location = response
+            .headers()
+            .get(header::LOCATION)
+            .expect("location header")
+            .to_str()
+            .expect("location header value");
+        assert!(!location.contains("max_candidates_reached=true"));
+        assert_eq!(
+            store.get_candidate_list(list_id)?.candidates.len(),
+            MAX_CANDIDATES + 1
         );
 
         Ok(())
