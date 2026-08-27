@@ -41,8 +41,11 @@ impl ValidationError {
             ValidationError::ValueTooLong(actual, max) => {
                 trans!("validation.value_too_long", locale, actual, max)
             }
+            ValidationError::ValueTooShort(1, min) => {
+                trans!("validation.value_too_short_single", locale, min)
+            }
             ValidationError::ValueTooShort(actual, min) => {
-                trans!("validation.value_too_short", locale, actual, min)
+                trans!("validation.value_too_short_plural", locale, actual, min)
             }
             ValidationError::InvalidChecksum => trans!("validation.invalid_bsn", locale),
             ValidationError::InvalidPlaceOfResidence => {
