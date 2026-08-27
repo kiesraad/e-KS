@@ -85,7 +85,7 @@ fn event_description(event: &PgEvent, locale: Locale) -> String {
 
 /// Short human-readable details for a listing row (name, file, districts, ...).
 fn event_details(event: &PgEvent) -> String {
-    fn district_codes(districts: &[crate::ElectoralDistrict]) -> String {
+    fn district_codes(districts: &[ElectoralDistrict]) -> String {
         districts
             .iter()
             .map(ElectoralDistrict::code)

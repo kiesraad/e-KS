@@ -6,7 +6,10 @@ use axum::{
     middleware::Next,
     response::{IntoResponse, Redirect, Response},
 };
-use axum_extra::{extract::CookieJar, routing::TypedPath};
+use axum_extra::{
+    extract::{CookieJar, cookie::Cookie},
+    routing::TypedPath,
+};
 use chrono::Utc;
 use serde::{Serialize, de::DeserializeOwned};
 
@@ -33,9 +36,7 @@ pub async fn session_middleware(
         return next.run(request).await;
     }
 
-    let token = jar
-        .get(SESSION_COOKIE_NAME)
-        .map(axum_extra::extract::cookie::Cookie::value);
+    let token = jar.get(SESSION_COOKIE_NAME).map(Cookie::value);
 
     let mut session = match state.sessions.get_existing(token).await {
         Ok(Some(session)) => session,

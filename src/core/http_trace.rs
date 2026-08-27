@@ -41,7 +41,7 @@ fn make_span(request: &Request<Body>) -> Span {
     let route = request
         .extensions()
         .get::<MatchedPath>()
-        .map(axum::extract::MatchedPath::as_str)
+        .map(MatchedPath::as_str)
         .unwrap_or(path);
 
     tracing::info_span!(
