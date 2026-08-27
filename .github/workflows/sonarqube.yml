@@ -44,7 +44,7 @@ jobs:
           shared-key: eks-sonarqube
 
       - name: Install cargo-llvm-cov
-        uses: taiki-e/install-action@b6b84cf49ebfe0176417bdce007c624f0db37f20 # v2.86.2
+        uses: taiki-e/install-action@a2a5f6e99e1a31540baa0468acfa302cff0f359f # v2.86.4
         with:
           tool: cargo-llvm-cov
 
