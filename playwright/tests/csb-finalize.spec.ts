@@ -1,8 +1,8 @@
 import { expect } from "@playwright/test";
 import { test } from "./fixtures.ts";
 import { CsbExaminationPage } from "./pages/csb/csbExaminationPage.ts";
+import { CsbOmissionsDeclarationsOfSupportPage } from "./pages/csb/csbOmissionsDeclarationsOfSupport.ts";
 import { CsbPoliticalGroupPage } from "./pages/csb/csbPoliticalGroupPage.ts";
-import { CsbOmissionsDeclarationsOfSupportPage } from "./pages/csb/csbOmissionsDeclarationsOfSupport.ts"
 
 test("finalize examination happy flow", async ({ csbImport }) => {
   const { page, groupName } = csbImport;
@@ -47,5 +47,5 @@ test("finalize examination with omissions", async ({ csbImport }) => {
   await expect(page.getByText("Onderzoek afgerond")).toBeVisible();
   await expect(page.locator(".candidate-lists")).toHaveClass(/disabled/);
   await politicalGroupPage.buttonBack.click();
-  await expect(page.getByText(`${groupName} Verzuim toegevoegd`)).toBeVisible();
+  await expect(page.getByText(`${groupName} Verzuimen toegevoegd`)).toBeVisible();
 });

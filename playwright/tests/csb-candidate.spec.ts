@@ -2,16 +2,16 @@ import { expect } from "@playwright/test";
 import { test } from "./fixtures.ts";
 import { CsbCandidateListPage } from "./pages/csb/csbCandidateListPage.ts";
 import { CsbCandidatePage } from "./pages/csb/csbCandidatePage.ts";
-import { csbCorrectionsPage } from "./pages/csb/csbCorrectionsPage.ts";
-import { csbOmissionsCandidatePage } from "./pages/csb/csbOmissionsCandidatePage.ts";
-import { csbPoliticalGroupPage } from "./pages/csb/csbPoliticalGroupPage.ts";
+import { CsbCorrectionsPage } from "./pages/csb/csbCorrectionsPage.ts";
+import { CsbOmissionsCandidatePage } from "./pages/csb/csbOmissionsCandidatePage.ts";
+import { CsbPoliticalGroupPage } from "./pages/csb/csbPoliticalGroupPage.ts";
 
 test.describe("check candidate and add corrections and omissions", async () => {
   test("add corrections", async ({ csbImport }) => {
     const { page, groupName } = csbImport;
-    const politicalGroupPage = new csbPoliticalGroupPage(page);
+    const politicalGroupPage = new CsbPoliticalGroupPage(page);
     const candidateListPage = new CsbCandidateListPage(page);
-    const correctionsPage = new csbCorrectionsPage(page);
+    const correctionsPage = new CsbCorrectionsPage(page);
     const candidatePage = new CsbCandidatePage(page);
 
     await politicalGroupPage.selectedGroup(groupName);
@@ -44,10 +44,10 @@ test.describe("check candidate and add corrections and omissions", async () => {
 
   test("for single list", async ({ csbImport }) => {
     const { page, groupName } = csbImport;
-    const politicalGroupPage = new csbPoliticalGroupPage(page);
+    const politicalGroupPage = new CsbPoliticalGroupPage(page);
     const candidateListPage = new CsbCandidateListPage(page);
     const candidatePage = new CsbCandidatePage(page);
-    const omissionsPage = new csbOmissionsCandidatePage(page);
+    const omissionsPage = new CsbOmissionsCandidatePage(page);
 
     await politicalGroupPage.selectedGroup(groupName);
     await politicalGroupPage.linkCandidateList.first().click();
@@ -130,10 +130,10 @@ test.describe("check candidate and add corrections and omissions", async () => {
   test("for multiple lists", async ({ csbImport }) => {
     const { page, groupName } = csbImport;
 
-    const politicalGroupPage = new csbPoliticalGroupPage(page);
+    const politicalGroupPage = new CsbPoliticalGroupPage(page);
     const candidateListPage = new CsbCandidateListPage(page);
     const candidatePage = new CsbCandidatePage(page);
-    const omissionsPage = new csbOmissionsCandidatePage(page);
+    const omissionsPage = new CsbOmissionsCandidatePage(page);
 
     await politicalGroupPage.selectedGroup(groupName);
     await politicalGroupPage.linkCandidateList.first().click();

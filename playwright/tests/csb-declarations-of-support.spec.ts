@@ -36,6 +36,7 @@ test.describe("add omissions for declarations of support", async () => {
         await expect(omissionsPage.checkboxRecoverable).toBeChecked();
         await omissionsPage.textfieldLetter.fill("Testtoevoeging");
       }
+      await omissionsPage.buttonAddAndClose.click();
       
       await politicalGroupPage.linkSupportDeclarations.click();
       await page.waitForURL(/\/omission\//);

@@ -1,14 +1,14 @@
 import { expect } from "@playwright/test";
 import { test } from "./fixtures.ts";
 import { CsbCandidateListPage } from "./pages/csb/csbCandidateListPage.ts";
-import { csbOmissionsListPage } from "./pages/csb/csbOmissionsListPage.ts";
-import { csbPoliticalGroupPage } from "./pages/csb/csbPoliticalGroupPage.ts";
+import { CsbOmissionsListPage } from "./pages/csb/csbOmissionsListPage.ts";
+import { CsbPoliticalGroupPage } from "./pages/csb/csbPoliticalGroupPage.ts";
 
 test.describe("check candidate list and add corrections and omissions", async () => {
   test("for single list", async ({ csbImport }) => {
     const { page, groupName } = csbImport;
-    const politicalGroupPage = new csbPoliticalGroupPage(page);
-    const omissionsPage = new csbOmissionsListPage(page);
+    const politicalGroupPage = new CsbPoliticalGroupPage(page);
+    const omissionsPage = new CsbOmissionsListPage(page);
     const candidateListPage = new CsbCandidateListPage(page);
 
     await politicalGroupPage.selectedGroup(groupName);
@@ -81,8 +81,8 @@ test.describe("check candidate list and add corrections and omissions", async ()
 
   test("for multiple lists", async ({ csbImport }) => {
     const { page, groupName } = csbImport;
-    const politicalGroupPage = new csbPoliticalGroupPage(page);
-    const omissionsPage = new csbOmissionsListPage(page);
+    const politicalGroupPage = new CsbPoliticalGroupPage(page);
+    const omissionsPage = new CsbOmissionsListPage(page);
     const candidateListPage = new CsbCandidateListPage(page);
 
     await politicalGroupPage.selectedGroup(groupName);
