@@ -11,7 +11,7 @@ export class CsbOmissionsPartyPage {
   readonly checkboxRecoverable: Locator;
   readonly buttonAddAndClose: Locator;
   readonly linkClose: Locator;
-  readonly buttonRemoveOmission: Locator;
+  private readonly buttonRemoveOmission: Locator;
 
   constructor(protected readonly page: Page) {
     this.linkAdd = this.page.getByRole("link", { name: "Verzuimen toevoegen" });
@@ -41,5 +41,13 @@ export class CsbOmissionsPartyPage {
     this.buttonRemoveOmission = this.page.getByRole("button", {
       name: "Verwijderen",
     });
+  }
+
+  async clickRemoveOmission() {
+    // wait for the animation to finish before attempting click
+    await this.page
+      .locator(".animation")
+      .evaluate((el) => Promise.all(el.getAnimations().map((a) => a.finished)));
+    await this.buttonRemoveOmission.click();
   }
 }

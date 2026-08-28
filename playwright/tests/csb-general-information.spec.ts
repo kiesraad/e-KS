@@ -59,7 +59,7 @@ test.describe("check general information and add corrections and omissions", asy
           page.getByText("Onherstelbaar", { exact: true }),
         ).toBeVisible();
       }
-      await omissionsPage.buttonRemoveOmission.click();
+      await omissionsPage.clickRemoveOmission();
       await expect(
         page.getByText("Er zijn nog geen verzuimen toegevoegd."),
       ).toBeVisible();
@@ -184,7 +184,7 @@ test.describe("check general information and add corrections and omissions", asy
           page.getByText("Onherstelbaar", { exact: true }),
         ).toBeVisible();
       }
-      await omissionsPage.buttonRemoveOmission.click();
+      await omissionsPage.clickRemoveOmission();
       await expect(
         page.getByText("Er zijn nog geen verzuimen toegevoegd."),
       ).toBeVisible();

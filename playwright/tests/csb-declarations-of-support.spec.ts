@@ -50,7 +50,7 @@ test.describe("add omissions for declarations of support", async () => {
         ).toBeVisible();
       }
       await expect(page.getByText("Groningen").first()).toBeVisible();
-      await omissionsPage.buttonRemoveOmission.click();
+      await omissionsPage.clickRemoveOmission();
       await expect(
         page.getByText("Er zijn nog geen verzuimen toegevoegd."),
       ).toBeVisible();
@@ -106,7 +106,7 @@ test.describe("add omissions for declarations of support", async () => {
       }
       await expect(page.getByText("Groningen").first()).toBeVisible();
       await expect(page.getByText("Fryslân").first()).toBeVisible();
-      await omissionsPage.buttonRemoveOmission.click();
+      await omissionsPage.clickRemoveOmission();
       await expect(
         page.getByText("Er zijn nog geen verzuimen toegevoegd."),
       ).toBeVisible();
@@ -166,7 +166,7 @@ test.describe("add omissions for declarations of support", async () => {
           "1 (Groningen), 2 (Fryslân), 3 (Drenthe), 4 (Overijssel), 5 (Flevoland), 6 (Gelderland), 7 (Utrecht)",
         ),
       ).toBeVisible();
-      await omissionsPage.buttonRemoveOmission.click();
+      await omissionsPage.clickRemoveOmission();
       await expect(
         page.getByText("Er zijn nog geen verzuimen toegevoegd."),
       ).toBeVisible();

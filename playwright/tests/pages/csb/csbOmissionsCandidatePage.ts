@@ -21,7 +21,7 @@ export class CsbOmissionsCandidatePage {
   readonly checkboxRecoverable: Locator;
   readonly buttonAddAndClose: Locator;
   readonly linkClose: Locator;
-  readonly buttonRemoveOmission: Locator;
+  private readonly buttonRemoveOmission: Locator;
   readonly checkboxAllLists: Locator;
 
   constructor(protected readonly page: Page) {
@@ -125,5 +125,13 @@ export class CsbOmissionsCandidatePage {
       const text = page.getByText(district);
       await expect(text).toBeVisible();
     }
+  }
+
+  async clickRemoveOmission() {
+    // wait for the animation to finish before attempting click
+    await this.page
+      .locator(".animation")
+      .evaluate((el) => Promise.all(el.getAnimations().map((a) => a.finished)));
+    await this.buttonRemoveOmission.click();
   }
 }
