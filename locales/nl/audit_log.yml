@@ -59,6 +59,8 @@ event:
   hide_download_warning: Download\u00ADwaarschuwing gesloten
   import: Politieke groepering geïmporteerd
   import_csv: CSV geïmporteerd
+  login: Ingelogd
+  logout: Uitgelogd
   paper_correction: Papieren correcties
   remove_candidate_from_list: Kandidaat van lijst verwijderd
   set_finished: Afgerond gezet

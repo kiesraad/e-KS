@@ -107,6 +107,42 @@ fn session_from_row(row: SessionRow) -> Result<Session, AppError> {
     })
 }
 
+/// Write the mutable fields of an existing session row. Like [`upsert`] but a
+/// plain UPDATE, so it never re-creates a row a concurrent logout deleted.
+/// `created_at`, `user_agent_hash` and `saml_name_id` are fixed at login.
+pub async fn update(pool: &sqlx::PgPool, session: &Session) -> Result<(), AppError> {
+    let current_election_json = session
+        .current_election
+        .map(serde_json::to_value)
+        .transpose()?;
+
+    sqlx::query(
+        r#"
+        UPDATE sessions SET
+            stream_id = $2,
+            paper_correction_stream_id = $3,
+            current_election = $4,
+            locale = $5,
+            last_activity = $6,
+            scope = $7,
+            csrf_token = $8
+        WHERE token = $1
+        "#,
+    )
+    .bind(session.token_hash())
+    .bind(session.stream_id.map(|s| s.uuid()))
+    .bind(session.paper_correction_stream_id.map(|s| s.uuid()))
+    .bind(current_election_json)
+    .bind(session.locale.as_str())
+    .bind(session.last_activity)
+    .bind(session.scope.as_str())
+    .bind(&session.csrf_token().0)
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
 /// Refresh `last_activity` of an existing session row. A conditional UPDATE
 /// (not an upsert), so it never re-creates a row a concurrent logout deleted.
 pub async fn touch(

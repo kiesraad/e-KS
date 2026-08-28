@@ -75,6 +75,12 @@ pub enum PgEvent {
         stream_id: StreamId,
     },
 
+    /// The user authenticated via TVS / DigiD. Recorded only once the session
+    /// has an election, since that completes the stream's partition key.
+    Login,
+    /// The user signed out.
+    Logout,
+
     DownloadFile {
         file_name: String,
         download_path: String,

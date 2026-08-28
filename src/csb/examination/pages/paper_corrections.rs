@@ -22,7 +22,7 @@ pub async fn start_paper_corrections<S: AppRequestState>(
     // Invalidate forms rendered before the switch, so a stale tab cannot
     // submit changes against this stream's data.
     session.rotate_csrf_token();
-    state.sessions().insert(session).await;
+    state.sessions().update(&session).await;
 
     Ok(Redirect::to(&PgIndexPath.to_string()).into_response())
 }
@@ -35,7 +35,7 @@ pub async fn stop_paper_corrections<S: AppRequestState>(
 ) -> Result<Response, AppError> {
     session.paper_correction_stream_id = None;
     session.rotate_csrf_token();
-    state.sessions().insert(session).await;
+    state.sessions().update(&session).await;
 
     Ok(Redirect::to(
         &CsbPoliticalGroupPath {
@@ -82,6 +82,9 @@ mod tests {
         let session = Session::new_test();
         let token = session.token_string();
         let old_csrf = session.csrf_token().to_string();
+        // The session middleware only hands a handler a session that is in the
+        // store; the handler updates it and never re-creates it.
+        state.sessions.insert(session.clone()).await;
 
         let response = start_paper_corrections(
             CsbPaperCorrectionsStartPath { stream_id },
@@ -113,6 +116,7 @@ mod tests {
         session.paper_correction_stream_id = Some(stream_id);
         let token = session.token_string();
         let old_csrf = session.csrf_token().to_string();
+        state.sessions.insert(session.clone()).await;
 
         let response = stop_paper_corrections(
             CsbPaperCorrectionsStopPath { stream_id },

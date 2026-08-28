@@ -33,7 +33,7 @@ pub async fn select_election<S: AppRequestState>(
         return Ok(Redirect::to(&PgIndexPath.to_string()).into_response());
     }
 
-    state.sessions().insert(session.clone()).await;
+    state.sessions().update(&session).await;
 
     let template = SelectElectionTemplate {
         elections: crate::ElectionConfig::type_options(),
@@ -85,7 +85,8 @@ pub async fn select_election_submit<S: AppRequestState>(
             crate::csb::import::fixture::import_csb_fixture(&state, election).await?;
         }
 
-        state.sessions().insert(session).await;
+        session.rotate_csrf_token();
+        state.sessions().update(&session).await;
 
         return Ok(Redirect::to(&CsbIndexPath {}.to_string()).into_response());
     }
@@ -100,7 +101,10 @@ pub async fn select_election_submit<S: AppRequestState>(
         .await?;
 
     session.set_current_election(election);
-    state.sessions().insert(session).await;
+    // Invalidate forms rendered before an election was picked, so a stale tab
+    // cannot submit against the election chosen here.
+    session.rotate_csrf_token();
+    state.sessions().update(&session).await;
 
     Ok(Redirect::to(&PgIndexPath.to_string()).into_response())
 }

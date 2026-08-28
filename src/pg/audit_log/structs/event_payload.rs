@@ -107,6 +107,8 @@ fn entity_old_new(
         PgEvent::AddCandidateToCandidateList { .. }
         | PgEvent::RemoveCandidateFromCandidateList { .. }
         | PgEvent::DeveloperLogin { .. }
+        | PgEvent::Login
+        | PgEvent::Logout
         | PgEvent::HideDownloadWarning
         | PgEvent::Import { .. }
         | PgEvent::DownloadFile { .. }

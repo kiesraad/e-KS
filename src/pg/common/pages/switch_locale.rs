@@ -1,4 +1,8 @@
-use crate::{AppRequestState, Locale, Session, common::SwitchLanguagePath};
+use crate::{
+    AppRequestState, Locale, Session,
+    common::{PgIndexPath, SwitchLanguagePath},
+    redirect_to_referer,
+};
 use axum::{extract::State, response::Redirect};
 use axum_extra::{TypedHeader, extract::Form, headers};
 use serde::Deserialize;
@@ -16,9 +20,11 @@ pub async fn switch_language<S: AppRequestState>(
     Form(form): Form<LanguageSwitch>,
 ) -> Redirect {
     session.locale = form.lang;
-    state.sessions().insert(session).await;
+    state.sessions().update(&session).await;
 
-    Redirect::to(&referer.to_string())
+    // Back to the page the switch was made on, never off-site (see
+    // [`redirect_to_referer`]).
+    redirect_to_referer(&referer, PgIndexPath)
 }
 
 #[cfg(test)]
@@ -67,10 +73,9 @@ mod tests {
         let response = app.oneshot(request).await.expect("response");
 
         assert_eq!(response.status(), StatusCode::SEE_OTHER);
-        assert_eq!(
-            response.headers().get(header::LOCATION).unwrap(),
-            "https://example.com/return"
-        );
+        // Only the referrer's path survives, so the redirect stays on this
+        // origin even when the header names another host.
+        assert_eq!(response.headers().get(header::LOCATION).unwrap(), "/return");
 
         let session = state
             .sessions
