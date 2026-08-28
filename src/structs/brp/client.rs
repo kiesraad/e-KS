@@ -5,14 +5,20 @@ use std::time::Duration;
 use super::{BrpField, BrpPerson};
 use crate::{
     AppError,
-    structs::candidate_lists::CandidateListId,
-    structs::common::{Bsn, BsnOrNoneConfirmed},
-    structs::csb::{Omission, OmissionCategory},
-    structs::persons::Person,
+    structs::{
+        candidate_lists::CandidateListId,
+        common::{Bsn, BsnOrNoneConfirmed, DutchAddress, FullName},
+        csb::{Omission, OmissionCategory},
+        persons::{Person, PersonId, PersonalData},
+    },
 };
 
-pub const BRP_PERSONS_ENDPOINT: &str = "haalcentraal/api/brp/personen";
-pub const BRP_TIMEOUT: u64 = 30;
+/// Default endpoint path for the BRP "personen" lookup, relative to
+/// `BrpConfig::base_url`.
+pub(crate) const BRP_PERSONS_ENDPOINT: &str = "haalcentraal/api/brp/personen";
+
+/// Default request timeout (in seconds) for BRP lookups.
+const BRP_TIMEOUT: u64 = 30;
 
 #[derive(Clone)]
 pub struct BrpClient {
@@ -66,178 +72,259 @@ impl BrpClient {
         person: &Person,
         candidate_lists: Vec<CandidateListId>,
     ) -> Result<Vec<Omission>, AppError> {
-        let query = match person.personal_data.bsn {
-            Some(BsnOrNoneConfirmed::Bsn(ref bsn)) => BrpQuery::ConsultWithBsn {
-                bsn: vec![bsn.clone()],
-                fields: vec![
-                    BrpField::Bsn,
-                    BrpField::DateOfBirth,
-                    BrpField::Gender,
-                    BrpField::Initials,
-                    BrpField::LastNamePrefix,
-                    BrpField::LastName,
-                    BrpField::StreetName,
-                    BrpField::HouseNumber,
-                    BrpField::HouseNumberAddition,
-                    BrpField::PostalCode,
-                    BrpField::PlaceOfResidence,
-                ],
-            },
-            Some(BsnOrNoneConfirmed::NoneConfirmed) => {
-                // TODO: This needs to be implemented
-                tracing::error!(
-                    "Person {} has BSN none confirmed. Use BRP search with address? Or manual verification",
-                    person.id
-                );
-                return Err(AppError::GenericNotFound);
-            }
-            None => {
-                // TODO: This needs to be implemented
-                tracing::warn!("Person {} does not have a BSN filled in", person.id,);
-                return Err(AppError::GenericNotFound);
-            }
-        };
-
-        let mut omissions = vec![];
-        let mut add_omission =
-            |title: &str, description: &str, help_text: &str| -> Result<(), AppError> {
-                omissions.push(Omission::new(
-                    OmissionCategory::Candidate {
-                        person: person.id,
-                        lists: candidate_lists.clone(),
-                    },
-                    // TODO: These should likely be user configurable and translatable
-                    title.parse().map_err(|_| AppError::InternalServerError)?,
-                    description
-                        .parse()
-                        .map_err(|_| AppError::InternalServerError)?,
-                    Some(
-                        help_text
-                            .parse()
-                            .map_err(|_| AppError::InternalServerError)?,
-                    ),
-                ));
-                Ok(())
-            };
+        let query = brp_query_for(person)?;
 
         let brp_persons = self.get_persons(&query).await?;
         let brp_person = match brp_persons.as_slice() {
             [] => {
-                add_omission(
+                return Ok(vec![build_omission(
+                    person.id,
+                    &candidate_lists,
                     "Burgerservicenummer onbekend",
                     "Er is geen persoon gevonden met dit burgerservicenummer",
                     "Controleer of er een fout is gemaakt bij het invoeren",
-                )?;
-                return Ok(omissions);
+                )?]);
             }
             [brp_person] => brp_person,
             [..] => {
-                add_omission(
+                return Ok(vec![build_omission(
+                    person.id,
+                    &candidate_lists,
                     "Burgerservicenummer niet uniek",
                     "Er zijn meerder personen gevonden met dit burgerservicenummer",
                     "Controleer of er een fout is gemaakt bij het invoeren",
-                )?;
-                return Ok(omissions);
+                )?]);
             }
         };
 
-        match &brp_person.address {
-            Some(address) => {
-                // Check all, except `known_in_bag`
-                if person.address.street_name != address.street_name {
-                    add_omission(
-                        "Onjuiste straatnaam",
-                        "De straatnaam komt niet overeen met de BRP",
-                        "Controleer de straatnaam",
-                    )?;
-                }
-                if person.address.house_number != address.house_number {
-                    add_omission(
-                        "Onjuist huisnummer",
-                        "Het huisnummer komt niet overeen met de BRP",
-                        "Controleer het huisnummer",
-                    )?;
-                }
-                if person.address.house_number_addition != address.house_number_addition {
-                    add_omission(
-                        "Onjuiste huisnummertoevoeging",
-                        "De huisnummertoevoeging komt niet overeen met de BRP",
-                        "Controleer de huisnummertoevoeging",
-                    )?;
-                }
-                if person.address.locality != address.locality {
-                    add_omission(
-                        "Onjuiste woonplaats",
-                        "De woonplaats komt niet overeen met de BRP",
-                        "Controleer de woonplaats",
-                    )?;
-                }
-                if person.address.postal_code != address.postal_code {
-                    add_omission(
-                        "Onjuiste postcode",
-                        "De postcode komt niet overeen met de BRP",
-                        "Controleer de postcode",
-                    )?;
-                }
-            }
-            None => {
-                tracing::warn!(
-                    "Not a Dutch Address or no address at all (because the field 'verblijfplaats' was not included)"
-                );
-            }
-        };
-
-        // Don't check first name (roepnaam)
-        if person.name.last_name != brp_person.name.last_name {
-            add_omission(
-                "Onjuiste achternaam",
-                "De achternaam komt niet overeen met de BRP",
-                "Controleer de achternaam",
-            )?;
-        }
-        if person.name.last_name_prefix != brp_person.name.last_name_prefix {
-            add_omission(
-                "Onjuist voorvoegsel",
-                "Het voorvoegsel komt niet overeen met de BRP",
-                "Controleer het voorvoegsel",
-            )?;
-        }
-        if person.name.initials != brp_person.name.initials {
-            add_omission(
-                "Onjuiste voorletters",
-                "De voorletters komen niet overeen met de BRP",
-                "Controleer de voorletters",
-            )?;
-        }
-
-        // Check all fields of personal_data except country, check gender only when filled in
-        if brp_person.personal_data.bsn != person.personal_data.bsn {
-            add_omission(
-                "Onjuist burgerservicenummer",
-                "Het burgerservicenummer komt niet overeen met de BRP",
-                "Controleer het burgerservicenummer",
-            )?;
-        }
-        if brp_person.personal_data.date_of_birth != person.personal_data.date_of_birth {
-            add_omission(
-                "Onjuiste geboortedatum",
-                "De geboortedatum komt niet overeen met de BRP",
-                "Controleer de geboortedatum",
-            )?;
-        }
-        // Gender field is optional, but if it is filled in, we check it
-        if person.personal_data.gender.is_some()
-            && brp_person.personal_data.gender != person.personal_data.gender
-        {
-            add_omission(
-                "Onjuist geslacht",
-                "Het geslacht komt niet overeen met de BRP",
-                "Controleer het geslacht",
-            )?;
-        }
+        let mut omissions = address_omissions(
+            person.id,
+            &candidate_lists,
+            &person.address,
+            brp_person.address.as_ref(),
+        )?;
+        omissions.extend(name_omissions(
+            person.id,
+            &candidate_lists,
+            &person.name,
+            &brp_person.name,
+        )?);
+        omissions.extend(personal_data_omissions(
+            person.id,
+            &candidate_lists,
+            &person.personal_data,
+            &brp_person.personal_data,
+        )?);
 
         Ok(omissions)
     }
+}
+
+/// Builds the BRP lookup query for a person's BSN. Only BSN-based lookup is
+/// supported today; the other two cases are follow-up work.
+fn brp_query_for(person: &Person) -> Result<BrpQuery, AppError> {
+    match person.personal_data.bsn {
+        Some(BsnOrNoneConfirmed::Bsn(ref bsn)) => Ok(BrpQuery::ConsultWithBsn {
+            bsn: vec![bsn.clone()],
+            fields: vec![
+                BrpField::Bsn,
+                BrpField::DateOfBirth,
+                BrpField::Gender,
+                BrpField::Initials,
+                BrpField::LastNamePrefix,
+                BrpField::LastName,
+                BrpField::StreetName,
+                BrpField::HouseNumber,
+                BrpField::HouseNumberAddition,
+                BrpField::PostalCode,
+                BrpField::PlaceOfResidence,
+            ],
+        }),
+        Some(BsnOrNoneConfirmed::NoneConfirmed) => {
+            // TODO: This needs to be implemented
+            tracing::error!(
+                "Person {} has BSN none confirmed. Use BRP search with address? Or manual verification",
+                person.id
+            );
+            Err(AppError::GenericNotFound)
+        }
+        None => {
+            // TODO: This needs to be implemented
+            tracing::warn!("Person {} does not have a BSN filled in", person.id);
+            Err(AppError::GenericNotFound)
+        }
+    }
+}
+
+// TODO: These should likely be user configurable and translatable
+fn build_omission(
+    person_id: PersonId,
+    candidate_lists: &[CandidateListId],
+    title: &str,
+    description: &str,
+    help_text: &str,
+) -> Result<Omission, AppError> {
+    Ok(Omission::new(
+        OmissionCategory::Candidate {
+            person: person_id,
+            lists: candidate_lists.to_vec(),
+        },
+        title.parse().map_err(|_| AppError::InternalServerError)?,
+        description
+            .parse()
+            .map_err(|_| AppError::InternalServerError)?,
+        Some(
+            help_text
+                .parse()
+                .map_err(|_| AppError::InternalServerError)?,
+        ),
+    ))
+}
+
+fn address_omissions(
+    person_id: PersonId,
+    candidate_lists: &[CandidateListId],
+    person_address: &DutchAddress,
+    brp_address: Option<&DutchAddress>,
+) -> Result<Vec<Omission>, AppError> {
+    let mut omissions = Vec::new();
+
+    // Check all, except `known_in_bag`
+    let Some(address) = brp_address else {
+        tracing::warn!(
+            "Not a Dutch Address or no address at all (because the field 'verblijfplaats' was not included)"
+        );
+        return Ok(omissions);
+    };
+
+    if person_address.street_name != address.street_name {
+        omissions.push(build_omission(
+            person_id,
+            candidate_lists,
+            "Onjuiste straatnaam",
+            "De straatnaam komt niet overeen met de BRP",
+            "Controleer de straatnaam",
+        )?);
+    }
+    if person_address.house_number != address.house_number {
+        omissions.push(build_omission(
+            person_id,
+            candidate_lists,
+            "Onjuist huisnummer",
+            "Het huisnummer komt niet overeen met de BRP",
+            "Controleer het huisnummer",
+        )?);
+    }
+    if person_address.house_number_addition != address.house_number_addition {
+        omissions.push(build_omission(
+            person_id,
+            candidate_lists,
+            "Onjuiste huisnummertoevoeging",
+            "De huisnummertoevoeging komt niet overeen met de BRP",
+            "Controleer de huisnummertoevoeging",
+        )?);
+    }
+    if person_address.locality != address.locality {
+        omissions.push(build_omission(
+            person_id,
+            candidate_lists,
+            "Onjuiste woonplaats",
+            "De woonplaats komt niet overeen met de BRP",
+            "Controleer de woonplaats",
+        )?);
+    }
+    if person_address.postal_code != address.postal_code {
+        omissions.push(build_omission(
+            person_id,
+            candidate_lists,
+            "Onjuiste postcode",
+            "De postcode komt niet overeen met de BRP",
+            "Controleer de postcode",
+        )?);
+    }
+
+    Ok(omissions)
+}
+
+fn name_omissions(
+    person_id: PersonId,
+    candidate_lists: &[CandidateListId],
+    person_name: &FullName,
+    brp_name: &FullName,
+) -> Result<Vec<Omission>, AppError> {
+    let mut omissions = Vec::new();
+
+    // Don't check first name (roepnaam)
+    if person_name.last_name != brp_name.last_name {
+        omissions.push(build_omission(
+            person_id,
+            candidate_lists,
+            "Onjuiste achternaam",
+            "De achternaam komt niet overeen met de BRP",
+            "Controleer de achternaam",
+        )?);
+    }
+    if person_name.last_name_prefix != brp_name.last_name_prefix {
+        omissions.push(build_omission(
+            person_id,
+            candidate_lists,
+            "Onjuist voorvoegsel",
+            "Het voorvoegsel komt niet overeen met de BRP",
+            "Controleer het voorvoegsel",
+        )?);
+    }
+    if person_name.initials != brp_name.initials {
+        omissions.push(build_omission(
+            person_id,
+            candidate_lists,
+            "Onjuiste voorletters",
+            "De voorletters komen niet overeen met de BRP",
+            "Controleer de voorletters",
+        )?);
+    }
+
+    Ok(omissions)
+}
+
+fn personal_data_omissions(
+    person_id: PersonId,
+    candidate_lists: &[CandidateListId],
+    person_data: &PersonalData,
+    brp_data: &PersonalData,
+) -> Result<Vec<Omission>, AppError> {
+    let mut omissions = Vec::new();
+
+    // Check all fields of personal_data except country, check gender only when filled in
+    if brp_data.bsn != person_data.bsn {
+        omissions.push(build_omission(
+            person_id,
+            candidate_lists,
+            "Onjuist burgerservicenummer",
+            "Het burgerservicenummer komt niet overeen met de BRP",
+            "Controleer het burgerservicenummer",
+        )?);
+    }
+    if brp_data.date_of_birth != person_data.date_of_birth {
+        omissions.push(build_omission(
+            person_id,
+            candidate_lists,
+            "Onjuiste geboortedatum",
+            "De geboortedatum komt niet overeen met de BRP",
+            "Controleer de geboortedatum",
+        )?);
+    }
+    // Gender field is optional, but if it is filled in, we check it
+    if person_data.gender.is_some() && brp_data.gender != person_data.gender {
+        omissions.push(build_omission(
+            person_id,
+            candidate_lists,
+            "Onjuist geslacht",
+            "Het geslacht komt niet overeen met de BRP",
+            "Controleer het geslacht",
+        )?);
+    }
+
+    Ok(omissions)
 }
 
 #[derive(Debug, Serialize)]

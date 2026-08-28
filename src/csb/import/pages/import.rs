@@ -15,8 +15,10 @@ use crate::{
     projection::WithCorrections,
     redirect_success,
     store::Store,
-    structs::brp::{BrpClient, BrpStatus},
-    structs::persons::Person,
+    structs::{
+        brp::{BrpClient, BrpStatus},
+        persons::Person,
+    },
     trans,
     utils::parse_hash_prefix,
 };
@@ -188,30 +190,25 @@ async fn monitor_verification(store: Store<CsbStoreData>, brp_client: BrpClient)
     }
 }
 
-/// Check every not-yet-validated candidate on `store` against the BRP.
-/// Candidates already present in `CsbStoreData::brp_validations` are skipped,
-/// so a later call resumes instead of re-checking everyone. A single
-/// candidate's failure is logged and does not stop the rest of the sweep; only
-/// a failure to record the final status is propagated to the caller.
+/// Check every candidate on `store` not already covered by
+/// `CsbStoreData::brp_validations` against the BRP, waiting
+/// `BRP_COURTESY_TIMEOUT` between checks. A single candidate's failure is
+/// logged and does not stop the rest of the sweep; only a failure to record
+/// the final status is propagated to the caller.
 async fn verify_candidates(
     store: Store<CsbStoreData>,
     brp_client: BrpClient,
 ) -> Result<(), AppError> {
     let already_validated = store.get_brp_validations();
+    let unvalidated = store
+        .get_persons(WithCorrections::All)
+        .into_iter()
+        .filter(|person| !already_validated.contains_key(&person.id));
+
     let mut ticker = tokio::time::interval(BRP_COURTESY_TIMEOUT);
-
-    for person in store.get_persons(WithCorrections::None) {
-        if already_validated.contains_key(&person.id) {
-            tracing::debug!("Person {} has already been validated", person.id);
-            continue;
-        }
-
-        tracing::info!("Checking person {} against the brp", person.id);
+    for person in unvalidated {
         ticker.tick().await;
-
-        if let Err(err) = verify_candidate(&store, &brp_client, &person).await {
-            tracing::error!("BRP verification failed for {}: {err}", person.id);
-        }
+        check_candidate(&store, &brp_client, &person).await;
     }
 
     tracing::info!(
@@ -222,6 +219,15 @@ async fn verify_candidates(
     store
         .update(CsbEvent::SetBrpStatus(BrpStatus::Finished))
         .await
+}
+
+/// Verify a single candidate, logging (rather than propagating) a failure so
+/// it does not stop the rest of the sweep in [`verify_candidates`].
+async fn check_candidate(store: &Store<CsbStoreData>, brp_client: &BrpClient, person: &Person) {
+    match verify_candidate(store, brp_client, person).await {
+        Err(err) => tracing::error!("BRP verification failed for {}: {err}", person.id),
+        Ok(()) => tracing::info!("Checked person {} against the brp", person.id),
+    }
 }
 
 /// Verify this candidate against the BRP, creating omissions that contain the

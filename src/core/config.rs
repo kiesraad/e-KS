@@ -7,7 +7,7 @@ use secrecy::SecretString;
 
 use crate::{
     AppError,
-    structs::brp::{BRP_PERSONS_ENDPOINT, BRP_TIMEOUT},
+    constants::{BRP_PERSONS_ENDPOINT, BRP_TIMEOUT},
 };
 
 #[cfg(feature = "dev-features")]
@@ -258,8 +258,8 @@ impl Config {
             brp_client: BrpConfig {
                 base_url: "http://localhost:5010".to_string(),
                 api_key: "".to_string(),
-                persons_endpoint: BRP_PERSONS_ENDPOINT.to_string(),
-                timeout: Duration::from_secs(BRP_TIMEOUT),
+                persons_endpoint: "haalcentraal/api/brp/personen".to_string(),
+                timeout: Duration::from_secs(5),
             },
         }
     }

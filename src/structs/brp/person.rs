@@ -1,9 +1,9 @@
 use chrono::NaiveDate;
 use serde::Deserialize;
 
-use crate::{
-    structs::common::{Bsn, BsnOrNoneConfirmed, DateOfBirth, DutchAddress, FullName},
-    structs::persons::PersonalData,
+use crate::structs::{
+    common::{Bsn, BsnOrNoneConfirmed, DateOfBirth, DutchAddress, FullName, PlaceOfResidence},
+    persons::PersonalData,
 };
 
 #[derive(Debug, Deserialize)]
@@ -67,75 +67,84 @@ structstruck::strike! {
     }
 }
 
+fn parse_name(name: Option<BrpName>) -> FullName {
+    name.map(|naam| FullName {
+        // First name isn't checked, because this does not necessarily need to be the same (roepnaam)
+        first_name: None,
+        last_name: naam
+            .last_name
+            .and_then(|s| s.parse().ok())
+            .unwrap_or_default(),
+        last_name_prefix: naam.last_name_prefix.and_then(|s| s.parse().ok()),
+        initials: naam
+            .initials
+            .and_then(|s| s.parse().ok())
+            .unwrap_or_default(),
+    })
+    .unwrap_or_default()
+}
+
+fn parse_date_of_birth(birth: Option<BrpBirth>) -> Option<DateOfBirth> {
+    birth
+        .as_ref()
+        .and_then(|b| b.date.as_ref())
+        .and_then(|d| d.date.as_ref())
+        .and_then(|s| NaiveDate::parse_from_str(s, "%Y-%m-%d").ok())
+        .map(DateOfBirth::from)
+}
+
+/// Returns the parsed address (if any) and, separately, the place of residence
+/// used for `PersonalData` (currently derived from the same BRP field).
+fn parse_place_of_residence(
+    place_of_residence: Option<BrpPlaceOfResidence>,
+) -> (Option<DutchAddress>, Option<PlaceOfResidence>) {
+    match place_of_residence {
+        Some(BrpPlaceOfResidence::Address {
+            residence_address: ra,
+        }) => {
+            let address = Some(DutchAddress {
+                street_name: ra.street_name.and_then(|s| s.parse().ok()),
+                house_number: ra.house_number.and_then(|s| s.to_string().parse().ok()),
+                house_number_addition: ra.house_number_addition.and_then(|s| s.parse().ok()),
+                locality: ra
+                    .place_of_residence
+                    .as_deref()
+                    .and_then(|s| s.parse().ok()),
+                postal_code: ra.postal_code.and_then(|s| s.parse().ok()),
+                // Known in BRP probably implies known in bag, I guess maybe this could be Some(true), but
+                // I don't think it matters
+                known_in_bag: None,
+            });
+
+            // TODO: Is place of residence really the same as locality (above).
+            // (though note that above is parsed as `Locality`, and below as `PlaceOfResidence`)
+            let place_of_residence = ra.place_of_residence.and_then(|s| s.parse().ok());
+
+            (address, place_of_residence)
+        }
+        Some(BrpPlaceOfResidence::NonDutchAddress) => {
+            // TODO: How to handle this? Set the address to None and conduct an additional BRP check
+            // for the Authorised Person?
+            tracing::warn!("Person has an non-Dutch address");
+            (None, None)
+        }
+        None => {
+            tracing::error!("Field 'verblijfplaats' not included");
+            (None, None)
+        }
+    }
+}
+
 impl From<BrpPersonRaw> for BrpPerson {
     fn from(raw: BrpPersonRaw) -> Self {
-        let name = raw
-            .name
-            .map(|naam| FullName {
-                // First name isn't checked, because this does not necessarily need to be the same (roepnaam)
-                first_name: None,
-                last_name: naam
-                    .last_name
-                    .and_then(|s| s.parse().ok())
-                    .unwrap_or_default(),
-                last_name_prefix: naam.last_name_prefix.and_then(|s| s.parse().ok()),
-                initials: naam
-                    .initials
-                    .and_then(|s| s.parse().ok())
-                    .unwrap_or_default(),
-            })
-            .unwrap_or_default();
-
+        let name = parse_name(raw.name);
         let bsn = raw
             .bsn
             .and_then(|s| s.parse::<Bsn>().ok())
             .map(BsnOrNoneConfirmed::Bsn);
-
         let gender = raw.gender.and_then(|g| g.gender.parse().ok());
-
-        let date_of_birth = raw
-            .birth
-            .as_ref()
-            .and_then(|b| b.date.as_ref())
-            .and_then(|d| d.date.as_ref())
-            .and_then(|s| NaiveDate::parse_from_str(s, "%Y-%m-%d").ok())
-            .map(DateOfBirth::from);
-
-        let (address, place_of_residence) = match raw.place_of_residence {
-            Some(BrpPlaceOfResidence::Address {
-                residence_address: ra,
-            }) => {
-                let addr = Some(DutchAddress {
-                    street_name: ra.street_name.and_then(|s| s.parse().ok()),
-                    house_number: ra.house_number.and_then(|s| s.to_string().parse().ok()),
-                    house_number_addition: ra.house_number_addition.and_then(|s| s.parse().ok()),
-                    locality: ra
-                        .place_of_residence
-                        .as_deref()
-                        .and_then(|s| s.parse().ok()),
-                    postal_code: ra.postal_code.and_then(|s| s.parse().ok()),
-                    // Known in BRP probably implies known in bag, I guess maybe this could be Some(true), but
-                    // I don't think it matters
-                    known_in_bag: None,
-                });
-
-                // TODO: Is place of residence really the same as locality (above).
-                // (though note that above is parsed as `Locality`, and below as `PlaceOfResidence`)
-                let por = ra.place_of_residence.and_then(|s| s.parse().ok());
-
-                (addr, por)
-            }
-            Some(BrpPlaceOfResidence::NonDutchAddress) => {
-                // TODO: How to handle this? Set the address to None and conduct an additional BRP check
-                // for the Authorised Person?
-                tracing::warn!("Person has an non-Dutch address");
-                (None, None)
-            }
-            None => {
-                tracing::error!("Field 'verblijfplaats' not included");
-                (None, None)
-            }
-        };
+        let date_of_birth = parse_date_of_birth(raw.birth);
+        let (address, place_of_residence) = parse_place_of_residence(raw.place_of_residence);
 
         BrpPerson {
             name,

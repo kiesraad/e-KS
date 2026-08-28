@@ -3,10 +3,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     Event, PgEvent, PgStoreData, StreamId,
-    structs::persons::PersonId,
     structs::{
         brp::BrpStatus,
         csb::{Correction, Omission, OmissionId},
+        persons::PersonId,
     },
     trans,
     utils::format_hash,
