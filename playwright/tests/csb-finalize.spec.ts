@@ -47,5 +47,7 @@ test("finalize examination with omissions", async ({ csbImport }) => {
   await expect(page.getByText("Onderzoek afgerond")).toBeVisible();
   await expect(page.locator(".candidate-lists")).toHaveClass(/disabled/);
   await politicalGroupPage.buttonBack.click();
-  await expect(page.getByText(`${groupName} Verzuimen toegevoegd`)).toBeVisible();
+  await expect(
+    page.getByText(`${groupName} Verzuimen toegevoegd`),
+  ).toBeVisible();
 });
