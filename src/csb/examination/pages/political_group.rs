@@ -7,7 +7,7 @@ use axum::{
 use crate::{
     AppError, Context, CsbContext,
     CsbEvent::{self},
-    CsbStore, HtmlTemplate, QueryParamState,
+    CsbStore, HtmlTemplate, Overlay, QueryParamState,
     csb::examination::{
         extractors::CsbPoliticalGroup,
         pages::{CsbPoliticalGroupPath, CsbPoliticalGroupToggleFinishPath},
@@ -25,6 +25,14 @@ struct CsbPoliticalGroupTemplate {
     political_group_status: RestorationStatus,
     declarations_of_support_status: RestorationStatus,
     declarations_of_support_card_path: String,
+}
+
+#[derive(Template)]
+#[template(path = "csb/examination/pages/delete.html")]
+struct CsbPoliticalGroupDeleteTemplate {
+    political_group: CsbPoliticalGroup,
+    overlay: Overlay,
+    close_action: String,
 }
 
 /// Render the placeholder political group overview page.
