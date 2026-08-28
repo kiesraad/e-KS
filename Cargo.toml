@@ -90,11 +90,8 @@ serde-saphyr = { version = "1.0.0", default-features = false, features = ["deser
 
 # tweedegolf
 memory-serve = "2.1.0"
-# Git dependencies are pinned by commit rather than by tag: a tag can be moved to
-# point at different code, a commit hash cannot. Bump these by hand, updating both
-# the hash and the tag in the trailing comment.
-textris-pdf = { git = "https://github.com/tweedegolf/textris-pdf.git", rev = "4560b774438e7eca0c17b58481145935fedb1eee", default-features = false, features = ["markdown-parser"] } # v0.9.0
-bag_address_lookup = { git = "https://github.com/tweedegolf/bag-address-lookup.git", rev = "e58060b03ed9bd321a829ea82e6299743d7f8ebe", default-features = false, features = ["compressed_database"] } # lib-v0.8.1
+textris-pdf = "0.10.1"
+bagatel = "0.8.3"
 
 # kiesraad
 eml-nl = "0.7.0"
@@ -155,7 +152,7 @@ auth-service = { path = "auth-service" }
 axum = { workspace = true, features = ["multipart", "macros"] }
 axum-extra = { workspace = true, features = ["routing", "typed-routing", "form", "typed-header"] }
 axum-server = { workspace = true, optional = true }
-bag_address_lookup = { workspace = true }
+bagatel = { workspace = true }
 bytes = { workspace = true }
 chrono = { workspace = true, features = ["now"] }
 chrono-tz = { workspace = true }

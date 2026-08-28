@@ -8,6 +8,7 @@ invalid_postal_code: "De postcode is ongeldig, gebruik het formaat 1234AB."
 invalid_value: De opgegeven waarde is ongeldig.
 name_already_exists: Er bestaat al een persoon met deze naam.
 starts_with_last_name_prefix: Zet het voorvoegsel in het juiste veld.
+too_many_initials: "Er zijn te veel voorletters ({}), maximaal {} voorletters toegestaan."
 value_should_not_be_empty: Dit veld mag niet leeg zijn.
 value_too_long: "De waarde is te lang ({} tekens), maximaal {} tekens toegestaan."
 value_too_short_plural: "De waarde is te kort ({} tekens), minimaal {} tekens vereist."

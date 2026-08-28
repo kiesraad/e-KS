@@ -5,9 +5,10 @@ use axum::{
 };
 
 use crate::{
-    AnyLocale, AppError, AppRequestState, Context, ElectionConfig, HtmlTemplate, Province, Session,
-    WaterCouncil,
+    AnyLocale, AppError, AppRequestState, Context, ElectionConfig, HtmlTemplate, Province, Scope,
+    Session, WaterCouncil,
     common::{PgIndexPath, SwitchElectionForm},
+    csb::index::CsbIndexPath,
     filters,
 };
 
@@ -65,6 +66,14 @@ pub async fn switch_election_submit<S: AppRequestState>(
     mut session: Session,
     axum::Form(form): axum::Form<SwitchElectionForm>,
 ) -> Result<Response, AppError> {
+    // Committee sessions use CSB stores, not app stores; never create an
+    // `PgStore` in their `(stream_id, election)` partition. Mirrors the guard
+    // in `select_election_submit`, which this route can otherwise bypass while
+    // a committee session is in paper-corrections mode.
+    if session.scope == Scope::CentralElectoralCommittee {
+        return Ok(Redirect::to(&CsbIndexPath {}.to_string()).into_response());
+    }
+
     let Some(election) = form.into_election_config() else {
         return Ok(Redirect::to(&SwitchElectionPath.to_string()).into_response());
     };
@@ -82,7 +91,10 @@ pub async fn switch_election_submit<S: AppRequestState>(
     state.store_for_stream(stream_id, election, false).await?;
 
     session.set_current_election(election);
-    state.sessions().insert(session).await;
+    // Invalidate forms rendered for the previous election, so a stale tab
+    // cannot submit its data against the newly selected one.
+    session.rotate_csrf_token();
+    state.sessions().update(&session).await;
 
     Ok(Redirect::to(&PgIndexPath.to_string()).into_response())
 }

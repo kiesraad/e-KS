@@ -127,7 +127,9 @@ test.describe("End-to-end", () => {
     }
 
     //finalise list
-    await manageCandidateListPage.buttonFinalise.click();
+    await manageCandidateListPage.buttonOverviewPage.click();
+    await page.waitForURL("/");
+    await overviewPage.linkFinalise.click();
     await page.waitForURL("/finalise");
     const _submitPage = new FinalisePage(page);
     const downloadPromise = page.waitForEvent("download");
@@ -244,7 +246,9 @@ test.describe("End-to-end", () => {
     }
 
     //finalise list
-    await manageCandidateListPage.buttonFinalise.click();
+    await manageCandidateListPage.buttonOverviewPage.click();
+    await page.waitForURL("/");
+    await overviewPage.linkFinalise.click();
     await page.waitForURL("/finalise");
     const downloadLink = page.locator("a", { hasText: "Alles in één zip" });
     await expect(downloadLink).toBeVisible();

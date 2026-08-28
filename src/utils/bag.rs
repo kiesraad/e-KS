@@ -1,5 +1,5 @@
 //! Embedded BAG address lookup: handles `/lookup` and `/suggest` in-process
-//! using the `bag-address-lookup` library
+//! using the `bagatel` library
 use std::sync::LazyLock;
 
 use axum::{
@@ -9,11 +9,13 @@ use axum::{
     response::{IntoResponse, Json},
     routing::get,
 };
-use bag_address_lookup::{DEFAULT_SUGGEST_LIMIT, DEFAULT_SUGGEST_THRESHOLD, DatabaseHandle};
+use bagatel::{DEFAULT_SUGGEST_LIMIT, DEFAULT_SUGGEST_THRESHOLD, DatabaseHandle};
 use serde::Deserialize;
 use serde_json::json;
 
-/// Lazily-decoded handle to the BAG database embedded in `bag-address-lookup`.
+use crate::utils::locality_aliases::replace_locality_alias;
+
+/// Lazily-decoded handle to the BAG database embedded in `bagatel`.
 ///
 /// Initialised on first `/lookup` or `/suggest` request and reused for the
 /// lifetime of the process; decoding the compressed database takes noticeable
@@ -85,7 +87,7 @@ struct SuggestQuery {
 /// Fuzzy-match localities and municipalities against the `wp` query param.
 ///
 /// Returns a JSON array of suggestion names, matching the wire format of the
-/// upstream `bag-address-lookup` service. A name already carries a province
+/// upstream `bagatel` service. A name already carries a province
 /// suffix (e.g. `Bergen (LI)`) when the source disambiguated a duplicate place
 /// name. An empty array is a successful response meaning no match; missing
 /// `wp` yields `400 Bad Request` with an `{"error": "missing wp"}` body.
@@ -100,6 +102,10 @@ async fn suggest(Query(params): Query<SuggestQuery>) -> impl IntoResponse {
             Json(json!({"error": "missing wp"})),
         );
     };
+
+    if let Some(suggestion) = replace_locality_alias(&query) {
+        return (StatusCode::OK, Json(json!([suggestion])));
+    }
 
     let limit = params.limit.unwrap_or(DEFAULT_SUGGEST_LIMIT);
 

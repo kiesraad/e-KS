@@ -243,6 +243,15 @@
     max-width: min(30em, 90vw);
     max-height: 70vh;
     overflow: auto;
+
+    ul {
+      list-style-position: inside;
+      list-style-type: disc;
+    }
+
+    p {
+      margin-top: var(--space-sm);
+    }
   }
 
   summary {

@@ -55,6 +55,7 @@ import_errors:
   invalid_headers: Use the same column names as in the exported CSV file.
   missing_file: Please select a CSV file to import.
   parse_error: "The candidate on line {} could not be imported. Please check field '{}': {}"
+  too_many_errors: "The file contains too many errors. Only the first {} are shown here; fix those and try again."
   upload_failed: Your file could not be uploaded. Please try again.
 import_export:
   export_title: Export

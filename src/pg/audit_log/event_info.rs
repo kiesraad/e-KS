@@ -73,12 +73,12 @@ fn event_description(event: &PgEvent, locale: Locale) -> String {
             trans!("audit_log.event.delete_substitute_submitter", locale)
         }
         PgEvent::DeveloperLogin { .. } => trans!("audit_log.event.developer_login", locale),
+        PgEvent::Login => trans!("audit_log.event.login", locale),
+        PgEvent::Logout => trans!("audit_log.event.logout", locale),
         PgEvent::DownloadFile { .. } => trans!("audit_log.event.download_file", locale),
         PgEvent::HideDownloadWarning => trans!("audit_log.event.hide_download_warning", locale),
         PgEvent::ExportCsv { .. } => trans!("audit_log.event.export_csv", locale),
-        PgEvent::ImportCandidates { .. } => {
-            trans!("audit_log.event.import_csv", locale)
-        }
+        PgEvent::ImportCandidates { .. } => trans!("audit_log.event.import_csv", locale),
         PgEvent::Import { .. } => trans!("audit_log.event.import", locale),
     }
 }
@@ -128,6 +128,8 @@ fn event_details(event: &PgEvent) -> String {
         | PgEvent::DeleteNameAuthorisation(..)
         | PgEvent::DeleteSubstituteSubmitter { .. }
         | PgEvent::DeveloperLogin { .. }
+        | PgEvent::Login
+        | PgEvent::Logout
         | PgEvent::HideDownloadWarning => PgEvent::DEFAULT_DETAILS.to_string(),
     }
 }
@@ -169,6 +171,8 @@ impl PgEvent {
             }
             PgEvent::DownloadFile { .. }
             | PgEvent::HideDownloadWarning
+            | PgEvent::Login
+            | PgEvent::Logout
             | PgEvent::Import { .. } => String::new(),
         }
     }
@@ -238,6 +242,8 @@ impl Event for PgEvent {
             | PgEvent::UpdateSubstituteSubmitter(_)
             | PgEvent::DeleteSubstituteSubmitter { .. } => "substitute_submitter",
             PgEvent::DeveloperLogin { .. }
+            | PgEvent::Login
+            | PgEvent::Logout
             | PgEvent::DownloadFile { .. }
             | PgEvent::HideDownloadWarning
             | PgEvent::ExportCsv { .. }
@@ -271,6 +277,8 @@ impl Event for PgEvent {
             PgEvent::UpdateSubstituteSubmitter(_) => "update_substitute_submitter",
             PgEvent::DeleteSubstituteSubmitter { .. } => "delete_substitute_submitter",
             PgEvent::DeveloperLogin { .. } => "developer_login",
+            PgEvent::Login => "login",
+            PgEvent::Logout => "logout",
             PgEvent::DownloadFile { .. } => "download_file",
             PgEvent::HideDownloadWarning => "hide_download_warning",
             PgEvent::ExportCsv { .. } => "export_csv",

@@ -110,6 +110,25 @@ where
     }
 }
 
+/// Secret key material from the environment, refusing a blank value.
+///
+/// `env::var` returns `Ok("")` for a variable set to nothing, which HKDF would
+/// otherwise accept as a key. Refuse to boot instead.
+fn get_secret_with<F>(name: &'static str, lookup: &mut F) -> Result<SecretString, AppError>
+where
+    F: FnMut(&'static str) -> Result<String, env::VarError>,
+{
+    let value = get_env_with(name, lookup)?;
+
+    if value.trim().is_empty() {
+        return Err(AppError::ConfigLoadError(format!(
+            "{name} is set but empty; it must hold secret key material"
+        )));
+    }
+
+    Ok(SecretString::from(value))
+}
+
 /// Offline sanity check; the credentials are bound to their directory, so a
 /// staging account can never be deployed against production (or vice versa).
 fn check_account_credentials(credentials: &str, directory_url: &str) -> Result<(), AppError> {
@@ -192,9 +211,8 @@ impl Config {
         F: FnMut(&'static str) -> Result<String, env::VarError>,
     {
         let storage_url = get_env_with("STORAGE_URL", &mut lookup)?;
-        let id_derivation_key = get_env_with("ID_DERIVATION_KEY", &mut lookup)?;
-
-        let master_encryption_key = get_env_with("MASTER_ENCRYPTION_KEY", &mut lookup)?;
+        let id_derivation_key = get_secret_with("ID_DERIVATION_KEY", &mut lookup)?;
+        let master_encryption_key = get_secret_with("MASTER_ENCRYPTION_KEY", &mut lookup)?;
 
         let tls = tls_from_env(&mut lookup)?;
         let acme = acme_from_env(&mut lookup, tls.is_some())?;
@@ -233,8 +251,8 @@ impl Config {
 
         Ok(Self {
             storage_url: SecretString::from(storage_url),
-            id_derivation_key: SecretString::from(id_derivation_key),
-            master_encryption_key: SecretString::from(master_encryption_key),
+            id_derivation_key,
+            master_encryption_key,
             tls,
             acme,
             server_name,
@@ -304,6 +322,51 @@ mod tests {
         let config = Config::from_env_with(lookup).expect("config");
 
         assert_eq!(config.storage_url.expose_secret(), "memory://test");
+    }
+
+    /// A secret that is set but blank must stop startup, not be accepted as key
+    /// material. Whitespace counts as blank.
+    #[test]
+    fn from_env_rejects_blank_secrets() {
+        for (name, blank) in [
+            ("ID_DERIVATION_KEY", ""),
+            ("ID_DERIVATION_KEY", "   "),
+            ("MASTER_ENCRYPTION_KEY", ""),
+            ("MASTER_ENCRYPTION_KEY", "\t\n"),
+        ] {
+            let map = HashMap::from([
+                ("STORAGE_URL", "memory://test"),
+                ("ID_DERIVATION_KEY", "id-derivation-key-123"),
+                ("MASTER_ENCRYPTION_KEY", "master-encryption-key-123"),
+                (name, blank),
+            ]);
+            let lookup = lookup_from(&map);
+
+            let err = Config::from_env_with(lookup).expect_err("blank secret must be rejected");
+
+            assert!(
+                matches!(err, AppError::ConfigLoadError(ref message) if message.contains(name)),
+                "{name}={blank:?} gave {err:?}"
+            );
+        }
+    }
+
+    /// A secret that holds a value still loads.
+    #[test]
+    fn from_env_accepts_non_blank_secrets() {
+        let map = HashMap::from([
+            ("STORAGE_URL", "memory://test"),
+            ("ID_DERIVATION_KEY", "id-derivation-key-123"),
+            ("MASTER_ENCRYPTION_KEY", "master-encryption-key-123"),
+        ]);
+        let lookup = lookup_from(&map);
+
+        let config = Config::from_env_with(lookup).expect("config");
+
+        assert_eq!(
+            config.master_encryption_key.expose_secret(),
+            "master-encryption-key-123"
+        );
     }
 
     #[cfg(feature = "dev-features")]

@@ -107,6 +107,32 @@ impl SessionStore {
         }
     }
 
+    /// Persists changes to a stored session. Unlike [`Self::insert`] this never
+    /// re-creates the entry, so an in-flight request holding a clone cannot undo
+    /// a concurrent logout. Use [`Self::insert`] only for a new session.
+    pub async fn update(&self, session: &Session) {
+        match self {
+            SessionStore::InMemory(inner) => {
+                if let Some(existing) = inner.write().get_mut(session.token_hash()) {
+                    // Mutable fields only, mirroring the database backend.
+                    existing.csrf_token = session.csrf_token.clone();
+                    existing.last_activity = session.last_activity;
+                    existing.stream_id = session.stream_id;
+                    existing.paper_correction_stream_id = session.paper_correction_stream_id;
+                    existing.scope = session.scope;
+                    existing.current_election = session.current_election;
+                    existing.locale = session.locale;
+                }
+            }
+            #[cfg(feature = "database")]
+            SessionStore::Database(pool) => {
+                if let Err(err) = session_db::update(pool, session).await {
+                    error!("failed to update session: {err}");
+                }
+            }
+        }
+    }
+
     /// Refreshes `last_activity` of an existing session. Unlike [`Self::insert`]
     /// this never re-creates the row, so a concurrent logout stays terminal.
     pub async fn touch(&self, session: &Session) {
@@ -128,6 +154,8 @@ impl SessionStore {
     }
 
     /// Removes a session by its token. Returns the removed session, if any.
+    /// A failed delete is logged: a session that outlives the request that ended
+    /// it must be visible somewhere.
     pub async fn remove(&self, token: &str) -> Option<Session> {
         let token_hash = hash_token(token);
         match self {
@@ -135,7 +163,9 @@ impl SessionStore {
             #[cfg(feature = "database")]
             SessionStore::Database(pool) => {
                 let session = session_db::load(pool, &token_hash).await.ok().flatten();
-                let _ = session_db::delete(pool, &token_hash).await;
+                if let Err(err) = session_db::delete(pool, &token_hash).await {
+                    error!("failed to remove session, it stays valid until it expires: {err}");
+                }
                 session
             }
         }
@@ -179,7 +209,9 @@ impl SessionStore {
             }
             #[cfg(feature = "database")]
             SessionStore::Database(pool) => {
-                let _ = session_db::delete(pool, token_hash).await;
+                if let Err(err) = session_db::delete(pool, token_hash).await {
+                    error!("failed to drop expired session: {err}");
+                }
             }
         }
     }
@@ -250,6 +282,52 @@ mod tests {
         store.remove(&token).await;
         store.touch(&session).await;
         assert!(store.get(&token).await.expect("load").is_none());
+    }
+
+    /// `update` writes a session's mutable fields but, like `touch`, never
+    /// re-creates a removed one: a request that still holds a clone of a
+    /// logged-out session cannot bring it back.
+    #[tokio::test]
+    async fn update_persists_changes_without_resurrecting_a_removed_session() {
+        let store = SessionStore::default();
+        let mut session = Session::new_test();
+        let token = session.token_string();
+        store.insert(session.clone()).await;
+
+        let old_csrf = session.csrf_token().to_string();
+        session.rotate_csrf_token();
+        session.set_current_election(crate::ElectionConfig::EK27);
+        store.update(&session).await;
+
+        let updated = store.get(&token).await.expect("load").expect("present");
+        assert_eq!(updated.current_election, Some(crate::ElectionConfig::EK27));
+        assert!(!updated.csrf_matches(&old_csrf));
+
+        store.remove(&token).await;
+        store.update(&session).await;
+        assert!(store.get(&token).await.expect("load").is_none());
+    }
+
+    /// The login-time facts of a session are not writable after the fact.
+    #[tokio::test]
+    async fn update_leaves_login_time_fields_alone() {
+        let store = SessionStore::default();
+        let mut session = Session::new_test();
+        session.saml_name_id = "nid-1".to_string();
+        session.set_user_agent_hash("ua-hash".to_string());
+        let token = session.token_string();
+        let created_at = session.created_at;
+        store.insert(session.clone()).await;
+
+        session.created_at = created_at + Duration::hours(1);
+        session.saml_name_id = "attacker".to_string();
+        session.set_user_agent_hash("other-ua".to_string());
+        store.update(&session).await;
+
+        let stored = store.get(&token).await.expect("load").expect("present");
+        assert_eq!(stored.created_at, created_at);
+        assert_eq!(stored.saml_name_id, "nid-1");
+        assert_eq!(stored.user_agent_hash.as_deref(), Some("ua-hash"));
     }
 
     /// Removes expired sessions on lookup.
@@ -346,11 +424,23 @@ mod tests {
             reloaded.created_at,
         );
 
+        // `update` writes the mutable fields and leaves the login-time ones.
+        let mut changed = reloaded.clone();
+        changed.set_current_election(crate::ElectionConfig::EK27);
+        changed.rotate_csrf_token();
+        changed.saml_name_id = "attacker".to_string();
+        store.update(&changed).await;
+        let updated = store.get(&token).await?.expect("still present");
+        assert_eq!(updated.current_election, Some(crate::ElectionConfig::EK27));
+        assert!(updated.csrf_matches(&changed.csrf_token().0));
+        assert_eq!(updated.saml_name_id, "nid-1");
+
         store.remove(&token).await;
         assert!(store.get(&token).await?.is_none());
 
-        // A touch after logout must not resurrect the session row.
+        // A touch or an update after logout must not resurrect the session row.
         store.touch(&reloaded).await;
+        store.update(&reloaded).await;
         assert!(store.get(&token).await?.is_none());
         Ok(())
     }

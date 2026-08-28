@@ -24,6 +24,10 @@ impl MinimalNameForm {
     pub fn first_name_opt(&self) -> Option<&str> {
         None
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.last_name.is_empty() && self.last_name_prefix.is_empty() && self.initials.is_empty()
+    }
 }
 
 impl From<FullName> for MinimalNameForm {
@@ -65,12 +69,5 @@ impl FullNameForm {
     /// The `FullNameForm` does have a first name field
     pub fn first_name_opt(&self) -> Option<&str> {
         Some(&self.first_name)
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.first_name.is_empty()
-            && self.last_name.is_empty()
-            && self.last_name_prefix.is_empty()
-            && self.initials.is_empty()
     }
 }

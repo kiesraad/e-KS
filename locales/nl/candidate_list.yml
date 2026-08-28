@@ -55,6 +55,7 @@ import_errors:
   invalid_headers: Gebruik dezelfde kolomnamen als in het geëxporteerde CSV-bestand.
   missing_file: Selecteer een CSV-bestand om te importeren.
   parse_error: "De kandidaat op regel {} kon niet worden geïmporteerd. Controleer veld '{}': {}"
+  too_many_errors: "Het bestand bevat te veel fouten. Alleen de eerste {} fouten worden hier getoond; herstel deze en probeer het opnieuw."
   upload_failed: Het bestand kon niet worden geüpload. Probeer het opnieuw.
 import_export:
   export_title: Exporteren

@@ -3,6 +3,8 @@ use crate::{Locale, trans};
 type ActualLength = usize;
 type MaxLength = usize;
 type MinLength = usize;
+type ActualCount = usize;
+type MaxCount = usize;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum ValidationError {
@@ -15,6 +17,7 @@ pub enum ValidationError {
     InvalidChecksum,
     InvalidPlaceOfResidence,
     StartsWithLastNamePrefix,
+    TooManyInitials(ActualCount, MaxCount),
     InvalidPostalCode,
     NameAlreadyExists,
     BsnAlreadyExists,
@@ -53,6 +56,9 @@ impl ValidationError {
             }
             ValidationError::StartsWithLastNamePrefix => {
                 trans!("validation.starts_with_last_name_prefix", locale)
+            }
+            ValidationError::TooManyInitials(actual, max) => {
+                trans!("validation.too_many_initials", locale, actual, max)
             }
             ValidationError::InvalidPostalCode => {
                 trans!("validation.invalid_postal_code", locale)
@@ -100,6 +106,10 @@ mod tests {
         assert_eq!(
             ValidationError::InvalidChecksum.message(Locale::En),
             "Invalid BSN."
+        );
+        assert_eq!(
+            ValidationError::TooManyInitials(21, 20).message(Locale::En),
+            "There are too many initials (21), maximum 20 initials allowed."
         );
         assert_eq!(
             ValidationError::StartsWithLastNamePrefix.message(Locale::En),

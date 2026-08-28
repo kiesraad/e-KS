@@ -78,7 +78,8 @@ mod tls {
         // HSTS: served only over TLS, so the header is meaningful here.
         // 1 year + includeSubDomains matches NCSC HTTPS guidance; preload is
         // intentionally omitted (requires explicit registration).
-        let router = router.layer(SetResponseHeaderLayer::if_not_present(
+        // `overriding`, so no handler can hand out a shorter max-age.
+        let router = router.layer(SetResponseHeaderLayer::overriding(
             header::STRICT_TRANSPORT_SECURITY,
             HeaderValue::from_static("max-age=31536000; includeSubDomains"),
         ));

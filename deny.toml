@@ -40,7 +40,4 @@ multiple-versions = "allow"
 ignore = []
 
 [sources]
-allow-git = [
-    "https://github.com/tweedegolf/bag-address-lookup.git",
-    "https://github.com/tweedegolf/textris-pdf.git",
-]
+allow-git = []

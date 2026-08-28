@@ -84,6 +84,8 @@ impl StoreData for PgStoreData {
 
             // Only the serialized event is relevant for logging.
             PgEvent::DeveloperLogin { .. }
+            | PgEvent::Login
+            | PgEvent::Logout
             | PgEvent::DownloadFile { .. }
             | PgEvent::HideDownloadWarning
             | PgEvent::ExportCsv { .. }

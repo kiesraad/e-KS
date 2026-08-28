@@ -285,7 +285,7 @@ mod tests {
         let body = response_body_string(response).await;
         assert!(body.contains("Import failed"));
         assert!(body.contains("The candidate on line 2 could not be imported:"));
-        assert!(body.contains("has 2 columns, but earlier rows have 23"));
+        assert!(body.contains("has 2 columns, but earlier rows have 22"));
         assert_eq!(body.matches("alert alert-warning").count(), 1);
 
         Ok(())
@@ -341,7 +341,7 @@ mod tests {
         let mut csv = format!("{}\r\n", csv_headers());
         for index in 0..(MAX_CANDIDATES + 5) {
             csv.push_str(&format!(
-                "H.A.H.A.,Henk,,Jansen{index},Juinen,NL,kandidaat heeft geen BSN,01-02-1990,v,1234AB,10,A,Stationsstraat,Juinen,,,,,,,,,\r\n"
+                "H.A.H.A.,Henk,,Jansen{index},Juinen,NL,kandidaat heeft geen BSN,01-02-1990,v,1234AB,10,A,Stationsstraat,Juinen,,,,,,,,\r\n"
             ));
         }
 
@@ -382,7 +382,7 @@ mod tests {
         format!(
             "{}\r\n{}",
             csv_headers(),
-            "JD,Henk,,Jansen,Juinen,NL,kandidaat heeft geen BSN,01-02-1990,v,1000,10,A,Stationsstraat,Juinen,,,,,,,,,\r\n"
+            "JD,Henk,,Jansen,Juinen,NL,kandidaat heeft geen BSN,01-02-1990,v,1000,10,A,Stationsstraat,Juinen,,,,,,,,\r\n"
         )
     }
 

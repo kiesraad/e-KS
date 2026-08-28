@@ -144,7 +144,7 @@ pub(crate) use form::{Form, TokenValue};
 pub(crate) use store::{DbHealth, Event};
 pub(crate) use utils::{
     OptionAsStrExt, OptionStringExt, Overlay, QueryParamState, abbreviate_str, overlay_active,
-    pagination, redirect_success, success_alert_requested, transparent_string,
+    pagination, redirect_success, redirect_to_referer, success_alert_requested, transparent_string,
 };
 // Askama resolves custom filters from the enclosing module scope, so template
 // modules do `use crate::filters`.

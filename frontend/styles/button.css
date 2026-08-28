@@ -202,15 +202,15 @@ span.button {
     width: var(--space-8);
   }
 
-  &.icon-edit::after {
+  &.icon-edit::before {
     background-color: currentColor;
     content: "";
-    height: var(--space-4);
+    height: var(--space-5);
     mask-image: url("../icons/edit.svg");
     mask-position: right var(--space-md) center;
     mask-repeat: no-repeat;
     mask-size: contain;
-    width: var(--space-4);
+    width: var(--space-5);
   }
 
   &.icon-trash {

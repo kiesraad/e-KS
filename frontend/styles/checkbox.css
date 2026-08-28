@@ -42,10 +42,6 @@
   > .checkbox {
     width: 100%;
   }
-
-  :has(.hide-alert:checked) ~ .hide-on-input {
-    display: none;
-  }
 }
 
 /* Checkbox and radio input styling */
@@ -210,7 +206,7 @@
       margin-top: var(--space-xs);
       display: block;
       font-size: var(--font-size-md);
-      max-width: 32rem;
+      max-width: 28rem;
     }
   }
 

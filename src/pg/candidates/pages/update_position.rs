@@ -1,4 +1,7 @@
-use crate::structs::candidates::{Candidate, CandidatePosition};
+use crate::structs::{
+    candidates::{Candidate, CandidatePosition},
+    political_groups::PoliticalGroup,
+};
 use askama::Template;
 use axum::{extract::Query, response::IntoResponse};
 
@@ -23,12 +26,29 @@ struct UpdateCandidatePositionTemplate {
     candidate: Candidate,
     form: FormData<CandidatePositionForm>,
     overlay: Overlay,
+    position_warning: Option<PositionWarning>,
+}
+
+struct PositionWarning {
+    max_candidates: usize,
+}
+
+impl PositionWarning {
+    fn new_opt(pg: &PoliticalGroup, candidate: &Candidate) -> Option<Self> {
+        let max_candidates = pg.get_max_candidates();
+        if max_candidates < candidate.position {
+            Some(PositionWarning { max_candidates })
+        } else {
+            None
+        }
+    }
 }
 
 pub async fn update_candidate_position(
     _: UpdateCandidatePositionPath,
     context: Context,
     full_list: FullCandidateList,
+    political_group: PoliticalGroup,
     candidate: Candidate,
     Query(query): Query<QueryParamState>,
 ) -> Result<impl IntoResponse, AppError> {
@@ -36,12 +56,12 @@ pub async fn update_candidate_position(
         position: candidate.position,
         action: FormAction::Save,
     };
-
     let form = FormData::new_with_data(CandidatePositionForm::from(candidate_position.clone()));
 
     Ok(HtmlTemplate(
         UpdateCandidatePositionTemplate {
-            candidate: candidate.clone(),
+            position_warning: PositionWarning::new_opt(&political_group, &candidate),
+            candidate,
             full_list,
             form,
             overlay: Overlay::new(&query),
@@ -67,6 +87,10 @@ pub async fn update_candidate_position_submit(
     match form.validate_update(&candidate_position) {
         Err(form_data) => Ok(HtmlTemplate(
             UpdateCandidatePositionTemplate {
+                position_warning: PositionWarning::new_opt(
+                    &store.get_political_group(),
+                    &candidate,
+                ),
                 candidate,
                 full_list,
                 form: form_data,
@@ -125,6 +149,7 @@ mod tests {
         list.create(&store).await?;
 
         let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
+        let political_group = store.get_political_group();
         let candidate = list.get_candidate(&store, person.id).await?;
 
         let response = update_candidate_position(
@@ -134,6 +159,7 @@ mod tests {
             },
             Context::new_test_without_db(),
             full_list,
+            political_group,
             candidate.clone(),
             Query(QueryParamState::default()),
         )
@@ -144,6 +170,50 @@ mod tests {
         let body = response_body_string(response).await;
         assert!(body.contains(&candidate.update_position_path().to_string()));
         assert!(body.contains("Jansen"));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn update_candidate_position_renders_form_with_warning() -> Result<(), AppError> {
+        let store = PgStore::new_for_test();
+        let list_id = CandidateListId::new();
+        let mut list = sample_candidate_list(list_id);
+        let mut candidates = Vec::new();
+
+        for _ in 0..100 {
+            let person = sample_person(PersonId::new());
+            person.create(&store).await?;
+            candidates.push(person.id);
+        }
+        list.candidates = candidates.clone();
+        list.create(&store).await?;
+
+        let last_candidate_id = candidates.last().unwrap().to_owned();
+
+        let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
+        let political_group = store.get_political_group();
+        let candidate = list.get_candidate(&store, last_candidate_id).await?;
+
+        let response = update_candidate_position(
+            UpdateCandidatePositionPath {
+                list_id,
+                person_id: last_candidate_id,
+            },
+            Context::new_test_without_db(),
+            full_list,
+            political_group,
+            candidate.clone(),
+            Query(QueryParamState::default()),
+        )
+        .await?
+        .into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        assert!(body.contains(&candidate.update_position_path().to_string()));
+        assert!(body.contains("Jansen"));
+        assert!(body.contains("Warning: More than 50 candidates on this list"));
 
         Ok(())
     }

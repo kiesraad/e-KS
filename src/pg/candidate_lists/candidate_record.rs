@@ -1,6 +1,9 @@
-use crate::structs::{
-    common::{BsnOrNoneConfirmed, DutchAddress},
-    persons::{Person, Representative},
+use crate::{
+    common::MinimalNameForm,
+    structs::{
+        common::{BsnOrNoneConfirmed, DutchAddress},
+        persons::{Person, Representative},
+    },
 };
 use serde::{Deserialize, Serialize};
 use validate::Validate;
@@ -14,7 +17,7 @@ use crate::{
 };
 
 const NO_BSN: &str = "kandidaat heeft geen BSN";
-pub(crate) const CSV_HEADERS: [&str; 23] = [
+pub(crate) const CSV_HEADERS: [&str; 22] = [
     "voorletters",
     "roepnaam",
     "voorvoegsel",
@@ -30,7 +33,6 @@ pub(crate) const CSV_HEADERS: [&str; 23] = [
     "correspondentie_straatnaam",
     "correspondentie_plaats",
     "gemachtigde_voorletters",
-    "gemachtigde_roepnaam",
     "gemachtigde_voorvoegsel",
     "gemachtigde_achternaam",
     "gemachtigde_postcode",
@@ -79,7 +81,6 @@ pub(crate) struct CandidateRecordCsv {
     correspondentie_plaats: String,
 
     gemachtigde_voorletters: String,
-    gemachtigde_roepnaam: String,
     gemachtigde_voorvoegsel: String,
     gemachtigde_achternaam: String,
 
@@ -93,8 +94,7 @@ pub(crate) struct CandidateRecordCsv {
 impl From<CandidateRecordCsv> for CandidateRecord {
     fn from(csv: CandidateRecordCsv) -> Self {
         let representative = RepresentativeForm {
-            name: FullNameForm {
-                first_name: csv.gemachtigde_roepnaam,
+            name: MinimalNameForm {
                 last_name: csv.gemachtigde_achternaam,
                 last_name_prefix: csv.gemachtigde_voorvoegsel,
                 initials: csv.gemachtigde_voorletters,
@@ -189,7 +189,6 @@ impl From<Person> for CandidateRecordCsv {
             correspondentie_plaats: address.locality.to_string_or_default(),
 
             gemachtigde_voorletters: representative.name.initials.to_string(),
-            gemachtigde_roepnaam: representative.name.first_name.to_string_or_default(),
             gemachtigde_voorvoegsel: representative.name.last_name_prefix.to_string_or_default(),
             gemachtigde_achternaam: representative.name.last_name.to_string(),
             gemachtigde_postcode: representative.address.postal_code.to_string_or_default(),
@@ -358,7 +357,6 @@ mod tests {
             geboortedatum: "20-10-2000".to_string(),
             geslacht: "v".to_string(),
             gemachtigde_voorletters: "P.".to_string(),
-            gemachtigde_roepnaam: "Pietje".to_string(),
             gemachtigde_voorvoegsel: String::new(),
             gemachtigde_achternaam: "Puk".to_string(),
             gemachtigde_postcode: "5678CD".to_string(),
@@ -383,7 +381,7 @@ mod tests {
         assert_eq!(representative.name.initials.to_string(), "P.");
         assert_eq!(
             display_opt(&representative.name.first_name).as_deref(),
-            Some("Pietje")
+            None
         );
         assert_eq!(representative.name.last_name.to_string(), "Puk");
         assert_address(

@@ -6,7 +6,7 @@ use askama::Template;
 use auth_service::{AuthFailure, AuthState, handle_logout};
 use axum::{
     extract::State,
-    http::HeaderMap,
+    http::{HeaderMap, HeaderName, HeaderValue},
     response::{IntoResponse, Response},
 };
 use axum_extra::extract::CookieJar;
@@ -76,14 +76,25 @@ pub async fn logout_submit<S: AppRequestState + AuthState>(
 
 /// GET `/logged-out`: post-logout confirmation page (TVS T7, also the SLO
 /// landing). Public: by definition there is no session left to show it with.
+///
+/// `Clear-Site-Data` drops what the session left on the client. `"cookies"` is
+/// left out: browsers widen it to the whole registrable domain, which would sign
+/// the user out of unrelated `kiesraad.nl` sites.
 pub async fn logged_out(_: LoggedOutPath, headers: HeaderMap) -> Response {
-    HtmlTemplate(
+    let mut response = HtmlTemplate(
         LoggedOutTemplate,
         LocaleValues {
             locale: Locale::from_headers(&headers),
         },
     )
-    .into_response()
+    .into_response();
+
+    response.headers_mut().insert(
+        HeaderName::from_static("clear-site-data"),
+        HeaderValue::from_static("\"cache\", \"storage\""),
+    );
+
+    response
 }
 
 /// Response page for a cancelled (T3), failed (L10), or unavailable auth attempt.
@@ -281,6 +292,54 @@ mod tests {
             .to_str()
             .unwrap();
         assert_eq!(location, PgIndexPath.to_string());
+    }
+
+    /// Signing in and out is recorded on the stream's audit log.
+    #[cfg(feature = "fixtures")]
+    #[tokio::test]
+    async fn login_and_logout_are_recorded_on_the_stream() {
+        use crate::{ElectionConfig, PgEvent, PgStore, store::StoreData};
+
+        let state = crate::AppState::new_for_tests().await;
+        let id_code = SecretString::from("999999990");
+        let stream_id = state.id_deriver().derive_stream_id(&id_code);
+        let store = PgStore::own(
+            state
+                .store_for_stream(stream_id, ElectionConfig::EK27, true)
+                .await
+                .unwrap(),
+        );
+
+        let response = state
+            .on_authenticated(
+                subject("999999990"),
+                "name-id-xyz".to_string(),
+                CookieJar::new(),
+                &HeaderMap::new(),
+            )
+            .await;
+        let cookie = response
+            .headers()
+            .get(header::SET_COOKIE)
+            .expect("session cookie")
+            .to_str()
+            .unwrap();
+        let token = Cookie::parse(cookie).unwrap().value().to_string();
+
+        let recorded = |store: &PgStore, want: fn(&PgEvent) -> bool| {
+            store.data.read().events().iter().any(|e| want(&e.payload))
+        };
+        assert!(
+            recorded(&store, |e| matches!(e, PgEvent::Login)),
+            "login must be recorded"
+        );
+
+        let _ = state.logout_session(jar_with_session_cookie(&token)).await;
+
+        assert!(
+            recorded(&store, |e| matches!(e, PgEvent::Logout)),
+            "logout must be recorded"
+        );
     }
 
     #[tokio::test]
