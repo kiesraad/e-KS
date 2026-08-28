@@ -438,10 +438,15 @@ dependencies = [
 ]
 
 [[package]]
-name = "bag_address_lookup"
-version = "0.8.1"
-source = "git+https://github.com/tweedegolf/bag-address-lookup.git?rev=e58060b03ed9bd321a829ea82e6299743d7f8ebe#e58060b03ed9bd321a829ea82e6299743d7f8ebe"
+name = "bagatel"
+version = "0.8.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dbf44126a27f82c30787a64ebf5369e427a63f3ad642f2645b5fb8cb3af5ffd3"
 dependencies = [
+ "percent-encoding",
+ "serde",
+ "serde_json",
+ "tokio",
  "zstd",
 ]
 
@@ -913,7 +918,7 @@ dependencies = [
  "axum",
  "axum-extra",
  "axum-server",
- "bag_address_lookup",
+ "bagatel",
  "bytes",
  "chrono",
  "chrono-tz",
@@ -959,7 +964,7 @@ dependencies = [
 
 [[package]]
 name = "eks-development"
-version = "0.5.6"
+version = "0.5.7"
 dependencies = [
  "anyhow",
  "eks",
@@ -1347,13 +1352,14 @@ dependencies = [
 
 [[package]]
 name = "harfrust"
-version = "0.12.0"
+version = "0.13.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c03d949a14aa089bbb282f7dd76a498a7f684428e4257202efc119ec010376f9"
+checksum = "948d0741125ba89cd3e1c23e5642415b6ade7e1d29d67ba25fb925b533e989d6"
 dependencies = [
  "bitflags",
  "bytemuck",
- "read-fonts 0.41.0",
+ "once_cell",
+ "read-fonts 0.43.3",
  "smallvec",
 ]
 
@@ -2430,9 +2436,9 @@ dependencies = [
 
 [[package]]
 name = "read-fonts"
-version = "0.41.0"
+version = "0.43.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "046a7d674daf459825b32f5062056d6882db0d2f5a479fbd76ccfc870ac18709"
+checksum = "005c8acf251756c478b0bf402885bfd88a1476020c4c7e6060edc1aa68da38ea"
 dependencies = [
  "bytemuck",
  "font-types 0.12.4",
@@ -3246,12 +3252,13 @@ dependencies = [
 
 [[package]]
 name = "textris-pdf"
-version = "0.9.0"
-source = "git+https://github.com/tweedegolf/textris-pdf.git?rev=4560b774438e7eca0c17b58481145935fedb1eee#4560b774438e7eca0c17b58481145935fedb1eee"
+version = "0.10.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d7d9ebba09a8d9d5326908457ff01ccb82754df5fc5ef374ec6d31f6d059fbc8"
 dependencies = [
  "harfrust",
  "krilla",
- "read-fonts 0.41.0",
+ "read-fonts 0.43.3",
  "time",
 ]
 

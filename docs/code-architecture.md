@@ -461,7 +461,7 @@ tool renders every example and visually diffs the output against a saved
 baseline (`tmp/main-pdfs/`, created with
 `cargo run --bin pdf_diff -- --save-baseline`).
 
-### [`bag_address_lookup`](https://github.com/tweedegolf/bag-address-lookup): Dutch address lookup
+### [`bagatel`](https://github.com/tweedegolf/bagatel): Dutch address lookup
 
 Address fields are validated and autocompleted against the BAG
 (*Basisregistratie Adressen en Gebouwen*): postal code + house number resolve
