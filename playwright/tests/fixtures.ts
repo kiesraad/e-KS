@@ -67,6 +67,9 @@ export const test = base.extend<Fixtures>({
     await page.getByRole("cell", { name: groupName }).click();
     await page.getByRole("link", { name: "Verwijderen" }).click();
     await page.getByRole("button", { name: "Verwijderen" }).click();
+    // wait for the redirect to the overview, so the fixture does not tear
+    // down while the delete request is still in flight
+    await page.waitForURL(/\/csb\/examination$/);
   },
 
   // Login as CSB and import a political group with a unique name, but no cleanup after

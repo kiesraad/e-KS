@@ -130,7 +130,8 @@ body.overlay-skip-anim .overlay {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .overlay {
+  .overlay,
+  .overlay.animation {
     animation: none;
   }
 }

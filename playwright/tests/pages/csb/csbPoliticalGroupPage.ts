@@ -52,5 +52,8 @@ export class CsbPoliticalGroupPage {
   async deleteGroup() {
     await this.linkDelete.click();
     await this.buttonDeleteConfirm.click();
+    // wait for the redirect to the overview, so the test does not end while
+    // the delete request is still in flight
+    await this.page.waitForURL(/\/csb\/examination$/);
   }
 }

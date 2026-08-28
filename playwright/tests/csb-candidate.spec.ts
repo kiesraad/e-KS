@@ -25,7 +25,7 @@ test.describe("check candidate and add corrections and omissions", async () => {
       page.getByRole("heading", { name: "Peereboom, P. (Patricia)" }),
     ).toBeVisible();
     await candidatePage.linkInitials.click();
-    await correctionsPage.addCorrection("Z");
+    await correctionsPage.addCorrection("Z.");
     await expect(candidatePage.textCorrectedInitials).toHaveText("Z.");
     await candidatePage.linkLastName.click();
     await correctionsPage.addCorrection("Pereboom");
@@ -101,7 +101,7 @@ test.describe("check candidate and add corrections and omissions", async () => {
         await omissionsPage.textfieldLetter.fill("Testtoevoeging");
       }
       await omissionsPage.buttonAddAndClose.click();
-      await expect(page.locator('[role="dialog"]')).toBeHidden();
+      await expect(page.locator("form.overlay")).toBeHidden();
       await candidatePage.linkManageOmissions.click();
       await page.waitForURL(/\/omission\//);
       await expect(page.getByText(text).first()).toBeVisible();
@@ -169,6 +169,7 @@ test.describe("check candidate and add corrections and omissions", async () => {
 
     for (const { button, text, resolvable } of omissions) {
       await candidatePage.linkAddOmission.click();
+      await page.waitForURL(/\/omission\//);
       await expect(
         page.getByRole("heading", {
           name: "Verzuimen - Peereboom, P. (Patricia)",
@@ -186,8 +187,9 @@ test.describe("check candidate and add corrections and omissions", async () => {
         await omissionsPage.textfieldLetter.fill("Testtoevoeging");
       }
       await omissionsPage.buttonAddAndClose.click();
-      await expect(page.locator('[role="dialog"]')).toBeHidden();
+      await expect(page.locator("form.overlay")).toBeHidden();
       await candidatePage.linkManageOmissions.click();
+      await page.waitForURL(/\/omission\//);
       await expect(page.getByText(text).first()).toBeVisible();
       if (resolvable) {
         await expect(page.getByText("Testtoevoeging")).toBeVisible();

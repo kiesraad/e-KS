@@ -54,7 +54,7 @@ test.describe("check candidate list and add corrections and omissions", async ()
         await omissionsPage.textfieldLetter.fill("Testtoevoeging");
       }
       await omissionsPage.buttonAddAndClose.click();
-      await expect(page.locator('[role="dialog"]')).toBeHidden();
+      await expect(page.locator("form.overlay")).toBeHidden();
       await candidateListPage.linkManageOmissions.click();
       await page.waitForURL(/\/omission\//);
       await expect(page.getByText(text)).toBeVisible();
@@ -129,7 +129,7 @@ test.describe("check candidate list and add corrections and omissions", async ()
         await omissionsPage.textfieldLetter.fill("Testtoevoeging");
       }
       await omissionsPage.buttonAddAndClose.click();
-      await expect(page.locator('[role="dialog"]')).toBeHidden();
+      await expect(page.locator("form.overlay")).toBeHidden();
       await candidateListPage.linkManageOmissions.click();
       await page.waitForURL(/\/omission\//);
       await expect(page.getByText(text)).toBeVisible();

@@ -47,7 +47,7 @@ test.describe("check general information and add corrections and omissions", asy
         await omissionsPage.textfieldLetter.fill("Testtoevoeging");
       }
       await omissionsPage.buttonAddAndClose.click();
-      await expect(page.locator('[role="dialog"]')).toBeHidden();
+      await expect(page.locator("form.overlay")).toBeHidden();
       await generalInformationPage.linkManageOmissions.click();
       await page.waitForURL(/\/omission\//);
       await expect(page.getByText(text)).toBeVisible();
@@ -172,7 +172,7 @@ test.describe("check general information and add corrections and omissions", asy
         await omissionsPage.textfieldLetter.fill("Testtoevoeging");
       }
       await omissionsPage.buttonAddAndClose.click();
-      await expect(page.locator('[role="dialog"]')).toBeHidden();
+      await expect(page.locator("form.overlay")).toBeHidden();
       await generalInformationPage.linkManageOmissions.click();
       await page.waitForURL(/\/omission\//);
       await expect(page.getByText(text)).toBeVisible();

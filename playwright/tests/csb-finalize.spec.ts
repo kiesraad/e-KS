@@ -39,7 +39,7 @@ test("finalize examination with omissions", async ({ csbImport }) => {
   await expect(omissionsPage.checkboxRecoverable).toBeChecked();
   await omissionsPage.textfieldLetter.fill("Testtoevoeging");
   await omissionsPage.buttonAddAndClose.click();
-  await expect(page.locator('[role="dialog"]')).toBeHidden();
+  await expect(page.locator("form.overlay")).toBeHidden();
 
   await expect(page.getByText("Onderzoek afronden")).toBeVisible();
   await expect(page.locator(".candidate-lists")).not.toHaveClass(/disabled/);

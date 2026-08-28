@@ -46,9 +46,8 @@ impl PersonRecord {
         let initials = self
             .voornamen
             .split_whitespace()
-            .filter_map(|n| n.chars().next().map(|c| c.to_string()))
-            .collect::<Vec<String>>()
-            .join(".");
+            .filter_map(|n| n.chars().next().map(|c| format!("{c}.")))
+            .collect::<String>();
 
         let locality = if self.woonplaats.is_empty() {
             None
