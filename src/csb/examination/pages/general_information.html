@@ -2,7 +2,7 @@
 {% import "csb/components/paper_corrected.html" as paper_corrected %}
 {% block breadcrumbs %}
   {{ breadcrumb(crate::csb::examination::CsbExaminationOverviewPath, "csb.examination") }}
-  {{ breadcrumb(political_group.examination_path() , political_group.csb_display_name(), is_translatable=false) }}
+  {{ breadcrumb(political_group.examination_path() , political_group.csb_appellation(), is_translatable=false) }}
   {{ breadcrumb(political_group.general_information_path() , "common.general_information") }}
 {% endblock %}
 {% block page_title %}
@@ -12,39 +12,23 @@
   {% set back_url = political_group.examination_path() %}
   {% include "csb/components/header_examination_actions.html" %}
 {% endblock %}
-{% macro columns_head(label) %}
-  <thead>
-    <tr>
-      <th scope="col">{{ label }}</th>
-      <th scope="col">{{ "csb.general.status"|trans }}</th>
-      <th scope="col"></th>
-    </tr>
-  </thead>
-{% endmacro %}
-{% macro data_row(label, value) %}
-  <tr>
-    <td>{{ label }}: {{ paper_corrected::value(value) }}</td>
-    <td></td>
-    <td></td>
-  </tr>
-{% endmacro %}
 {% macro submitter_tables(submitter) %}
   <table class="detail-table">
-    {{ columns_head("csb.general.personalia"|trans) }}
+    {{ paper_corrected::columns_head("csb.general.personalia"|trans) }}
     <tbody>
-      {{ data_row("person.fields.initials"|trans, submitter.initials) }}
-      {{ data_row("person.fields.last_name"|trans, submitter.last_name) }}
+      {{ paper_corrected::data_row("person.fields.initials"|trans, submitter.initials) }}
+      {{ paper_corrected::data_row("person.fields.last_name"|trans, submitter.last_name) }}
     </tbody>
   </table>
   <table class="detail-table">
-    {{ columns_head("person.correspondence_address"|trans) }}
+    {{ paper_corrected::columns_head("person.correspondence_address"|trans) }}
     <tbody>
-      {{ data_row("person.fields.postal_code"|trans, submitter.postal_code) }}
-      {{ data_row("person.fields.house_number"|trans, submitter.house_number) }}
-      {{ data_row("person.fields.street_name"|trans, submitter.street_name) }}
-      {{ data_row("person.fields.locality"|trans, submitter.locality) }}
-      {{ data_row("person.fields.state_or_province"|trans, submitter.state_or_province) }}
-      {{ data_row("person.fields.country"|trans, submitter.country) }}
+      {{ paper_corrected::data_row("person.fields.postal_code"|trans, submitter.postal_code) }}
+      {{ paper_corrected::data_row("person.fields.house_number"|trans, submitter.house_number) }}
+      {{ paper_corrected::data_row("person.fields.street_name"|trans, submitter.street_name) }}
+      {{ paper_corrected::data_row("person.fields.locality"|trans, submitter.locality) }}
+      {{ paper_corrected::data_row("person.fields.state_or_province"|trans, submitter.state_or_province) }}
+      {{ paper_corrected::data_row("person.fields.country"|trans, submitter.country) }}
     </tbody>
   </table>
 {% endmacro %}
@@ -93,18 +77,18 @@
     </div>
     <h2>{{ "csb.general.group_info"|trans }}</h2>
     <table class="detail-table">
-      {{ columns_head("common.general_information"|trans) }}
+      {{ paper_corrected::columns_head("common.general_information"|trans) }}
       <tbody>
         <tr class="clickable">
-          <td>{{ "political_group.display_name"|trans }}: {{ paper_corrected::value(group_info.display_name) }}</td>
+          <td>{{ "political_group.appellation"|trans }}: {{ paper_corrected::value(group_info.appellation) }}</td>
           <td></td>
           <td class="actions">
-            <a href="{{ political_group.correction_display_name_path() }}"
+            <a href="{{ political_group.correction_appellation_path() }}"
                aria-label="{{ "action.edit"|trans }}"></a>
           </td>
         </tr>
-        {{ data_row("political_group.list_type"|trans, group_info.list_type) }}
-        {{ data_row("problems.no_previous_election_results"|trans, group_info.previous_results) }}
+        {{ paper_corrected::data_row("political_group.list_type"|trans, group_info.list_type) }}
+        {{ paper_corrected::data_row("problems.no_previous_election_results"|trans, group_info.previous_results) }}
       </tbody>
     </table>
     {% if name_authorisations.is_empty() %}
@@ -112,10 +96,10 @@
     {% else %}
       {% for name_authorisation in name_authorisations %}
         <table class="detail-table">
-          {{ columns_head(name_authorisation.heading) }}
+          {{ paper_corrected::columns_head(name_authorisation.heading) }}
           <tbody>
-            {{ data_row("political_group.legal_name"|trans, name_authorisation.legal_name) }}
-            {{ data_row("political_group.authorised_agent"|trans, name_authorisation.authorised_agent) }}
+            {{ paper_corrected::data_row("political_group.legal_name"|trans, name_authorisation.legal_name) }}
+            {{ paper_corrected::data_row("political_group.authorised_agent"|trans, name_authorisation.authorised_agent) }}
           </tbody>
         </table>
       {% endfor %}

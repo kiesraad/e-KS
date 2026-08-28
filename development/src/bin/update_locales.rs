@@ -1,11 +1,19 @@
 use std::{
     borrow::Cow,
     collections::{BTreeMap, BTreeSet, HashSet},
+    ffi::OsStr,
     path::Path,
 };
 
 use anyhow::{Context, Result};
+use eks_locales::{collect_locale_files, find_used_keys};
 use saphyr::{LoadableYamlNode, Mapping, Scalar, Yaml, YamlEmitter};
+
+/// Escape text like `\u00AD` must survive the YAML round-trip verbatim (see
+/// load_locales.rs). The `\u` prefix is masked with a private-use character
+/// before parsing and restored after emitting.
+const ESCAPE_PREFIX: &str = "\\u";
+const ESCAPE_MASK: char = '\u{E042}';
 
 /// In-memory representation of locale YAML structures.
 #[derive(Debug, Clone)]
@@ -13,9 +21,6 @@ enum LocaleNode {
     Map(BTreeMap<String, LocaleNode>),
     String(String),
 }
-
-include!("../../../tooling/locales/collect_locale_files.rs");
-include!("../../../tooling/locales/find_used_keys.rs");
 
 /// Parse YAML into a structured tree while enforcing string-only leaves.
 fn yaml_to_node(yaml: &Yaml, file: &Path, path: &str) -> Result<LocaleNode> {
@@ -215,6 +220,15 @@ fn parse_locale_root(file: &Path) -> Result<LocaleNode> {
     let input = std::fs::read_to_string(file)
         .with_context(|| format!("failed to read locale file {}", file.display()))?;
 
+    if input.contains(ESCAPE_MASK) {
+        anyhow::bail!(
+            "locale file {} contains reserved character U+E042",
+            file.display()
+        );
+    }
+
+    let input = input.replace(ESCAPE_PREFIX, ESCAPE_MASK.to_string().as_str());
+
     let docs = Yaml::load_from_str(&input)
         .with_context(|| format!("failed to parse YAML in {}", file.display()))?;
 
@@ -278,6 +292,7 @@ fn write_locale_file(node: &LocaleNode, file: &Path) -> Result<()> {
         .dump(&yaml_out)
         .with_context(|| format!("failed to emit YAML for {}", file.display()))?;
 
+    let output = output.replace(ESCAPE_MASK, ESCAPE_PREFIX);
     let mut output = output.strip_prefix("---\n").unwrap_or(&output).to_string();
     output.push('\n');
 
@@ -289,7 +304,7 @@ fn process_locale_file(file: &Path, used_keys: &[String], stats: &mut LocaleStat
     stats.files_processed += 1;
     let basename = file
         .file_stem()
-        .and_then(|s| s.to_str())
+        .and_then(OsStr::to_str)
         .context("Failed to get locale file stem")?;
 
     let mut node = parse_locale_root(file)?;

@@ -2,10 +2,12 @@
 {% import "pg/common/components/macros.html" as macros %}
 {% block breadcrumbs %}
   {{ breadcrumb(crate::csb::examination::CsbExaminationOverviewPath, "csb.examination") }}
-  {{ breadcrumb(political_group.examination_path() , political_group.csb_display_name(), is_translatable=false) }}
+  {{ breadcrumb(political_group.examination_path() , political_group.csb_appellation(), is_translatable=false) }}
 {% endblock %}
 {% block page_title %}
-  {{ political_group.csb_display_name() }}
+  {{ political_group.csb_appellation() }}
+  <a class="button tertiary-destructive icon-trash"
+     href="{{ political_group.delete_path() }}">{{ "action.delete"|trans }}</a>
 {% endblock %}
 {% block header_action %}
   {% set back_url = crate::csb::examination::CsbExaminationOverviewPath %}
@@ -67,8 +69,8 @@
             <h3 class="h4">{{ "common.general_information"|trans }}</h3>
           </div>
         </div>
+        {{ omission_badge(political_group_status) }}
         <div class="card-content">
-          {{ omission_count_badge(political_group_omission_count) }}
           <ul class="card-instruction">
             <li>{{ "csb.group.instruction_group"|trans }}</li>
             <li>{{ "csb.group.instruction_submitter"|trans }}</li>
@@ -85,11 +87,11 @@
             <h3 class="h4">{{ "csb.declarations_of_support.title"|trans }}</h3>
           </div>
         </div>
+        {{ omission_badge(declarations_of_support_status) }}
         <div class="card-content">
           <ul class="card-instruction">
             <li>{{ "csb.declarations_of_support.instruction"|trans }}</li>
           </ul>
-          {{ omission_count_badge(declarations_of_support_omission_count) }}
         </div>
         <a class="card-footer" href="{{ declarations_of_support_card_path }}">{{ "csb.omission.action.manage"|trans }}</a>
       </div>
@@ -116,6 +118,9 @@
                   <a class="error" href="#">{{ "csb.group.brp_errors.plural"|trans(&candidate_list.brp_error_count.to_string() ) }}</a>
                 {% endif %}
               </li>
+              {% if candidate_list.restoration_status.has_changes() %}
+                <li>{{ omission_badge(candidate_list.restoration_status) }}</li>
+              {% endif %}
             </ul>
             <p>{{ "csb.group.candidate_count"|trans(&candidate_list.list.candidates.len().to_string())|safe }}</p>
             {% if !election.has_only_one_district() %}

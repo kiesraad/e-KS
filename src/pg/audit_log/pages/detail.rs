@@ -117,7 +117,7 @@ mod tests {
     use super::*;
     use crate::{
         AppError, Context, PgStore,
-        persons::PersonId,
+        structs::persons::PersonId,
         test_utils::{response_body_string, sample_person},
     };
     use axum::{http::StatusCode, response::IntoResponse};
@@ -156,7 +156,7 @@ mod tests {
         let person_name = person.name.display();
         person.create(&store).await?;
 
-        let list_id = crate::candidate_lists::CandidateListId::new();
+        let list_id = crate::structs::candidate_lists::CandidateListId::new();
         let list = sample_candidate_list(list_id);
         list.create(&store).await?;
 
@@ -190,7 +190,7 @@ mod tests {
         );
         assert!(
             body.contains(&person_name),
-            "expected person display name to appear next to the abbreviated id"
+            "expected person appellation to appear next to the abbreviated id"
         );
 
         Ok(())
@@ -338,15 +338,20 @@ mod tests {
         Ok(())
     }
 
+    /// Number of consent declarations (h9) in a zip documents response.
+    async fn h9_entry_count(response: axum::response::Response) -> usize {
+        crate::test_utils::zip_entry_names(response)
+            .await
+            .iter()
+            .filter(|filename| filename.starts_with("h9-instemmingsverklaringen/"))
+            .count()
+    }
+
     #[tokio::test]
     async fn audit_log_gen_documents_returns_zip_response() -> Result<(), AppError> {
-        use axum::{
-            http::{StatusCode, header},
-            response::IntoResponse,
-        };
-        use regex::Regex;
+        use axum::{http::StatusCode, response::IntoResponse};
 
-        use crate::test_utils::{self, setup_documents_test_state, zip_entry_names};
+        use crate::test_utils::{self, assert_zip_response_headers, setup_documents_test_state};
 
         let (store, _, context) =
             setup_documents_test_state(1, 5, true, true, crate::ElectionConfig::EK27).await?;
@@ -385,35 +390,7 @@ mod tests {
         .into_response();
 
         assert_eq!(response_4_candidates.status(), StatusCode::OK);
-        let headers = response_4_candidates.headers().clone();
-        assert_eq!(
-            headers
-                .get(header::CONTENT_TYPE)
-                .expect("content type header"),
-            "application/zip"
-        );
-        assert!(
-            Regex::new("attachment; filename=\"kiesraad-demo-ek27-v\\d+\\.zip\"")
-                .unwrap()
-                .is_match(
-                    headers
-                        .get(header::CONTENT_DISPOSITION)
-                        .expect("content disposition header")
-                        .to_str()
-                        .unwrap()
-                )
-        );
-        assert_eq!(
-            headers
-                .get(header::CACHE_CONTROL)
-                .expect("cache control header"),
-            "no-store, no-cache, must-revalidate, max-age=0"
-        );
-        assert_eq!(
-            headers.get(header::PRAGMA).expect("pragma header"),
-            "no-cache"
-        );
-        assert_eq!(headers.get(header::EXPIRES).expect("expires header"), "0");
+        assert_zip_response_headers(response_4_candidates.headers());
 
         // check if two download events are present
         let download_event_count = store
@@ -423,19 +400,8 @@ mod tests {
             .count();
         assert_eq!(2, download_event_count);
 
-        let h9_count_4_candidates = zip_entry_names(response_4_candidates)
-            .await
-            .iter()
-            .filter(|filename| filename.starts_with("h9-instemmingsverklaringen/"))
-            .count();
-        assert_eq!(4, h9_count_4_candidates);
-
-        let h9_count_5_candidates = zip_entry_names(response_5_candidates)
-            .await
-            .iter()
-            .filter(|filename| filename.starts_with("h9-instemmingsverklaringen/"))
-            .count();
-        assert_eq!(5, h9_count_5_candidates);
+        assert_eq!(4, h9_entry_count(response_4_candidates).await);
+        assert_eq!(5, h9_entry_count(response_5_candidates).await);
 
         Ok(())
     }

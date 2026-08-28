@@ -7,12 +7,13 @@ export MEMORY_SERVE_QUIET=1
 FULL=false
 for arg in "$@"; do
     case "$arg" in
-        --full) FULL=true ;;
+        -a|--all|--full) FULL=true ;;
         -h|--help)
             echo "Usage: bin/check [--full]"
             echo
             echo "  --full  Run the Rust checks for the whole workspace with"
-            echo "          --all-features, and also build the API docs."
+            echo "          --all-features, build the API docs, and run the"
+            echo "          dylint libraries."
             exit 0
             ;;
         *)
@@ -23,29 +24,34 @@ for arg in "$@"; do
     esac
 done
 
-# rust
-SCOPE=()
-if [ "$FULL" = true ]; then
-    SCOPE=(--workspace --all-features)
-fi
-
 echo "==> Rust checks"
-cargo check ${SCOPE[@]+"${SCOPE[@]}"}
-cargo +nightly fmt --all -- --config imports_granularity="Crate"
-cargo clippy --all-targets ${SCOPE[@]+"${SCOPE[@]}"} -- -D warnings
-cargo test ${SCOPE[@]+"${SCOPE[@]}"}
-
 if [ "$FULL" = true ]; then
-    echo "==> Rust docs"
-    cargo doc --workspace --no-deps --all-features --document-private-items
+    cargo check --locked --workspace --all-features
+    cargo +nightly fmt --all -- --config imports_granularity="Crate"
+    cargo clippy --locked --all-targets --workspace --all-features -- -D warnings
+    cargo test --locked --workspace --all-features
+    cargo doc --locked --workspace --no-deps --all-features --document-private-items
+    cargo dylint --all -- --locked
+else
+    cargo +nightly fmt --all -- --config imports_granularity="Crate"
+    cargo clippy --locked --all-targets -- -D warnings
+    cargo test --locked
 fi
 
 # typescript
+echo "==> Typescript checks"
 ./bin/biome check --fix ./frontend
 ./bin/biome check --fix ./playwright/tests
 
 # html
-docker run --rm -v ./src:/work/templates djlint
+echo "==> Html checks"
+# fix for devs that use docker rootless
+if docker info -f '{{.SecurityOptions}}' | grep -q rootless; then
+  DOCKER_USER="0:0"
+else
+  DOCKER_USER="$(id -u):$(id -g)"
+fi
+docker run --rm -v ./src:/work/templates --user "$DOCKER_USER" djlint
 
 # generic
 ./bin/check_newline

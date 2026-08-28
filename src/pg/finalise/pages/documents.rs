@@ -20,10 +20,12 @@ mod tests {
     use super::*;
     use crate::{
         ElectionConfig,
-        common::{BsnOrNoneConfirmed, CountryCode, FullName},
         core::ModelLocale,
-        name_authorisations::NameAuthorisationId,
-        persons::Representative,
+        structs::{
+            common::{BsnOrNoneConfirmed, CountryCode, FullName},
+            name_authorisations::NameAuthorisationId,
+            persons::Representative,
+        },
         test_utils::{sample_name_authorisation, setup_documents_test_state},
     };
 
@@ -82,7 +84,8 @@ mod tests {
             setup_documents_test_state(1, 1, true, true, ElectionConfig::EK27).await?;
 
         let mut political_group = store.get_political_group();
-        political_group.list_designation = Some(crate::list_designation::ListDesignation::Combined);
+        political_group.list_designation =
+            Some(crate::structs::list_designation::ListDesignation::Combined);
         political_group.update(&store).await?;
 
         let response = gen_documents(
@@ -109,7 +112,8 @@ mod tests {
             setup_documents_test_state(1, 1, true, true, ElectionConfig::EK27).await?;
 
         let mut political_group = store.get_political_group();
-        political_group.list_designation = Some(crate::list_designation::ListDesignation::Blank);
+        political_group.list_designation =
+            Some(crate::structs::list_designation::ListDesignation::Blank);
         political_group.update(&store).await?;
 
         let response = gen_documents(
@@ -134,7 +138,7 @@ mod tests {
             setup_documents_test_state(1, 1, true, true, ElectionConfig::EK27).await?;
 
         let mut political_group = store.get_political_group();
-        political_group.display_name = None;
+        political_group.appellation = None;
         political_group.update(&store).await?;
 
         let result = gen_documents(
@@ -181,11 +185,9 @@ mod tests {
 
     #[tokio::test]
     async fn gen_documents_returns_zip_response() -> Result<(), AppError> {
-        use axum::{
-            http::{StatusCode, header},
-            response::IntoResponse,
-        };
-        use regex::Regex;
+        use axum::{http::StatusCode, response::IntoResponse};
+
+        use crate::test_utils::assert_zip_response_headers;
 
         let (store, list_ids, context) =
             setup_documents_test_state(2, 2, true, true, ElectionConfig::EK27).await?;
@@ -207,35 +209,7 @@ mod tests {
         .into_response();
 
         assert_eq!(response.status(), StatusCode::OK);
-        let headers = response.headers().clone();
-        assert_eq!(
-            headers
-                .get(header::CONTENT_TYPE)
-                .expect("content type header"),
-            "application/zip"
-        );
-        assert!(
-            Regex::new("attachment; filename=\"kiesraad-demo-ek27-v\\d+\\.zip\"")
-                .unwrap()
-                .is_match(
-                    headers
-                        .get(header::CONTENT_DISPOSITION)
-                        .expect("content disposition header")
-                        .to_str()
-                        .unwrap()
-                )
-        );
-        assert_eq!(
-            headers
-                .get(header::CACHE_CONTROL)
-                .expect("cache control header"),
-            "no-store, no-cache, must-revalidate, max-age=0"
-        );
-        assert_eq!(
-            headers.get(header::PRAGMA).expect("pragma header"),
-            "no-cache"
-        );
-        assert_eq!(headers.get(header::EXPIRES).expect("expires header"), "0");
+        assert_zip_response_headers(response.headers());
 
         let entry_names = crate::test_utils::zip_entry_names(response).await;
         for folder in expected_folders {

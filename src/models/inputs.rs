@@ -8,13 +8,15 @@ use tracing::error;
 
 use crate::{
     AppError, ElectionConfig,
-    candidate_lists::CandidateList,
-    candidates::Candidate as AppCandidate,
-    common::{Address, BsnOrNoneConfirmed},
     core::{ElectionType, ModelLocale},
-    list_submitters::ListSubmitter,
-    name_authorisations::NameAuthorisation as AppNameAuthorisation,
-    persons::Representative,
+    structs::{
+        candidate_lists::CandidateList,
+        candidates::Candidate as AppCandidate,
+        common::{Address, BsnOrNoneConfirmed},
+        list_submitters::ListSubmitter,
+        name_authorisations::NameAuthorisation as AppNameAuthorisation,
+        persons::Representative,
+    },
 };
 
 /// Input data shared by the H models.
@@ -22,7 +24,7 @@ use crate::{
 pub struct ModelData {
     pub election_name: String,
     pub election_type: ElectionType,
-    pub designation: String,
+    pub appellation: String,
     pub candidates: Vec<Candidate>,
     pub locale: ModelLocale,
     pub event_id: usize,
@@ -252,14 +254,16 @@ mod tests {
     use super::*;
     use crate::{
         ElectoralDistrict,
-        candidate_lists::CandidateListId,
-        common::{
-            CountryCode, DutchAddress, FullName, HouseNumber, Initials, LastName, Locality,
-            PostalCode, StreetName,
-        },
         core::election::WaterCouncil,
-        list_submitters::ListSubmitterId,
-        persons::PersonId,
+        structs::{
+            candidate_lists::CandidateListId,
+            common::{
+                CountryCode, DutchAddress, FullName, HouseNumber, Initials, LastName, Locality,
+                PostalCode, StreetName,
+            },
+            list_submitters::ListSubmitterId,
+            persons::PersonId,
+        },
         test_utils::{sample_list_submitter, sample_person, sample_person_with_last_name},
     };
 

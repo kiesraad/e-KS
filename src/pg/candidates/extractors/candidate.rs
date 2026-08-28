@@ -1,6 +1,6 @@
 use axum::extract::Path;
 
-use crate::{AppError, candidates::Candidate, pg::request_extractor, trans};
+use crate::{AppError, pg::request_extractor, structs::candidates::Candidate, trans};
 
 use super::CandidateListAndPersonPathParams;
 
@@ -40,10 +40,8 @@ mod tests {
     use tower::ServiceExt;
 
     use crate::{
-        AppState, Locale, PgStore,
-        candidate_lists::CandidateListId,
-        persons::PersonId,
-        render_error_pages,
+        AppState, Locale, PgStore, render_error_pages,
+        structs::{candidate_lists::CandidateListId, persons::PersonId},
         test_utils::{response_body_string, sample_candidate_list, sample_person},
     };
 

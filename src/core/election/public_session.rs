@@ -1,9 +1,10 @@
-use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
+use chrono::NaiveDateTime;
 use serde::{Serialize, Serializer, ser::SerializeStruct};
 
 use crate::core::constants::{DEFAULT_DATE_FORMAT, DEFAULT_TIME_FORMAT};
 
-#[derive(Debug, Clone, Copy)]
+/// The derived `Default` uses the Unix epoch as datetime.
+#[derive(Debug, Clone, Copy, Default)]
 pub struct PublicSession {
     pub location: &'static str,
     pub datetime: NaiveDateTime,
@@ -18,20 +19,6 @@ impl PublicSession {
 
     pub fn formatted_time(&self) -> String {
         self.datetime.format(DEFAULT_TIME_FORMAT).to_string()
-    }
-}
-
-impl Default for PublicSession {
-    fn default() -> Self {
-        Self {
-            location: "",
-            datetime: NaiveDateTime::new(
-                NaiveDate::from_ymd_opt(1970, 1, 1).unwrap(),
-                NaiveTime::from_hms_opt(0, 0, 0).unwrap(),
-            ),
-            chair: "",
-            members: &[],
-        }
     }
 }
 

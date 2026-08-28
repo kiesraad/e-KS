@@ -2,8 +2,8 @@ use chrono::NaiveDate;
 use serde::Deserialize;
 
 use crate::{
-    common::{Bsn, BsnOrNoneConfirmed, DateOfBirth, DutchAddress, FullName},
-    persons::PersonalData,
+    structs::common::{Bsn, BsnOrNoneConfirmed, DateOfBirth, DutchAddress, FullName},
+    structs::persons::PersonalData,
 };
 
 #[derive(Debug, Deserialize)]

@@ -2,9 +2,10 @@
 //! `EntityRef`s the template can render as abbreviated clickable links plus a
 //! human-readable description.
 
-use crate::{PgStoreData, candidate_lists::CandidateListId, persons::PersonId};
-
-pub use crate::structs::audit_log::EntityRef;
+use crate::{
+    ElectoralDistrict, PgStoreData,
+    structs::{audit_log::EntityRef, candidate_lists::CandidateListId, persons::PersonId},
+};
 
 /// Entity types that can appear as ID references inside diff values.
 enum EntityKind {
@@ -78,7 +79,7 @@ fn describe_entity(kind: &EntityKind, id_str: &str, state: &PgStoreData) -> Stri
             .map(|cl| {
                 cl.electoral_districts
                     .iter()
-                    .map(|d| d.code())
+                    .map(ElectoralDistrict::code)
                     .collect::<Vec<_>>()
                     .join(", ")
             })

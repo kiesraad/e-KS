@@ -173,7 +173,7 @@ mod tests {
     use crate::{
         AppError, Context, PgStore,
         pagination::Pagination,
-        persons::PersonId,
+        structs::persons::PersonId,
         test_utils::{response_body_string, sample_person, sample_political_group},
     };
     use axum::{extract::Query, http::StatusCode, response::IntoResponse};

@@ -47,13 +47,27 @@ pub struct TlsConfig {
     pub key_path: PathBuf,
 }
 
-/// TLS configuration for serving HTTPS via rustls.
+/// BRP client configuration.
 #[derive(Debug, Clone)]
 pub struct BrpConfig {
     pub base_url: String,
     pub api_key: String,
     pub persons_endpoint: String,
     pub timeout: Duration,
+}
+
+/// ACME (Let's Encrypt) certificate-renewal configuration.
+#[derive(Debug, Clone)]
+pub struct AcmeConfig {
+    /// Deliberately no default, so production orders are always explicit.
+    pub directory_url: String,
+    /// FQDN to order the certificate for.
+    pub domain: String,
+    /// Account credentials JSON produced by the `create_acme_account` tool
+    /// (development crate); contains the account's private key.
+    pub account_credentials: SecretString,
+    /// Extra trust root for the directory's own TLS (pebble testing only).
+    pub root_ca_path: Option<PathBuf>,
 }
 
 /// Runtime configuration loaded from environment variables.
@@ -63,6 +77,8 @@ pub struct Config {
     pub id_derivation_key: SecretString,
     pub master_encryption_key: SecretString,
     pub tls: Option<TlsConfig>,
+    /// ACME certificate renewal; requires `tls`.
+    pub acme: Option<AcmeConfig>,
     /// Short identifier of the server this instance runs on (e.g. "S1"),
     /// rendered next to the version in the layout footer.
     pub server_name: Option<String>,
@@ -94,6 +110,78 @@ where
     }
 }
 
+/// Offline sanity check; the credentials are bound to their directory, so a
+/// staging account can never be deployed against production (or vice versa).
+fn check_account_credentials(credentials: &str, directory_url: &str) -> Result<(), AppError> {
+    let value: serde_json::Value = serde_json::from_str(credentials).map_err(|e| {
+        AppError::ConfigLoadError(format!("ACME_ACCOUNT_CREDENTIALS is not valid JSON: {e}"))
+    })?;
+    if value.get("directory").and_then(|v| v.as_str()) != Some(directory_url) {
+        return Err(AppError::ConfigLoadError(
+            "ACME_ACCOUNT_CREDENTIALS was not created for ACME_DIRECTORY_URL; \
+             run `create_acme_account` against this directory"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+/// TLS config from `TLS_CERT_PATH` and `TLS_KEY_PATH`; both or neither must be
+/// set.
+fn tls_from_env<F>(lookup: &mut F) -> Result<Option<TlsConfig>, AppError>
+where
+    F: FnMut(&'static str) -> Result<String, env::VarError>,
+{
+    match (lookup("TLS_CERT_PATH").ok(), lookup("TLS_KEY_PATH").ok()) {
+        (Some(cert), Some(key)) => Ok(Some(TlsConfig {
+            cert_path: PathBuf::from(cert),
+            key_path: PathBuf::from(key),
+        })),
+        (None, None) => Ok(None),
+        _ => Err(AppError::ConfigLoadError(
+            "TLS_CERT_PATH and TLS_KEY_PATH must both be set, or both unset".to_string(),
+        )),
+    }
+}
+
+/// ACME config from `ACME_DIRECTORY_URL` and `ACME_DOMAIN`; both or neither
+/// must be set, and renewal requires TLS plus directory-bound credentials.
+fn acme_from_env<F>(lookup: &mut F, has_tls: bool) -> Result<Option<AcmeConfig>, AppError>
+where
+    F: FnMut(&'static str) -> Result<String, env::VarError>,
+{
+    let directory_url = lookup("ACME_DIRECTORY_URL").ok().filter(|s| !s.is_empty());
+    let domain = lookup("ACME_DOMAIN").ok().filter(|s| !s.is_empty());
+
+    match (directory_url, domain) {
+        (Some(directory_url), Some(domain)) => {
+            if !has_tls {
+                return Err(AppError::ConfigLoadError(
+                    "ACME renewal requires TLS_CERT_PATH and TLS_KEY_PATH".to_string(),
+                ));
+            }
+            let account_credentials = lookup("ACME_ACCOUNT_CREDENTIALS")
+                .ok()
+                .filter(|s| !s.is_empty())
+                .ok_or(AppError::MissingEnvVar("ACME_ACCOUNT_CREDENTIALS"))?;
+            check_account_credentials(&account_credentials, &directory_url)?;
+            Ok(Some(AcmeConfig {
+                directory_url,
+                domain,
+                account_credentials: SecretString::from(account_credentials),
+                root_ca_path: lookup("ACME_ROOT_CA_PATH")
+                    .ok()
+                    .filter(|s| !s.is_empty())
+                    .map(PathBuf::from),
+            }))
+        }
+        (None, None) => Ok(None),
+        _ => Err(AppError::ConfigLoadError(
+            "ACME_DIRECTORY_URL and ACME_DOMAIN must both be set, or both unset".to_string(),
+        )),
+    }
+}
+
 impl Config {
     pub fn from_env() -> Result<Self, AppError> {
         Self::from_env_with(env::var)
@@ -108,18 +196,8 @@ impl Config {
 
         let master_encryption_key = get_env_with("MASTER_ENCRYPTION_KEY", &mut lookup)?;
 
-        let tls = match (lookup("TLS_CERT_PATH").ok(), lookup("TLS_KEY_PATH").ok()) {
-            (Some(cert), Some(key)) => Some(TlsConfig {
-                cert_path: PathBuf::from(cert),
-                key_path: PathBuf::from(key),
-            }),
-            (None, None) => None,
-            _ => {
-                return Err(AppError::ConfigLoadError(
-                    "TLS_CERT_PATH and TLS_KEY_PATH must both be set, or both unset".to_string(),
-                ));
-            }
-        };
+        let tls = tls_from_env(&mut lookup)?;
+        let acme = acme_from_env(&mut lookup, tls.is_some())?;
 
         let server_name = lookup("SERVER_NAME").ok().filter(|s| !s.is_empty());
 
@@ -158,6 +236,7 @@ impl Config {
             id_derivation_key: SecretString::from(id_derivation_key),
             master_encryption_key: SecretString::from(master_encryption_key),
             tls,
+            acme,
             server_name,
             eks_key,
             disable_auth_service,
@@ -172,6 +251,7 @@ impl Config {
             id_derivation_key: SecretString::from("test-secret-123"),
             master_encryption_key: SecretString::from("test-encryption-secret-123"),
             tls: None,
+            acme: None,
             server_name: None,
             eks_key: None,
             disable_auth_service: false,
@@ -314,6 +394,123 @@ mod tests {
     #[test]
     fn from_env_errors_when_only_tls_key_set() {
         let map = HashMap::from([("TLS_KEY_PATH", "/etc/tls/key.pem")]);
+        let lookup = lookup_from(&map);
+
+        let err = Config::from_env_with(lookup).expect_err("err");
+        assert!(matches!(err, AppError::ConfigLoadError(_)));
+    }
+
+    #[test]
+    fn from_env_returns_no_acme_when_unset() {
+        let map = HashMap::new();
+        let lookup = lookup_from(&map);
+
+        let config = Config::from_env_with(lookup).expect("config");
+
+        assert!(config.acme.is_none());
+    }
+
+    const TEST_ACME_CREDENTIALS: &str = concat!(
+        r#"{"id":"https://acme-staging-v02.api.letsencrypt.org/acme/acct/123","#,
+        r#""key_pkcs8":"bm90LWEtcmVhbC1rZXk","#,
+        r#""directory":"https://acme-staging-v02.api.letsencrypt.org/directory"}"#
+    );
+
+    #[test]
+    fn from_env_returns_acme_when_set_with_tls() {
+        let map = HashMap::from([
+            ("TLS_CERT_PATH", "/etc/tls/cert.pem"),
+            ("TLS_KEY_PATH", "/etc/tls/key.pem"),
+            (
+                "ACME_DIRECTORY_URL",
+                "https://acme-staging-v02.api.letsencrypt.org/directory",
+            ),
+            ("ACME_DOMAIN", "example.nl"),
+            ("ACME_ACCOUNT_CREDENTIALS", TEST_ACME_CREDENTIALS),
+        ]);
+        let lookup = lookup_from(&map);
+
+        let config = Config::from_env_with(lookup).expect("config");
+        let acme = config.acme.expect("acme present");
+
+        assert_eq!(
+            acme.directory_url,
+            "https://acme-staging-v02.api.letsencrypt.org/directory"
+        );
+        assert_eq!(acme.domain, "example.nl");
+        assert_eq!(
+            acme.account_credentials.expose_secret(),
+            TEST_ACME_CREDENTIALS
+        );
+        assert!(acme.root_ca_path.is_none());
+    }
+
+    #[test]
+    fn from_env_errors_when_acme_credentials_missing() {
+        let map = HashMap::from([
+            ("TLS_CERT_PATH", "/etc/tls/cert.pem"),
+            ("TLS_KEY_PATH", "/etc/tls/key.pem"),
+            ("ACME_DIRECTORY_URL", "https://localhost:14000/dir"),
+            ("ACME_DOMAIN", "example.nl"),
+        ]);
+        let lookup = lookup_from(&map);
+
+        let err = Config::from_env_with(lookup).expect_err("err");
+        assert_eq!(
+            err.to_string(),
+            AppError::MissingEnvVar("ACME_ACCOUNT_CREDENTIALS").to_string()
+        );
+    }
+
+    #[test]
+    fn from_env_errors_when_acme_credentials_are_not_json() {
+        let map = HashMap::from([
+            ("TLS_CERT_PATH", "/etc/tls/cert.pem"),
+            ("TLS_KEY_PATH", "/etc/tls/key.pem"),
+            ("ACME_DIRECTORY_URL", "https://localhost:14000/dir"),
+            ("ACME_DOMAIN", "example.nl"),
+            ("ACME_ACCOUNT_CREDENTIALS", "not json"),
+        ]);
+        let lookup = lookup_from(&map);
+
+        let err = Config::from_env_with(lookup).expect_err("err");
+        assert!(matches!(err, AppError::ConfigLoadError(_)));
+    }
+
+    #[test]
+    fn from_env_errors_when_acme_credentials_are_for_another_directory() {
+        let map = HashMap::from([
+            ("TLS_CERT_PATH", "/etc/tls/cert.pem"),
+            ("TLS_KEY_PATH", "/etc/tls/key.pem"),
+            ("ACME_DIRECTORY_URL", "https://localhost:14000/dir"),
+            ("ACME_DOMAIN", "example.nl"),
+            ("ACME_ACCOUNT_CREDENTIALS", TEST_ACME_CREDENTIALS),
+        ]);
+        let lookup = lookup_from(&map);
+
+        let err = Config::from_env_with(lookup).expect_err("err");
+        assert!(matches!(err, AppError::ConfigLoadError(_)));
+    }
+
+    #[test]
+    fn from_env_errors_when_only_acme_directory_set() {
+        let map = HashMap::from([
+            ("TLS_CERT_PATH", "/etc/tls/cert.pem"),
+            ("TLS_KEY_PATH", "/etc/tls/key.pem"),
+            ("ACME_DIRECTORY_URL", "https://localhost:14000/dir"),
+        ]);
+        let lookup = lookup_from(&map);
+
+        let err = Config::from_env_with(lookup).expect_err("err");
+        assert!(matches!(err, AppError::ConfigLoadError(_)));
+    }
+
+    #[test]
+    fn from_env_errors_when_acme_set_without_tls() {
+        let map = HashMap::from([
+            ("ACME_DIRECTORY_URL", "https://localhost:14000/dir"),
+            ("ACME_DOMAIN", "example.nl"),
+        ]);
         let lookup = lookup_from(&map);
 
         let err = Config::from_env_with(lookup).expect_err("err");

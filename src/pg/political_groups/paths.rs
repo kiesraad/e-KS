@@ -2,7 +2,7 @@
 
 use axum_extra::routing::TypedPath;
 
-use crate::{AppError, political_groups::PoliticalGroup};
+use crate::{AppError, structs::political_groups::PoliticalGroup};
 
 #[derive(TypedPath)]
 #[typed_path("/political-group/information", rejection(AppError))]

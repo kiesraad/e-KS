@@ -2,16 +2,16 @@ use askama::Template;
 use axum_extra::routing::TypedPath;
 
 use crate::{
-    AppError, Context, CsbStore, ElectoralDistrict, Locale, Overlay, QueryParamState,
-    candidate_lists::CandidateListId,
-    csb::{
-        WithCorrections,
-        examination::{OmissionForm, pages::CsbDeleteOmissionPath},
-    },
+    AppError, Context, CsbStore, ElectoralDistrict, Locale, Overlay,
+    csb::examination::{OmissionForm, pages::CsbDeleteOmissionPath},
     filters,
     form::FormData,
-    persons::PersonId,
-    structs::csb::{Omission, OmissionPlaceholders, OmissionType},
+    projection::WithCorrections,
+    structs::{
+        candidate_lists::CandidateListId,
+        csb::{Omission, OmissionPlaceholders, OmissionType},
+        persons::PersonId,
+    },
 };
 
 use super::OmissionTarget;
@@ -33,9 +33,8 @@ pub(super) struct CsbAddOmissionTemplate {
     pub(super) close_action: String,
     /// Quick-fill suggestions for this type, with placeholders interpolated.
     pub(super) presets: Vec<PresetView>,
-    /// The dialog opened on its two tabs, for the steps sidebar.
-    pub(super) add_tab_url: String,
-    pub(super) overview_tab_url: String,
+    /// target to generate urls from, for the steps sidebar.
+    pub(super) omission_target: OmissionTarget,
     /// Districts that appear on at least one paper-corrected candidate list of
     /// this political group. The districts section is hidden when this is
     /// empty. Districts absent from all lists are shown disabled so the user
@@ -55,19 +54,26 @@ pub(super) struct CsbOmissionOverviewTemplate {
     pub(super) close_action: String,
     /// The omissions already added to this entity, each with a remove action.
     pub(super) omissions: Vec<OmissionView>,
-    /// The dialog opened on its two tabs, for the steps sidebar.
-    pub(super) add_tab_url: String,
-    pub(super) overview_tab_url: String,
+    /// target to generate urls from, for the steps sidebar.
+    pub(super) omission_target: OmissionTarget,
     pub(super) title_suffix: String,
 }
 
-/// An omission in the overview tab, paired with the URL of its remove action
-/// (which returns to this same overview afterwards).
+/// An omission in the overview tab; the URL of its remove action is derived
+/// from the dialog's target via `remove_url`.
 pub(super) struct OmissionView {
     omission: Omission,
-    remove_url: String,
     /// Formatted district string for display (e.g. "1. Groningen, 2. Friesland").
     districts: String,
+}
+
+impl OmissionView {
+    fn remove_url(&self, omission_target: &OmissionTarget) -> impl TypedPath {
+        CsbDeleteOmissionPath {
+            stream_id: omission_target.stream_id,
+            omission_id: self.omission.id,
+        }
+    }
 }
 
 /// A preset shown in the dialog, with `{token}` placeholders in its description
@@ -107,12 +113,18 @@ fn placeholders_for(target: &OmissionTarget, store: &CsbStore) -> OmissionPlaceh
     }
 }
 
-/// All paper-corrected candidate lists of the political group for the
-/// candidate omission form
-pub(super) fn candidate_list_options(store: &CsbStore, locale: Locale) -> Vec<CandidateListOption> {
+/// Candidate lists of the political group, optionally filtered to those
+/// containing a specific candidate. When `person_id` is `None`, returns all
+/// lists; when `Some`, returns only lists this candidate appears on.
+pub(super) fn candidate_list_options(
+    store: &CsbStore,
+    locale: Locale,
+    person_filter: Option<PersonId>,
+) -> Vec<CandidateListOption> {
     store
         .get_candidate_lists(WithCorrections::All)
         .into_iter()
+        .filter(|l| person_filter.is_none_or(|id| l.candidates.contains(&id)))
         .map(|l| CandidateListOption {
             id: l.id,
             label: l.districts_name(locale.into()),
@@ -152,12 +164,10 @@ pub(super) fn preset_views(target: &OmissionTarget, store: &CsbStore) -> Vec<Pre
 
 /// The omissions already added to the entity the dialog was opened for, shown
 /// on the overview tab. A candidate lists every omission for the person, both
-/// list-scoped and general. Each is paired with a remove action that returns to
-/// `overview_url` afterwards.
+/// list-scoped and general.
 pub(super) fn omission_views(
     target: &OmissionTarget,
     store: &CsbStore,
-    overview_url: &str,
 ) -> Result<Vec<OmissionView>, AppError> {
     let omissions = match target.omission_type {
         OmissionType::PoliticalGroup => store.get_political_group_omissions(),
@@ -174,12 +184,6 @@ pub(super) fn omission_views(
             .category
             .electoral_district(store, &store.election)?;
         views.push(OmissionView {
-            remove_url: CsbDeleteOmissionPath {
-                stream_id: target.stream_id,
-                omission_id: omission.id,
-            }
-            .with_query_params(QueryParamState::redirect_to(overview_url.to_string()))
-            .to_string(),
             omission,
             districts,
         });

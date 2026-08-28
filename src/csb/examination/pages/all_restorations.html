@@ -1,8 +1,9 @@
 {% extends "csb/components/layout.html" %}
 {% import "pg/common/components/macros.html" as macros %}
+{% import "csb/components/paper_corrected.html" as paper_corrected %}
 {% block breadcrumbs %}
   {{ breadcrumb(crate::csb::examination::CsbExaminationOverviewPath, "csb.examination") }}
-  {{ breadcrumb(political_group.examination_path() , political_group.csb_display_name(), is_translatable=false) }}
+  {{ breadcrumb(political_group.examination_path() , political_group.csb_appellation(), is_translatable=false) }}
   {{ breadcrumb(political_group.all_restorations_path() , "csb.all_restorations.title") }}
 {% endblock %}
 {% block page_title %}
@@ -24,6 +25,9 @@
       {{ "csb.omission.title"|trans }}
     </h3>
     <p>{{ "csb.all_restorations.omissions_explanation"|trans }}</p>
+    {% if omission_count == 0 %}
+      <p class="font-italic mt-md">{{ "csb.omission.overview.no_omissions"|trans }}</p>
+    {% endif %}
     {% if !all_omissions.general.is_empty() %}
       <h4>{{ "common.general_information"|trans }}</h4>
       <ul class="tags-list">
@@ -73,6 +77,31 @@
       {{ "csb.correction.title"|trans }}
     </h3>
     <p>{{ "csb.all_restorations.corrections_explanation"|trans }}</p>
-    <p class="font-italic">Under construction...</p>
+    {% if correction_count == 0 %}
+      <p class="font-italic mt-md">{{ "csb.omission.overview.no_corrections"|trans }}</p>
+    {% else %}
+      {% if !all_corrections.general.is_empty() %}
+        <table class="detail-table mt-md">
+          {{ paper_corrected::columns_head("common.general_information"|trans) }}
+          <tbody>
+            {% for correction in all_corrections.general %}
+              {{ paper_corrected::editable_data_row(correction.label, correction.corrected, correction.edit_path) }}
+            {% endfor %}
+          </tbody>
+        </table>
+      {% endif %}
+      {% for candidate in all_corrections.candidates %}
+        <table class="detail-table mt-md">
+          {{ paper_corrected::columns_head(candidate.person.name.display() ) }}
+          <tbody>
+            {% for correction in candidate.corrections %}
+              {{ paper_corrected::editable_data_row(correction.label, correction.corrected, correction.edit_path) }}
+            {% endfor %}
+          </tbody>
+        </table>
+      {% endfor %}
+    {% endif %}
+    <p class="mt-md mb-sm">{{ "csb.all_restorations.add_note_explanation"|trans }}</p>
+    <button class="button secondary icon-plus">{{ "csb.all_restorations.add_note"|trans }}</button>
   </div>
 {% endblock %}

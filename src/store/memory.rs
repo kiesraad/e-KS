@@ -16,7 +16,7 @@ use std::{collections::HashMap, sync::Arc};
 
 use parking_lot::RwLock;
 
-use super::StreamMeta;
+use super::{EventHash, StreamMeta};
 use crate::{AppError, ElectionConfig, Scope, StreamId};
 
 /// Per-stream metadata recorded by the in-memory backend.
@@ -59,7 +59,7 @@ pub(crate) fn record_event(
     stream_id: StreamId,
     election: ElectionConfig,
     event_id: usize,
-    hash: [u8; 32],
+    hash: EventHash,
 ) {
     store
         .inner

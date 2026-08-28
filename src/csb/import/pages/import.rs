@@ -8,17 +8,15 @@ use axum::{
 use serde::Deserialize;
 
 use crate::{
-    AppError, AppState, Context, CsbContext, CsbEvent, CsbStoreData, Form, HtmlTemplate, Locale,
-    PgStoreData, StreamId,
-    csb::{
-        WithCorrections,
-        examination::{CsbExaminationOverviewPath, CsbPoliticalGroupPath},
-    },
+    AppError, AppRequestState, Context, CsbContext, CsbEvent, CsbStoreData, Form, HtmlTemplate,
+    Locale, PgStoreData, StreamId,
+    csb::examination::{CsbExaminationOverviewPath, CsbPoliticalGroupPath},
     filters,
-    persons::Person,
+    projection::WithCorrections,
     redirect_success,
     store::Store,
     structs::brp::{BrpClient, BrpStatus},
+    structs::persons::Person,
     trans,
     utils::parse_hash_prefix,
 };
@@ -50,9 +48,9 @@ pub struct ImportForm {
 }
 
 /// Import the package identified by the submitted chain hash.
-pub async fn import_submit(
+pub async fn import_submit<S: AppRequestState>(
     _: CsbImportPath,
-    State(state): State<AppState>,
+    State(state): State<S>,
     context: CsbContext,
     Form(form): Form<ImportForm>,
 ) -> Result<Response, AppError> {
@@ -76,8 +74,8 @@ pub async fn import_submit(
 /// a fresh CSB stream keyed on the source election. The source `stream_id` is
 /// carried on the event for reference; it is never reused as the CSB partition,
 /// which would collide with the PG stream's own events there.
-async fn do_import(
-    state: &AppState,
+async fn do_import<S: AppRequestState>(
+    state: &S,
     form: ImportForm,
     locale: Locale,
 ) -> Result<Response, AppError> {
@@ -85,18 +83,19 @@ async fn do_import(
         .ok_or_else(|| AppError::UserError(trans!("csb.import.error.invalid_hash", locale)))?;
 
     let (source_stream_id, source_election, event_id) = state
-        .store_registry
+        .store_registry()
         .persistence()
         .find_event_by_hash_prefix(&hash_prefix)
         .await?
         .ok_or_else(|| AppError::UserError(trans!("csb.import.error.not_found", locale)))?;
 
     // Reject if this source stream has already been imported.
-    for store in state.csb_store_registry.stores_by_scope().await? {
-        let already_imported = store.data.read().events.first().is_some_and(|e| {
-            matches!(&e.payload, CsbEvent::Import { source_stream_id: sid, .. } if *sid == source_stream_id)
+    for store in state.csb_store_registry().stores_by_scope().await? {
+        let already_imported_and_not_deleted = store.data.read().events.first().is_some_and(|e| {
+            matches!(&e.payload, CsbEvent::Import { source_stream_id: sid, .. } if *sid == source_stream_id) &&
+            !store.is_deleted()
         });
-        if already_imported {
+        if already_imported_and_not_deleted {
             return Err(AppError::UserError(trans!(
                 "csb.import.error.already_imported",
                 locale
@@ -133,7 +132,7 @@ async fn do_import(
         })
         .await?;
 
-    do_brp_verification(&csb_store, &state.brp_client).await?;
+    do_brp_verification(&csb_store, state.brp_client()).await?;
 
     Ok(redirect_success(CsbPoliticalGroupPath {
         stream_id: csb_store.stream_id,
@@ -141,9 +140,9 @@ async fn do_import(
 }
 
 /// Create a new empty CSB store without importing from a political-group stream.
-pub async fn create_empty(
+pub async fn create_empty<S: AppRequestState>(
     _: CsbCreateEmptyPath,
-    State(state): State<AppState>,
+    State(state): State<S>,
     context: CsbContext,
 ) -> Result<Response, AppError> {
     let csb_store = state
@@ -261,7 +260,9 @@ mod tests {
     use axum::http::StatusCode;
 
     use crate::{
-        AppState, CsbContext, ElectionConfig, PgEvent,
+        AppState, CsbContext,
+        CsbEvent::Delete,
+        ElectionConfig, PgEvent,
         test_utils::{response_body_string, sample_person_from_brp},
         utils::format_hash,
     };
@@ -367,7 +368,7 @@ mod tests {
         assert_eq!(response.status(), StatusCode::SEE_OTHER);
 
         // The import is recorded under a fresh CSB stream, carrying the source.
-        let csb_stores = state.csb_store_registry.stores_by_scope().await?;
+        let csb_stores = state.csb_store_registry().stores_by_scope().await?;
         assert_eq!(csb_stores.len(), 1);
         let imported = csb_stores[0].data.read().events.first().is_some_and(|e| {
             matches!(&e.payload, CsbEvent::Import { source_stream_id, .. } if *source_stream_id == source_stream)
@@ -410,7 +411,7 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
 
         // Only the first import was recorded.
-        let csb_stores = state.csb_store_registry.stores_by_scope().await?;
+        let csb_stores = state.csb_store_registry().stores_by_scope().await?;
         assert_eq!(csb_stores.len(), 1);
 
         Ok(())
@@ -432,7 +433,7 @@ mod tests {
         assert_eq!(response.status(), StatusCode::SEE_OTHER);
 
         // A single CSB store is recorded carrying the CreateEmpty event.
-        let csb_stores = state.csb_store_registry.stores_by_scope().await?;
+        let csb_stores = state.csb_store_registry().stores_by_scope().await?;
         assert_eq!(csb_stores.len(), 1);
         let data = csb_stores[0].data.read();
         assert!(matches!(
@@ -463,7 +464,7 @@ mod tests {
         wait_for_brp_status_finished(&csb_store).await;
         let omission = csb_store.get_omission_for_test();
         assert_eq!(
-            omission.description,
+            omission.description.as_str(),
             "De huisnummertoevoeging komt niet overeen met de BRP"
         );
 
@@ -525,6 +526,64 @@ mod tests {
         do_brp_verification(&csb_store, &brp_client).await?;
         tokio::time::sleep(Duration::from_millis(100)).await;
         assert_eq!(csb_store.data.read().omissions.len(), 1);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn reimport_deleted_allowed() -> Result<(), AppError> {
+        let state = AppState::new_for_tests().await;
+        let (_, hash) = seed_source_event(&state).await?;
+
+        let context = CsbContext::new_test();
+        let response = import_submit(
+            CsbImportPath {},
+            State(state.clone()),
+            context,
+            Form(ImportForm { hash: hash.clone() }),
+        )
+        .await?
+        .into_response();
+        // First import succeeds (redirects away from import page)
+        assert_eq!(response.status(), StatusCode::SEE_OTHER);
+
+        let csb_stores = state.csb_store_registry().stores_by_scope().await?;
+        assert_eq!(csb_stores.len(), 1);
+
+        // mark imported store as deleted
+        csb_stores[0].update(Delete).await?;
+
+        // Re-importing the same source stream is rejected against the cached CSB
+        // store (the in-memory backend persists nothing, so the duplicate check
+        // must consult the live registry).
+        let context = CsbContext::new_test();
+        let response = import_submit(
+            CsbImportPath {},
+            State(state.clone()),
+            context,
+            Form(ImportForm { hash: hash.clone() }),
+        )
+        .await?
+        .into_response();
+
+        dbg!(&response);
+
+        // second import succeeds too as first import got deleted
+        assert_eq!(response.status(), StatusCode::SEE_OTHER);
+
+        let csb_stores = state.csb_store_registry().stores_by_scope().await?;
+        assert_eq!(csb_stores.iter().filter(|s| s.is_deleted()).count(), 1);
+        assert_eq!(csb_stores.iter().filter(|s| !s.is_deleted()).count(), 1);
+        for store in csb_stores {
+            if let CsbEvent::Import {
+                hash: import_hash, ..
+            } = store.data.read().events.first().unwrap().payload
+            {
+                assert_eq!(hash.clone(), format_hash(&import_hash, false));
+            } else {
+                panic!("No import")
+            }
+        }
 
         Ok(())
     }

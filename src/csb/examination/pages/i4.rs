@@ -1,53 +1,22 @@
-use std::collections::BTreeMap;
-
 use axum::{extract::State, http::HeaderValue, response::IntoResponse};
 
 use crate::{
-    AppError, CsbMainStore, CsbStoreData,
+    AppError, AppRequestState, CsbMainStore,
     core::{ModelLocale, constants::DEFAULT_DATE_FORMAT},
-    csb::examination::pages::CsbI4DownloadPath,
-    models::{
-        Pdf,
-        i4::{I4, OmissionGroup},
-    },
-    store::StoreRegistry,
+    csb::examination::{actions::found_omissions, pages::CsbI4DownloadPath},
+    models::{Pdf, i4::I4},
     utils::no_cache_headers,
 };
 
 const PDF_CONTENT_TYPE: &str = "application/pdf";
 
-pub async fn gen_i4(
+pub async fn gen_i4<S: AppRequestState>(
     _: CsbI4DownloadPath,
     main_store: CsbMainStore,
-    State(csb_registry): State<StoreRegistry<CsbStoreData>>,
+    State(state): State<S>,
 ) -> Result<impl IntoResponse, AppError> {
     let election = main_store.election;
-
-    let mut found_omissions = Vec::new();
-    for store in csb_registry.stores_by_scope().await? {
-        let recoverable = store.get_recoverable_omissions();
-        if recoverable.is_empty() {
-            continue;
-        }
-
-        let mut by_district: BTreeMap<String, Vec<String>> = BTreeMap::new();
-        for omission in recoverable {
-            let district = omission.category.electoral_district(&store, &election)?;
-            by_district
-                .entry(district)
-                .or_default()
-                .push(omission.description);
-        }
-
-        let designation = store.get_display_name(crate::csb::WithCorrections::All);
-        for (district, descriptions) in by_district {
-            found_omissions.push(OmissionGroup {
-                designation: designation.clone(),
-                electoral_district: district,
-                omission_descriptions: descriptions,
-            });
-        }
-    }
+    let found_omissions = found_omissions(state.csb_store_registry(), &election).await?;
 
     let model = I4 {
         election_name: election.formal_title(ModelLocale::Nl),
@@ -60,8 +29,8 @@ pub async fn gen_i4(
         recovered_omissions: Vec::new(),
         invalid_lists: Vec::new(),
         removed_candidates: Vec::new(),
-        removed_designations: Vec::new(),
-        corrected_designations: Vec::new(),
+        removed_appellations: Vec::new(),
+        corrected_appellations: Vec::new(),
         valid_lists: Vec::new(),
         numbered_based_on_votes: Vec::new(),
         numbered_based_on_districts: Vec::new(),
@@ -85,20 +54,17 @@ pub async fn gen_i4(
 mod tests {
     use super::*;
     use axum::{
-        extract::FromRef,
         http::{StatusCode, header},
         response::IntoResponse,
     };
 
-    use crate::{AppState, store::StoreRegistry};
+    use crate::AppState;
 
     #[tokio::test]
     async fn gen_i4_returns_pdf_response() -> Result<(), AppError> {
         let main_store = CsbMainStore::new_for_test();
         let state = AppState::new_for_tests().await;
-        let csb_registry = StoreRegistry::<CsbStoreData>::from_ref(&state);
-
-        let response = gen_i4(CsbI4DownloadPath, main_store, State(csb_registry))
+        let response = gen_i4(CsbI4DownloadPath, main_store, State(state))
             .await?
             .into_response();
 

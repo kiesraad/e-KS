@@ -6,13 +6,9 @@ use axum::{
 use chrono::{DateTime, Utc};
 
 use crate::{
-    AppError, AppState, Context, CsbContext, CsbMainStore, Event, HtmlTemplate, Locale, Overlay,
-    QueryParamState,
-    csb::{CSB_MAIN_STREAM_ID, audit_log::pages::CsbAuditLogDetailPath},
-    filters,
-    store::StoreEvent,
-    structs::audit_log::FieldChange,
-    trans,
+    AppError, AppRequestState, Context, CsbContext, CsbMainStore, Event, HtmlTemplate, Locale,
+    Overlay, QueryParamState, csb::audit_log::pages::CsbAuditLogDetailPath, filters,
+    projection::CSB_MAIN_STREAM_ID, store::StoreEvent, structs::audit_log::FieldChange, trans,
 };
 
 struct CsbEventDetail {
@@ -54,14 +50,14 @@ struct CsbAuditLogDetailTemplate {
     overlay: Overlay,
 }
 
-pub async fn csb_audit_log_detail(
+pub async fn csb_audit_log_detail<S: AppRequestState>(
     CsbAuditLogDetailPath {
         stream_id,
         event_id,
     }: CsbAuditLogDetailPath,
     context: CsbContext,
     main_store: CsbMainStore,
-    State(state): State<AppState>,
+    State(state): State<S>,
     Query(query): Query<QueryParamState>,
 ) -> Result<impl IntoResponse, AppError> {
     let locale = context.session.locale;
@@ -74,7 +70,7 @@ pub async fn csb_audit_log_detail(
             locale,
         )?
     } else {
-        let import_stores = state.csb_store_registry.stores_by_scope().await?;
+        let import_stores = state.csb_store_registry().stores_by_scope().await?;
         let store = import_stores
             .iter()
             .find(|s| s.stream_id == stream_id)
@@ -83,7 +79,10 @@ pub async fn csb_audit_log_detail(
         CsbEventDetail::find(
             &data.events,
             event_id,
-            store.get_display_name(crate::csb::WithCorrections::All),
+            store.get_appellation_with_deleted_label(
+                crate::projection::WithCorrections::All,
+                context.session.locale,
+            ),
             locale,
         )?
     };
@@ -108,8 +107,7 @@ mod tests {
 
     use crate::{
         AppError, AppState, CsbContext, CsbEvent, CsbMainEvent, CsbMainStore, ElectionConfig,
-        QueryParamState, StreamId,
-        csb::{CSB_MAIN_STREAM_ID, audit_log::pages::CsbAuditLogDetailPath},
+        QueryParamState, StreamId, csb::audit_log::pages::CsbAuditLogDetailPath,
         test_utils::response_body_string,
     };
 

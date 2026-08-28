@@ -53,3 +53,13 @@ commands:
       - install
       - cargo-watch
       - --locked
+  install_dylint:
+    command: cargo
+    args:
+      - install
+      - --locked
+      - cargo-dylint
+      - dylint-link
+      # Must match `dylint_linting` in the lint libraries' Cargo.toml.
+      - --version
+      - "6.0.3"

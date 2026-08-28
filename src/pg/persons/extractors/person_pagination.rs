@@ -1,7 +1,7 @@
 use crate::{
     pagination::Pagination,
-    persons::{self, PersonPagination, PersonSort},
     pg::request_extractor,
+    structs::persons::{Person, PersonPagination, PersonSort},
 };
 
 request_extractor!(PersonPagination, |store, parts, state| {
@@ -10,7 +10,7 @@ request_extractor!(PersonPagination, |store, parts, state| {
     let total_items = store.get_person_count();
     let pagination = pagination.set_total(total_items);
 
-    let persons = persons::Person::list(
+    let persons = Person::list(
         &store,
         pagination.limit(),
         pagination.offset(),
@@ -37,7 +37,7 @@ mod tests {
 
     use crate::{
         AppState, PgStore,
-        persons::PersonId,
+        structs::persons::PersonId,
         test_utils::{response_body_string, sample_person_with_last_name},
     };
 

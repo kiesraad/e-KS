@@ -1,7 +1,7 @@
 use serde::Deserialize;
 use validate::Validate;
 
-use crate::list_designation::ListDesignation;
+use crate::structs::list_designation::ListDesignation;
 
 #[derive(Default, Debug, Clone)]
 pub struct ListDesignationTarget {

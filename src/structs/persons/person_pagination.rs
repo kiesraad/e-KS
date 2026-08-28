@@ -1,5 +1,5 @@
 use super::PersonWithProblems;
-use crate::{pagination::PaginationInfo, persons::PersonSort};
+use crate::{pagination::PaginationInfo, structs::persons::PersonSort};
 
 #[derive(Debug, Clone)]
 pub struct PersonPagination {

@@ -3,16 +3,18 @@ mod views;
 use serde::Deserialize;
 
 use crate::{
-    candidate_lists::CandidateListId,
-    common::{DateOfBirth, Initials, LastName, PlaceOfResidence},
     csb::examination::extractors::CsbPoliticalGroup,
     form::ValidationError,
-    persons::{Person, PersonId},
-    structs::csb::PersonCorrection,
+    structs::{
+        candidate_lists::CandidateListId,
+        common::{DateOfBirth, Initials, LastName, PlaceOfResidence},
+        csb::PersonCorrection,
+        persons::PersonId,
+    },
 };
 
 pub use views::{
-    display_name_correction, display_name_correction_submit, person_correction,
+    appellation_correction_submit, appellation_name_correction, person_correction,
     person_correction_submit,
 };
 
@@ -36,7 +38,7 @@ fn return_path(
     person_id: PersonId,
     list: Option<CandidateListId>,
 ) -> String {
-    // TODO handle case where user is coming from the all rectifications page (#897)
+    // TODO handle case where user is coming from the all omission page (#897)
     match list {
         Some(list_id) => political_group
             .candidate_path(&list_id, &person_id)
@@ -64,23 +66,5 @@ fn parse_person_correction(
         CandidateCorrectionField::PlaceOfResidence => value
             .parse::<PlaceOfResidence>()
             .map(PersonCorrection::PlaceOfResidence),
-    }
-}
-
-/// Extract the string representation of a specific field from a person,
-/// using the same formatting as the examination page display.
-fn extract_field(field: CandidateCorrectionField, person: &Person) -> String {
-    match field {
-        CandidateCorrectionField::Initials => person.name.initials.to_string(),
-        CandidateCorrectionField::LastName => person.name.last_name_with_prefix(),
-        CandidateCorrectionField::DateOfBirth => {
-            DateOfBirth::format_option(&person.personal_data.date_of_birth)
-        }
-        CandidateCorrectionField::PlaceOfResidence => person
-            .personal_data
-            .place_of_residence
-            .as_ref()
-            .map(|p| p.to_string())
-            .unwrap_or_default(),
     }
 }

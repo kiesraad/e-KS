@@ -1,5 +1,6 @@
 //! Database-backed persistence for the event store.
 
+use super::{EncryptedEvent, EventHash};
 use chrono::{DateTime, Utc};
 use serde::{Serialize, de::DeserializeOwned};
 
@@ -21,7 +22,7 @@ impl<'r> sqlx::FromRow<'r, sqlx::postgres::PgRow> for StoreEvent<Vec<u8>> {
         let payload: Vec<u8> = row.try_get("payload")?;
         let created_at: DateTime<Utc> = row.try_get("created_at")?;
         let hash_bytes: Vec<u8> = row.try_get("hash")?;
-        let hash: [u8; 32] = hash_bytes.as_slice().try_into().map_err(|_| {
+        let hash: EventHash = hash_bytes.as_slice().try_into().map_err(|_| {
             sqlx::Error::Decode(
                 format!(
                     "event {event_id} hash is {} bytes, expected 32",
@@ -450,9 +451,12 @@ where
     super::apply_encrypted_events(
         &mut *data,
         cipher,
-        missing
-            .into_iter()
-            .map(|e| (e.event_id, e.created_at, e.hash, e.payload)),
+        missing.into_iter().map(|e| EncryptedEvent {
+            event_id: e.event_id,
+            created_at: e.created_at,
+            hash: e.hash,
+            payload: e.payload,
+        }),
     )?;
 
     Ok(stream_last_id as usize)
@@ -467,7 +471,7 @@ async fn insert_event<D, E: Serialize>(
     event_id: usize,
     created_at: DateTime<Utc>,
     payload: &E,
-    prev_hash: &[u8; 32],
+    prev_hash: &EventHash,
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
 ) -> Result<[u8; 32], AppError>
 where

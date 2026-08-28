@@ -3,7 +3,7 @@ use validate::Validate;
 
 use crate::{
     OptionStringExt,
-    candidates::{AddPerson, AddPersonAction},
+    structs::candidates::{AddPerson, AddPersonAction},
 };
 
 #[derive(Default, Serialize, Deserialize, Clone, Debug, Validate)]

@@ -1,3 +1,4 @@
+use crate::structs::candidate_lists::CandidateList;
 use askama::Template;
 use axum::{
     extract::Query,
@@ -6,8 +7,7 @@ use axum::{
 
 use crate::{
     AppError, AppResponse, Context, HtmlTemplate, Overlay, PgStore, QueryParamState,
-    candidate_lists::{CandidateList, pages::CandidateListsDeletePath},
-    filters,
+    candidate_lists::pages::CandidateListsDeletePath, filters,
 };
 
 #[derive(Template)]
@@ -48,8 +48,8 @@ pub async fn delete_candidate_list(
 mod tests {
     use super::*;
     use crate::{
-        ElectoralDistrict, PgStore, QueryParamState, candidate_lists::CandidateListSummary,
-        test_utils::response_body_string,
+        ElectoralDistrict, PgStore, QueryParamState,
+        structs::candidate_lists::CandidateListSummary, test_utils::response_body_string,
     };
     use axum::{
         extract::Query,

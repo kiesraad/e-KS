@@ -12,9 +12,7 @@ where
     T: std::ops::Deref<Target = String>,
 {
     fn as_str_or_empty(&self) -> &str {
-        self.as_deref()
-            .map(|value| value.as_str())
-            .unwrap_or_default()
+        self.as_deref().map(String::as_str).unwrap_or_default()
     }
 }
 

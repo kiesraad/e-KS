@@ -2,12 +2,12 @@ detail:
   field: Field
   fields:
     address_type: Address type
+    appellation: Appellation
     bsn: Social security number (BSN)
     candidates: Candidates
     country: Country code
     created_persons: Created candidates
     date_of_birth: Date of birth
-    display_name: Registered designation
     download_path: Download path
     electoral_districts: Electoral districts
     file_name: File name
@@ -37,17 +37,17 @@ detail:
 documents:
   download: Download documents
   no_download: This version was not in a state where downloading documents was possible.
-empty: No events have been recorded yet.
+empty: No events have been recorded yet that meet the filter criteria.
 event:
   add_candidate_to_list: Added candidate to list
   brp_validation: Validated candidate against the BRP
   create_candidate_list: Created list of candidates
-  create_name_authorisation: Created statutory name and authorised agent
   create_empty: Created empty political group
-  paper_correction: Paper corrections
+  create_name_authorisation: Created statutory name and authorised agent
   create_omission: Created omission
   create_person: Created person
   create_substitute_submitter: Created substitute submitter of the list
+  delete: Deleted political group
   delete_candidate_list: Deleted list of candidates
   delete_name_authorisation: Deleted statutory name and authorised agent
   delete_omission: Deleted omission
@@ -60,6 +60,7 @@ event:
   hide_download_warning: Dismissed download warning
   import: Imported political group
   import_csv: Imported CSV
+  paper_correction: Paper corrections
   remove_candidate_from_list: Removed candidate from list
   set_brp_validation_state: Set BRP validation state
   set_finished: Set finished state
@@ -87,11 +88,12 @@ filter:
   category:
     candidate_list: Candidate list
     correction: Corrections
+    delete: Deleted
     import: Import
     list_submitter: List submitter
-    paper_correction: Paper corrections
     name_authorisation: Statutory name and authorised agent
     omission: Omission
+    paper_correction: Paper corrections
     person: Person
     political_group: Political group
     set_finished: Finished state

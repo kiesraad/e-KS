@@ -1,7 +1,16 @@
 import { test as base, type Page } from "@playwright/test";
-import { CandidateListsOverviewPage } from "./pages/candidateListsOverviewPage";
-import { ManageCandidateListPage } from "./pages/manageCandidateListPage";
-import { SelectElectionPage } from "./pages/selectElectionPage";
+import { CsbExaminationPage } from "./pages/csb/csbExaminationPage.ts";
+import { CsbImportPage } from "./pages/csb/csbImportPage.ts";
+import { CsbOverviewPage } from "./pages/csb/csbOverviewPage.ts";
+import { CandidateListsOverviewPage } from "./pages/pg/candidateListsOverviewPage.ts";
+import { ManageCandidateListPage } from "./pages/pg/manageCandidateListPage.ts";
+import { SelectElectionPage } from "./pages/pg/selectElectionPage.ts";
+
+type CsbLogin = {
+  page: Page;
+  groupName: string;
+  lastEventHash: string;
+};
 
 type Fixtures = {
   login: Page;
@@ -10,6 +19,8 @@ type Fixtures = {
   provincialCouncilElection: Page;
   provincialCouncilFrisianElection: Page;
   waterAuthorityElection: Page;
+  csbLogin: CsbLogin;
+  csbImport: CsbLogin;
 };
 
 export const test = base.extend<Fixtures>({
@@ -21,6 +32,36 @@ export const test = base.extend<Fixtures>({
   noExistingData: async ({ page }, use) => {
     await page.goto("/dev/login?fixtures=false");
     await use(page);
+  },
+
+  // Load fixtures into a fresh political-group stream with a unique name and
+  // capture the chain hash of its last event, then log in as CSB. The hash can
+  // be entered on the CSB import page to import the group.
+  csbLogin: async ({ page }, use) => {
+    const groupName = `Test Partij ${Math.random().toString(36).slice(2, 10)}`;
+    const response = await page.request.get(
+      `/dev/login?fixtures=true&name=${encodeURIComponent(groupName)}`,
+      { maxRedirects: 0 },
+    );
+    const lastEventHash = response.headers()["x-last-event-hash"] ?? "";
+    await page.goto("/dev/login?csb=true");
+    await use({ page, groupName, lastEventHash });
+  },
+
+  // Login as CSB and import a political group with a unique name.
+  csbImport: async ({ csbLogin }, use) => {
+    const { page, groupName, lastEventHash } = csbLogin;
+    const overviewPage = new CsbOverviewPage(page);
+    const examinationPage = new CsbExaminationPage(page);
+    const importPage = new CsbImportPage(page);
+    await overviewPage.linkExamination.click();
+    await examinationPage.linkAddPoliticalGroup.click();
+    await importPage.textfieldHashcode.fill(lastEventHash);
+    await Promise.all([
+      page.waitForURL(/\/csb\/examination\/[^/]+/),
+      page.getByRole("button", { name: "Importeren" }).click(),
+    ]);
+    await use({ page, groupName, lastEventHash });
   },
 
   deleteExistingCandidateLists: async ({ page }, use) => {

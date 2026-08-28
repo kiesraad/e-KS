@@ -2,12 +2,12 @@ detail:
   field: Veld
   fields:
     address_type: Adrestype
+    appellation: Geregistreerde aanduiding
     bsn: Burgerservicenummer (BSN)
     candidates: Kandidaten
     country: Landcode
     created_persons: Aangemaakte kandidaten
     date_of_birth: Geboortedatum
-    display_name: Geregistreerde aanduiding
     download_path: Downloadpad
     electoral_districts: Kieskringen
     file_name: Bestandsnaam
@@ -37,17 +37,17 @@ detail:
 documents:
   download: Documenten downloaden
   no_download: In deze versie was het downloaden van documenten niet mogelijk.
-empty: Er zijn nog geen gebeurtenissen vastgelegd.
+empty: Er zijn nog geen gebeurtenissen vastgelegd die voldoen aan de filter criteria.
 event:
   add_candidate_to_list: Kandidaat aan lijst toegevoegd
   brp_validation: Kandidaat gevalideerd tegen de BRP
   create_candidate_list: Kandidatenlijst aangemaakt
-  create_name_authorisation: Statutaire naam en gemachtigde aangemaakt
   create_empty: Lege politieke groepering aangemaakt
-  paper_correction: Papieren correcties
+  create_name_authorisation: Statutaire naam en gemachtigde aangemaakt
   create_omission: Verzuim aangemaakt
   create_person: Persoon aangemaakt
   create_substitute_submitter: Vervanger herstel verzuim aangemaakt
+  delete: Politieke groepering verwijderd
   delete_candidate_list: Kandidatenlijst verwijderd
   delete_name_authorisation: Statutaire naam en gemachtigde verwijderd
   delete_omission: Verzuim verwijderd
@@ -60,6 +60,7 @@ event:
   hide_download_warning: Download\u00ADwaarschuwing gesloten
   import: Politieke groepering geïmporteerd
   import_csv: CSV geïmporteerd
+  paper_correction: Papieren correcties
   remove_candidate_from_list: Kandidaat van lijst verwijderd
   set_brp_validation_state: BRP validatie status gezet
   set_finished: Afgerond gezet
@@ -87,11 +88,12 @@ filter:
   category:
     candidate_list: Kandidatenlijst
     correction: Ambtshalve correcties
+    delete: Verwijderd
     import: Import
     list_submitter: Lijstinleveraar
-    paper_correction: Papieren correcties
     name_authorisation: Statutaire naam en gemachtigde
     omission: Verzuim
+    paper_correction: Papieren correcties
     person: Persoon
     political_group: Politieke groepering
     set_finished: Afgerond

@@ -7,15 +7,25 @@ use uuid::Uuid;
 
 use crate::{
     AppError, QueryParamState, StreamId,
-    candidate_lists::CandidateListId,
     csb::examination::{extractors::CsbPoliticalGroup, structs::CandidateCorrectionField},
-    persons::PersonId,
-    structs::csb::{OmissionId, OmissionType},
+    structs::{
+        candidate_lists::CandidateListId,
+        csb::{OmissionId, OmissionType},
+        persons::PersonId,
+    },
 };
+
+#[derive(TypedPath)]
+#[typed_path("/", rejection(AppError))]
+pub struct PgIndexPath;
 
 #[derive(TypedPath)]
 #[typed_path("/csb/examination", rejection(AppError))]
 pub struct CsbExaminationOverviewPath;
+
+#[derive(TypedPath)]
+#[typed_path("/csb/examination/i1.pdf", rejection(AppError))]
+pub struct CsbI1DownloadPath;
 
 #[derive(TypedPath)]
 #[typed_path("/csb/examination/i4.pdf", rejection(AppError))]
@@ -30,6 +40,12 @@ pub struct CsbPoliticalGroupPath {
 #[derive(TypedPath, Deserialize)]
 #[typed_path("/csb/examination/{stream_id}/toggle-finish", rejection(AppError))]
 pub struct CsbPoliticalGroupToggleFinishPath {
+    pub stream_id: StreamId,
+}
+
+#[derive(TypedPath, Deserialize)]
+#[typed_path("/csb/examination/{stream_id}/delete", rejection(AppError))]
+pub struct CsbPoliticalGroupDeletePath {
     pub stream_id: StreamId,
 }
 
@@ -115,10 +131,10 @@ pub struct CsbAllRestorationsPath {
 
 #[derive(TypedPath, Deserialize)]
 #[typed_path(
-    "/csb/examination/{stream_id}/correction/display-name",
+    "/csb/examination/{stream_id}/correction/appellation",
     rejection(AppError)
 )]
-pub struct CsbDisplayNameCorrectionPath {
+pub struct CsbAppellationCorrectionPath {
     pub stream_id: StreamId,
 }
 
@@ -145,6 +161,12 @@ pub struct OmissionListQuery {
 impl CsbPoliticalGroup {
     pub fn examination_path(&self) -> impl TypedPath {
         CsbPoliticalGroupPath {
+            stream_id: self.stream_id,
+        }
+    }
+
+    pub fn delete_path(&self) -> impl TypedPath {
+        CsbPoliticalGroupDeletePath {
             stream_id: self.stream_id,
         }
     }
@@ -283,9 +305,9 @@ impl CsbPoliticalGroup {
         }
     }
 
-    /// Path to the correction overlay for the political group display name.
-    pub fn correction_display_name_path(&self) -> impl TypedPath {
-        CsbDisplayNameCorrectionPath {
+    /// Path to the correction overlay for the political group appellation.
+    pub fn correction_appellation_path(&self) -> impl TypedPath {
+        CsbAppellationCorrectionPath {
             stream_id: self.stream_id,
         }
     }
@@ -305,5 +327,39 @@ impl CsbPoliticalGroup {
             field,
         }
         .with_query_params(OmissionListQuery { list: Some(*list) })
+    }
+
+    pub fn correction_person_path_from_all_restorations(
+        &self,
+        person: &PersonId,
+        field: CandidateCorrectionField,
+    ) -> impl TypedPath {
+        CsbPersonCorrectionPath {
+            stream_id: self.stream_id,
+            person_id: *person,
+            field,
+        }
+        .with_query_params(QueryParamState::redirect_to(
+            self.all_restorations_path().to_string(),
+        ))
+    }
+}
+
+#[cfg(test)]
+mod prefix_guard {
+    use super::CsbPaperCorrectionsStopPath;
+    use crate::{StreamId, view::CSB_PAPER_CORRECTIONS_STOP_PREFIX};
+
+    /// `view::Context` builds the paper-corrections exit link from a prefix
+    /// constant; this keeps the two in sync.
+    #[test]
+    fn stop_path_matches_shared_prefix() {
+        let stream_id = StreamId::new();
+        let expected =
+            format!("{CSB_PAPER_CORRECTIONS_STOP_PREFIX}/{stream_id}/paper-corrections/stop");
+        assert_eq!(
+            CsbPaperCorrectionsStopPath { stream_id }.to_string(),
+            expected
+        );
     }
 }

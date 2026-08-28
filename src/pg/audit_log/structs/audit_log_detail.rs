@@ -162,6 +162,10 @@ fn natural_cmp(a: &str, b: &str) -> std::cmp::Ordering {
 /// Uses the leaf segment of the dot-notation path (e.g. `name.first_name` →
 /// `first_name`) to look up a translation. Array indices become a 1-indexed
 /// suffix on the parent field name (e.g. `candidates.3` → `Candidates #4`).
+#[expect(
+    clippy::cognitive_complexity,
+    reason = "A flat translation table; the `trans!` expansions inflate the metric."
+)]
 fn translate_field_name(field: &str, locale: Locale) -> String {
     let leaf = field.rsplit('.').next().unwrap_or(field);
     if let Ok(index) = leaf.parse::<usize>()
@@ -194,7 +198,7 @@ fn translate_field_name(field: &str, locale: Locale) -> String {
         // Political group fields
         "long_list_allowed" => trans!("audit_log.detail.fields.long_list_allowed", locale),
         "legal_name" => trans!("audit_log.detail.fields.legal_name", locale),
-        "display_name" => trans!("audit_log.detail.fields.display_name", locale),
+        "appellation" => trans!("audit_log.detail.fields.appellation", locale),
         // Candidate list fields
         "electoral_districts" => trans!("audit_log.detail.fields.electoral_districts", locale),
         "candidates" => trans!("audit_log.detail.fields.candidates", locale),
@@ -221,10 +225,10 @@ mod tests {
     use super::*;
     use crate::{
         ElectoralDistrict, Locale,
-        candidate_lists::CandidateListId,
-        common::FullName,
-        persons::PersonId,
-        structs::audit_log::EntityRef,
+        structs::{
+            audit_log::EntityRef, candidate_lists::CandidateListId, common::FullName,
+            persons::PersonId,
+        },
         test_utils::{sample_candidate_list, sample_person, sample_political_group},
     };
 

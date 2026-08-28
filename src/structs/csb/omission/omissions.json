@@ -1,34 +1,10 @@
 {
   "political-group": [
     {
-      "title": "De machtiging aanduiding ontbreekt",
-      "description": "De machtiging om de aanduiding van de politieke groepering boven de lijst te plaatsen ontbreekt.",
-      "help_text": "Dit verzuim is te herstellen door een nieuw model H 3-1 in te vullen, waarmee alsnog een machtiging om de aanduiding boven de lijst te plaatsen wordt ingeleverd.",
-      "recoverable": true
-    },
-    {
-      "title": "De gemachtigde is niet geregistreerd",
-      "description": "De machtiging om de aanduiding van de politieke groepering boven de lijst te plaatsen, wordt geacht te ontbreken omdat de gemachtigde niet vermeld staat in het register van aanduidingen voor de Tweede Kamer of het register van aanduidingen voor de Eerste Kamer.",
-      "help_text": "Dit verzuim is te herstellen door een nieuw model H 3-1 in te vullen, waarmee alsnog een machtiging, ondertekend door de (plaatsvervangend) gemachtigde in het register, wordt ingeleverd.",
-      "recoverable": true
-    },
-    {
       "title": "De aanduiding is niet geregistreerd",
       "description": "De machtiging om de aanduiding van de politieke groepering boven de lijst te plaatsen, wordt geacht te ontbreken omdat de aanduiding niet vermeld staat in het register van aanduidingen voor de Tweede Kamer of het register van aanduidingen voor de Eerste Kamer. Dit is een onherstelbaar verzuim. De politieke groepering kan nog wel meedoen aan de Eerste Kamerverkiezing, maar dan zonder aanduiding. Het zal dus een blanco lijst worden.",
       "help_text": "",
       "recoverable": false
-    },
-    {
-      "title": "De machtiging samenvoeging ontbreekt",
-      "description": "De machtiging om een samenvoeging van aanduidingen van de politieke groeperingen boven de lijst te plaatsen ontbreekt.",
-      "help_text": "Dit verzuim is te herstellen door een nieuw model H 3-2 in te vullen, waarmee alsnog een machtiging om de samenvoeging van aanduidingen boven de lijst te plaatsen wordt ingeleverd.",
-      "recoverable": true
-    },
-    {
-      "title": "De gemachtigde(n) is/zijn niet geregistreerd",
-      "description": "De machtiging om de samenvoeging van aanduidingen van de politieke groeperingen boven de lijst te plaatsen, wordt geacht te ontbreken omdat (één van) de gemachtigde(n) niet vermeld staat/staan in het register van aanduidingen voor de Tweede Kamer of het register van aanduidingen voor de Eerste Kamer.",
-      "help_text": "Dit verzuim is te herstellen door een nieuw model H 3-2 in te vullen, waarmee alsnog een machtiging, ondertekend door de (plaatsvervangend) gemachtigden in het register, wordt ingeleverd.",
-      "recoverable": true
     },
     {
       "title": "De aanduiding(en) is/zijn niet geregistreerd",
@@ -66,7 +42,7 @@
   "candidate": [
     {
       "title": "Kandidaat onjuist vermeld",
-      "description": "Kandidaat nr. {candidate_number}, {candidate_name} is niet op de kandidatenlijst vermeld op de manier waarop dat moet (artikel H 2 van het Kiesbesluit). De kandidaat staat op de lijst vermeld met de nadere aanduiding/het predicaat {designation}. Dit is op grond van de beleidsregel van de Kiesraad omtrent de vermelding van kandidaten op de kandidatenlijst niet toegestaan.",
+      "description": "Kandidaat nr. {candidate_number}, {candidate_name} is niet op de kandidatenlijst vermeld op de manier waarop dat moet (artikel H 2 van het Kiesbesluit). De kandidaat staat op de lijst vermeld met de nadere aanduiding/het predicaat {appellation}. Dit is op grond van de beleidsregel van de Kiesraad omtrent de vermelding van kandidaten op de kandidatenlijst niet toegestaan.",
       "help_text": "Dit verzuim is te herstellen door een nieuwe instemmingsverklaring (model H 9) van betreffende kandidaat in te leveren, waar deze nadere aanduiding(en)/het predicaat niet zijn vermeld.",
       "recoverable": true
     },
@@ -136,5 +112,31 @@
       "help_text": "Dit verzuim is te herstellen door een nieuwe ondertekende instemmingsverklaring (model H 9) van de betreffende kandidaat in te leveren.",
       "recoverable": true
     }
+  ],
+  "candidate-list": [
+{
+      "title": "De machtiging aanduiding ontbreekt",
+      "description": "De machtiging om de aanduiding van de politieke groepering boven de lijst te plaatsen ontbreekt.",
+      "help_text": "Dit verzuim is te herstellen door een nieuw model H 3-1 in te vullen, waarmee alsnog een machtiging om de aanduiding boven de lijst te plaatsen wordt ingeleverd.",
+      "recoverable": true
+    },
+    {
+      "title": "De gemachtigde is niet geregistreerd",
+      "description": "De machtiging om de aanduiding van de politieke groepering boven de lijst te plaatsen, wordt geacht te ontbreken omdat de gemachtigde niet vermeld staat in het register van aanduidingen voor de Tweede Kamer of het register van aanduidingen voor de Eerste Kamer.",
+      "help_text": "Dit verzuim is te herstellen door een nieuw model H 3-1 in te vullen, waarmee alsnog een machtiging, ondertekend door de (plaatsvervangend) gemachtigde in het register, wordt ingeleverd.",
+      "recoverable": true
+    },{
+      "title": "De machtiging samenvoeging ontbreekt",
+      "description": "De machtiging om een samenvoeging van aanduidingen van de politieke groeperingen boven de lijst te plaatsen ontbreekt.",
+      "help_text": "Dit verzuim is te herstellen door een nieuw model H 3-2 in te vullen, waarmee alsnog een machtiging om de samenvoeging van aanduidingen boven de lijst te plaatsen wordt ingeleverd.",
+      "recoverable": true
+    },
+    {
+      "title": "De gemachtigde(n) is/zijn niet geregistreerd",
+      "description": "De machtiging om de samenvoeging van aanduidingen van de politieke groeperingen boven de lijst te plaatsen, wordt geacht te ontbreken omdat (één van) de gemachtigde(n) niet vermeld staat/staan in het register van aanduidingen voor de Tweede Kamer of het register van aanduidingen voor de Eerste Kamer.",
+      "help_text": "Dit verzuim is te herstellen door een nieuw model H 3-2 in te vullen, waarmee alsnog een machtiging, ondertekend door de (plaatsvervangend) gemachtigden in het register, wordt ingeleverd.",
+      "recoverable": true
+    }
   ]
 }
+

@@ -5,10 +5,10 @@ use std::time::Duration;
 use super::{BrpField, BrpPerson};
 use crate::{
     AppError,
-    candidate_lists::CandidateListId,
-    common::{Bsn, BsnOrNoneConfirmed},
-    persons::Person,
+    structs::candidate_lists::CandidateListId,
+    structs::common::{Bsn, BsnOrNoneConfirmed},
     structs::csb::{Omission, OmissionCategory},
+    structs::persons::Person,
 };
 
 pub const BRP_PERSONS_ENDPOINT: &str = "haalcentraal/api/brp/personen";
@@ -99,18 +99,26 @@ impl BrpClient {
         };
 
         let mut omissions = vec![];
-        let mut add_omission = |title: &str, description: &str, help_text: &str| {
-            omissions.push(Omission::new(
-                OmissionCategory::Candidate {
-                    person: person.id,
-                    lists: candidate_lists.clone(),
-                },
-                // TODO: These should likely be user configurable and translatable
-                title.to_string(),
-                description.to_string(),
-                help_text.to_string(),
-            ));
-        };
+        let mut add_omission =
+            |title: &str, description: &str, help_text: &str| -> Result<(), AppError> {
+                omissions.push(Omission::new(
+                    OmissionCategory::Candidate {
+                        person: person.id,
+                        lists: candidate_lists.clone(),
+                    },
+                    // TODO: These should likely be user configurable and translatable
+                    title.parse().map_err(|_| AppError::InternalServerError)?,
+                    description
+                        .parse()
+                        .map_err(|_| AppError::InternalServerError)?,
+                    Some(
+                        help_text
+                            .parse()
+                            .map_err(|_| AppError::InternalServerError)?,
+                    ),
+                ));
+                Ok(())
+            };
 
         let brp_persons = self.get_persons(&query).await?;
         let brp_person = match brp_persons.as_slice() {
@@ -119,7 +127,7 @@ impl BrpClient {
                     "Burgerservicenummer onbekend",
                     "Er is geen persoon gevonden met dit burgerservicenummer",
                     "Controleer of er een fout is gemaakt bij het invoeren",
-                );
+                )?;
                 return Ok(omissions);
             }
             [brp_person] => brp_person,
@@ -128,7 +136,7 @@ impl BrpClient {
                     "Burgerservicenummer niet uniek",
                     "Er zijn meerder personen gevonden met dit burgerservicenummer",
                     "Controleer of er een fout is gemaakt bij het invoeren",
-                );
+                )?;
                 return Ok(omissions);
             }
         };
@@ -141,35 +149,35 @@ impl BrpClient {
                         "Onjuiste straatnaam",
                         "De straatnaam komt niet overeen met de BRP",
                         "Controleer de straatnaam",
-                    );
+                    )?;
                 }
                 if person.address.house_number != address.house_number {
                     add_omission(
                         "Onjuist huisnummer",
                         "Het huisnummer komt niet overeen met de BRP",
                         "Controleer het huisnummer",
-                    );
+                    )?;
                 }
                 if person.address.house_number_addition != address.house_number_addition {
                     add_omission(
                         "Onjuiste huisnummertoevoeging",
                         "De huisnummertoevoeging komt niet overeen met de BRP",
                         "Controleer de huisnummertoevoeging",
-                    );
+                    )?;
                 }
                 if person.address.locality != address.locality {
                     add_omission(
                         "Onjuiste woonplaats",
                         "De woonplaats komt niet overeen met de BRP",
                         "Controleer de woonplaats",
-                    );
+                    )?;
                 }
                 if person.address.postal_code != address.postal_code {
                     add_omission(
                         "Onjuiste postcode",
                         "De postcode komt niet overeen met de BRP",
                         "Controleer de postcode",
-                    );
+                    )?;
                 }
             }
             None => {
@@ -185,21 +193,21 @@ impl BrpClient {
                 "Onjuiste achternaam",
                 "De achternaam komt niet overeen met de BRP",
                 "Controleer de achternaam",
-            );
+            )?;
         }
         if person.name.last_name_prefix != brp_person.name.last_name_prefix {
             add_omission(
                 "Onjuist voorvoegsel",
                 "Het voorvoegsel komt niet overeen met de BRP",
                 "Controleer het voorvoegsel",
-            );
+            )?;
         }
         if person.name.initials != brp_person.name.initials {
             add_omission(
                 "Onjuiste voorletters",
                 "De voorletters komen niet overeen met de BRP",
                 "Controleer de voorletters",
-            );
+            )?;
         }
 
         // Check all fields of personal_data except country, check gender only when filled in
@@ -208,14 +216,14 @@ impl BrpClient {
                 "Onjuist burgerservicenummer",
                 "Het burgerservicenummer komt niet overeen met de BRP",
                 "Controleer het burgerservicenummer",
-            );
+            )?;
         }
         if brp_person.personal_data.date_of_birth != person.personal_data.date_of_birth {
             add_omission(
                 "Onjuiste geboortedatum",
                 "De geboortedatum komt niet overeen met de BRP",
                 "Controleer de geboortedatum",
-            );
+            )?;
         }
         // Gender field is optional, but if it is filled in, we check it
         if person.personal_data.gender.is_some()
@@ -225,7 +233,7 @@ impl BrpClient {
                 "Onjuist geslacht",
                 "Het geslacht komt niet overeen met de BRP",
                 "Controleer het geslacht",
-            );
+            )?;
         }
 
         Ok(omissions)
@@ -258,7 +266,7 @@ mod tests {
     use std::collections::HashSet;
 
     use crate::{
-        persons::PersonId,
+        structs::persons::PersonId,
         test_utils::{sample_person, sample_person_from_brp},
     };
 
@@ -311,7 +319,7 @@ mod tests {
                 };
                 assert_eq!(lists, &[list_id]);
                 assert_eq!(
-                    omission.description,
+                    omission.description.as_str(),
                     "Er is geen persoon gevonden met dit burgerservicenummer",
                 )
             }
@@ -329,7 +337,7 @@ mod tests {
                     OmissionCategory::Candidate { .. }
                 ));
                 assert_eq!(
-                    omission.description,
+                    omission.description.as_str(),
                     "De huisnummertoevoeging komt niet overeen met de BRP",
                 )
             }
@@ -355,7 +363,8 @@ mod tests {
 
         match brp_client.verify(&person, Vec::new()).await {
             Ok(omissions) => {
-                let actual_titles = HashSet::from_iter(omissions.into_iter().map(|o| o.title));
+                let actual_titles =
+                    HashSet::from_iter(omissions.into_iter().map(|o| o.title.to_string()));
                 assert_eq!(
                     expected_titles.symmetric_difference(&actual_titles).count(),
                     0

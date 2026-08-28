@@ -1,14 +1,15 @@
 use askama::Template;
 use axum::response::IntoResponse;
 
-use super::IndexPath;
-
 use crate::{
     AppResponse, Context, HtmlTemplate, PgStore,
-    candidate_lists::CandidateListSummary,
-    common::{PotentialProblems, Severity},
+    common::PgIndexPath,
     filters,
     finalise::AllProblems,
+    structs::{
+        candidate_lists::CandidateListSummary,
+        common::{PotentialProblems, Severity},
+    },
 };
 
 #[derive(Template)]
@@ -22,7 +23,7 @@ pub struct IndexTemplate {
 }
 
 pub async fn index(
-    _: IndexPath,
+    _: PgIndexPath,
     context: Context,
     store: PgStore,
 ) -> AppResponse<impl IntoResponse> {
@@ -87,15 +88,14 @@ mod tests {
     use crate::{
         ElectionConfig, QueryParamState,
         core::AnyLocale,
-        list_designation::ListDesignation,
-        political_groups::PoliticalGroup,
+        structs::{list_designation::ListDesignation, political_groups::PoliticalGroup},
         test_utils::{response_body_string, sample_political_group},
     };
 
     #[tokio::test]
     async fn index_renders_html() {
         let store = PgStore::new_for_test();
-        let body = index(IndexPath, Context::new_test_from_store(&store), store)
+        let body = index(PgIndexPath, Context::new_test_from_store(&store), store)
             .await
             .into_response();
         let body = response_body_string(body).await;
@@ -125,7 +125,7 @@ mod tests {
         let pg = store.get_political_group();
         assert!(pg.is_general_information_empty(&store));
 
-        let body = index(IndexPath, Context::new_test_from_store(&store), store)
+        let body = index(PgIndexPath, Context::new_test_from_store(&store), store)
             .await
             .into_response();
         let body = response_body_string(body).await;
@@ -143,7 +143,7 @@ mod tests {
         let pg = store.get_political_group();
         assert!(!pg.is_general_information_empty(&store));
 
-        let body = index(IndexPath, Context::new_test_from_store(&store), store)
+        let body = index(PgIndexPath, Context::new_test_from_store(&store), store)
             .await
             .into_response();
         let body = response_body_string(body).await;

@@ -1,7 +1,7 @@
 use super::PaperCorrected;
 use crate::{
     CsbStore, Locale,
-    csb::WithCorrections,
+    projection::WithCorrections,
     structs::{
         common::PreviousElectionResults, list_designation::ListDesignation,
         political_groups::PoliticalGroup,
@@ -11,7 +11,7 @@ use crate::{
 
 /// The political group rows of the general information page.
 pub struct PaperCorrectedPoliticalGroupInfo {
-    pub display_name: PaperCorrected,
+    pub appellation: PaperCorrected,
     pub list_type: PaperCorrected,
     pub previous_results: PaperCorrected,
 }
@@ -22,11 +22,11 @@ impl PaperCorrectedPoliticalGroupInfo {
         let paper_corrected_group = store.get_political_group(WithCorrections::Paper);
 
         Self {
-            display_name: PaperCorrected::new(
-                store.get_display_name(WithCorrections::None),
-                store.get_display_name(WithCorrections::Paper),
+            appellation: PaperCorrected::new(
+                store.get_appellation(WithCorrections::None),
+                store.get_appellation(WithCorrections::Paper),
             )
-            .with_csb_correction(Some(store.get_display_name(WithCorrections::All))),
+            .with_csb_correction(Some(store.get_appellation(WithCorrections::All))),
             list_type: PaperCorrected::new(
                 list_type_label(&imported_group, locale),
                 list_type_label(&paper_corrected_group, locale),

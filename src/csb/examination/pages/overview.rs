@@ -6,7 +6,7 @@ use crate::{
     csb::{
         examination::{
             extractors::{CsbPoliticalGroup, CsbPoliticalGroups},
-            pages::{CsbExaminationOverviewPath, CsbI4DownloadPath},
+            pages::{CsbExaminationOverviewPath, CsbI1DownloadPath, CsbI4DownloadPath},
         },
         import::CsbImportPath,
     },
@@ -29,6 +29,9 @@ pub async fn overview(
     let mut unfinished_political_groups = Vec::new();
     let mut finished_political_groups = Vec::new();
     for political_group in political_groups {
+        if political_group.is_deleted {
+            continue;
+        }
         if political_group.is_examination_finished {
             finished_political_groups.push(political_group)
         } else {
@@ -61,6 +64,8 @@ mod tests {
             political_group: sample_political_group(),
             stream_id: StreamId::new(),
             is_examination_finished: false,
+            is_deleted: false,
+            restoration_count: 0,
             omission_count: 0,
             first_candidate_name: None,
         }]);
@@ -75,9 +80,36 @@ mod tests {
         .into_response();
 
         assert_eq!(response.status(), StatusCode::OK);
-        // The seeded group's display name is rendered in the "added" table.
+        // The seeded group's appellation is rendered in the "added" table.
         let body = response_body_string(response).await;
         assert!(body.contains("Kiesraad Demo"));
+    }
+
+    #[tokio::test]
+    async fn overview_skips_deleted_political_group_names() {
+        let groups = CsbPoliticalGroups(vec![CsbPoliticalGroup {
+            political_group: sample_political_group(),
+            stream_id: StreamId::new(),
+            is_examination_finished: false,
+            is_deleted: true,
+            restoration_count: 0,
+            omission_count: 0,
+            first_candidate_name: None,
+        }]);
+
+        let response = overview(
+            CsbExaminationOverviewPath {},
+            CsbContext::new_test(),
+            groups,
+        )
+        .await
+        .unwrap()
+        .into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        // The seeded group's appellation is not rendered as it is deleted.
+        let body = response_body_string(response).await;
+        assert!(!body.contains("Kiesraad Demo"));
     }
 
     #[tokio::test]
@@ -86,6 +118,8 @@ mod tests {
             political_group: sample_political_group(),
             stream_id: StreamId::new(),
             is_examination_finished: false,
+            is_deleted: false,
+            restoration_count: 0, /* omission count should be used and > 0 */
             omission_count: 3,
             first_candidate_name: None,
         }]);
@@ -101,8 +135,7 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
-        assert!(body.contains("omission-badge"));
-        assert!(body.contains("3 omissions"));
+        assert!(body.contains("Omissions added"));
     }
 
     #[tokio::test]

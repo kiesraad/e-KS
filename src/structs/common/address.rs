@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     OptionAsStrExt,
-    common::{InfoProblems, PotentialProblems, Problematic, Problems, Severity},
+    structs::common::{InfoProblems, PotentialProblems, Problematic, Problems, Severity},
     utils::bag,
 };
 
@@ -362,7 +362,7 @@ impl Problematic<Severity> for Address {
 
 #[cfg(test)]
 mod tests {
-    use crate::common::HasSeverity;
+    use crate::structs::common::HasSeverity;
 
     use super::*;
     use std::str::FromStr;

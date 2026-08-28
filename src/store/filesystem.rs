@@ -23,7 +23,10 @@ use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
 };
 
-use super::{Store, StoreData, StreamMeta, chain_hash, event_aad, persistence::NewStream};
+use super::{
+    EncryptedEvent, EventHash, Store, StoreData, StreamMeta, chain_hash, event_aad,
+    persistence::NewStream,
+};
 use crate::{
     AppError, ElectionConfig, Scope, StreamId,
     crypto::{EventCipher, WrappedKey},
@@ -37,7 +40,7 @@ enum Frame {
         event_id: u64,
         created_at_micros: i64,
         /// Chain hash; see [`super::chain_hash`] and [`super::StoreEvent::hash`].
-        hash: [u8; 32],
+        hash: EventHash,
         encrypted_payload: Vec<u8>,
     },
 }
@@ -58,7 +61,7 @@ where
 {
     let path = stream_path(dir, store.stream_id, store.election);
     let frames = read_frames(&path).await?;
-    let last_file_id = frames.iter().map(|(id, ..)| *id).max().unwrap_or(0);
+    let last_file_id = frames.iter().map(|f| f.event_id).max().unwrap_or(0);
 
     let mut data = store.data.write();
     super::apply_encrypted_events(&mut *data, cipher, frames)?;
@@ -216,7 +219,7 @@ pub async fn find_event_by_hash_prefix(
     let mut matches = Vec::new();
     for (stream_id, election) in streams {
         let path = stream_path(dir, stream_id, election);
-        for (event_id, _, hash, _) in read_frames(&path).await? {
+        for EncryptedEvent { event_id, hash, .. } in read_frames(&path).await? {
             if hash.starts_with(hash_prefix) {
                 matches.push((stream_id, election, event_id));
                 if matches.len() > 1 {
@@ -252,9 +255,9 @@ pub async fn stream_metadata_by_scope(
         result.push(StreamMeta {
             stream_id,
             election,
-            event_count: frames.iter().map(|(id, ..)| *id).max().unwrap_or(0),
-            created_at: frames.first().map(|(_, at, ..)| *at),
-            last_event_at: frames.last().map(|(_, at, ..)| *at),
+            event_count: frames.iter().map(|f| f.event_id).max().unwrap_or(0),
+            created_at: frames.first().map(|f| f.created_at),
+            last_event_at: frames.last().map(|f| f.created_at),
         });
     }
 
@@ -263,9 +266,7 @@ pub async fn stream_metadata_by_scope(
 
 /// Read each frame's `(event_id, created_at, chain hash, encrypted payload)`
 /// from a stream file without decrypting. Empty vector if the file does not exist.
-async fn read_frames(
-    path: &Path,
-) -> Result<Vec<(usize, DateTime<Utc>, [u8; 32], Vec<u8>)>, AppError> {
+async fn read_frames(path: &Path) -> Result<Vec<EncryptedEvent>, AppError> {
     let mut file = match File::open(path).await {
         Ok(file) => file,
         Err(err) if err.kind() == std::io::ErrorKind::NotFound => return Ok(Vec::new()),
@@ -296,7 +297,12 @@ async fn read_frames(
             .map_err(|e| AppError::EventDecodeError(format!("failed to decode frame: {e}")))?;
 
         let created_at = DateTime::from_timestamp_micros(created_at_micros).unwrap_or_default();
-        result.push((event_id as usize, created_at, hash, encrypted_payload));
+        result.push(EncryptedEvent {
+            event_id: event_id as usize,
+            created_at,
+            hash,
+            payload: encrypted_payload,
+        });
     }
 
     Ok(result)
@@ -310,7 +316,7 @@ pub(super) async fn append_event<E: Serialize>(
     event_id: usize,
     created_at: DateTime<Utc>,
     payload: &E,
-    prev_hash: &[u8; 32],
+    prev_hash: &EventHash,
 ) -> Result<[u8; 32], AppError> {
     let aad = event_aad(event_id, created_at, prev_hash);
     let encrypted_payload = cipher.encrypt(payload, &aad)?;

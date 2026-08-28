@@ -2,8 +2,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     ElectoralDistrict, OptionAsStrExt,
-    candidate_lists::{CandidateList, FullCandidateList},
-    common::{InfoProblems, PotentialProblems, Problematic, Problems, WithProblems},
+    structs::{
+        candidate_lists::{CandidateList, FullCandidateList},
+        common::{InfoProblems, PotentialProblems, Problematic, Problems, WithProblems},
+    },
 };
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -127,15 +129,14 @@ mod tests {
         AppError,
         ElectoralDistrict::PsAmsterdam,
         PgStore,
-        candidate_lists::CandidateListId,
-        persons::PersonId,
+        structs::{candidate_lists::CandidateListId, persons::PersonId},
         test_utils::{sample_candidate_list, sample_person, sample_person_with},
     };
 
     use super::*;
 
     async fn make_store_with_candidates(
-        persons: Vec<crate::persons::Person>,
+        persons: Vec<crate::structs::persons::Person>,
     ) -> Result<(PgStore, Vec<PersonId>), AppError> {
         let store = PgStore::new_for_test();
         let ids = persons.iter().map(|p| p.id).collect();
@@ -315,7 +316,6 @@ mod tests {
     }
 
     #[tokio::test]
-
     async fn empty_list_problems() -> Result<(), AppError> {
         let (store, ids) = make_store_with_candidates(Vec::new()).await?;
         let problems = create_summary_and_get_problems(ids, &store, Vec::new(), Vec::new()).await?;

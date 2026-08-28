@@ -1,13 +1,15 @@
 use crate::{
     AppError, OptionAsStrExt,
-    common::{DisplayName, FullName, PreviousElectionResults, Problematic, Problems},
-    list_designation::ListDesignation,
+    structs::{
+        common::{Appellation, FullName, PreviousElectionResults, Problematic, Problems},
+        list_designation::ListDesignation,
+    },
 };
 use serde::{Deserialize, Serialize};
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
 pub struct PoliticalGroup {
-    pub display_name: Option<DisplayName>,
+    pub appellation: Option<Appellation>,
     pub list_designation: Option<ListDesignation>,
     pub previous_election_results: Option<PreviousElectionResults>,
 }
@@ -15,7 +17,7 @@ pub struct PoliticalGroup {
 impl Problematic<()> for PoliticalGroup {
     fn get_problems(&self, _: ()) -> Problems {
         Problems::merge(vec![
-            self.display_name.get_problems(self.list_designation),
+            self.appellation.get_problems(self.list_designation),
             self.list_designation.get_problems(()),
             self.previous_election_results
                 .get_problems(self.list_designation),
@@ -24,23 +26,21 @@ impl Problematic<()> for PoliticalGroup {
 }
 
 impl PoliticalGroup {
-    /// display name for use in exported PG documents (EML 210 and H-models)
-    pub fn pg_display_name(&self) -> Result<String, AppError> {
+    /// Appellation for use in exported PG documents (EML 210 and H-models)
+    pub fn pg_appellation(&self) -> Result<String, AppError> {
         if self.list_designation == Some(ListDesignation::Blank) {
             // empty place holder
             return Ok(String::new());
         }
-        self.display_name
+        self.appellation
             .as_ref()
             .map(|d| Ok(d.to_string()))
-            .unwrap_or(Err(AppError::IncompleteData(
-                "Missing registered designation",
-            )))
+            .unwrap_or(Err(AppError::IncompleteData("Missing appellation")))
     }
 
-    /// display name for use in the UI of the CSB module and the I-models
-    pub fn csb_display_name(&self, first_candidate_name: Option<&FullName>) -> String {
-        if let Some(name) = &self.display_name
+    /// Appellation for use in the UI of the CSB module and the I-models
+    pub fn csb_appellation(&self, first_candidate_name: Option<&FullName>) -> String {
+        if let Some(name) = &self.appellation
             && self.list_designation != Some(ListDesignation::Blank)
         {
             return name.to_string();
@@ -79,13 +79,13 @@ impl PoliticalGroup {
     }
 
     pub fn is_group_information_empty(&self) -> bool {
-        self.display_name.is_empty_or_none() && self.previous_election_results.is_none()
+        self.appellation.is_empty_or_none() && self.previous_election_results.is_none()
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::common::{InfoProblems, PotentialProblems};
+    use crate::structs::common::{InfoProblems, PotentialProblems};
 
     use super::*;
 
@@ -96,7 +96,7 @@ mod tests {
         let empty_items = PoliticalGroup {
             previous_election_results: None,
             list_designation: None,
-            display_name: None,
+            appellation: None,
         }
         .get_problems(());
 
@@ -104,7 +104,7 @@ mod tests {
         assert!(
             empty_items
                 .potential_problems
-                .contains(&PotentialProblems::NoDisplayName)
+                .contains(&PotentialProblems::NoAppellation)
         );
 
         assert_eq!(empty_items.info_problems.len(), 2);
@@ -125,7 +125,7 @@ mod tests {
         let problems = PoliticalGroup {
             previous_election_results: Some(PreviousElectionResults::OneToFifteenSeats),
             list_designation: Some(ListDesignation::Standalone),
-            display_name: DisplayName::from_str("test").ok(),
+            appellation: Appellation::from_str("test").ok(),
         }
         .get_problems(());
 
@@ -138,7 +138,7 @@ mod tests {
         let problems = PoliticalGroup {
             previous_election_results: None,
             list_designation: Some(ListDesignation::Blank),
-            display_name: None,
+            appellation: None,
         }
         .get_problems(());
         assert!(problems.potential_problems.is_empty());
@@ -150,15 +150,15 @@ mod tests {
         let mut group = PoliticalGroup {
             previous_election_results: Some(PreviousElectionResults::SixteenOrMoreSeats),
             list_designation: Some(ListDesignation::Standalone),
-            display_name: DisplayName::from_str("test").ok(),
+            appellation: Appellation::from_str("test").ok(),
         };
-        assert_eq!(group.pg_display_name().unwrap(), "test");
+        assert_eq!(group.pg_appellation().unwrap(), "test");
         assert_eq!(group.get_max_candidates(), 80);
         assert!(group.was_previously_seated());
 
         // the set values should be ignored when switching to a blank list
         group.list_designation = Some(ListDesignation::Blank);
-        assert_eq!(group.pg_display_name().unwrap(), "");
+        assert_eq!(group.pg_appellation().unwrap(), "");
         assert_eq!(group.get_max_candidates(), 50);
         assert!(!group.was_previously_seated());
     }

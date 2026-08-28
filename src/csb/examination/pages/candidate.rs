@@ -3,18 +3,14 @@ use axum::response::{IntoResponse, Response};
 
 use crate::{
     AppError, Context, CsbContext, CsbStore, ElectoralDistrict, HtmlTemplate,
-    candidate_lists::CandidateListId,
-    csb::{
-        WithCorrections,
-        examination::{
-            extractors::CsbPoliticalGroup,
-            pages::CsbCandidatePath,
-            structs::{PaperCorrected, PaperCorrectedPersonDetails},
-        },
+    csb::examination::{
+        extractors::CsbPoliticalGroup,
+        pages::CsbCandidatePath,
+        structs::{PaperCorrected, PaperCorrectedPersonDetails},
     },
     filters,
-    persons::Person,
-    structs::csb::Omission,
+    projection::WithCorrections,
+    structs::{candidate_lists::CandidateListId, csb::Omission, persons::Person},
 };
 
 #[derive(Template)]
@@ -27,7 +23,6 @@ struct CsbCandidateTemplate {
     details: PaperCorrectedPersonDetails,
     position: PaperCorrected,
     candidate_omissions: Vec<Omission>,
-    restoration_count: usize,
 }
 
 pub async fn overview(
@@ -78,7 +73,6 @@ pub async fn overview(
             details,
             position,
             candidate_omissions,
-            restoration_count: store.get_omission_count(),
         },
         context,
     )
@@ -91,8 +85,7 @@ mod tests {
     use axum::http::StatusCode;
 
     use crate::{
-        persons::PersonId,
-        structs::csb::OmissionCategory,
+        structs::{csb::OmissionCategory, persons::PersonId},
         test_utils::{response_body_string, sample_candidate_list, sample_person},
     };
 
@@ -300,9 +293,9 @@ mod tests {
                 person: person_id,
                 lists: vec![list_id],
             },
-            "Missing consent".to_string(),
-            "The declaration of consent is missing.".to_string(),
-            String::new(),
+            "Missing consent".parse().unwrap(),
+            "The declaration of consent is missing.".parse().unwrap(),
+            None,
         )
         .create(&store)
         .await

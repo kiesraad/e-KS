@@ -3,12 +3,14 @@ use axum::response::IntoResponse;
 
 use crate::{
     AppError, Context, HtmlTemplate, PgStore,
-    common::{HasSeverity, Severity},
     core::ModelLocale,
     filters,
     finalise::AllProblems,
-    list_designation::ListDesignation,
-    list_submitters::ListSubmitter,
+    structs::{
+        common::{HasSeverity, Severity},
+        list_designation::ListDesignation,
+        list_submitters::ListSubmitter,
+    },
 };
 
 use super::FinalisePath;
@@ -55,9 +57,9 @@ mod tests {
     use super::*;
     use crate::{
         Context, ElectionConfig, ElectoralDistrict, Locale, PgStore, Session,
-        candidate_lists::CandidateListId,
-        list_submitters::ListSubmitterId,
-        persons::PersonId,
+        structs::{
+            candidate_lists::CandidateListId, list_submitters::ListSubmitterId, persons::PersonId,
+        },
         test_utils::{
             response_body_string, sample_candidate_list, sample_list_submitter, sample_person,
         },

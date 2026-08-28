@@ -1,11 +1,10 @@
+use crate::structs::candidate_lists::{CandidateList, CandidateListId};
 use askama::Template;
 use axum::response::{IntoResponse, Redirect, Response};
 
 use crate::{
     AppError, Context, ElectoralDistrict, Form, HtmlTemplate, Overlay, PgStore,
-    candidate_lists::{
-        CandidateList, CandidateListCreateForm, CandidateListId, pages::CandidateListCreatePath,
-    },
+    candidate_lists::{CandidateListCreateForm, pages::CandidateListCreatePath},
     filters,
     form::FormData,
 };
@@ -113,8 +112,7 @@ mod test {
     use crate::{
         Context, ElectionConfig, ElectoralDistrict, Locale, PgStore, Province, Session,
         WaterCouncil,
-        candidate_lists::{CandidateListId, CandidateListSummary},
-        persons::PersonId,
+        structs::{candidate_lists::CandidateListSummary, persons::PersonId},
         test_utils::{response_body_string, sample_candidate_list, sample_person},
     };
 

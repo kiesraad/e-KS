@@ -3,8 +3,8 @@ use serde::Deserialize;
 
 use crate::{
     AppError, Locale,
-    persons::{Person, PersonId},
     pg::request_extractor,
+    structs::persons::{Person, PersonId},
     trans,
 };
 

@@ -1,8 +1,8 @@
 use std::cmp;
 
 use crate::{
-    common::Severity,
     finalise::{AllProblems, EntityProblems},
+    structs::common::Severity,
 };
 
 impl AllProblems {
@@ -64,20 +64,20 @@ impl AllProblems {
 #[cfg(test)]
 mod tests {
     use crate::{
-        candidate_lists::CandidateListId,
-        common::{
-            InfoProblems::{self},
-            PotentialProblems,
-        },
         finalise::{
             EntityProblems,
-            structs::problems::{
-                EntityInfoProblems, GeneralProblems, ListProblems, PersonProblems,
-            },
+            structs::problems::{EntityInfoProblems, GeneralProblems, ListProblems},
         },
-        list_submitters::ListSubmitterId,
-        name_authorisations::NameAuthorisationId,
-        persons::PersonId,
+        structs::{
+            candidate_lists::CandidateListId,
+            common::{
+                InfoProblems::{self},
+                PotentialProblems,
+            },
+            list_submitters::ListSubmitterId,
+            name_authorisations::NameAuthorisationId,
+            persons::PersonId,
+        },
         test_utils::{
             sample_candidate_list, sample_list_submitter, sample_name_authorisation, sample_person,
         },
@@ -99,244 +99,121 @@ mod tests {
         ]
     }
 
-    #[test]
-    fn sort_by_severity() {
-        let nn1 = sample_name_authorisation(NameAuthorisationId::new());
-        let nn2 = sample_name_authorisation(NameAuthorisationId::new());
+    /// Unordered problems attached to two fresh sample entities.
+    fn unordered_pair<T>(sample: impl Fn() -> T) -> Vec<EntityProblems<T>> {
+        (0..2)
+            .map(|_| EntityProblems {
+                entity: sample(),
+                problems: problem_vec_unordered(),
+            })
+            .collect()
+    }
 
-        let ls = sample_list_submitter(ListSubmitterId::new());
-
-        let ss1 = sample_list_submitter(ListSubmitterId::new());
-        let ss2 = sample_list_submitter(ListSubmitterId::new());
-
-        let c1 = sample_person(PersonId::new());
-        let c2 = sample_person(PersonId::new());
-
-        let cl1 = sample_candidate_list(CandidateListId::new());
-        let cl2 = sample_candidate_list(CandidateListId::new());
-
-        let info_problems = vec![
-            EntityInfoProblems::Person {
-                person: Box::new(sample_person(PersonId::new())),
-                problem: InfoProblems::NoLastName,
-            },
-            EntityInfoProblems::Person {
-                person: Box::new(sample_person(PersonId::new())),
-                problem: InfoProblems::NoInitials,
-            },
-        ];
-
-        let mut all_problems = AllProblems {
+    /// An `AllProblems` with unordered problems for every entity kind.
+    fn unsorted_all_problems() -> AllProblems {
+        AllProblems {
             general: GeneralProblems {
                 general: problem_vec_unordered(),
-                name_authorisations: vec![
-                    EntityProblems {
-                        entity: nn1.clone(),
-                        problems: problem_vec_unordered(),
-                    },
-                    EntityProblems {
-                        entity: nn2.clone(),
-                        problems: problem_vec_unordered(),
-                    },
-                ],
+                name_authorisations: unordered_pair(|| {
+                    sample_name_authorisation(NameAuthorisationId::new())
+                }),
                 list_submitter: Some(EntityProblems {
-                    entity: ls.clone(),
+                    entity: sample_list_submitter(ListSubmitterId::new()),
                     problems: problem_vec_unordered(),
                 }),
-                substitute_submitters: vec![
-                    EntityProblems {
-                        entity: ss1.clone(),
-                        problems: problem_vec_unordered(),
-                    },
-                    EntityProblems {
-                        entity: ss2.clone(),
-                        problems: problem_vec_unordered(),
-                    },
-                ],
+                substitute_submitters: unordered_pair(|| {
+                    sample_list_submitter(ListSubmitterId::new())
+                }),
             },
-            candidates: vec![
-                PersonProblems {
-                    entity: c1.clone(),
-                    problems: problem_vec_unordered(),
-                },
-                PersonProblems {
-                    entity: c2.clone(),
-                    problems: problem_vec_unordered(),
-                },
-            ],
+            candidates: unordered_pair(|| sample_person(PersonId::new())),
             lists: ListProblems {
                 general: problem_vec_unordered(),
-                per_list: vec![
-                    EntityProblems {
-                        entity: cl1.clone(),
-                        problems: problem_vec_unordered(),
-                    },
-                    EntityProblems {
-                        entity: cl2.clone(),
-                        problems: problem_vec_unordered(),
-                    },
-                ],
+                per_list: unordered_pair(|| sample_candidate_list(CandidateListId::new())),
             },
-            info_problems: info_problems.clone(),
-        };
+            info_problems: vec![
+                EntityInfoProblems::Person {
+                    person: Box::new(sample_person(PersonId::new())),
+                    problem: InfoProblems::NoLastName,
+                },
+                EntityInfoProblems::Person {
+                    person: Box::new(sample_person(PersonId::new())),
+                    problem: InfoProblems::NoInitials,
+                },
+            ],
+        }
+    }
+
+    /// The same entities with their problems in sorted order.
+    fn with_ordered_problems<T: Clone>(source: &[EntityProblems<T>]) -> Vec<EntityProblems<T>> {
+        source
+            .iter()
+            .map(|ep| EntityProblems {
+                entity: ep.entity.clone(),
+                problems: problem_vec_ordered(),
+            })
+            .collect()
+    }
+
+    #[test]
+    fn sort_by_severity() {
+        let mut all_problems = unsorted_all_problems();
+        let original = all_problems.clone();
 
         all_problems.sort_problems_by_severity();
+
+        // Per-list problems are regrouped: every list's errors first, then
+        // every list's warnings.
+        let expected_per_list: Vec<_> = [Severity::Error, Severity::Warn]
+            .into_iter()
+            .flat_map(|severity| {
+                original
+                    .lists
+                    .per_list
+                    .iter()
+                    .map(move |ep| EntityProblems {
+                        entity: ep.entity.clone(),
+                        problems: vec![PotentialProblems::NoInitials(severity)],
+                    })
+            })
+            .collect();
 
         assert_eq!(
             all_problems,
             AllProblems {
                 general: GeneralProblems {
                     general: problem_vec_ordered(),
-                    name_authorisations: vec![
+                    name_authorisations: with_ordered_problems(
+                        &original.general.name_authorisations
+                    ),
+                    list_submitter: original.general.list_submitter.as_ref().map(|ls| {
                         EntityProblems {
-                            entity: nn1,
+                            entity: ls.entity.clone(),
                             problems: problem_vec_ordered(),
-                        },
-                        EntityProblems {
-                            entity: nn2,
-                            problems: problem_vec_ordered(),
-                        },
-                    ],
-                    list_submitter: Some(EntityProblems {
-                        entity: ls,
-                        problems: problem_vec_ordered(),
+                        }
                     }),
-                    substitute_submitters: vec![
-                        EntityProblems {
-                            entity: ss1,
-                            problems: problem_vec_ordered(),
-                        },
-                        EntityProblems {
-                            entity: ss2,
-                            problems: problem_vec_ordered(),
-                        },
-                    ],
+                    substitute_submitters: with_ordered_problems(
+                        &original.general.substitute_submitters
+                    ),
                 },
-                candidates: vec![
-                    PersonProblems {
-                        entity: c1,
-                        problems: problem_vec_ordered(),
-                    },
-                    PersonProblems {
-                        entity: c2,
-                        problems: problem_vec_ordered(),
-                    },
-                ],
+                candidates: with_ordered_problems(&original.candidates),
                 lists: ListProblems {
                     general: problem_vec_ordered(),
-                    per_list: vec![
-                        EntityProblems {
-                            entity: cl1.clone(),
-                            problems: vec![PotentialProblems::NoInitials(Severity::Error)],
-                        },
-                        EntityProblems {
-                            entity: cl2.clone(),
-                            problems: vec![PotentialProblems::NoInitials(Severity::Error)],
-                        },
-                        EntityProblems {
-                            entity: cl1.clone(),
-                            problems: vec![PotentialProblems::NoInitials(Severity::Warn)],
-                        },
-                        EntityProblems {
-                            entity: cl2.clone(),
-                            problems: vec![PotentialProblems::NoInitials(Severity::Warn)],
-                        },
-                    ],
+                    per_list: expected_per_list,
                 },
-                info_problems,
+                info_problems: original.info_problems.clone(),
             }
         )
     }
 
     #[test]
     fn sort_by_severity_is_idempotent() {
-        let nn1 = sample_name_authorisation(NameAuthorisationId::new());
-        let nn2 = sample_name_authorisation(NameAuthorisationId::new());
-
-        let ls = sample_list_submitter(ListSubmitterId::new());
-
-        let ss1 = sample_list_submitter(ListSubmitterId::new());
-        let ss2 = sample_list_submitter(ListSubmitterId::new());
-
-        let c1 = sample_person(PersonId::new());
-        let c2 = sample_person(PersonId::new());
-
-        let cl1 = sample_candidate_list(CandidateListId::new());
-        let cl2 = sample_candidate_list(CandidateListId::new());
-
-        let info_problems = vec![
-            EntityInfoProblems::Person {
-                person: Box::new(sample_person(PersonId::new())),
-                problem: InfoProblems::NoLastName,
-            },
-            EntityInfoProblems::Person {
-                person: Box::new(sample_person(PersonId::new())),
-                problem: InfoProblems::NoInitials,
-            },
-        ];
-
-        let mut all_problems = AllProblems {
-            general: GeneralProblems {
-                general: problem_vec_unordered(),
-                name_authorisations: vec![
-                    EntityProblems {
-                        entity: nn1.clone(),
-                        problems: problem_vec_unordered(),
-                    },
-                    EntityProblems {
-                        entity: nn2.clone(),
-                        problems: problem_vec_unordered(),
-                    },
-                ],
-                list_submitter: Some(EntityProblems {
-                    entity: ls.clone(),
-                    problems: problem_vec_unordered(),
-                }),
-                substitute_submitters: vec![
-                    EntityProblems {
-                        entity: ss1.clone(),
-                        problems: problem_vec_unordered(),
-                    },
-                    EntityProblems {
-                        entity: ss2.clone(),
-                        problems: problem_vec_unordered(),
-                    },
-                ],
-            },
-            candidates: vec![
-                PersonProblems {
-                    entity: c1.clone(),
-                    problems: problem_vec_unordered(),
-                },
-                PersonProblems {
-                    entity: c2.clone(),
-                    problems: problem_vec_unordered(),
-                },
-            ],
-            lists: ListProblems {
-                general: problem_vec_unordered(),
-                per_list: vec![
-                    EntityProblems {
-                        entity: cl1.clone(),
-                        problems: problem_vec_unordered(),
-                    },
-                    EntityProblems {
-                        entity: cl2.clone(),
-                        problems: problem_vec_unordered(),
-                    },
-                ],
-            },
-            info_problems: info_problems.clone(),
-        };
-
+        let mut all_problems = unsorted_all_problems();
         let original = all_problems.clone();
 
         all_problems.sort_problems_by_severity();
-
         let after_sort1 = all_problems.clone();
 
         all_problems.sort_problems_by_severity();
-
         let after_sort2 = all_problems;
 
         assert_ne!(original, after_sort1);

@@ -5,9 +5,9 @@ mod forms;
 mod pages;
 mod paths;
 
-pub use crate::structs::persons::{
-    Person, PersonId, PersonPagination, PersonSort, PersonalData, Representative,
-};
 pub use forms::{AddressForm, PersonalDataFieldsForm, PersonalDataForm, RepresentativeForm};
 pub use pages::router;
-pub use paths::{PersonsPath, UpdatePersonPath};
+pub use paths::UpdatePersonPath;
+// Only the guard test in this section reads this; see `view::context`.
+#[cfg(test)]
+pub use paths::PersonsPath;

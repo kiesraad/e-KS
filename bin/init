@@ -15,7 +15,7 @@ fi
 
 # The development crate is a workspace member, so its binaries land in the
 # shared workspace target/ directory rather than development/target/.
-cargo build --release -p eks-development
+cargo build --locked --release -p eks-development
 
 cp target/release/dev bin/dev
 cp target/release/setup bin/setup

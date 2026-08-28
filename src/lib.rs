@@ -64,49 +64,66 @@
 //! This layout keeps domain-specific routing and UI close to each other while
 //! sharing generic infrastructure via `core`, `auth`, `state`, and `store`.
 
+#[cfg(feature = "acme")]
+mod acme;
+mod app;
 mod auth;
 mod core;
-mod crypto;
 mod csb;
 mod error;
-mod filters;
 mod form;
-mod middleware;
 mod pg;
-mod state;
+mod projection;
 mod store;
 mod structs;
 mod utils;
+mod view;
 
 // `pub` because the `pdf_diff` development tool renders the PDF models (from
 // the JSON example inputs) through this module.
+pub use app::router;
+
 pub mod models;
-pub mod router;
 
 #[cfg(feature = "fixtures")]
 mod fixtures;
 
-// The crate's public API is exactly what the `eks` binary needs; everything
+// The crate's public API is exactly what the binaries need; everything
 // else is re-exported `pub(crate)` so the flat `crate::X` import style keeps
 // working internally without growing the external interface.
+#[cfg(feature = "acme")]
+pub use acme::{
+    bootstrap_certificate, create_acme_account, parse_acme_account_credentials, run_acme_renewer,
+};
+pub use app::AppState;
 pub use auth::session_store::run_session_sweeper;
 pub use core::{Config, logging, server};
 pub use error::AppError;
-pub use state::AppState;
 pub use store::run_db_prober;
 
-pub(crate) use middleware::{
-    csb_store_middleware, db_gate_middleware, eks_key_middleware, health_router,
+#[cfg(feature = "acme")]
+pub(crate) use acme::AcmeStore;
+#[cfg(feature = "acme")]
+pub(crate) use core::AcmeConfig;
+
+pub(crate) use app::middleware::{
+    csb_store_middleware, db_gate_middleware, eks_key_middleware, health_router, lb_health_router,
     session_middleware, store_middleware,
 };
 pub(crate) use pg::{
-    Context, PgEvent, PgStore, PgStoreData, audit_log, candidate_lists, candidates, common,
-    csrf_rejection_response, finalise, list_designation, list_submitters, name_authorisations,
-    persons, political_groups, render_error_pages, substitute_list_submitters,
+    audit_log, candidate_lists, candidates, common, csrf_rejection_response, finalise,
+    list_designation, list_submitters, name_authorisations, persons, political_groups,
+    render_error_pages, substitute_list_submitters,
+};
+#[cfg(any(test, feature = "dev-features"))]
+pub(crate) use projection::CsbMainEvent;
+pub(crate) use projection::{
+    AppRequestState, CsbEvent, CsbMainStore, CsbMainStoreData, CsbStore, CsbStoreData, PgEvent,
+    PgStore, PgStoreData,
 };
 
 #[cfg(not(feature = "memory-serve"))]
-pub(crate) use middleware::proxy_handler;
+pub(crate) use app::middleware::proxy_handler;
 // `pub` because the `eks` binary's tests reference `eks::SESSION_COOKIE_NAME`.
 pub use auth::session_extractor::SESSION_COOKIE_NAME;
 pub(crate) use auth::{
@@ -121,27 +138,21 @@ pub(crate) use core::{
     constants::{self, MAX_CANDIDATES},
     http_trace, translate,
 };
-#[cfg(any(test, feature = "dev-features"))]
-pub(crate) use csb::CsbMainEvent;
-pub(crate) use csb::{CsbContext, CsbEvent, CsbMainStoreData, CsbStoreData};
+pub(crate) use csb::CsbContext;
 pub(crate) use error::AppResponse;
 pub(crate) use form::{Form, TokenValue};
-pub(crate) use state::AppRequestState;
 pub(crate) use store::{DbHealth, Event};
 pub(crate) use utils::{
-    OptionAsStrExt, OptionStringExt, Overlay, QueryParamState, abbreviate_str, id_newtype,
-    overlay_active, pagination, redirect_success, success_alert_requested, transparent_string,
+    OptionAsStrExt, OptionStringExt, Overlay, QueryParamState, abbreviate_str, overlay_active,
+    pagination, redirect_success, success_alert_requested, transparent_string,
 };
+// Askama resolves custom filters from the enclosing module scope, so template
+// modules do `use crate::filters`.
+pub(crate) use view::{Context, filters};
 
 #[cfg(test)]
-pub(crate) use utils::test_utils;
+mod test_support;
+#[cfg(test)]
+pub(crate) use test_support::test_utils;
 
-// Nominally `pub` in a private module (then re-exported `pub(crate)`) so the
-// many nominally-`pub` signatures mentioning it don't trip `private_interfaces`.
-mod stream_id {
-    crate::id_newtype!(pub struct StreamId);
-}
-pub(crate) use stream_id::StreamId;
-
-pub(crate) type CsbStore = store::Store<CsbStoreData>;
-pub(crate) type CsbMainStore = store::Store<CsbMainStoreData>;
+pub(crate) use store::{StreamId, crypto};

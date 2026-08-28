@@ -8,7 +8,7 @@
 {% block overlay_form %}
   <div class="omission-overview">
     {% if omissions.is_empty() %}
-      <p class="font-italic">{{ "csb.omission.overview.empty"|trans }}</p>
+      <p class="font-italic">{{ "csb.omission.overview.no_omissions"|trans }}</p>
     {% else %}
       <ul class="omission-list">
         {% for view in omissions %}
@@ -27,14 +27,14 @@
                 <p>In {{ view.districts }}</p>
                 <h5>{{ "csb.omission.overview.description"|trans }}</h5>
                 <p>{{ view.omission.description }}</p>
-                {% if !view.omission.help_text.is_empty() %}
+                {% if let Some(help_text) = view.omission.help_text() %}
                   <h5>{{ "csb.omission.overview.help_text"|trans }}</h5>
-                  <p>{{ view.omission.help_text }}</p>
+                  <p>{{ help_text }}</p>
                 {% endif %}
               </div>
               <button type="submit"
                       class="button xs tertiary-destructive"
-                      formaction="{{ view.remove_url }}"
+                      formaction="{{ overlay.forward(view.remove_url(omission_target) ) }}"
                       formnovalidate>{{ "action.remove"|trans }}</button>
             </div>
           </li>

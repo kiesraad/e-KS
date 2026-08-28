@@ -1,12 +1,10 @@
+use crate::structs::persons::Person;
 use askama::Template;
 use axum::response::{IntoResponse, Redirect, Response};
 
 use crate::{
-    AppError, Context, Form, HtmlTemplate, MAX_CANDIDATES, Overlay, PgStore,
-    candidate_lists::FullCandidateList,
-    filters,
-    form::FormData,
-    persons::{Person, PersonalDataForm},
+    AppError, Context, Form, HtmlTemplate, MAX_CANDIDATES, Overlay, PgStore, filters,
+    form::FormData, persons::PersonalDataForm, structs::candidate_lists::FullCandidateList,
 };
 
 use super::CreateCandidatePath;
@@ -78,8 +76,7 @@ mod tests {
 
     use crate::{
         Context, Form, PgStore,
-        candidate_lists::CandidateListId,
-        persons::PersonId,
+        structs::{candidate_lists::CandidateListId, persons::PersonId},
         test_utils::{
             response_body_string, sample_candidate_list, sample_person_form,
             sample_person_with_last_name,

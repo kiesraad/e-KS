@@ -2,13 +2,15 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     ElectionConfig,
-    common::{
-        DutchAddress, FullName, Gender, HasSeverity, PotentialProblems, Problematic, Problems,
-        Severity, UtcDateTime, WithProblems,
-    },
     core::{AnyLocale, Locale},
     id_newtype,
-    persons::PersonalData,
+    structs::{
+        common::{
+            DutchAddress, FullName, Gender, HasSeverity, PotentialProblems, Problematic, Problems,
+            Severity, UtcDateTime, WithProblems,
+        },
+        persons::PersonalData,
+    },
     trans,
 };
 
@@ -146,9 +148,11 @@ mod tests {
     use super::*;
     use crate::{
         AppError, PgStore,
-        common::{BsnOrNoneConfirmed, CountryCode, EmptyAddressProblems},
         pagination::SortDirection,
-        persons::PersonSort,
+        structs::{
+            common::{BsnOrNoneConfirmed, CountryCode, EmptyAddressProblems},
+            persons::PersonSort,
+        },
         test_utils::{
             parse_country_code, parse_last_name_prefix, sample_person, sample_person_with,
             sample_person_with_last_name,
@@ -222,7 +226,7 @@ mod tests {
 
         let updated = store.get_person(id)?;
         assert_eq!(
-            updated.address.locality.as_deref().map(|v| v.to_string()),
+            updated.address.locality.as_deref().map(ToString::to_string),
             Some("Nieuwegein".to_string())
         );
         assert_eq!(
@@ -234,7 +238,7 @@ mod tests {
                 .address
                 .house_number
                 .as_deref()
-                .map(|v| v.to_string()),
+                .map(ToString::to_string),
             Some("99".to_string())
         );
         assert_eq!(updated.address.house_number_addition, None);
@@ -243,7 +247,7 @@ mod tests {
                 .address
                 .street_name
                 .as_deref()
-                .map(|v| v.to_string()),
+                .map(ToString::to_string),
             Some("Nieuweweg".to_string())
         );
 
@@ -282,7 +286,7 @@ mod tests {
     }
 
     #[test]
-    fn display_name_shows_first_name_when_present() {
+    fn appellation_shows_first_name_when_present() {
         let mut person =
             sample_person_with(PersonId::new(), Some("Anne"), "Dijk", Some("van"), "A.B.");
         assert_eq!(person.name.display(), "van Dijk, A.B. (Anne)");

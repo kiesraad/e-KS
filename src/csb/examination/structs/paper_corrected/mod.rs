@@ -43,7 +43,7 @@ impl PaperCorrected {
     /// corrected counterpart. A missing counterpart (deleted in the
     /// corrections) yields an empty corrected side; pass an absent imported
     /// side for entities added by the corrections.
-    fn from_field<T>(
+    pub fn from_field<T>(
         imported: Option<&T>,
         corrected: Option<&T>,
         field: impl Fn(&T) -> String,

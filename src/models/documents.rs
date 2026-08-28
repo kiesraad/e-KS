@@ -16,10 +16,12 @@ use super::{
 };
 use crate::{
     AppError, Context, ElectionConfig, PgStore,
-    candidate_lists::{CandidateListId, FullCandidateList},
-    common::{HasSeverity, Problematic, Severity},
     core::{ModelLocale, ZipResponseWriter},
-    list_designation::ListDesignation,
+    structs::{
+        candidate_lists::{CandidateListId, FullCandidateList},
+        common::{HasSeverity, Problematic, Severity},
+        list_designation::ListDesignation,
+    },
     utils::{format_hash, no_cache_headers, slugify_teletex},
 };
 use axum::{
@@ -61,7 +63,7 @@ impl DocumentData {
         let name_slug = if self.list_designation == ListDesignation::Blank {
             "blanco".to_string()
         } else {
-            slugify_teletex(&self.model_data.designation, true)
+            slugify_teletex(&self.model_data.appellation, true)
         };
 
         if self.model_data.locale == ModelLocale::Fry {
@@ -146,17 +148,9 @@ impl DocumentData {
         let electoral_districts = ElectoralDistricts::from(&list, &context.election, locale);
 
         let group = store.get_political_group();
-        let designation = group.pg_display_name()?;
+        let appellation = group.pg_appellation()?;
 
-        let list_submitter = store.get_list_submitter();
-        if list_submitter.is_empty()
-            || list_submitter
-                .get_problems(())
-                .has_severity_or_higher(Severity::Error)
-        {
-            return Err(AppError::IncompleteData("Incomplete list submitter"));
-        }
-        let list_submitter = Person::from(list_submitter);
+        let list_submitter = Self::complete_list_submitter(store)?;
 
         let substitute_submitters = store
             .get_substitute_submitters()
@@ -181,7 +175,7 @@ impl DocumentData {
             model_data: ModelData {
                 election_name: election.formal_title(locale),
                 election_type: election.election_type(),
-                designation,
+                appellation,
                 candidates: ordered_candidates,
                 locale,
                 event_id,
@@ -196,6 +190,20 @@ impl DocumentData {
             name_authorisations: Self::name_authorisations_with_fill_ins(store)?,
             nomination,
         })
+    }
+
+    /// The list submitter as a model person, or an error when it is missing
+    /// or incomplete.
+    fn complete_list_submitter(store: &PgStore) -> Result<Person, AppError> {
+        let list_submitter = store.get_list_submitter();
+        if list_submitter.is_empty()
+            || list_submitter
+                .get_problems(())
+                .has_severity_or_higher(Severity::Error)
+        {
+            return Err(AppError::IncompleteData("Incomplete list submitter"));
+        }
+        Ok(Person::from(list_submitter))
     }
 
     pub fn from_store_and_context(

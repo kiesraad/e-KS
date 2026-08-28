@@ -2,14 +2,17 @@ use axum_extra::routing::TypedPath as _;
 
 use crate::{
     AppError, Locale, PgStore, QueryParamState,
-    candidate_lists::{CandidateList, CandidateListSummary, FullCandidateList},
-    common::{HasSeverity, IndexPath, InfoProblems, PotentialProblems, Problematic, Severity},
+    common::PgIndexPath,
     finalise::FinalisePath,
-    list_designation::ListDesignation,
-    list_submitters::ListSubmitter,
-    name_authorisations::NameAuthorisation,
-    persons::Person,
-    political_groups::PoliticalGroup,
+    structs::{
+        candidate_lists::{CandidateList, CandidateListSummary, FullCandidateList},
+        common::{HasSeverity, InfoProblems, PotentialProblems, Problematic, Severity},
+        list_designation::ListDesignation,
+        list_submitters::ListSubmitter,
+        name_authorisations::NameAuthorisation,
+        persons::Person,
+        political_groups::PoliticalGroup,
+    },
 };
 
 impl PotentialProblems {
@@ -129,61 +132,78 @@ impl AllProblems {
             }
         };
 
+        let list_submitter =
+            Self::find_list_submitter_problems(store, &mut general, &mut info_problems);
+        let substitute_submitters =
+            Self::find_substitute_submitter_problems(store, &mut info_problems);
+
+        (
+            GeneralProblems {
+                general,
+                name_authorisations,
+                list_submitter,
+                substitute_submitters,
+            },
+            info_problems,
+        )
+    }
+
+    /// Problems of the list submitter; a missing submitter is pushed onto
+    /// `general` and info problems onto `info_problems`.
+    fn find_list_submitter_problems(
+        store: &PgStore,
+        general: &mut Vec<PotentialProblems>,
+        info_problems: &mut Vec<EntityInfoProblems>,
+    ) -> Option<EntityProblems<ListSubmitter>> {
         let list_submitter = store.get_list_submitter();
         if list_submitter.is_empty() {
             general.push(PotentialProblems::NoListSubmitter);
         }
 
-        let all_list_submitter_problems = list_submitter.get_problems(());
-        let list_submitter_problems = if !all_list_submitter_problems.potential_problems.is_empty()
-        {
-            Some(EntityProblems {
-                entity: list_submitter.clone(),
-                problems: all_list_submitter_problems.potential_problems,
-            })
-        } else {
-            None
-        };
+        let problems = list_submitter.get_problems(());
         info_problems.extend(
-            all_list_submitter_problems
+            problems
                 .info_problems
                 .into_iter()
-                .map(|problem| EntityInfoProblems::Submitter { problem })
-                .collect::<Vec<_>>(),
+                .map(|problem| EntityInfoProblems::Submitter { problem }),
         );
 
+        if problems.potential_problems.is_empty() {
+            return None;
+        }
+        Some(EntityProblems {
+            entity: list_submitter,
+            problems: problems.potential_problems,
+        })
+    }
+
+    /// Problems per substitute submitter; info problems are pushed onto
+    /// `info_problems`, including one when there is no substitute at all.
+    fn find_substitute_submitter_problems(
+        store: &PgStore,
+        info_problems: &mut Vec<EntityInfoProblems>,
+    ) -> Vec<EntityProblems<ListSubmitter>> {
         let submitters = store.get_substitute_submitters();
         if submitters.is_empty() {
             info_problems.push(EntityInfoProblems::AnyProblem(
                 InfoProblems::NoSubstituteSubmitter,
             ));
         }
+
         let mut substitute_submitters = Vec::new();
         for ss in submitters {
             let (ss_problems, infos) = EntityProblems::new(ss.clone());
             if !ss_problems.problems.is_empty() {
                 substitute_submitters.push(ss_problems)
             }
-            info_problems.extend(
-                infos
-                    .into_iter()
-                    .map(|problem| EntityInfoProblems::SubstituteSubmitter {
-                        submitter: ss.clone(),
-                        problem,
-                    })
-                    .collect::<Vec<_>>(),
-            );
+            info_problems.extend(infos.into_iter().map(|problem| {
+                EntityInfoProblems::SubstituteSubmitter {
+                    submitter: ss.clone(),
+                    problem,
+                }
+            }));
         }
-
-        (
-            GeneralProblems {
-                general,
-                name_authorisations,
-                list_submitter: list_submitter_problems,
-                substitute_submitters,
-            },
-            info_problems,
-        )
+        substitute_submitters
     }
 
     fn find_name_authorisation_problems(
@@ -320,7 +340,7 @@ impl AllProblems {
 impl HasSeverity for AllProblems {
     fn highest_severity(&self) -> Option<Severity> {
         self.flatten_problems()
-            .map(|p| p.severity())
+            .map(PotentialProblems::severity)
             .max()
             .or_else(|| (!self.info_problems.is_empty()).then_some(Severity::Info))
     }
@@ -444,7 +464,7 @@ impl EntityInfoProblems {
             EntityInfoProblems::AnyProblem(InfoProblems::NoPreviousElectionResults) => {
                 PoliticalGroup::update_path().to_string()
             }
-            EntityInfoProblems::AnyProblem(..) => IndexPath.to_string(),
+            EntityInfoProblems::AnyProblem(..) => PgIndexPath.to_string(),
 
             EntityInfoProblems::List { list, .. } => list.view_path().to_string(),
             EntityInfoProblems::SubstituteSubmitter { submitter, .. } => submitter
@@ -493,11 +513,11 @@ impl EntityInfoProblems {
 mod tests {
     use crate::{
         AppError, ElectoralDistrict,
-        candidate_lists::CandidateListId,
-        common::HasSeverity,
-        list_submitters::ListSubmitterId,
-        name_authorisations::NameAuthorisationId,
-        persons::PersonId,
+        structs::{
+            candidate_lists::CandidateListId, common::HasSeverity,
+            list_submitters::ListSubmitterId, name_authorisations::NameAuthorisationId,
+            persons::PersonId,
+        },
         test_utils::{
             sample_candidate_list, sample_list_submitter, sample_name_authorisation, sample_person,
         },

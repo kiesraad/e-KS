@@ -1,6 +1,6 @@
 use serde::Deserialize;
 
-use crate::{candidate_lists::CandidateListId, persons::PersonId};
+use crate::structs::{candidate_lists::CandidateListId, persons::PersonId};
 
 mod candidate;
 

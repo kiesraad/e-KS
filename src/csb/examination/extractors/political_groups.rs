@@ -1,11 +1,7 @@
-use axum::{
-    extract::{FromRef, FromRequestParts},
-    http::request::Parts,
-};
+use axum::{extract::FromRequestParts, http::request::Parts};
 
 use crate::{
-    AppError, CsbStore, CsbStoreData, StreamId,
-    store::StoreRegistry,
+    AppError, AppRequestState, CsbStore, StreamId,
     structs::{common::FullName, political_groups::PoliticalGroup},
 };
 
@@ -13,39 +9,40 @@ pub struct CsbPoliticalGroup {
     pub political_group: PoliticalGroup,
     pub stream_id: StreamId,
     pub is_examination_finished: bool,
+    pub is_deleted: bool,
+    pub restoration_count: usize,
     pub omission_count: usize,
     pub first_candidate_name: Option<FullName>,
 }
 
 impl CsbPoliticalGroup {
     pub fn new_from_csb_store(store: &CsbStore) -> Self {
-        CsbPoliticalGroup {
-            political_group: store.get_political_group(crate::csb::WithCorrections::All),
+        Self {
+            political_group: store.get_political_group(crate::projection::WithCorrections::All),
             stream_id: store.stream_id,
             is_examination_finished: store.is_examination_finished(),
+            is_deleted: store.is_deleted(),
+            restoration_count: store.get_restoration_count(),
             omission_count: store.get_omission_count(),
-            first_candidate_name: store.get_first_candidate_name(crate::csb::WithCorrections::All),
+            first_candidate_name: store
+                .get_first_candidate_name(crate::projection::WithCorrections::All),
         }
     }
 
-    pub fn csb_display_name(&self) -> String {
+    pub fn csb_appellation(&self) -> String {
         self.political_group
-            .csb_display_name(self.first_candidate_name.as_ref())
+            .csb_appellation(self.first_candidate_name.as_ref())
     }
 }
 
 /// Extracts all imported political groups visible to the CSB scope.
 pub struct CsbPoliticalGroups(pub Vec<CsbPoliticalGroup>);
 
-impl<S> FromRequestParts<S> for CsbPoliticalGroups
-where
-    S: Send + Sync,
-    StoreRegistry<CsbStoreData>: FromRef<S>,
-{
+impl<S: AppRequestState> FromRequestParts<S> for CsbPoliticalGroups {
     type Rejection = AppError;
 
     async fn from_request_parts(_parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
-        let registry = StoreRegistry::<CsbStoreData>::from_ref(state);
+        let registry = state.csb_store_registry();
 
         let mut political_groups = Vec::new();
         for store in registry.stores_by_scope().await? {
@@ -123,24 +120,26 @@ mod tests {
     }
 
     #[test]
-    fn csb_display_name_returns_display_name_for_normal_list() {
+    fn csb_appellation_returns_appellation_for_normal_list() {
         let group = CsbPoliticalGroup {
             political_group: PoliticalGroup {
-                display_name: Some("Kiesraad Demo".parse().unwrap()),
+                appellation: Some("Kiesraad Demo".parse().unwrap()),
                 list_designation: Some(ListDesignation::Standalone),
                 ..Default::default()
             },
             stream_id: StreamId::new(),
             is_examination_finished: false,
+            is_deleted: false,
+            restoration_count: 0,
             omission_count: 0,
             first_candidate_name: None,
         };
 
-        assert_eq!(group.csb_display_name(), "Kiesraad Demo");
+        assert_eq!(group.csb_appellation(), "Kiesraad Demo");
     }
 
     #[test]
-    fn csb_display_name_blank_list_with_candidate_uses_first_candidate_name() {
+    fn csb_appellation_blank_list_with_candidate_uses_first_candidate_name() {
         let group = CsbPoliticalGroup {
             political_group: PoliticalGroup {
                 list_designation: Some(ListDesignation::Blank),
@@ -148,6 +147,8 @@ mod tests {
             },
             stream_id: StreamId::new(),
             is_examination_finished: false,
+            is_deleted: false,
+            restoration_count: 0,
             omission_count: 0,
             first_candidate_name: Some(FullName {
                 last_name: "Jansen".parse().unwrap(),
@@ -156,11 +157,11 @@ mod tests {
             }),
         };
 
-        assert_eq!(group.csb_display_name(), "Blanco (Jansen, A.B.)");
+        assert_eq!(group.csb_appellation(), "Blanco (Jansen, A.B.)");
     }
 
     #[test]
-    fn csb_display_name_blank_list_without_candidates_uses_blanco_fallback() {
+    fn csb_appellation_blank_list_without_candidates_uses_blanco_fallback() {
         let group = CsbPoliticalGroup {
             political_group: PoliticalGroup {
                 list_designation: Some(ListDesignation::Blank),
@@ -168,10 +169,12 @@ mod tests {
             },
             stream_id: StreamId::new(),
             is_examination_finished: false,
+            is_deleted: false,
+            restoration_count: 0,
             omission_count: 0,
             first_candidate_name: None,
         };
 
-        assert_eq!(group.csb_display_name(), "Blanco");
+        assert_eq!(group.csb_appellation(), "Blanco");
     }
 }

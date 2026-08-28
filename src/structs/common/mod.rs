@@ -1,10 +1,10 @@
 mod address;
+mod appellation;
 mod bsn;
 mod constrained_string;
 mod countries;
 mod country_code;
 mod date;
-mod display_name;
 mod form_action;
 mod gender;
 mod house_number;
@@ -22,12 +22,13 @@ mod severity;
 mod utc_date_time;
 
 pub use address::{Address, DutchAddress, InternationalAddress};
+pub use appellation::Appellation;
 pub use bsn::{BSN_NONE_CONFIRMATION, Bsn, BsnOrNoneConfirmed};
+pub(crate) use constrained_string::constrained_strings;
 pub use constrained_string::{FirstName, LegalName, StateOrProvince, StreetName};
 pub use countries::COUNTRY_CODES;
 pub use country_code::{CountryCode, RVIG_COUNTRY_CODES_URL};
 pub use date::DateOfBirth;
-pub use display_name::DisplayName;
 pub use form_action::FormAction;
 pub use gender::Gender;
 pub use house_number::HouseNumber;

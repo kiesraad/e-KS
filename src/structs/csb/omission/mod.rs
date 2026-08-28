@@ -10,10 +10,22 @@ use crate::{
     ElectoralDistrict,
     form::ValidationError,
     id_newtype,
-    structs::{candidate_lists::CandidateListId, common::UtcDateTime, persons::PersonId},
+    structs::{
+        candidate_lists::CandidateListId,
+        common::{UtcDateTime, constrained_strings},
+        persons::PersonId,
+    },
 };
 
 id_newtype!(pub struct OmissionId);
+
+constrained_strings! {
+    /// Short omission title shown in the pill/badge layout.
+    pub struct OmissionTitle(max = 100, multiline = false);
+    /// Free omission text: the model I 1 description or the omission letter
+    /// help text.
+    pub struct OmissionText(max = 2000, multiline = true);
+}
 
 /// The kind of item an omission is added to, carried as a path parameter so a
 /// single "add omission" dialog can serve political groups, candidate lists and
@@ -128,11 +140,15 @@ pub struct Omission {
     pub id: OmissionId,
     pub category: OmissionCategory,
     /// Short title shown in the pill/badge layout
-    pub title: String,
+    pub title: OmissionTitle,
     /// The description for on the model I 1
-    pub description: String,
-    /// Help text for political groups explaining how to resolve the omission ("Dit verzuim is te herstellen door ...")
-    pub help_text: String,
+    pub description: OmissionText,
+    /// Help text for political groups explaining how to resolve the omission
+    /// ("Dit verzuim is te herstellen door ..."); irreparable omissions have
+    /// none. Events persisted before this was optional store an empty string,
+    /// so display code should go through [`Self::help_text`].
+    #[serde(default)]
+    pub(crate) help_text: Option<OmissionText>,
     #[serde(default = "recoverable_by_default")]
     pub recoverable: bool,
     pub updated_at: UtcDateTime,
@@ -145,9 +161,9 @@ fn recoverable_by_default() -> bool {
 impl Omission {
     pub fn new(
         category: OmissionCategory,
-        title: String,
-        description: String,
-        help_text: String,
+        title: OmissionTitle,
+        description: OmissionText,
+        help_text: Option<OmissionText>,
     ) -> Self {
         Omission {
             category,
@@ -157,6 +173,12 @@ impl Omission {
             recoverable: true,
             ..Default::default()
         }
+    }
+
+    /// The help text, if any (legacy events persisted "no help text" as an
+    /// empty string rather than as an absent value).
+    pub fn help_text(&self) -> Option<&OmissionText> {
+        self.help_text.as_ref().filter(|text| !text.is_empty())
     }
 
     pub fn class(&self) -> &str {
@@ -172,9 +194,9 @@ pub mod tests {
     pub fn sample_omission(category: OmissionCategory) -> Omission {
         Omission::new(
             category,
-            "test title".to_string(),
-            "test description".to_string(),
-            "test help text".to_string(),
+            "test title".parse().unwrap(),
+            "test description".parse().unwrap(),
+            Some("test help text".parse().unwrap()),
         )
     }
 
@@ -192,6 +214,9 @@ pub mod tests {
         }"#;
         let omission: Omission = serde_json::from_str(json).unwrap();
         assert!(omission.recoverable);
+        // Legacy events persisted "no help text" as an empty string; the
+        // accessor hides it.
+        assert_eq!(omission.help_text(), None);
     }
 
     #[tokio::test]
@@ -203,7 +228,7 @@ pub mod tests {
 
         let loaded = store.get_omission(omission.id)?;
         assert_eq!(loaded.id, omission.id);
-        assert_eq!(loaded.description, "test description");
+        assert_eq!(loaded.description.to_string(), "test description");
 
         Ok(())
     }
@@ -215,11 +240,11 @@ pub mod tests {
 
         omission.create(&store).await?;
 
-        omission.description = "Updated description".to_string();
+        omission.description = "Updated description".parse().unwrap();
         omission.update(&store).await?;
 
         let updated = store.get_omission(omission.id)?;
-        assert_eq!(updated.description, "Updated description");
+        assert_eq!(updated.description.to_string(), "Updated description");
 
         Ok(())
     }

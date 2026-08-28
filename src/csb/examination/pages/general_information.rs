@@ -25,7 +25,6 @@ struct CsbGeneralInformationTemplate {
     list_submitter: Option<PaperCorrectedSubmitter>,
     substitute_submitters: Vec<PaperCorrectedSubmitter>,
     political_group_omissions: Vec<Omission>,
-    restoration_count: usize,
 }
 
 /// Render the placeholder general information (basisgegevens) page for a
@@ -43,7 +42,6 @@ pub async fn overview(
             list_submitter: paper_corrected_list_submitter(&store),
             substitute_submitters: paper_corrected_substitute_submitters(&store),
             political_group_omissions: store.get_political_group_omissions(),
-            restoration_count: store.get_omission_count(),
         },
         context,
     )
@@ -61,7 +59,7 @@ mod tests {
     };
 
     #[tokio::test]
-    async fn renders_section_headings_and_registered_designation() {
+    async fn renders_section_headings_and_appellation() {
         let store = CsbStore::new_for_test();
         store.set_political_group(sample_political_group());
         let stream_id = store.stream_id;
@@ -77,7 +75,7 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
-        // The political group section and the imported registered designation
+        // The political group section and the imported appellation
         // (the test session uses the English locale).
         assert!(body.contains("Political group information"));
         assert!(body.contains("Kiesraad Demo"));
@@ -96,7 +94,7 @@ mod tests {
         let stream_id = store.stream_id;
 
         let mut corrected_group = sample_political_group();
-        corrected_group.display_name = Some("Gecorrigeerde Naam".parse().unwrap());
+        corrected_group.appellation = Some("Gecorrigeerde Naam".parse().unwrap());
         store
             .update(CsbEvent::PaperCorrectedUpdate(Box::new(
                 PgEvent::UpdatePoliticalGroup(corrected_group),
@@ -190,9 +188,9 @@ mod tests {
         let stream_id = store.stream_id;
         Omission::new(
             OmissionCategory::PoliticalGroup,
-            "Deposit missing".to_string(),
-            "The deposit has not been paid.".to_string(),
-            String::new(),
+            "Deposit missing".parse().unwrap(),
+            "The deposit has not been paid.".parse().unwrap(),
+            None,
         )
         .create(&store)
         .await
@@ -223,9 +221,9 @@ mod tests {
         let stream_id = store.stream_id;
         let mut omission = Omission::new(
             OmissionCategory::PoliticalGroup,
-            "Unregistered designation".to_string(),
-            "The designation is not registered.".to_string(),
-            String::new(),
+            "Unregistered appellation".parse().unwrap(),
+            "The appellation is not registered.".parse().unwrap(),
+            None,
         );
         omission.recoverable = false;
         omission.create(&store).await.unwrap();

@@ -13,34 +13,31 @@ async fn main() {
     start(address).await;
 }
 
+/// Unwraps a startup step, logging the error and exiting on failure.
+fn or_exit<T>(result: Result<T, impl std::fmt::Display>, context: &str) -> T {
+    match result {
+        Ok(value) => value,
+        Err(err) => {
+            tracing::error!("{context}: {err}");
+            std::process::exit(1);
+        }
+    }
+}
+
 /// Starts the server on the given address.
 async fn start(address: String) {
     // Initialize tracing subscriber (logging)
     logging::init();
 
     // Load and validate configuration before binding so misconfiguration fails fast.
-    let config = match Config::from_env() {
-        Ok(config) => config,
-        Err(err) => {
-            tracing::error!("Invalid configuration: {err}");
-            std::process::exit(1);
-        }
-    };
+    let config = or_exit(Config::from_env(), "Invalid configuration");
 
-    // Create a `TcpListener` using tokio.
-    let listener = match TcpListener::bind(&address).await {
-        Ok(listener) => listener,
-        Err(err) => {
-            tracing::error!("Failed to bind to address {address}: {err}");
-            std::process::exit(1);
-        }
-    };
+    let listener = or_exit(
+        TcpListener::bind(&address).await,
+        &format!("Failed to bind to address {address}"),
+    );
 
-    // Run the application
-    if let Err(err) = run(listener, config).await {
-        tracing::error!("Application error: {}", err);
-        std::process::exit(1);
-    }
+    or_exit(run(listener, config).await, "Application error");
 }
 
 /// Runs the application with the given TCP listener and resolved configuration.
@@ -67,6 +64,24 @@ async fn run(listener: TcpListener, config: Config) -> Result<(), AppError> {
 
     // Start the server
     let router = router::create(state.clone()).with_state(state.clone());
+
+    // The renewer hot-reloads renewed certificates through a clone of the
+    // TLS config the server listens with.
+    #[cfg(feature = "acme")]
+    if let (Some(tls), Some(acme)) = (state.config.tls.as_ref(), state.config.acme.as_ref()) {
+        // Fail fast on malformed account credentials.
+        let _ = eks::parse_acme_account_credentials(acme)?;
+        eks::bootstrap_certificate(acme, tls).await?;
+        let rustls_config = server::build_rustls_config(tls).await?;
+        tokio::spawn(eks::run_acme_renewer(
+            acme,
+            tls,
+            rustls_config.clone(),
+            state.acme_store.clone(),
+        ));
+        return server::serve_tls(router, listener, rustls_config).await;
+    }
+
     server::serve(router, listener, state.config).await?;
 
     Ok(())

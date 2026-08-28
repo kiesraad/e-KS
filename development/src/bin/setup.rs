@@ -24,13 +24,12 @@ async fn main() -> Result<()> {
     let args: Vec<String> = std::env::args().collect();
     if args.len() == 2 {
         let tool_name = &args[1];
-        if let Some(tool) = config.tools.iter().find(|t| &t.name == tool_name) {
-            tool.verify_installed(&platform, bin_dir).await?;
-
-            return Ok(());
-        } else {
+        let Some(tool) = config.tools.iter().find(|t| &t.name == tool_name) else {
             anyhow::bail!("unknown tool: {}", tool_name);
-        }
+        };
+        tool.verify_installed(&platform, bin_dir).await?;
+
+        return Ok(());
     }
 
     for tool in config.tools {
@@ -51,6 +50,9 @@ async fn main() -> Result<()> {
 
     println!("📚 Installing cargo-watch (if it is not yet installed)...");
     config.commands.install_cargo_watch.run().await?;
+
+    println!("📚 Installing cargo-dylint (if it is not yet installed)...");
+    config.commands.install_dylint.run().await?;
 
     wait_for_postgres().await?;
 
@@ -80,6 +82,7 @@ struct CommandsConfig {
     docker_compose_up: CommandConfig,
     build_djlint_docker_image: CommandConfig,
     install_cargo_watch: CommandConfig,
+    install_dylint: CommandConfig,
     esbuild_bundle: CommandConfig,
 }
 

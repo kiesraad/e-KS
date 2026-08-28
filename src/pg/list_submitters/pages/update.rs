@@ -1,3 +1,4 @@
+use crate::structs::list_submitters::{ListSubmitter, ListSubmitterData};
 use askama::Template;
 use axum::{
     extract::Query,
@@ -6,8 +7,7 @@ use axum::{
 
 use crate::{
     AppError, Context, Form, HtmlTemplate, Overlay, PgStore, QueryParamState, filters,
-    form::FormData,
-    list_submitters::{ListSubmitter, ListSubmitterData, ListSubmitterForm},
+    form::FormData, list_submitters::ListSubmitterForm,
 };
 
 use super::ListSubmitterUpdatePath;
@@ -76,7 +76,7 @@ mod tests {
     use super::*;
     use crate::{
         AppError, Context, Form, PgStore, QueryParamState,
-        common::{Address, PotentialProblems, Problematic},
+        structs::common::{Address, PotentialProblems, Problematic},
         test_utils::{response_body_string, sample_list_submitter, sample_list_submitter_form},
     };
     use axum::{
@@ -89,7 +89,8 @@ mod tests {
     async fn update_list_submitter_renders_existing_submitter() -> Result<(), AppError> {
         let store = PgStore::new_for_test();
 
-        let list_submitter = sample_list_submitter(crate::list_submitters::ListSubmitterId::new());
+        let list_submitter =
+            sample_list_submitter(crate::structs::list_submitters::ListSubmitterId::new());
         list_submitter.update(&store).await?;
 
         let response = update_list_submitter(

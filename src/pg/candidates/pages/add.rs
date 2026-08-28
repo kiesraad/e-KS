@@ -1,14 +1,17 @@
+use crate::structs::candidates::{AddPerson, AddPersonAction};
 use askama::Template;
 use axum::response::{IntoResponse, Redirect, Response};
 use std::collections::HashMap;
 
 use crate::{
     AppError, Context, Form, HtmlTemplate, MAX_CANDIDATES, Overlay, PgStore,
-    candidate_lists::{CandidateListId, FullCandidateList},
-    candidates::{AddPerson, AddPersonAction, AddPersonForm},
+    candidates::AddPersonForm,
     filters,
     form::FormData,
-    persons::{Person, PersonId},
+    structs::{
+        candidate_lists::{CandidateListId, FullCandidateList},
+        persons::{Person, PersonId},
+    },
 };
 
 use super::AddCandidatePath;
@@ -173,7 +176,7 @@ pub async fn add_person_to_candidate_list(
             let just_added =
                 match handle_add_candidate_form(&mut add_person, &mut full_list, &store).await {
                     Ok(just_added) => just_added,
-                    Err(AppError::TooManyCandidates) => {
+                    Err(AppError::TooManyCandidates { .. }) => {
                         return Ok(Redirect::to(
                             &full_list.list.max_candidates_reached_path().to_string(),
                         )
@@ -202,8 +205,7 @@ mod tests {
     use super::*;
     use crate::{
         Context, Form, PgStore,
-        candidate_lists::CandidateListId,
-        persons::PersonId,
+        structs::{candidate_lists::CandidateListId, persons::PersonId},
         test_utils::{
             response_body_string, sample_candidate_list, sample_person,
             sample_person_with_last_name,

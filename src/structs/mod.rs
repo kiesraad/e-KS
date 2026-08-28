@@ -8,5 +8,6 @@ pub mod common;
 pub mod csb;
 pub mod list_designation;
 pub mod list_submitters;
+pub mod name_authorisations;
 pub mod persons;
 pub mod political_groups;

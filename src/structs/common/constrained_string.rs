@@ -1,37 +1,46 @@
-use std::str::FromStr;
+use crate::structs::common::{PotentialProblems, Problematic, Problems};
 
-use crate::{
-    common::{PotentialProblems, Problematic, Problems},
-    form::{ValidationError, validate_length, validate_teletex_chars},
-    transparent_string,
-};
-
-/// Define multiple separate types with the same basic constrains in the FromStr implementation
+/// Define string types constrained in the FromStr implementation: trimmed, at
+/// most `max` bytes, teletex characters only (which excludes all control
+/// characters). With `multiline = true` (textarea fields) line breaks are
+/// allowed on top of that, with `\r\n` (as submitted by a textarea) normalized
+/// to `\n`.
 macro_rules! constrained_strings {
-    ($(pub struct $name:ident;)*) => {
+    (@parse false, $value:ident, $max:expr, $name:ident) => {{
+        let trimmed_value = $crate::form::validate_length($value, 1, $max)?;
+        $crate::form::validate_teletex_chars(&trimmed_value)?;
+        Ok($name(trimmed_value))
+    }};
+    (@parse true, $value:ident, $max:expr, $name:ident) => {{
+        let normalized = $value.replace("\r\n", "\n");
+        let trimmed_value = $crate::form::validate_length(&normalized, 1, $max)?;
+        $crate::form::validate_multi_line_teletex_chars(&trimmed_value)?;
+        Ok($name(trimmed_value))
+    }};
+    ($($(#[$meta:meta])* $vis:vis struct $name:ident(max = $max:expr, multiline = $multiline:tt);)*) => {
         $(
-            transparent_string! {
-                pub struct $name(String);
+            $crate::transparent_string! {
+                $(#[$meta])*
+                $vis struct $name(String);
             }
 
-            impl FromStr for $name {
-                type Err = ValidationError;
+            impl std::str::FromStr for $name {
+                type Err = $crate::form::ValidationError;
 
                 fn from_str(value: &str) -> Result<Self, Self::Err> {
-                    let trimmed_value = validate_length(value, 1, 200)?;
-                    validate_teletex_chars(&trimmed_value)?;
-                    Ok($name(trimmed_value))
+                    constrained_strings!(@parse $multiline, value, $max, $name)
                 }
             }
         )*
     };
 }
+pub(crate) use constrained_strings;
 
 constrained_strings! {
-    pub struct FirstName;
-    pub struct LegalName;
-    pub struct StreetName;
-    pub struct StateOrProvince;
+    pub struct FirstName(max = 200, multiline = false);
+    pub struct LegalName(max = 200, multiline = false);
+    pub struct StreetName(max = 200, multiline = false);
+    pub struct StateOrProvince(max = 200, multiline = false);
 }
 
 impl Problematic<()> for LegalName {
@@ -51,7 +60,14 @@ impl Problematic<()> for LegalName {
 
 #[cfg(test)]
 mod tests {
+    use std::str::FromStr;
+
     use super::*;
+    use crate::form::ValidationError;
+
+    constrained_strings! {
+        struct TestText(max = 30, multiline = true);
+    }
 
     #[test]
     fn single_char_is_valid() {
@@ -73,6 +89,46 @@ mod tests {
         assert_eq!(
             Err(ValidationError::ValueTooLong(201, 200)),
             LegalName::from_str(&long)
+        );
+    }
+
+    #[test]
+    fn line_breaks_are_rejected() {
+        assert_eq!(
+            Err(ValidationError::InvalidValue),
+            LegalName::from_str("regel\néinde")
+        );
+    }
+
+    #[test]
+    fn multi_line_allows_and_normalizes_line_breaks() {
+        assert_eq!(
+            Ok(TestText("regel één\nregel twee".to_string())),
+            TestText::from_str("regel één\r\nregel twee")
+        );
+    }
+
+    #[test]
+    fn multi_line_rejects_other_control_chars() {
+        assert_eq!(
+            Err(ValidationError::InvalidValue),
+            TestText::from_str("tab\there")
+        );
+        assert_eq!(
+            Err(ValidationError::InvalidValue),
+            TestText::from_str("los\rreturn")
+        );
+    }
+
+    #[test]
+    fn multi_line_enforces_length_and_non_empty() {
+        assert_eq!(
+            Err(ValidationError::ValueShouldNotBeEmpty),
+            TestText::from_str(" \r\n ")
+        );
+        assert_eq!(
+            Err(ValidationError::ValueTooLong(31, 30)),
+            TestText::from_str(&"a".repeat(31))
         );
     }
 }

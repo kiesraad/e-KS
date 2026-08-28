@@ -1,11 +1,13 @@
 use crate::{
     AppError, Locale, MAX_CANDIDATES, PgEvent, PgStore,
-    candidate_lists::CandidateList,
-    common::{Bsn, BsnOrNoneConfirmed},
+    candidate_lists::{CSV_HEADERS, CandidateRecord, CandidateRecordCsv},
     core::{Csv, CsvError},
     form::FieldErrors,
-    persons::{Person, PersonId},
-    structs::candidate_lists::{CSV_HEADERS, CandidateRecord, CandidateRecordCsv},
+    structs::{
+        candidate_lists::CandidateList,
+        common::{Bsn, BsnOrNoneConfirmed},
+        persons::{Person, PersonId},
+    },
     trans,
 };
 
@@ -36,9 +38,15 @@ pub(crate) async fn import_candidate_list_csv(
     file_size: usize,
 ) -> Result<ImportOutcome, ImportCandidateListError> {
     ensure_expected_headers(csv_data, locale)?;
-    let records = parse_records(csv_data, locale)?;
+    let mut records = parse_records(csv_data, locale)?;
+
+    let capped = records.len() > MAX_CANDIDATES;
+    records.truncate(MAX_CANDIDATES);
+
     let persons = collect_persons(records, store.get_persons(), locale)?;
-    emit_import_event(list, store, persons, file_name, file_size).await
+    emit_import_event(list, store, persons, file_name, file_size).await?;
+
+    Ok(ImportOutcome { capped })
 }
 
 /// Information about a successful import that the caller surfaces to the user.
@@ -113,13 +121,25 @@ fn validate_record(
     candidate_number: usize,
     locale: Locale,
 ) -> Result<Person, ImportCandidateListError> {
-    record.validate_create().map_err(|error| {
-        ImportCandidateListError::Messages(field_error_messages(
-            candidate_number,
-            error.errors(),
-            locale,
-        ))
-    })
+    record
+        .validate_create()
+        .map(refresh_bag_checks)
+        .map_err(|error| {
+            ImportCandidateListError::Messages(field_error_messages(
+                candidate_number,
+                error.errors(),
+                locale,
+            ))
+        })
+}
+
+/// Imported addresses bypass the address forms, so refresh their BAG flags here.
+fn refresh_bag_checks(mut person: Person) -> Person {
+    person.address.update_is_known_in_bag();
+    if let Some(representative) = &mut person.representative {
+        representative.address.update_is_known_in_bag();
+    }
+    person
 }
 
 fn upsert_person(
@@ -203,7 +223,7 @@ fn field_error_messages(
         .into_iter()
         .map(|(field_name, error)| {
             CsvError::ParseError {
-                candidate_number,
+                line_number: candidate_number + 1,
                 field_name,
                 message: error.message(locale),
             }
@@ -218,10 +238,8 @@ async fn emit_import_event(
     persons: Vec<PreparedPerson>,
     file_name: String,
     file_size: usize,
-) -> Result<ImportOutcome, ImportCandidateListError> {
-    let mut candidates = persons.iter().map(|p| p.person.id).collect::<Vec<_>>();
-    let capped = candidates.len() > MAX_CANDIDATES;
-    candidates.truncate(MAX_CANDIDATES);
+) -> Result<(), ImportCandidateListError> {
+    let candidates = persons.iter().map(|p| p.person.id).collect::<Vec<_>>();
 
     let mut created_persons = Vec::new();
     let mut updated_persons = Vec::new();
@@ -246,7 +264,7 @@ async fn emit_import_event(
 
     *list = store.get_candidate_list(list.id)?;
 
-    Ok(ImportOutcome { capped })
+    Ok(())
 }
 
 #[cfg(test)]
@@ -254,8 +272,7 @@ mod tests {
     use super::*;
 
     use crate::{
-        candidate_lists::CandidateListId,
-        persons::PersonId,
+        structs::{candidate_lists::CandidateListId, persons::PersonId},
         test_utils::{sample_candidate_list, sample_person, sample_person_with},
     };
 
@@ -291,7 +308,7 @@ mod tests {
                 .name
                 .first_name
                 .as_deref()
-                .map(|value| value.to_string()),
+                .map(ToString::to_string),
             Some("Henk".to_string())
         );
 
@@ -423,7 +440,7 @@ mod tests {
                 .name
                 .first_name
                 .as_deref()
-                .map(|value| value.to_string()),
+                .map(ToString::to_string),
             Some("Hendrik".to_string())
         );
 
@@ -459,7 +476,7 @@ mod tests {
                 .name
                 .first_name
                 .as_deref()
-                .map(|value| value.to_string()),
+                .map(ToString::to_string),
             Some("Hendrik".to_string())
         );
 
@@ -523,6 +540,81 @@ mod tests {
             store.get_candidate_list(list_id)?.candidates.len(),
             MAX_CANDIDATES
         );
+        // Rows past the cap are dropped entirely: no person records may be
+        // persisted for them.
+        assert_eq!(store.get_person_count(), MAX_CANDIDATES);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn import_runs_bag_check_on_correspondence_address() -> Result<(), AppError> {
+        let store = PgStore::new_for_test();
+        let list_id = CandidateListId::new();
+        let mut list = sample_candidate_list(list_id);
+
+        list.create(&store).await?;
+
+        let csv = format!(
+            "{}\r\n{}{}",
+            csv_headers(),
+            "H.A.H.A.,Henk,,Jansen,Amsterdam,NL,kandidaat heeft geen BSN,01-02-1990,v,1012JS,1,,Dam,Amsterdam,,,,,,,,,\r\n",
+            "H.A.H.A.,Piet,,Pietersen,Juinen,NL,kandidaat heeft geen BSN,01-02-1990,v,1234AB,10,A,Stationsstraat,Juinen,,,,,,,,,\r\n"
+        );
+
+        import_candidate_list_csv(
+            &mut list,
+            &store,
+            csv.as_bytes(),
+            Locale::En,
+            "test.csv".to_string(),
+            0,
+        )
+        .await
+        .expect("import should succeed");
+
+        let candidates = store.get_candidate_list(list_id)?.candidates;
+        let known = store.get_person(candidates[0])?;
+        let unknown = store.get_person(candidates[1])?;
+
+        assert_eq!(known.address.known_in_bag, Some(true));
+        assert_eq!(unknown.address.known_in_bag, Some(false));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn import_runs_bag_check_on_representative_address() -> Result<(), AppError> {
+        let store = PgStore::new_for_test();
+        let list_id = CandidateListId::new();
+        let mut list = sample_candidate_list(list_id);
+
+        list.create(&store).await?;
+
+        let csv = format!(
+            "{}\r\n{}",
+            csv_headers(),
+            "H.A.H.A.,Henk,,Jansen,Antwerp,BE,kandidaat heeft geen BSN,01-02-1990,v,,,,,,P.,Pietje,,Puk,1012JS,1,,Dam,Amsterdam\r\n"
+        );
+
+        import_candidate_list_csv(
+            &mut list,
+            &store,
+            csv.as_bytes(),
+            Locale::En,
+            "test.csv".to_string(),
+            0,
+        )
+        .await
+        .expect("import should succeed");
+
+        let candidate_id = store.get_candidate_list(list_id)?.candidates[0];
+        let representative = store
+            .get_person(candidate_id)?
+            .representative
+            .expect("representative should be present");
+
+        assert_eq!(representative.address.known_in_bag, Some(true));
 
         Ok(())
     }
@@ -547,8 +639,8 @@ mod tests {
         match result {
             Err(ImportCandidateListError::Messages(messages)) => {
                 assert_eq!(messages.len(), 2);
-                assert!(messages.iter().any(|message| message.contains("line 1")));
                 assert!(messages.iter().any(|message| message.contains("line 2")));
+                assert!(messages.iter().any(|message| message.contains("line 3")));
             }
             other => panic!("expected validation messages, got {other:?}"),
         }

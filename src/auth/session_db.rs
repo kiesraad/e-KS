@@ -107,6 +107,21 @@ fn session_from_row(row: SessionRow) -> Result<Session, AppError> {
     })
 }
 
+/// Refresh `last_activity` of an existing session row. A conditional UPDATE
+/// (not an upsert), so it never re-creates a row a concurrent logout deleted.
+pub async fn touch(
+    pool: &sqlx::PgPool,
+    token_hash: &str,
+    last_activity: DateTime<Utc>,
+) -> Result<(), AppError> {
+    sqlx::query("UPDATE sessions SET last_activity = $2 WHERE token = $1")
+        .bind(token_hash)
+        .bind(last_activity)
+        .execute(pool)
+        .await?;
+    Ok(())
+}
+
 /// Delete a single session by its token hash.
 pub async fn delete(pool: &sqlx::PgPool, token_hash: &str) -> Result<(), AppError> {
     sqlx::query("DELETE FROM sessions WHERE token = $1")

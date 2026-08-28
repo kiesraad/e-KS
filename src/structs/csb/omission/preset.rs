@@ -64,8 +64,8 @@ pub mod tests {
 
     #[test]
     fn presets_are_loaded_from_json_per_type() {
-        assert_eq!(OmissionType::PoliticalGroup.presets().len(), 6);
-        assert_eq!(OmissionType::CandidateList.presets().len(), 0);
+        assert_eq!(OmissionType::PoliticalGroup.presets().len(), 2);
+        assert_eq!(OmissionType::CandidateList.presets().len(), 4);
         assert_eq!(OmissionType::DeclarationsOfSupport.presets().len(), 4);
         assert_eq!(OmissionType::Candidate.presets().len(), 12);
 
@@ -111,6 +111,32 @@ pub mod tests {
     }
 
     #[test]
+    fn presets_fit_the_omission_field_constraints() {
+        // A preset-filled form must pass validation unmodified, so every
+        // preset has to parse into the constrained omission types.
+        use crate::structs::csb::{OmissionText, OmissionTitle};
+
+        for presets in PRESET_OMISSIONS.values() {
+            for preset in presets {
+                preset
+                    .title
+                    .parse::<OmissionTitle>()
+                    .unwrap_or_else(|e| panic!("preset title {:?}: {e:?}", preset.title));
+                preset
+                    .description
+                    .parse::<OmissionText>()
+                    .unwrap_or_else(|e| panic!("preset description {:?}: {e:?}", preset.title));
+                if !preset.help_text.is_empty() {
+                    preset
+                        .help_text
+                        .parse::<OmissionText>()
+                        .unwrap_or_else(|e| panic!("preset help text {:?}: {e:?}", preset.title));
+                }
+            }
+        }
+    }
+
+    #[test]
     fn interpolate_fills_known_tokens_and_keeps_the_rest() {
         let placeholders = OmissionPlaceholders {
             candidate_number: Some("3".to_string()),
@@ -118,12 +144,12 @@ pub mod tests {
         };
 
         let result = placeholders
-            .interpolate("Kandidaat nr. {candidate_number}, {candidate_name} ... {designation}");
+            .interpolate("Kandidaat nr. {candidate_number}, {candidate_name} ... {appellation}");
 
         assert_eq!(
             result,
             // The known tokens are filled; the manual one is left in place.
-            "Kandidaat nr. 3, A.B. de Vries ... {designation}"
+            "Kandidaat nr. 3, A.B. de Vries ... {appellation}"
         );
     }
 

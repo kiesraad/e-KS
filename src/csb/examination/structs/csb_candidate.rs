@@ -2,7 +2,8 @@ use rand::{RngExt, rng};
 
 use crate::{
     AnyLocale, CsbStore,
-    csb::WithCorrections,
+    csb::examination::structs::RestorationStatus,
+    projection::WithCorrections,
     structs::{candidate_lists::CandidateList, persons::Person},
 };
 
@@ -18,6 +19,7 @@ pub struct CsbCandidate {
     pub name: PaperCorrected,
     pub residence: PaperCorrected,
     pub brp_error_count: usize,
+    pub restoration_status: RestorationStatus,
 }
 
 impl CsbCandidate {
@@ -75,6 +77,7 @@ fn imported_rows(
                         corrected.as_ref().map(residence_string).unwrap_or_default(),
                     )
                     .with_csb_correction(csb_corrected.as_ref().map(residence_string)),
+                    restoration_status: RestorationStatus::for_candidate(store, person.id, list.id),
                     person,
                     brp_error_count: rng().random_range(0..=2),
                 },
@@ -112,8 +115,9 @@ fn corrected_only_rows(
                         ),
                     residence: PaperCorrected::new(String::new(), residence_string(&person))
                         .with_csb_correction(csb_corrected.as_ref().map(residence_string)),
-                    person,
                     brp_error_count: 0,
+                    restoration_status: RestorationStatus::for_candidate(store, person.id, list.id),
+                    person,
                 },
             ))
         })
@@ -133,7 +137,7 @@ fn residence_string(person: &Person) -> String {
         .personal_data
         .place_of_residence
         .as_ref()
-        .map(|p| p.to_string())
+        .map(ToString::to_string)
         .unwrap_or_default();
 
     match &person.personal_data.country {

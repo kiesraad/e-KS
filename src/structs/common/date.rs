@@ -6,9 +6,9 @@ use std::{str::FromStr, sync::LazyLock};
 use crate::{ElectionConfig, constants::DEFAULT_DATE_FORMAT, form::ValidationError};
 
 static DATE_FORMAT_REGEX: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"^\d{2}-\d{2}-\d{4}$").unwrap());
+    LazyLock::new(|| Regex::new(r"^\d{1,2}-\d{1,2}-\d{4}$").expect("valid date regex"));
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, Hash)]
 #[serde(transparent)]
 pub struct DateOfBirth(NaiveDate);
 

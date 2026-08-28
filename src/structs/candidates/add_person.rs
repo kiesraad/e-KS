@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{form::ValidationError, persons::PersonId};
+use crate::{form::ValidationError, structs::persons::PersonId};
 
 #[derive(Default, Serialize, Deserialize, Clone, Debug)]
 pub struct AddPerson {

@@ -30,11 +30,11 @@ impl std::str::FromStr for PostalCode {
 
         let bytes = postal_code.as_bytes();
 
-        if !bytes[..4].iter().all(|b| b.is_ascii_digit()) {
+        if !bytes[..4].iter().all(u8::is_ascii_digit) {
             return Err(ValidationError::InvalidPostalCode);
         }
 
-        if !bytes[4..].iter().all(|b| b.is_ascii_alphabetic()) {
+        if !bytes[4..].iter().all(u8::is_ascii_alphabetic) {
             return Err(ValidationError::InvalidPostalCode);
         }
 

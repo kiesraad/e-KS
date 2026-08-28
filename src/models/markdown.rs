@@ -5,8 +5,7 @@
 //! Interpolated data must never be able to change the document structure, so
 //! every `{{ }}` value passes through the crate's escape functions:
 //! [`MarkdownEscaper`] auto-escapes flow contexts (registered for the `.md`
-//! extension in `askama.toml`), and [`filters`] cover the table-cell and
-//! verbatim contexts.
+//! extension in `askama.toml`)
 
 use askama::filters::Safe;
 use chrono::NaiveDate;
@@ -28,7 +27,7 @@ impl askama::filters::Escaper for MarkdownEscaper {
 /// Filters for the escaping contexts the flow auto-escaper does not cover,
 /// plus the shared `display` filter for optional values.
 pub mod filters {
-    use super::*;
+    use super::{DEFAULT_DATE_FORMAT, NaiveDate, Safe, markdown};
 
     pub use crate::filters::display;
 
@@ -39,6 +38,17 @@ pub mod filters {
         _: &dyn askama::Values,
     ) -> askama::Result<Safe<String>> {
         Ok(Safe(markdown::escape_cell(&value.to_string())))
+    }
+
+    /// Escape a value interpolated into a single-line context (a heading):
+    /// newlines fold to a space, as the enclosing block ends at the line end.
+    #[askama::filter_fn]
+    pub fn line<T: std::fmt::Display>(
+        value: T,
+        _: &dyn askama::Values,
+    ) -> askama::Result<Safe<String>> {
+        let single_line = value.to_string().replace(['\r', '\n'], " ");
+        Ok(Safe(markdown::escape(&single_line)))
     }
 
     /// Wrap a value in a verbatim (mono) span inside a table cell.
@@ -100,6 +110,28 @@ mod tests {
         filters::upper_alpha::default()
             .execute(&index, askama::NO_VALUES)
             .unwrap()
+    }
+
+    fn line(value: &str) -> String {
+        filters::line::default()
+            .execute(value, askama::NO_VALUES)
+            .unwrap()
+            .0
+    }
+
+    #[test]
+    fn line_folds_newlines_to_spaces() {
+        assert_eq!(line("a\nb"), "a b");
+        assert_eq!(line("a\r\nb"), "a  b");
+        assert_eq!(line("a\n\nb"), "a  b");
+        // Trailing whitespace still folds away.
+        assert_eq!(line("a\n"), "a");
+    }
+
+    #[test]
+    fn line_escapes_punctuation() {
+        assert_eq!(line("a # b"), "a \\# b");
+        assert_eq!(line("x|y"), "x\\|y");
     }
 
     #[test]

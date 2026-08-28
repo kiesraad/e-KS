@@ -2,7 +2,7 @@
 {% import "csb/components/paper_corrected.html" as paper_corrected %}
 {% block breadcrumbs %}
   {{ breadcrumb(crate::csb::examination::CsbExaminationOverviewPath, "csb.examination") }}
-  {{ breadcrumb(political_group.examination_path() , political_group.csb_display_name(), is_translatable=false) }}
+  {{ breadcrumb(political_group.examination_path() , political_group.csb_appellation(), is_translatable=false) }}
   {{ breadcrumb(political_group.candidate_list_path(list_id) , "candidate_list.title_single") }}
   {{ breadcrumb(political_group.candidate_path(list_id, candidate.id) , candidate.name.display() , is_translatable=false) }}
 {% endblock %}
@@ -31,31 +31,6 @@
   {% set back_url = political_group.candidate_list_path(list_id) %}
   {% include "csb/components/header_examination_actions.html" %}
 {% endblock %}
-{% macro columns_head(label) %}
-  <thead>
-    <tr>
-      <th scope="col">{{ label }}</th>
-      <th scope="col">{{ "csb.candidate.status"|trans }}</th>
-      <th scope="col"></th>
-    </tr>
-  </thead>
-{% endmacro %}
-{% macro data_row(label, value) %}
-  <tr>
-    <td>{{ label }}: {{ paper_corrected::value(value) }}</td>
-    <td></td>
-    <td></td>
-  </tr>
-{% endmacro %}
-{% macro editable_data_row(label, value, edit_url) %}
-  <tr class="clickable">
-    <td>{{ label }}: {{ paper_corrected::value(value) }}</td>
-    <td></td>
-    <td class="actions">
-      <a href="{{ edit_url }}" aria-label="{{ "action.edit"|trans }}"></a>
-    </td>
-  </tr>
-{% endmacro %}
 {% block content %}
   <section class="general-information">
     <div class="omission-cards">
@@ -101,38 +76,38 @@
     </div>
     <h2>{{ "csb.candidate.personal_details"|trans }}</h2>
     <table class="detail-table">
-      {{ columns_head("person.personal_details"|trans) }}
+      {{ paper_corrected::columns_head("person.personal_details"|trans) }}
       <tbody>
-        {{ editable_data_row("person.fields.initials"|trans, details.initials, political_group.correction_person_path(candidate.id, crate::csb::examination::structs::CandidateCorrectionField::Initials, list_id) ) }}
-        {{ data_row("person.fields.first_name"|trans, details.first_name) }}
-        {{ editable_data_row("person.fields.last_name"|trans, details.last_name, political_group.correction_person_path(candidate.id, crate::csb::examination::structs::CandidateCorrectionField::LastName, list_id) ) }}
-        {{ data_row("person.fields.gender"|trans, details.gender) }}
-        {{ editable_data_row("person.fields.date_of_birth"|trans, details.date_of_birth, political_group.correction_person_path(candidate.id, crate::csb::examination::structs::CandidateCorrectionField::DateOfBirth, list_id) ) }}
-        {{ data_row("person.fields.bsn"|trans, details.bsn) }}
-        {{ editable_data_row("person.fields.place_of_residence"|trans, details.place_of_residence, political_group.correction_person_path(candidate.id, crate::csb::examination::structs::CandidateCorrectionField::PlaceOfResidence, list_id) ) }}
+        {{ paper_corrected::editable_data_row("person.fields.initials"|trans, details.initials, political_group.correction_person_path(candidate.id, crate::csb::examination::structs::CandidateCorrectionField::Initials, list_id) ) }}
+        {{ paper_corrected::data_row("person.fields.first_name"|trans, details.first_name) }}
+        {{ paper_corrected::editable_data_row("person.fields.last_name"|trans, details.last_name, political_group.correction_person_path(candidate.id, crate::csb::examination::structs::CandidateCorrectionField::LastName, list_id) ) }}
+        {{ paper_corrected::data_row("person.fields.gender"|trans, details.gender) }}
+        {{ paper_corrected::editable_data_row("person.fields.date_of_birth"|trans, details.date_of_birth, political_group.correction_person_path(candidate.id, crate::csb::examination::structs::CandidateCorrectionField::DateOfBirth, list_id) ) }}
+        {{ paper_corrected::data_row("person.fields.bsn"|trans, details.bsn) }}
+        {{ paper_corrected::editable_data_row("person.fields.place_of_residence"|trans, details.place_of_residence, political_group.correction_person_path(candidate.id, crate::csb::examination::structs::CandidateCorrectionField::PlaceOfResidence, list_id) ) }}
       </tbody>
     </table>
     <table class="detail-table">
-      {{ columns_head("person.correspondence_address"|trans) }}
+      {{ paper_corrected::columns_head("person.correspondence_address"|trans) }}
       <tbody>
-        {{ data_row("person.fields.street_name"|trans, details.street_name) }}
-        {{ data_row("person.fields.house_number"|trans, details.house_number) }}
-        {{ data_row("person.fields.house_number_addition"|trans, details.house_number_addition) }}
-        {{ data_row("person.fields.postal_code"|trans, details.postal_code) }}
-        {{ data_row("person.fields.locality"|trans, details.locality) }}
-        {{ data_row("person.fields.country"|trans, details.country) }}
+        {{ paper_corrected::data_row("person.fields.street_name"|trans, details.street_name) }}
+        {{ paper_corrected::data_row("person.fields.house_number"|trans, details.house_number) }}
+        {{ paper_corrected::data_row("person.fields.house_number_addition"|trans, details.house_number_addition) }}
+        {{ paper_corrected::data_row("person.fields.postal_code"|trans, details.postal_code) }}
+        {{ paper_corrected::data_row("person.fields.locality"|trans, details.locality) }}
+        {{ paper_corrected::data_row("person.fields.country"|trans, details.country) }}
       </tbody>
     </table>
     {% if details.has_representative %}
       <table class="detail-table">
-        {{ columns_head("person.representative"|trans) }}
+        {{ paper_corrected::columns_head("person.representative"|trans) }}
         <tbody>
-          {{ data_row("person.fields.name"|trans, details.representative_name) }}
-          {{ data_row("person.fields.street_name"|trans, details.representative_street_name) }}
-          {{ data_row("person.fields.house_number"|trans, details.representative_house_number) }}
-          {{ data_row("person.fields.house_number_addition"|trans, details.representative_house_number_addition) }}
-          {{ data_row("person.fields.postal_code"|trans, details.representative_postal_code) }}
-          {{ data_row("person.fields.locality"|trans, details.representative_locality) }}
+          {{ paper_corrected::data_row("person.fields.name"|trans, details.representative_name) }}
+          {{ paper_corrected::data_row("person.fields.street_name"|trans, details.representative_street_name) }}
+          {{ paper_corrected::data_row("person.fields.house_number"|trans, details.representative_house_number) }}
+          {{ paper_corrected::data_row("person.fields.house_number_addition"|trans, details.representative_house_number_addition) }}
+          {{ paper_corrected::data_row("person.fields.postal_code"|trans, details.representative_postal_code) }}
+          {{ paper_corrected::data_row("person.fields.locality"|trans, details.representative_locality) }}
         </tbody>
       </table>
     {% endif %}

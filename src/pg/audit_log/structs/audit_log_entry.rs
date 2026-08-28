@@ -47,10 +47,10 @@ mod tests {
     use super::*;
     use crate::{
         Locale, StreamId,
-        candidate_lists::CandidateListId,
-        list_submitters::ListSubmitterId,
-        name_authorisations::NameAuthorisationId,
-        persons::PersonId,
+        structs::{
+            candidate_lists::CandidateListId, list_submitters::ListSubmitterId,
+            name_authorisations::NameAuthorisationId, persons::PersonId,
+        },
         test_utils::{
             sample_candidate_list, sample_list_submitter, sample_name_authorisation, sample_person,
             sample_political_group,
@@ -75,7 +75,7 @@ mod tests {
     #[test]
     fn from_update_political_group_event() {
         let pg = sample_political_group();
-        let expected_name = pg.display_name.as_ref().unwrap().to_string();
+        let expected_name = pg.appellation.as_ref().unwrap().to_string();
         let event = StoreEvent::new(2, PgEvent::UpdatePoliticalGroup(pg));
 
         let entry = AuditLogEntry::new(event, EN);
@@ -265,7 +265,7 @@ mod tests {
             1,
             PgEvent::UpdatePersonAddress {
                 person_id,
-                address: crate::common::DutchAddress::default(),
+                address: crate::structs::common::DutchAddress::default(),
             },
         );
 

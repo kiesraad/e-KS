@@ -1,33 +1,33 @@
 use axum::{
     extract::Query,
-    response::{IntoResponse, Response},
+    response::{IntoResponse, Redirect, Response},
 };
+use axum_extra::routing::TypedPath;
 use uuid::Uuid;
 
 use crate::{
     AppError, CsbContext, CsbStore, Form, HtmlTemplate, Locale, Overlay, QueryParamState, StreamId,
-    candidate_lists::CandidateListId,
-    csb::{
-        WithCorrections,
-        examination::{
-            OmissionForm,
-            extractors::CsbPoliticalGroup,
-            pages::{
-                CsbAddOmissionPath, CsbDeleteOmissionPath, CsbOmissionOverviewPath,
-                OmissionListQuery,
-            },
+    csb::examination::{
+        OmissionForm,
+        extractors::CsbPoliticalGroup,
+        pages::{
+            CsbAddOmissionPath, CsbDeleteOmissionPath, CsbOmissionOverviewPath, OmissionListQuery,
         },
     },
     form::{FieldErrors, FormData, ValidationError},
-    persons::PersonId,
-    structs::csb::{OmissionCategory, OmissionType},
+    projection::WithCorrections,
+    structs::{
+        candidate_lists::CandidateListId,
+        csb::{OmissionCategory, OmissionType},
+        persons::PersonId,
+    },
     trans,
 };
 
 mod urls;
 mod views;
 
-use urls::{add_url, overview_url, overview_url_for, return_path};
+use urls::{overview_url_for, return_path};
 use views::{CsbAddOmissionTemplate, CsbOmissionOverviewTemplate, omission_views, preset_views};
 
 /// The entity an omission dialog operates on, together with the list context
@@ -79,9 +79,17 @@ impl OmissionTarget {
         let available_candidate_lists = self
             .omission_type
             .needs_candidate_lists()
-            .then(|| views::candidate_list_options(store, context.session.locale))
+            .then(|| {
+                views::candidate_list_options(
+                    store,
+                    context.session.locale,
+                    (self.omission_type == OmissionType::Candidate)
+                        .then(|| PersonId::from(self.reference)),
+                )
+            })
             .filter(|options| options.len() > 1)
             .unwrap_or_default();
+
         let political_group = CsbPoliticalGroup::new_from_csb_store(store);
         Ok(HtmlTemplate(
             CsbAddOmissionTemplate {
@@ -89,8 +97,7 @@ impl OmissionTarget {
                 overlay: Overlay::new(query),
                 close_action: return_path(self, &political_group),
                 presets: preset_views(self, store),
-                add_tab_url: add_url(self),
-                overview_tab_url: overview_url(self),
+                omission_target: self.to_owned(),
                 available_districts,
                 available_candidate_lists,
                 title_suffix: self.generate_title_suffix(store, context.session.locale)?,
@@ -101,18 +108,23 @@ impl OmissionTarget {
     }
 
     fn generate_title_suffix(&self, store: &CsbStore, locale: Locale) -> Result<String, AppError> {
-        match self.omission_type {
-            OmissionType::PoliticalGroup => Ok(trans!("common.general_information", locale)),
-            OmissionType::CandidateList => Ok(trans!("candidate_list.title_single", locale)),
+        let first_candidate = store.get_first_candidate_name(WithCorrections::All);
+        let appellation = store
+            .get_political_group(WithCorrections::All)
+            .csb_appellation(first_candidate.as_ref());
+        let first_part = match self.omission_type {
+            OmissionType::PoliticalGroup => trans!("common.general_information", locale),
+            OmissionType::CandidateList => trans!("candidate_list.title_single", locale),
             OmissionType::DeclarationsOfSupport => {
-                Ok(trans!("csb.declarations_of_support.title", locale))
+                trans!("csb.declarations_of_support.title", locale)
             }
-            OmissionType::Candidate => Ok(store
+            OmissionType::Candidate => store
                 .get_person(PersonId::from(self.reference), WithCorrections::All)
                 .ok_or(AppError::GenericNotFound)?
                 .name
-                .display()),
-        }
+                .display(),
+        };
+        Ok(format!("{} ({})", first_part, appellation))
     }
 }
 
@@ -154,18 +166,16 @@ pub async fn overview(
     Query(query): Query<QueryParamState>,
     Query(list_query): Query<OmissionListQuery>,
 ) -> Result<Response, AppError> {
-    let target = OmissionTarget::from_overview_path(path, list_query);
+    let omission_target = OmissionTarget::from_overview_path(path, list_query);
     let political_group = CsbPoliticalGroup::new_from_csb_store(&store);
-    let overview_tab_url = overview_url(&target);
 
     Ok(HtmlTemplate(
         CsbOmissionOverviewTemplate {
             overlay: Overlay::new(&query),
-            close_action: return_path(&target, &political_group),
-            omissions: omission_views(&target, &store, &overview_tab_url)?,
-            add_tab_url: add_url(&target),
-            overview_tab_url,
-            title_suffix: target.generate_title_suffix(&store, context.session.locale)?,
+            close_action: return_path(&omission_target, &political_group),
+            omissions: omission_views(&omission_target, &store)?,
+            title_suffix: omission_target.generate_title_suffix(&store, context.session.locale)?,
+            omission_target,
         },
         context,
     )
@@ -229,7 +239,7 @@ pub async fn add_omission_submit(
         target.omission_type.needs_candidate_lists(),
         &form.candidate_lists,
         || {
-            views::candidate_list_options(&store, context.session.locale)
+            views::candidate_list_options(&store, context.session.locale, None)
                 .into_iter()
                 .map(|o| o.id)
                 .collect()
@@ -263,9 +273,9 @@ pub async fn add_omission_submit(
     }
 }
 
-/// Remove a single omission and return to the overview it was removed from (the
-/// `redirect_to` carried by the button, falling back to the overview derived
-/// from the omission's category).
+/// Remove a single omission and return to the overview it was listed on,
+/// keeping the dialog's `redirect_to` (where the close button returns to) and
+/// the overlay marker across the redirect.
 pub async fn delete_omission(
     path: CsbDeleteOmissionPath,
     _context: CsbContext,
@@ -277,10 +287,16 @@ pub async fn delete_omission(
         omission_id,
     } = path;
     let omission = store.get_omission(omission_id)?;
-    let fallback = overview_url_for(&omission.category, stream_id);
+    let overview = overview_url_for(&omission.category, stream_id);
     omission.delete(&store).await?;
-
-    Ok(query.redirect_or(fallback))
+    Ok(Redirect::to(
+        &overview
+            .with_query_params(QueryParamState::overlay(
+                query.redirect_url().map(str::to_owned),
+            ))
+            .to_string(),
+    )
+    .into_response())
 }
 
 #[cfg(test)]
@@ -290,9 +306,7 @@ mod tests {
 
     use crate::{
         ElectoralDistrict,
-        candidate_lists::CandidateListId,
-        persons::PersonId,
-        structs::csb::Omission,
+        structs::{candidate_lists::CandidateListId, csb::Omission, persons::PersonId},
         test_utils::{response_body_string, sample_candidate_list},
     };
 
@@ -344,7 +358,7 @@ mod tests {
         assert!(body.contains("Add omissions"));
         // The pill shows the short preset title, while the full description and
         // help text ride along in data attributes for the client to fill in.
-        assert!(body.contains("De machtiging aanduiding ontbreekt"));
+        assert!(body.contains("De aanduiding(en) is/zijn niet geregistreerd"));
         assert!(body.contains("data-title="));
         assert!(body.contains("data-description="));
         assert!(body.contains("data-help-text="));
@@ -481,10 +495,54 @@ mod tests {
         // With only one list the selector is hidden
         let body = render(store.clone()).await;
         assert!(!body.contains(&format!("omission_candidate_list_{list_id}")));
-        // A second list shows the selector
-        store.set_paper_corrected_candidate_list(sample_candidate_list(CandidateListId::new()));
+        // A second list this candidate is also on shows the selector
+        let second_list_id = CandidateListId::new();
+        let mut second_list = sample_candidate_list(second_list_id);
+        second_list.candidates = vec![person_id];
+        store.set_paper_corrected_candidate_list(second_list);
         let body = render(store.clone()).await;
         assert!(body.contains(&format!("omission_candidate_list_{list_id}")));
+        assert!(body.contains(&format!("omission_candidate_list_{second_list_id}")));
+    }
+
+    #[tokio::test]
+    async fn candidate_dialog_excludes_lists_the_candidate_is_not_on() {
+        use crate::test_utils::{sample_candidate_list, sample_person};
+
+        let store = CsbStore::new_for_test();
+        let stream_id = store.stream_id;
+        let person = sample_person(PersonId::new());
+        let person_id = person.id;
+        store.add_person(person);
+        let list_id = CandidateListId::new();
+        let mut list = sample_candidate_list(list_id);
+        list.candidates = vec![person_id];
+        store.add_candidate_list(list);
+        // A second list this candidate does not appear on.
+        let other_list_id = CandidateListId::new();
+        store.add_candidate_list(sample_candidate_list(other_list_id));
+
+        let response = add_omission(
+            CsbAddOmissionPath {
+                stream_id,
+                omission_type: OmissionType::Candidate,
+                reference: person_id.into(),
+            },
+            CsbContext::new_test(),
+            store,
+            Query(QueryParamState::default()),
+            Query(OmissionListQuery::default()),
+        )
+        .await
+        .unwrap()
+        .into_response();
+        let body = response_body_string(response).await;
+
+        // Only one list actually has this candidate, so the selector stays
+        // hidden (nothing to choose between) and the other list is never
+        // offered as an option.
+        assert!(!body.contains(&format!("omission_candidate_list_{list_id}")));
+        assert!(!body.contains(&format!("omission_candidate_list_{other_list_id}")));
     }
 
     #[tokio::test]
@@ -545,18 +603,18 @@ mod tests {
         // A recoverable and an irreparable omission scoped to the list.
         Omission::new(
             OmissionCategory::CandidateList(vec![list]),
-            "Waarborgsom ontbreekt".to_string(),
-            "De waarborgsom ontbreekt.".to_string(),
-            "Betaal de waarborgsom.".to_string(),
+            "Waarborgsom ontbreekt".parse().unwrap(),
+            "De waarborgsom ontbreekt.".parse().unwrap(),
+            Some("Betaal de waarborgsom.".parse().unwrap()),
         )
         .create(&store)
         .await
         .unwrap();
         let mut irreparable = Omission::new(
             OmissionCategory::CandidateList(vec![list]),
-            "Aanduiding niet geregistreerd".to_string(),
-            "De aanduiding is niet geregistreerd.".to_string(),
-            String::new(),
+            "Aanduiding niet geregistreerd".parse().unwrap(),
+            "De aanduiding is niet geregistreerd.".parse().unwrap(),
+            None,
         );
         irreparable.recoverable = false;
         irreparable.create(&store).await.unwrap();
@@ -610,9 +668,9 @@ mod tests {
 
         let omission = Omission::new(
             OmissionCategory::CandidateList(vec![list]),
-            "Waarborgsom ontbreekt".to_string(),
-            "De waarborgsom ontbreekt.".to_string(),
-            String::new(),
+            "Waarborgsom ontbreekt".parse().unwrap(),
+            "De waarborgsom ontbreekt.".parse().unwrap(),
+            None,
         );
         omission.create(&store).await.unwrap();
         let omission_id = omission.id;
@@ -634,7 +692,8 @@ mod tests {
         assert_eq!(response.status(), StatusCode::SEE_OTHER);
         // The omission is gone...
         assert!(store.get_candidate_list_omissions(list).unwrap().is_empty());
-        // ...and without an explicit redirect we fall back to the political group overview
+        // ...and we return to the overview it was listed on, without replaying
+        // the overlay open animation
         let location = response
             .headers()
             .get("Location")
@@ -642,20 +701,21 @@ mod tests {
             .to_str()
             .unwrap();
         assert!(location.contains(&format!(
-            "/csb/examination/{stream_id}/omission/political-group/{stream_id}/overview"
+            "/csb/examination/{stream_id}/omission/candidate-list/{list}/overview"
         )));
+        assert!(location.contains("overlay=true"));
     }
 
     #[tokio::test]
-    async fn delete_omission_honours_the_redirect_to() {
+    async fn delete_omission_preserves_the_redirect_to() {
         let store = CsbStore::new_for_test();
         let stream_id = store.stream_id;
 
         let omission = Omission::new(
             OmissionCategory::PoliticalGroup,
-            "Deposit missing".to_string(),
-            "The deposit is missing.".to_string(),
-            String::new(),
+            "Deposit missing".parse().unwrap(),
+            "The deposit is missing.".parse().unwrap(),
+            None,
         );
         omission.create(&store).await.unwrap();
         let omission_id = omission.id;
@@ -681,7 +741,8 @@ mod tests {
             .unwrap()
             .to_str()
             .unwrap();
-        assert!(location.starts_with("/back/here"));
+        assert!(location.contains("redirect_to=%2Fback%2Fhere"));
+        assert!(location.contains("overlay=true"));
     }
 
     #[tokio::test]
@@ -747,8 +808,11 @@ mod tests {
         assert!(location.contains(&format!("/list/{list}")));
 
         let omission = store.get_omission_for_test();
-        assert_eq!(omission.title, "Waarborgsom ontbreekt");
-        assert_eq!(omission.description, "De waarborgsom ontbreekt.");
+        assert_eq!(omission.title.to_string(), "Waarborgsom ontbreekt");
+        assert_eq!(
+            omission.description.to_string(),
+            "De waarborgsom ontbreekt."
+        );
         assert!(matches!(
             &omission.category,
             OmissionCategory::CandidateList(lists) if lists == &[list]
@@ -905,7 +969,7 @@ mod tests {
         // The candidate's name and position are interpolated into the preset.
         assert!(body.contains("Kandidaat nr. 1, Jansen, H.A.H.A. (Henk)"));
         // The unresolved token is left for the committee to fill in manually.
-        assert!(body.contains("{designation}"));
+        assert!(body.contains("{appellation}"));
         assert!(!body.contains("{candidate_name}"));
         // Both former "candidate" and "person" presets are shown.
         assert!(body.contains("Kopie ID ontbreekt"));

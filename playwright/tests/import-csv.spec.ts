@@ -1,8 +1,8 @@
 import { expect } from "@playwright/test";
 import { test } from "./fixtures.ts";
-import { CandidateListsOverviewPage } from "./pages/candidateListsOverviewPage.ts";
-import { CsvImportExportPage } from "./pages/csvImportExportPage.ts";
-import { ManageCandidateListPage } from "./pages/manageCandidateListPage.ts";
+import { CandidateListsOverviewPage } from "./pages/pg/candidateListsOverviewPage.ts";
+import { CsvImportExportPage } from "./pages/pg/csvImportExportPage.ts";
+import { ManageCandidateListPage } from "./pages/pg/manageCandidateListPage.ts";
 
 test.describe("import and export candidates with csv file", () => {
   test.beforeEach("navigate to csv page", async ({ login: page }) => {
@@ -23,7 +23,7 @@ test.describe("import and export candidates with csv file", () => {
     ).toBeVisible();
   });
 
-  test("import with errors", async ({ login: page }) => {
+  test("import with validation errors", async ({ login: page }) => {
     const csvImportExport = new CsvImportExportPage(page);
     await csvImportExport.uploadCsvFile("candidate-list-export-nh.csv");
     await expect(csvImportExport.textFailure).toBeVisible();

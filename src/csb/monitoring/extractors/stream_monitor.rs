@@ -1,12 +1,6 @@
-use axum::{
-    extract::{FromRef, FromRequestParts},
-    http::request::Parts,
-};
+use axum::{extract::FromRequestParts, http::request::Parts};
 
-use crate::{
-    AppError, PgStoreData,
-    store::{StoreRegistry, StreamMeta},
-};
+use crate::{AppError, AppRequestState, store::StreamMeta};
 
 /// One row of the monitoring overview.
 pub struct StreamMonitorRow {
@@ -27,15 +21,11 @@ pub struct StreamMonitor {
     pub database_enabled: bool,
 }
 
-impl<S> FromRequestParts<S> for StreamMonitor
-where
-    S: Send + Sync,
-    StoreRegistry<PgStoreData>: FromRef<S>,
-{
+impl<S: AppRequestState> FromRequestParts<S> for StreamMonitor {
     type Rejection = AppError;
 
     async fn from_request_parts(_parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
-        let registry = StoreRegistry::<PgStoreData>::from_ref(state);
+        let registry = state.store_registry();
 
         // Reading these figures never decrypts or warms a stream.
         let metadata = registry.stream_metadata_by_scope().await?;
@@ -60,9 +50,9 @@ where
                             .or(meta.last_event_at);
                         let name = data
                             .political_group
-                            .display_name
+                            .appellation
                             .as_ref()
-                            .map(|name| name.to_string());
+                            .map(ToString::to_string);
                         let until = data.events.last().map(|e| e.event_id).unwrap_or(0);
                         (name, Some(until))
                     }
@@ -88,6 +78,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::{PgStoreData, store::StoreRegistry};
     use axum::{body::Body, http::Request};
 
     use crate::{AppState, ElectionConfig, PgEvent, StreamId, test_utils::sample_political_group};

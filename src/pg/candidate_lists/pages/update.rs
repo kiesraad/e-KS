@@ -1,3 +1,4 @@
+use crate::structs::candidate_lists::CandidateList;
 use askama::Template;
 use axum::{
     extract::Query,
@@ -6,7 +7,7 @@ use axum::{
 
 use crate::{
     AppError, Context, ElectoralDistrict, Form, HtmlTemplate, Overlay, PgStore, QueryParamState,
-    candidate_lists::{CandidateList, CandidateListForm, pages::CandidateListUpdatePath},
+    candidate_lists::{CandidateListForm, pages::CandidateListUpdatePath},
     filters,
     form::FormData,
 };
@@ -88,7 +89,7 @@ mod tests {
     use super::*;
     use crate::{
         Context, ElectionConfig, ElectoralDistrict, Form, PgStore, QueryParamState,
-        candidate_lists::{CandidateListId, CandidateListSummary},
+        structs::candidate_lists::{CandidateListId, CandidateListSummary},
         test_utils::{response_body_string, sample_candidate_list},
     };
     use axum::{

@@ -1,10 +1,6 @@
 use crate::{
-    CsbStore,
-    csb::{
-        WithCorrections,
-        examination::{pages::correction::extract_field, structs::CandidateCorrectionField},
-    },
-    persons::PersonId,
+    CsbStore, csb::examination::structs::CandidateCorrectionField, projection::WithCorrections,
+    structs::persons::PersonId,
 };
 
 /// Which type of input to render in the correction overlay.
@@ -44,11 +40,11 @@ pub(crate) struct FieldValues {
 }
 
 impl FieldValues {
-    pub(crate) fn for_display_name(store: &CsbStore) -> Self {
-        let imported = store.get_display_name(WithCorrections::None);
+    pub(crate) fn for_appellation(store: &CsbStore) -> Self {
+        let imported = store.get_appellation(WithCorrections::None);
         let paper_corrected =
-            Some(store.get_display_name(WithCorrections::Paper)).filter(|d| d != &imported);
-        let current_correction = Some(store.get_display_name(WithCorrections::All))
+            Some(store.get_appellation(WithCorrections::Paper)).filter(|d| d != &imported);
+        let current_correction = Some(store.get_appellation(WithCorrections::All))
             .filter(|d| d != paper_corrected.as_ref().unwrap_or(&imported));
 
         Self {
@@ -69,15 +65,15 @@ impl FieldValues {
 
         let imported = imported
             .as_ref()
-            .map(|p| extract_field(field, p))
+            .map(|p| field.extract(p))
             .unwrap_or_default();
         let paper_corrected = paper_corrected
             .as_ref()
-            .map(|p| extract_field(field, p))
+            .map(|p| field.extract(p))
             .filter(|v| v != &imported);
         let current_correction = csb_corrected
             .as_ref()
-            .map(|p| extract_field(field, p))
+            .map(|p| field.extract(p))
             .filter(|v| v != paper_corrected.as_ref().unwrap_or(&imported));
 
         Self {

@@ -1,0 +1,113 @@
+//! Proxy handler for forwarding requests to an upstream server.
+//! See <https://github.com/tokio-rs/axum/blob/main/examples/reverse-proxy/src/main.rs>
+//! Note that "legacy" is currently the only stable high-level client in hyper-util (and is not deprecated).
+
+use axum::{
+    body::Body,
+    extract::Request,
+    http::{StatusCode, Uri, uri::PathAndQuery},
+    response::{IntoResponse, Response},
+};
+use hyper_util::rt::TokioExecutor;
+use std::{
+    cell::LazyCell,
+    sync::{Arc, Mutex},
+};
+
+use crate::AppState;
+
+/// Proxy handler that forwards requests to `upstream`.
+///
+/// `rewrites` maps incoming paths to outgoing paths. When the incoming path matches a key,
+/// the corresponding value is used as the path forwarded to upstream instead.
+pub fn proxy_handler(
+    upstream: impl Into<String>,
+    rewrites: Vec<(String, String)>,
+) -> axum::routing::MethodRouter<AppState> {
+    let upstream = upstream.into();
+    let client = Arc::new(Mutex::new(LazyCell::new(|| {
+        hyper_util::client::legacy::Client::<(), ()>::builder(TokioExecutor::new()).build_http()
+    })));
+
+    axum::routing::any(move |mut req: Request<Body>| {
+        let upstream = upstream.clone();
+        let rewrites = rewrites.clone();
+        let client = Arc::clone(&client);
+
+        async move {
+            let path = req.uri().path();
+            let path_query = req
+                .uri()
+                .path_and_query()
+                .map(PathAndQuery::as_str)
+                .unwrap_or(path);
+
+            let rewritten = rewrites
+                .iter()
+                .find(|(from, _)| from == path)
+                .map(|(_, to)| to.as_str());
+
+            let uri = format!("{upstream}{}", rewritten.unwrap_or(path_query));
+
+            *req.uri_mut() = Uri::try_from(uri).map_err(|_| StatusCode::BAD_REQUEST)?;
+
+            let client = {
+                let client = client.lock().map_err(|_| StatusCode::BAD_REQUEST)?;
+                LazyCell::force(&client).clone()
+            };
+
+            Ok::<Response, StatusCode>(
+                client
+                    .request(req)
+                    .await
+                    .map_err(|_| StatusCode::BAD_REQUEST)?
+                    .into_response(),
+            )
+        }
+    })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::AppError;
+    use axum::{
+        Router,
+        body::Body,
+        http::{Request, StatusCode},
+        routing::get,
+    };
+    use tokio::net::TcpListener;
+    use tower::ServiceExt;
+
+    use crate::test_utils::response_body_string;
+
+    #[cfg_attr(not(feature = "net-tests"), ignore = "requires network")]
+    #[tokio::test]
+    async fn proxy_forwards_requests_to_upstream() -> Result<(), AppError> {
+        let upstream_router = Router::new().route("/up", get(|| async { "ok" }));
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let upstream = tokio::spawn(async move {
+            axum::serve(listener, upstream_router).await.unwrap();
+        });
+
+        let app_state = AppState::new_for_tests().await;
+        let app = Router::new()
+            .route("/up", proxy_handler(format!("http://{addr}"), vec![]))
+            .with_state(app_state);
+
+        let response = app
+            .oneshot(Request::builder().uri("/up").body(Body::empty()).unwrap())
+            .await
+            .expect("response");
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        assert_eq!(body, "ok");
+
+        upstream.abort();
+
+        Ok(())
+    }
+}

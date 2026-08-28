@@ -3,12 +3,14 @@ use axum::response::{IntoResponse, Response};
 
 use crate::{
     AnyLocale, AppError, Context, CsbContext, CsbStore, ElectoralDistrict, HtmlTemplate,
-    candidate_lists::{CandidateList, CandidateListId},
     csb::examination::{
         extractors::CsbPoliticalGroup, pages::CsbCandidateListPath, structs::CsbCandidate,
     },
     filters,
-    structs::csb::Omission,
+    structs::{
+        candidate_lists::{CandidateList, CandidateListId},
+        csb::Omission,
+    },
 };
 
 #[derive(Template)]
@@ -19,7 +21,6 @@ struct CsbCandidateListTemplate {
     electoral_districts: Vec<ElectoralDistrict>,
     candidates: Vec<CsbCandidate>,
     omissions: Vec<Omission>,
-    restoration_count: usize,
 }
 
 pub async fn overview(
@@ -28,11 +29,11 @@ pub async fn overview(
     store: CsbStore,
 ) -> Result<Response, AppError> {
     let political_group = CsbPoliticalGroup::new_from_csb_store(&store);
-    let corrected_list = store.get_candidate_list(list_id, crate::csb::WithCorrections::All);
+    let corrected_list = store.get_candidate_list(list_id, crate::projection::WithCorrections::All);
     // For paper-added lists there is no imported side; use an empty-candidate
     // placeholder so all candidates render as paper-corrected additions.
     let imported_list = store
-        .get_candidate_list(list_id, crate::csb::WithCorrections::None)
+        .get_candidate_list(list_id, crate::projection::WithCorrections::None)
         .or_else(|| {
             corrected_list.as_ref().map(|corrected| CandidateList {
                 candidates: Vec::new(),
@@ -61,7 +62,6 @@ pub async fn overview(
             electoral_districts,
             candidates,
             omissions,
-            restoration_count: store.get_omission_count(),
         },
         context,
     )
@@ -74,8 +74,7 @@ mod tests {
     use axum::http::StatusCode;
 
     use crate::{
-        persons::PersonId,
-        structs::csb::OmissionCategory,
+        structs::{csb::OmissionCategory, persons::PersonId},
         test_utils::{response_body_string, sample_candidate_list, sample_person},
     };
 
@@ -128,9 +127,11 @@ mod tests {
         store.add_candidate_list(sample_candidate_list(list_id));
         Omission::new(
             OmissionCategory::CandidateList(vec![list_id]),
-            "Too many candidates".to_string(),
-            "The list holds more candidates than allowed.".to_string(),
-            String::new(),
+            "Too many candidates".parse().unwrap(),
+            "The list holds more candidates than allowed."
+                .parse()
+                .unwrap(),
+            None,
         )
         .create(&store)
         .await

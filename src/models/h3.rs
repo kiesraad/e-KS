@@ -1,6 +1,6 @@
-//! Model H 3: authorisation to place a designation above a candidate list.
+//! Model H 3: authorisation to place a appellation above a candidate list.
 //! Depending on the list designation this renders as H 3-1 (a single
-//! registered designation) or H 3-2 (a combined designation); each variant is
+//! designation) or H 3-2 (a combined designation); each variant is
 //! its own Markdown template in `templates/`.
 
 use textris_pdf::build::Textris;
@@ -11,7 +11,7 @@ use super::{
     layout::h_document,
     markdown::{filters, model_template},
 };
-use crate::{AppError, core::ModelLocale, list_designation::ListDesignation};
+use crate::{AppError, core::ModelLocale, structs::list_designation::ListDesignation};
 
 #[derive(Debug)]
 pub struct H3 {

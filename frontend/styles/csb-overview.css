@@ -573,3 +573,50 @@
     font-weight: bold;
   }
 }
+
+.icon-container {
+  display: flex;
+
+  > * {
+    margin-right: var(--space-2);
+  }
+}
+
+.icon-small {
+  align-items: center;
+  border-radius: 50%;
+  aspect-ratio: 1 / 1;
+  display: flex;
+  width: var(--space-8);
+  justify-content: center;
+
+  &.omission-icon-small {
+    border: 1px solid var(--orange-600);
+    background-color: var(--orange-100);
+  }
+
+  &.correction-icon-small {
+    border: 1px solid var(--blue-600);
+    background-color: var(--blue-100);
+  }
+}
+
+.icon-small::before {
+  content: "";
+  mask-position: center;
+  mask-repeat: no-repeat;
+  mask-size: contain;
+  width: var(--space-5);
+}
+
+.omission-icon-small::before {
+  background-color: var(--orange-600);
+  height: var(--space-5);
+  mask-image: url("../icons/omission.svg");
+}
+
+.correction-icon-small::before {
+  background-color: var(--blue-600);
+  height: var(--space-4);
+  mask-image: url("../icons/wand.svg");
+}

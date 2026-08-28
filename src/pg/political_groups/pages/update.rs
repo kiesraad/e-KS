@@ -1,3 +1,4 @@
+use crate::structs::political_groups::PoliticalGroup;
 use askama::Template;
 use axum::{
     extract::Query,
@@ -7,10 +8,11 @@ use axum::{
 use crate::{
     AppError, Context, HtmlTemplate, PgStore, QueryParamState, filters,
     form::{Form, FormData},
-    list_designation::ListDesignation,
-    list_submitters::ListSubmitter,
-    name_authorisations::NameAuthorisation,
-    political_groups::{PoliticalGroup, PoliticalGroupForm, PoliticalGroupSteps},
+    political_groups::{PoliticalGroupForm, PoliticalGroupSteps},
+    structs::{
+        list_designation::ListDesignation, list_submitters::ListSubmitter,
+        name_authorisations::NameAuthorisation,
+    },
 };
 
 use crate::political_groups::PoliticalGroupUpdatePath;
@@ -73,8 +75,10 @@ mod tests {
     use super::*;
     use crate::{
         AppError, Context, Form, PgStore, QueryParamState,
-        common::{DisplayName, PreviousElectionResults},
-        name_authorisations::NameAuthorisationId,
+        structs::{
+            common::{Appellation, PreviousElectionResults},
+            name_authorisations::NameAuthorisationId,
+        },
         test_utils::{
             response_body_string, sample_name_authorisation, sample_political_group_form,
         },
@@ -163,7 +167,7 @@ mod tests {
 
         let context = Context::new_test_without_db();
         let mut form = sample_political_group_form();
-        form.display_name = "a".repeat(DisplayName::MAX_CHAR_COUNT); // max length
+        form.appellation = "a".repeat(Appellation::MAX_CHAR_COUNT); // max length
 
         let response = update_political_group_submit(
             PoliticalGroupUpdatePath {},
@@ -196,8 +200,8 @@ mod tests {
             Some(PreviousElectionResults::OneToFifteenSeats)
         );
         assert_eq!(
-            updated.display_name.as_deref().map(|v| v.to_string()),
-            Some("a".repeat(DisplayName::MAX_CHAR_COUNT))
+            updated.appellation.as_deref().map(ToString::to_string),
+            Some("a".repeat(Appellation::MAX_CHAR_COUNT))
         );
 
         Ok(())
@@ -214,7 +218,7 @@ mod tests {
         let context = Context::new_test_without_db();
         let mut form = sample_political_group_form();
 
-        form.display_name = "a".repeat(DisplayName::MAX_CHAR_COUNT + 1); // Invalid value (too long)
+        form.appellation = "a".repeat(Appellation::MAX_CHAR_COUNT + 1); // Invalid value (too long)
 
         let response = update_political_group_submit(
             PoliticalGroupUpdatePath {},
