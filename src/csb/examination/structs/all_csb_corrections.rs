@@ -174,7 +174,7 @@ mod tests {
 
     use crate::{
         AppError,
-        CsbEvent::{self},
+        CsbAction::{self},
         structs::{
             common::{Appellation, Initials, LastName, PlaceOfResidence},
             csb::Correction,
@@ -183,6 +183,7 @@ mod tests {
     };
 
     use super::*;
+    use crate::CsbUser;
 
     fn all_corrections(store: &CsbStore) -> AllCsbCorrections {
         store.get_all_corrections(&CsbPoliticalGroup::new_from_csb_store(store), Locale::Nl)
@@ -195,9 +196,10 @@ mod tests {
         correction: PersonCorrection,
     ) -> Result<(), AppError> {
         store
-            .update(CsbEvent::UpdateCorrection(Correction::Person(
-                person, correction,
-            )))
+            .update(
+                CsbAction::UpdateCorrection(Correction::Person(person, correction))
+                    .by(CsbUser::new_test()),
+            )
             .await
     }
 

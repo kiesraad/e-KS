@@ -1,5 +1,8 @@
 //! Authentication and session helpers.
 
+/// The authenticated identity behind a CSB (committee) session.
+pub mod csb_user;
+
 /// BSN-based identifier derivation using HKDF-SHA256.
 pub mod derive_id;
 

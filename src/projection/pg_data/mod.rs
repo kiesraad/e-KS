@@ -670,15 +670,15 @@ mod tests {
 
     /// In paper-corrections mode the handle reads the CSB stream's corrected
     /// projection, and every dispatched app event is wrapped in
-    /// [`crate::CsbEvent::PaperCorrectedUpdate`] and persisted on that stream.
+    /// [`crate::CsbAction::PaperCorrectedUpdate`] and persisted on that stream.
     #[tokio::test]
     async fn paper_corrections_store_wraps_events_and_refreshes_its_snapshot()
     -> Result<(), AppError> {
-        use crate::{CsbEvent, CsbStore, test_utils::sample_political_group};
+        use crate::{CsbAction, CsbStore, CsbUser, test_utils::sample_political_group};
 
         let csb_store = CsbStore::new_for_test();
         csb_store.set_political_group(sample_political_group());
-        let store = PgStore::paper_corrections(csb_store.clone());
+        let store = PgStore::paper_corrections(csb_store.clone(), CsbUser::new_test());
 
         // Reads serve a snapshot of the corrected projection.
         assert_eq!(
@@ -696,8 +696,8 @@ mod tests {
         {
             let data = csb_store.data.read();
             assert!(matches!(
-                &data.events.last().unwrap().payload,
-                CsbEvent::PaperCorrectedUpdate(inner)
+                &data.events.last().unwrap().payload.action,
+                CsbAction::PaperCorrectedUpdate(inner)
                     if matches!(**inner, PgEvent::UpdatePoliticalGroup(_))
             ));
             assert_eq!(

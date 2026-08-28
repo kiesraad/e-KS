@@ -265,7 +265,7 @@ pub async fn add_omission_submit(
                     candidate_lists,
                 )
             };
-            omission.create(&store).await?;
+            omission.create(&store, context.user()?).await?;
 
             let political_group = CsbPoliticalGroup::new_from_csb_store(&store);
             Ok(query.redirect_or(return_path(&target, &political_group)))
@@ -278,7 +278,7 @@ pub async fn add_omission_submit(
 /// the overlay marker across the redirect.
 pub async fn delete_omission(
     path: CsbDeleteOmissionPath,
-    _context: CsbContext,
+    context: CsbContext,
     store: CsbStore,
     Query(query): Query<QueryParamState>,
 ) -> Result<Response, AppError> {
@@ -288,7 +288,7 @@ pub async fn delete_omission(
     } = path;
     let omission = store.get_omission(omission_id)?;
     let overview = overview_url_for(&omission.category, stream_id);
-    omission.delete(&store).await?;
+    omission.delete(&store, context.user()?).await?;
     Ok(Redirect::to(
         &overview
             .with_query_params(QueryParamState::overlay(
@@ -302,6 +302,7 @@ pub async fn delete_omission(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::CsbUser;
     use axum::http::StatusCode;
 
     use crate::{
@@ -607,7 +608,7 @@ mod tests {
             "De waarborgsom ontbreekt.".parse().unwrap(),
             Some("Betaal de waarborgsom.".parse().unwrap()),
         )
-        .create(&store)
+        .create(&store, CsbUser::new_test())
         .await
         .unwrap();
         let mut irreparable = Omission::new(
@@ -617,7 +618,10 @@ mod tests {
             None,
         );
         irreparable.recoverable = false;
-        irreparable.create(&store).await.unwrap();
+        irreparable
+            .create(&store, CsbUser::new_test())
+            .await
+            .unwrap();
 
         let response = overview(
             CsbOmissionOverviewPath {
@@ -672,7 +676,7 @@ mod tests {
             "De waarborgsom ontbreekt.".parse().unwrap(),
             None,
         );
-        omission.create(&store).await.unwrap();
+        omission.create(&store, CsbUser::new_test()).await.unwrap();
         let omission_id = omission.id;
         assert_eq!(store.get_candidate_list_omissions(list).unwrap().len(), 1);
 
@@ -717,7 +721,7 @@ mod tests {
             "The deposit is missing.".parse().unwrap(),
             None,
         );
-        omission.create(&store).await.unwrap();
+        omission.create(&store, CsbUser::new_test()).await.unwrap();
         let omission_id = omission.id;
 
         let response = delete_omission(

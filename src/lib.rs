@@ -115,26 +115,29 @@ pub(crate) use pg::{
     list_designation, list_submitters, name_authorisations, persons, political_groups,
     render_error_pages, substitute_list_submitters,
 };
-#[cfg(any(test, feature = "dev-features"))]
-pub(crate) use projection::CsbMainEvent;
 pub(crate) use projection::{
-    AppRequestState, CsbEvent, CsbMainStore, CsbMainStoreData, CsbStore, CsbStoreData, PgEvent,
-    PgStore, PgStoreData,
+    AppRequestState, CsbAction, CsbMainAction, CsbMainStore, CsbMainStoreData, CsbStore,
+    CsbStoreData, PgEvent, PgStore, PgStoreData,
 };
+#[cfg(test)]
+pub(crate) use projection::{CsbEvent, CsbMainEvent};
 
 #[cfg(not(feature = "memory-serve"))]
 pub(crate) use app::middleware::proxy_handler;
 // `pub` because the `eks` binary's tests reference `eks::SESSION_COOKIE_NAME`.
 pub use auth::session_extractor::SESSION_COOKIE_NAME;
 pub(crate) use auth::{
-    derive_id::IdDeriver, pending_request_store::PendingRequestStore, session::Session,
+    csb_user::{CsbUser, HasCsbUser},
+    derive_id::IdDeriver,
+    pending_request_store::PendingRequestStore,
+    session::Session,
     session_store::SessionStore,
 };
 #[cfg(feature = "tls")]
 pub(crate) use core::TlsConfig;
 pub(crate) use core::{
-    AnyLocale, ElectionConfig, ElectionType, ElectoralDistrict, HtmlTemplate, Locale, LocaleValues,
-    Province, Scope, SessionPageValues, WaterCouncil,
+    AnyLocale, ElectionConfig, ElectionType, ElectoralDistrict, GithubUserId, HtmlTemplate, Locale,
+    LocaleValues, Province, Scope, SessionPageValues, WaterCouncil,
     constants::{self, MAX_CANDIDATES},
     http_trace, translate,
 };

@@ -141,6 +141,7 @@ mod tests {
     };
 
     use super::*;
+    use crate::CsbUser;
 
     fn redirect_param(stream_id: StreamId) -> String {
         format!("&redirect_to=%2Fcsb%2Fexamination%2F{stream_id}%2Fomissions")
@@ -255,7 +256,7 @@ mod tests {
             "description".parse().unwrap(),
             "help_text".parse().ok(),
         )
-        .create(&store)
+        .create(&store, CsbUser::new_test())
         .await
         .expect("Couldn't create omission");
 
@@ -287,7 +288,7 @@ mod tests {
                 "description".parse().unwrap(),
                 "help_text".parse().ok(),
             )
-            .create(&store)
+            .create(&store, CsbUser::new_test())
             .await
             .expect("Couldn't create omission");
         }

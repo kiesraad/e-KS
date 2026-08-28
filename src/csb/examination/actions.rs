@@ -3,7 +3,8 @@
 use std::collections::BTreeMap;
 
 use crate::{
-    AnyLocale, AppError, CsbEvent, CsbStore, CsbStoreData, ElectionConfig, ElectoralDistrict,
+    AnyLocale, AppError, CsbAction, CsbStore, CsbStoreData, CsbUser, ElectionConfig,
+    ElectoralDistrict,
     models::{
         i1::{DistrictLists, SubmittedList},
         i4::OmissionGroup,
@@ -168,19 +169,26 @@ fn format_districts(districts: &[ElectoralDistrict], election: &ElectionConfig) 
 }
 
 impl Omission {
-    pub async fn create(&self, store: &CsbStore) -> Result<(), AppError> {
-        store.update(CsbEvent::CreateOmission(self.clone())).await
-    }
-
-    pub async fn update(&self, store: &CsbStore) -> Result<(), AppError> {
-        store.update(CsbEvent::UpdateOmission(self.clone())).await
-    }
-
-    pub async fn delete(&self, store: &CsbStore) -> Result<(), AppError> {
+    pub async fn create(&self, store: &CsbStore, user: CsbUser) -> Result<(), AppError> {
         store
-            .update(CsbEvent::DeleteOmission {
-                omission_id: self.id,
-            })
+            .update(CsbAction::CreateOmission(self.clone()).by(user))
+            .await
+    }
+
+    pub async fn update(&self, store: &CsbStore, user: CsbUser) -> Result<(), AppError> {
+        store
+            .update(CsbAction::UpdateOmission(self.clone()).by(user))
+            .await
+    }
+
+    pub async fn delete(&self, store: &CsbStore, user: CsbUser) -> Result<(), AppError> {
+        store
+            .update(
+                CsbAction::DeleteOmission {
+                    omission_id: self.id,
+                }
+                .by(user),
+            )
             .await
     }
 }
@@ -255,11 +263,14 @@ mod tests {
         }
 
         store
-            .update(CsbEvent::Import {
-                hash: [0u8; 32],
-                source_stream_id: StreamId::new(),
-                snapshot: Box::new(snapshot),
-            })
+            .update(
+                CsbAction::Import {
+                    hash: [0u8; 32],
+                    source_stream_id: StreamId::new(),
+                    snapshot: Box::new(snapshot),
+                }
+                .by(CsbUser::new_test()),
+            )
             .await
             .unwrap();
 
@@ -269,7 +280,7 @@ mod tests {
     async fn create_omission(store: &CsbStore, category: OmissionCategory, description: &str) {
         let mut omission = sample_omission(category);
         omission.description = description.parse().unwrap();
-        omission.create(store).await.unwrap();
+        omission.create(store, CsbUser::new_test()).await.unwrap();
     }
 
     #[test]
@@ -602,7 +613,10 @@ mod tests {
         let without = seed_csb_store(&state, named_group("Zonder Verzuimen"), vec![], vec![]).await;
         let mut irreparable = sample_omission(OmissionCategory::PoliticalGroup);
         irreparable.recoverable = false;
-        irreparable.create(&without).await.unwrap();
+        irreparable
+            .create(&without, CsbUser::new_test())
+            .await
+            .unwrap();
 
         let with = seed_csb_store(&state, named_group("Met Verzuimen"), vec![], vec![]).await;
         create_omission(

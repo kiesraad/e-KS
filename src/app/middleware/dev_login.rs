@@ -8,8 +8,8 @@ use secrecy::SecretString;
 use serde::Deserialize;
 
 use crate::{
-    AppError, AppState, CsbMainEvent, ElectionConfig, Locale, PgEvent, PgStoreData, Scope, Session,
-    StreamId,
+    AppError, AppState, CsbMainAction, CsbUser, ElectionConfig, Locale, PgEvent, PgStoreData,
+    Scope, Session, StreamId,
     auth::session_extractor::{build_session_cookie, user_agent_hash},
     common::{PgIndexPath, SelectElectionPath},
     csb::index::CsbIndexPath,
@@ -136,17 +136,18 @@ impl<'a> DevLogin<'a> {
         // All committee members share a single stream
         // The session's own stream_id is not used for CSB state (other than for logging)
         let election = ElectionConfig::EK27;
+        let user = CsbUser::Developer {
+            stream_id: self.stream_id,
+        };
+        self.session.set_csb_user(user.clone());
+
         let store = self.state.csb_main_store(election).await?;
-        store
-            .update(CsbMainEvent::DeveloperLogin {
-                stream_id: self.stream_id,
-            })
-            .await?;
+        store.update(CsbMainAction::Login.by(user.clone())).await?;
         self.session.set_current_election(election);
 
         #[cfg(feature = "fixtures")]
         if self.query.fixtures.unwrap_or(false) {
-            crate::csb::import::fixture::import_csb_fixture(self.state, election).await?;
+            crate::csb::import::fixture::import_csb_fixture(self.state, election, user).await?;
         }
 
         Ok(CsbIndexPath {}.to_string())
@@ -239,8 +240,9 @@ mod tests {
     use secrecy::SecretString;
 
     use crate::{
-        AppState, CsbEvent, CsbMainEvent, ElectionConfig, Locale, PgEvent, PgStore, Scope, Session,
-        StreamId, router, store::StoreEvent, test_utils::response_body_string,
+        AppState, CsbAction, CsbMainAction, CsbMainEvent, CsbUser, ElectionConfig, Locale, PgEvent,
+        PgStore, Scope, Session, StreamId, router, store::StoreEvent,
+        test_utils::response_body_string,
     };
 
     const TEST_ID_CODE: &str = "999999990";
@@ -406,7 +408,10 @@ mod tests {
         assert!(matches!(
             store.data.read().events.as_slice(),
             &[StoreEvent {
-                payload: CsbMainEvent::DeveloperLogin { .. },
+                payload: CsbMainEvent {
+                    user: CsbUser::Developer { .. },
+                    action: CsbMainAction::Login,
+                },
                 ..
             }]
         ));
@@ -561,7 +566,11 @@ mod tests {
 
         let event = events[0].clone();
         let StoreEvent {
-            payload: CsbEvent::Import { hash, snapshot, .. },
+            payload:
+                crate::CsbEvent {
+                    action: CsbAction::Import { hash, snapshot, .. },
+                    ..
+                },
             ..
         } = event
         else {

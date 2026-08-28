@@ -3,7 +3,7 @@
 
 use axum::{extract::FromRequestParts, http::request::Parts};
 
-use crate::{AppError, AppRequestState, ElectionConfig, Session};
+use crate::{AppError, AppRequestState, CsbUser, ElectionConfig, Session};
 
 #[cfg(test)]
 use crate::Locale;
@@ -37,10 +37,16 @@ impl CsbContext {
         }
     }
 
+    /// The committee member behind this request, recorded on CSB events.
+    pub fn user(&self) -> Result<CsbUser, AppError> {
+        self.session.require_csb_user()
+    }
+
     #[cfg(test)]
     pub fn new_test() -> Self {
         let mut session = Session::new_test_with_locale(Locale::En);
         session.set_current_election(ElectionConfig::EK27);
+        session.set_csb_user(CsbUser::new_test());
         Self::new(session, ElectionConfig::EK27)
     }
 }

@@ -110,6 +110,11 @@ pub async fn store_middleware(
         else {
             return Redirect::to(&CsbIndexPath {}.to_string()).into_response();
         };
+        // Corrections are recorded under the committee member's identity; a
+        // session without one (predating the CSB login) must log in again.
+        let Ok(user) = session.require_csb_user() else {
+            return AppError::Unauthorised.into_response();
+        };
 
         // Finalising (and generating documents) is not part of paper
         // corrections: the documents were already handed in on paper.
@@ -122,8 +127,10 @@ pub async fn store_middleware(
             .csb_store_registry
             .get_store(stream_id, election)
             .await;
-        return inject_loaded_store(&state, resolved, request, next, PgStore::paper_corrections)
-            .await;
+        return inject_loaded_store(&state, resolved, request, next, |store| {
+            PgStore::paper_corrections(store, user)
+        })
+        .await;
     }
 
     // Redirect to `/select-election` when the session has not yet picked an election
@@ -448,6 +455,7 @@ mod tests {
         let mut session = Session::new_test();
         session.set_scope(crate::Scope::CentralElectoralCommittee);
         session.set_current_election(crate::ElectionConfig::EK27);
+        session.set_csb_user(crate::CsbUser::new_test());
         session.paper_correction_stream_id = correcting;
         let token = session.token_string();
         state.sessions.insert(session).await;
@@ -462,11 +470,14 @@ mod tests {
             .await
             .expect("csb store");
         store
-            .update(crate::CsbEvent::Import {
-                hash: [0u8; 32],
-                source_stream_id: crate::StreamId::new(),
-                snapshot: Box::new(crate::PgStoreData::default()),
-            })
+            .update(
+                crate::CsbAction::Import {
+                    hash: [0u8; 32],
+                    source_stream_id: crate::StreamId::new(),
+                    snapshot: Box::new(crate::PgStoreData::default()),
+                }
+                .by(crate::CsbUser::new_test()),
+            )
             .await
             .expect("import");
         stream_id

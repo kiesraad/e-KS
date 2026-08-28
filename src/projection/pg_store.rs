@@ -1,7 +1,9 @@
 //! [`PgStore`]: the store handle used by the app feature handlers, including
 //! the CSB paper-corrections write target.
 
-use crate::{AppError, CsbEvent, CsbStore, MAX_CANDIDATES, PgEvent, PgStoreData, store::Store};
+use crate::{
+    AppError, CsbAction, CsbStore, CsbUser, MAX_CANDIDATES, PgEvent, PgStoreData, store::Store,
+};
 
 /// Store handle used by the app feature handlers: reads come from the
 /// [`PgStoreData`] projection, writes dispatch [`PgEvent`]s to the write
@@ -9,7 +11,7 @@ use crate::{AppError, CsbEvent, CsbStore, MAX_CANDIDATES, PgEvent, PgStoreData, 
 ///
 /// A political group session appends events to its own stream. A CSB session
 /// correcting the paper documents gets every event wrapped in
-/// [`CsbEvent::PaperCorrectedUpdate`] and appended to the CSB stream instead,
+/// [`CsbAction::PaperCorrectedUpdate`] and appended to the CSB stream instead,
 /// so corrections land in that stream's `paper_corrected_data` projection and
 /// the political group's own stream is never touched.
 #[derive(Clone)]
@@ -24,10 +26,11 @@ pub struct PgStore {
 enum WriteTarget {
     /// Persist events on the projection's own stream.
     Own,
-    /// Wrap events in [`CsbEvent::PaperCorrectedUpdate`] and persist them on
-    /// this CSB stream. The projection is a request-local snapshot of the
-    /// stream's `paper_corrected_data`.
-    PaperCorrections(CsbStore),
+    /// Wrap events in [`CsbAction::PaperCorrectedUpdate`] and persist them on
+    /// this CSB stream, recorded as triggered by the correcting committee
+    /// member. The projection is a request-local snapshot of the stream's
+    /// `paper_corrected_data`.
+    PaperCorrections { store: CsbStore, user: CsbUser },
 }
 
 impl std::ops::Deref for PgStore {
@@ -48,8 +51,9 @@ impl PgStore {
     }
 
     /// Build a paper-corrections handle over a loaded CSB store: reads serve a
-    /// snapshot of its `paper_corrected_data`, writes go to the CSB stream.
-    pub fn paper_corrections(csb_store: CsbStore) -> Self {
+    /// snapshot of its `paper_corrected_data`, writes go to the CSB stream,
+    /// recorded as triggered by `user`.
+    pub fn paper_corrections(csb_store: CsbStore, user: CsbUser) -> Self {
         let projection = Store::new_for_temp_stream(csb_store.election);
         *projection.data.write() = csb_store.data.read().paper_corrected_data.clone();
 
@@ -58,7 +62,10 @@ impl PgStore {
                 stream_id: csb_store.stream_id,
                 ..projection
             },
-            target: WriteTarget::PaperCorrections(csb_store),
+            target: WriteTarget::PaperCorrections {
+                store: csb_store,
+                user,
+            },
         }
     }
 
@@ -71,9 +78,12 @@ impl PgStore {
     pub async fn update(&self, event: PgEvent) -> Result<(), AppError> {
         match &self.target {
             WriteTarget::Own => self.projection.update(event).await,
-            WriteTarget::PaperCorrections(csb_store) => {
+            WriteTarget::PaperCorrections {
+                store: csb_store,
+                user,
+            } => {
                 csb_store
-                    .update(CsbEvent::PaperCorrectedUpdate(Box::new(event)))
+                    .update(CsbAction::PaperCorrectedUpdate(Box::new(event)).by(user.clone()))
                     .await?;
 
                 // Refresh the snapshot so reads later in this request observe
@@ -94,7 +104,7 @@ impl PgStore {
     pub fn candidate_limit(&self) -> usize {
         match &self.target {
             WriteTarget::Own => MAX_CANDIDATES,
-            WriteTarget::PaperCorrections(_) => usize::MAX,
+            WriteTarget::PaperCorrections { .. } => usize::MAX,
         }
     }
 
@@ -103,7 +113,9 @@ impl PgStore {
     pub fn paper_corrections_stream_id(&self) -> Option<crate::StreamId> {
         match &self.target {
             WriteTarget::Own => None,
-            WriteTarget::PaperCorrections(csb_store) => Some(csb_store.stream_id),
+            WriteTarget::PaperCorrections {
+                store: csb_store, ..
+            } => Some(csb_store.stream_id),
         }
     }
 
@@ -114,9 +126,9 @@ impl PgStore {
     pub fn imported_snapshot(&self) -> Option<PgStoreData> {
         match &self.target {
             WriteTarget::Own => None,
-            WriteTarget::PaperCorrections(csb_store) => {
-                Some(csb_store.data.read().imported_data.clone())
-            }
+            WriteTarget::PaperCorrections {
+                store: csb_store, ..
+            } => Some(csb_store.data.read().imported_data.clone()),
         }
     }
 }

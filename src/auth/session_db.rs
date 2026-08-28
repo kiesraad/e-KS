@@ -10,7 +10,7 @@ use std::str::FromStr;
 use chrono::{DateTime, Utc};
 
 use crate::{
-    AppError, ElectionConfig, Locale, Scope, Session, StreamId, TokenValue,
+    AppError, CsbUser, ElectionConfig, Locale, Scope, Session, StreamId, TokenValue,
     auth::session::{session_absolute_timeout, session_idle_timeout},
 };
 
@@ -25,6 +25,7 @@ struct SessionRow {
     last_activity: DateTime<Utc>,
     saml_name_id: String,
     scope: String,
+    csb_user: Option<serde_json::Value>,
     created_at: DateTime<Utc>,
     user_agent_hash: Option<String>,
     csrf_token: String,
@@ -38,12 +39,17 @@ pub async fn upsert(pool: &sqlx::PgPool, session: &Session) -> Result<(), AppErr
         .current_election
         .map(serde_json::to_value)
         .transpose()?;
+    let csb_user_json = session
+        .csb_user
+        .as_ref()
+        .map(serde_json::to_value)
+        .transpose()?;
 
     sqlx::query(
         r#"
         INSERT INTO sessions
-            (token, stream_id, paper_correction_stream_id, current_election, locale, last_activity, saml_name_id, scope, created_at, user_agent_hash, csrf_token)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+            (token, stream_id, paper_correction_stream_id, current_election, locale, last_activity, saml_name_id, scope, csb_user, created_at, user_agent_hash, csrf_token)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
         ON CONFLICT (token) DO UPDATE SET
             stream_id = EXCLUDED.stream_id,
             paper_correction_stream_id = EXCLUDED.paper_correction_stream_id,
@@ -52,6 +58,7 @@ pub async fn upsert(pool: &sqlx::PgPool, session: &Session) -> Result<(), AppErr
             last_activity = EXCLUDED.last_activity,
             saml_name_id = EXCLUDED.saml_name_id,
             scope = EXCLUDED.scope,
+            csb_user = EXCLUDED.csb_user,
             csrf_token = EXCLUDED.csrf_token
         "#,
     )
@@ -63,6 +70,7 @@ pub async fn upsert(pool: &sqlx::PgPool, session: &Session) -> Result<(), AppErr
     .bind(session.last_activity)
     .bind(&session.saml_name_id)
     .bind(session.scope.as_str())
+    .bind(csb_user_json)
     .bind(session.created_at)
     .bind(&session.user_agent_hash)
     .bind(&session.csrf_token().0)
@@ -75,7 +83,7 @@ pub async fn upsert(pool: &sqlx::PgPool, session: &Session) -> Result<(), AppErr
 /// Fetch a single session by its token hash.
 pub async fn load(pool: &sqlx::PgPool, token_hash: &str) -> Result<Option<Session>, AppError> {
     let row: Option<SessionRow> = sqlx::query_as(
-        r#"SELECT token, stream_id, paper_correction_stream_id, current_election, locale, last_activity, saml_name_id, scope, created_at, user_agent_hash, csrf_token
+        r#"SELECT token, stream_id, paper_correction_stream_id, current_election, locale, last_activity, saml_name_id, scope, csb_user, created_at, user_agent_hash, csrf_token
            FROM sessions WHERE token = $1"#,
     )
     .bind(token_hash)
@@ -90,6 +98,10 @@ fn session_from_row(row: SessionRow) -> Result<Session, AppError> {
         .current_election
         .map(serde_json::from_value::<ElectionConfig>)
         .transpose()?;
+    let csb_user = row
+        .csb_user
+        .map(serde_json::from_value::<CsbUser>)
+        .transpose()?;
 
     Ok(Session {
         token_hash: row.token,
@@ -101,6 +113,7 @@ fn session_from_row(row: SessionRow) -> Result<Session, AppError> {
         stream_id: row.stream_id.map(StreamId::from),
         paper_correction_stream_id: row.paper_correction_stream_id.map(StreamId::from),
         scope: Scope::from_str(&row.scope).unwrap_or_default(),
+        csb_user,
         current_election,
         locale: Locale::from_str(&row.locale).unwrap_or_default(),
         saml_name_id: row.saml_name_id,
@@ -195,10 +208,24 @@ mod tests {
             last_activity: Utc::now(),
             saml_name_id,
             scope: Scope::default().as_str().to_string(),
+            csb_user: None,
             created_at: Utc::now(),
             user_agent_hash: Some("ua-hash".to_string()),
             csrf_token: "csrf-token-abc".to_string(),
         }
+    }
+
+    /// The committee identity survives the row to `Session` mapping, so CSB
+    /// events keep referencing the right user for database-backed sessions.
+    #[test]
+    fn session_from_row_preserves_csb_user() {
+        let user = CsbUser::new_test();
+        let mut row = sample_row(String::new());
+        row.csb_user = Some(serde_json::to_value(&user).expect("serialize"));
+
+        let session = session_from_row(row).expect("maps row");
+
+        assert_eq!(session.csb_user, Some(user));
     }
 
     /// The SAML NameID survives the row to `Session` mapping so SP-initiated

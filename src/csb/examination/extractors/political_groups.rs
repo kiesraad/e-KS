@@ -59,7 +59,8 @@ mod tests {
     use axum::{body::Body, http::Request};
 
     use crate::{
-        AppState, CsbEvent, ElectionConfig, PgStoreData, structs::list_designation::ListDesignation,
+        AppState, CsbAction, CsbUser, ElectionConfig, PgStoreData,
+        structs::list_designation::ListDesignation,
     };
 
     /// Persist a CSB stream carrying a single import event in the (in-memory)
@@ -71,11 +72,14 @@ mod tests {
             .await
             .unwrap();
         store
-            .update(CsbEvent::Import {
-                hash: [0u8; 32],
-                source_stream_id: StreamId::new(),
-                snapshot: Box::new(PgStoreData::default()),
-            })
+            .update(
+                CsbAction::Import {
+                    hash: [0u8; 32],
+                    source_stream_id: StreamId::new(),
+                    snapshot: Box::new(PgStoreData::default()),
+                }
+                .by(CsbUser::new_test()),
+            )
             .await
             .unwrap();
         stream_id

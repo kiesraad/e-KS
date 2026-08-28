@@ -82,6 +82,7 @@ fields:
   stream: Stream
   subject_id: Subject ID
   timestamp: Timestamp
+  user: User
 filter:
   all_events: All events
   apply: Filter
@@ -106,3 +107,6 @@ filter:
   search_placeholder: "Search by name, ID..."
   stream: Filter by stream
 title: Audit log
+user:
+  developer: Developer
+  github: GitHub user

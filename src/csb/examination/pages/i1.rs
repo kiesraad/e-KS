@@ -54,7 +54,7 @@ mod tests {
     };
 
     use crate::{
-        AppState, CsbEvent, ElectionConfig, PgStoreData, StreamId,
+        AppState, CsbAction, CsbUser, ElectionConfig, PgStoreData, StreamId,
         structs::{
             candidate_lists::CandidateList,
             csb::{OmissionCategory, sample_omission},
@@ -119,14 +119,17 @@ mod tests {
         };
         snapshot.candidate_lists.insert(list.id, list);
         store
-            .update(CsbEvent::Import {
-                hash: [0u8; 32],
-                source_stream_id: StreamId::new(),
-                snapshot: Box::new(snapshot),
-            })
+            .update(
+                CsbAction::Import {
+                    hash: [0u8; 32],
+                    source_stream_id: StreamId::new(),
+                    snapshot: Box::new(snapshot),
+                }
+                .by(CsbUser::new_test()),
+            )
             .await?;
         sample_omission(OmissionCategory::PoliticalGroup)
-            .create(&store)
+            .create(&store, CsbUser::new_test())
             .await?;
 
         let main_store = CsbMainStore::new_for_test();

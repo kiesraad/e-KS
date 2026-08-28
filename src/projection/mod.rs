@@ -5,10 +5,12 @@ mod pg_data;
 mod pg_store;
 mod request_state;
 
-pub use csb_data::{CsbEvent, CsbStoreData, WithCorrections};
-#[cfg(any(test, feature = "dev-features"))]
+#[cfg(test)]
+pub use csb_data::CsbEvent;
+pub use csb_data::{CsbAction, CsbStoreData, WithCorrections};
+#[cfg(test)]
 pub use csb_main::CsbMainEvent;
-pub use csb_main::{CSB_MAIN_STREAM_ID, CsbMainStoreData};
+pub use csb_main::{CSB_MAIN_STREAM_ID, CsbMainAction, CsbMainStoreData};
 pub use pg_data::{PgEvent, PgStoreData};
 pub use pg_store::PgStore;
 pub use request_state::AppRequestState;

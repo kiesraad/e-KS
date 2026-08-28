@@ -34,6 +34,7 @@ CREATE TABLE IF NOT EXISTS sessions (
   last_activity TIMESTAMPTZ NOT NULL,
   saml_name_id TEXT NOT NULL DEFAULT '',
   scope TEXT NOT NULL DEFAULT 'political_group',
+  csb_user JSONB,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   user_agent_hash TEXT,
   csrf_token TEXT NOT NULL

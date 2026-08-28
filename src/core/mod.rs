@@ -1,5 +1,6 @@
 mod config;
 mod csv;
+mod github_user_id;
 
 pub mod election;
 mod locale;
@@ -21,6 +22,7 @@ pub use config::Config;
 pub use config::TlsConfig;
 pub use csv::{Csv, CsvError, reader_from_bytes};
 pub use election::{ElectionConfig, ElectionType, ElectoralDistrict, Province, WaterCouncil};
+pub use github_user_id::GithubUserId;
 pub use locale::Locale;
 pub use model_locale::{AnyLocale, ModelLocale};
 pub use scope::Scope;

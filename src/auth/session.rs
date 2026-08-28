@@ -5,7 +5,7 @@ use rand::{RngExt, distr::Alphanumeric};
 use secrecy::{ExposeSecret, SecretString};
 
 use crate::{
-    AppError, ElectionConfig, Locale, Scope, StreamId, TokenValue,
+    AppError, CsbUser, ElectionConfig, Locale, Scope, StreamId, TokenValue,
     form::{csrf_token_matches, generate_csrf_token},
     utils::sha256_hex,
 };
@@ -87,6 +87,9 @@ pub struct Session {
     /// Authorization scope of the session, set on login. Governs which streams
     /// the session may reach (see [`crate::Scope`]).
     pub scope: Scope,
+    /// The committee identity behind a CSB login, recorded on every CSB event
+    /// for the audit log. `None` for political-group sessions.
+    pub csb_user: Option<CsbUser>,
     /// Election the user is currently working on (set after login).
     pub current_election: Option<ElectionConfig>,
     /// Active locale for the session.
@@ -149,6 +152,7 @@ impl Session {
             stream_id: None,
             paper_correction_stream_id: None,
             scope: Scope::default(),
+            csb_user: None,
             current_election: None,
             locale,
             saml_name_id: String::new(),
@@ -163,6 +167,11 @@ impl Session {
     /// Assigns the authorization scope for this session.
     pub fn set_scope(&mut self, scope: Scope) {
         self.scope = scope;
+    }
+
+    /// Assigns the committee identity for this session (CSB logins only).
+    pub fn set_csb_user(&mut self, csb_user: CsbUser) {
+        self.csb_user = Some(csb_user);
     }
 
     /// Assigns the current election for this session.

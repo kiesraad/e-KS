@@ -77,12 +77,15 @@ pub async fn select_election_submit<S: AppRequestState>(
     // into the committee (CSB) scope
     #[cfg(feature = "fixtures")]
     if form.login_as_csb() {
-        session.stream_id = Some(crate::StreamId::new());
+        let stream_id = crate::StreamId::new();
+        let user = crate::CsbUser::Developer { stream_id };
+        session.stream_id = Some(stream_id);
         session.scope = Scope::CentralElectoralCommittee;
+        session.set_csb_user(user.clone());
         session.set_current_election(election);
 
         if form.load_fixtures() {
-            crate::csb::import::fixture::import_csb_fixture(&state, election).await?;
+            crate::csb::import::fixture::import_csb_fixture(&state, election, user).await?;
         }
 
         session.rotate_csrf_token();

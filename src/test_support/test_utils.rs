@@ -226,17 +226,23 @@ pub fn sample_political_group() -> PoliticalGroup {
 pub async fn paper_corrections_store() -> Result<PgStore, AppError> {
     let csb_store = crate::CsbStore::new_for_test();
     csb_store
-        .update(crate::CsbEvent::Import {
-            hash: [1; 32],
-            source_stream_id: crate::StreamId::new(),
-            snapshot: Box::new(crate::PgStoreData {
-                political_group: sample_political_group(),
-                ..Default::default()
-            }),
-        })
+        .update(
+            crate::CsbAction::Import {
+                hash: [1; 32],
+                source_stream_id: crate::StreamId::new(),
+                snapshot: Box::new(crate::PgStoreData {
+                    political_group: sample_political_group(),
+                    ..Default::default()
+                }),
+            }
+            .by(crate::CsbUser::new_test()),
+        )
         .await?;
 
-    Ok(PgStore::paper_corrections(csb_store))
+    Ok(PgStore::paper_corrections(
+        csb_store,
+        crate::CsbUser::new_test(),
+    ))
 }
 
 pub fn sample_name_authorisation(id: NameAuthorisationId) -> NameAuthorisation {

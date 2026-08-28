@@ -49,7 +49,7 @@ mod tests {
     };
     use tower::ServiceExt;
 
-    use crate::{AppState, CsbEvent, CsbStoreData, ElectionConfig, Locale, PgStoreData};
+    use crate::{AppState, CsbAction, CsbStoreData, CsbUser, ElectionConfig, Locale, PgStoreData};
 
     /// Persist a CSB stream carrying a single import event and return its id.
     async fn seed_csb_store(state: &AppState, election: ElectionConfig) -> StreamId {
@@ -59,11 +59,14 @@ mod tests {
             .await
             .unwrap();
         store
-            .update(CsbEvent::Import {
-                hash: [0u8; 32],
-                source_stream_id: StreamId::new(),
-                snapshot: Box::new(PgStoreData::default()),
-            })
+            .update(
+                CsbAction::Import {
+                    hash: [0u8; 32],
+                    source_stream_id: StreamId::new(),
+                    snapshot: Box::new(PgStoreData::default()),
+                }
+                .by(CsbUser::new_test()),
+            )
             .await
             .unwrap();
         stream_id
@@ -167,7 +170,9 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
 
         // delete the store
-        csb_store.update(CsbEvent::Delete).await?;
+        csb_store
+            .update(CsbAction::Delete.by(CsbUser::new_test()))
+            .await?;
 
         let response = request_store(
             state,

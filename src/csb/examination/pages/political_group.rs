@@ -5,9 +5,9 @@ use axum::{
 };
 
 use crate::{
-    AppError, Context, CsbContext,
-    CsbEvent::{self},
-    CsbStore, HtmlTemplate, Overlay, QueryParamState,
+    AppError, Context,
+    CsbAction::{self},
+    CsbContext, CsbStore, HtmlTemplate, Overlay, QueryParamState,
     csb::examination::{
         extractors::CsbPoliticalGroup,
         pages::{CsbPoliticalGroupPath, CsbPoliticalGroupToggleFinishPath},
@@ -81,17 +81,21 @@ pub async fn overview(
 
 pub async fn toggle_examination_finish(
     _: CsbPoliticalGroupToggleFinishPath,
+    context: CsbContext,
     Query(query): Query<QueryParamState>,
     store: CsbStore,
 ) -> Result<Response, AppError> {
     let finished = store.is_examination_finished();
-    store.update(CsbEvent::SetFinished(!finished)).await?;
+    store
+        .update(CsbAction::SetFinished(!finished).by(context.user()?))
+        .await?;
     Ok(query.redirect_or(CsbPoliticalGroup::new_from_csb_store(&store).examination_path()))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::CsbUser;
     use axum::http::StatusCode;
 
     use crate::{
@@ -270,7 +274,7 @@ mod tests {
             "The deposit has not been paid.".parse().unwrap(),
             None,
         )
-        .create(&store)
+        .create(&store, CsbUser::new_test())
         .await
         .unwrap();
 
@@ -298,6 +302,7 @@ mod tests {
 
         toggle_examination_finish(
             CsbPoliticalGroupToggleFinishPath { stream_id },
+            CsbContext::new_test(),
             Query(QueryParamState::default()),
             store.clone(),
         )
@@ -309,6 +314,7 @@ mod tests {
 
         toggle_examination_finish(
             CsbPoliticalGroupToggleFinishPath { stream_id },
+            CsbContext::new_test(),
             Query(QueryParamState::default()),
             store.clone(),
         )
@@ -326,6 +332,7 @@ mod tests {
 
         let response = toggle_examination_finish(
             CsbPoliticalGroupToggleFinishPath { stream_id },
+            CsbContext::new_test(),
             Query(QueryParamState::redirect_to("/back/here".to_string())),
             store,
         )
@@ -350,6 +357,7 @@ mod tests {
 
         let response = toggle_examination_finish(
             CsbPoliticalGroupToggleFinishPath { stream_id },
+            CsbContext::new_test(),
             Query(QueryParamState::default()),
             store,
         )

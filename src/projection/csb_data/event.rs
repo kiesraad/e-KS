@@ -2,15 +2,59 @@ use crate::store::EventHash;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    Event, PgEvent, PgStoreData, StreamId,
+    CsbUser, Event, HasCsbUser, PgEvent, PgStoreData, StreamId,
     structs::csb::{Correction, Omission, OmissionId},
     trans,
     utils::format_hash,
 };
 
-/// Domain events that mutate the CSB (Centraal Stembureau) store.
+/// An event on a CSB store: the acting committee member plus what they did.
+/// Every event records its user so the audit log can show who triggered it.
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub enum CsbEvent {
+pub struct CsbEvent {
+    /// The committee member that triggered the event.
+    pub user: CsbUser,
+    pub action: CsbAction,
+}
+
+impl CsbAction {
+    /// Attach the acting committee member, producing the event to persist.
+    pub fn by(self, user: CsbUser) -> CsbEvent {
+        CsbEvent { user, action: self }
+    }
+}
+
+impl HasCsbUser for CsbEvent {
+    fn csb_user(&self) -> &CsbUser {
+        &self.user
+    }
+}
+
+impl Event for CsbEvent {
+    fn category(&self) -> &'static str {
+        self.action.category()
+    }
+
+    fn key(&self) -> &'static str {
+        self.action.key()
+    }
+
+    fn description(&self, locale: crate::Locale) -> String {
+        self.action.description(locale)
+    }
+
+    fn details(&self) -> String {
+        self.action.details()
+    }
+
+    fn changes(&self, locale: crate::Locale) -> Vec<crate::structs::audit_log::FieldChange> {
+        self.action.changes(locale)
+    }
+}
+
+/// Domain actions that mutate the CSB (Centraal Stembureau) store.
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub enum CsbAction {
     /// Import a submitted candidate-list package, identified by the chain hash
     /// of the event stream it was produced from.
     ///
@@ -45,46 +89,46 @@ pub enum CsbEvent {
     UpdateCorrection(Correction),
 }
 
-impl Event for CsbEvent {
+impl CsbAction {
     fn category(&self) -> &'static str {
         match self {
-            CsbEvent::Import { .. } => "import",
-            CsbEvent::CreateEmpty => "import",
-            CsbEvent::Delete => "delete",
-            CsbEvent::PaperCorrectedUpdate(_) => "paper_correction",
-            CsbEvent::SetFinished(_) => "set_finished",
-            CsbEvent::CreateOmission(_)
-            | CsbEvent::UpdateOmission(_)
-            | CsbEvent::DeleteOmission { .. } => "omission",
-            CsbEvent::UpdateCorrection(_) => "correction",
+            CsbAction::Import { .. } => "import",
+            CsbAction::CreateEmpty => "import",
+            CsbAction::Delete => "delete",
+            CsbAction::PaperCorrectedUpdate(_) => "paper_correction",
+            CsbAction::SetFinished(_) => "set_finished",
+            CsbAction::CreateOmission(_)
+            | CsbAction::UpdateOmission(_)
+            | CsbAction::DeleteOmission { .. } => "omission",
+            CsbAction::UpdateCorrection(_) => "correction",
         }
     }
 
     fn key(&self) -> &'static str {
         match self {
-            CsbEvent::Import { .. } => "import",
-            CsbEvent::CreateEmpty => "create_empty",
-            CsbEvent::Delete => "delete",
-            CsbEvent::PaperCorrectedUpdate(event) => event.key(),
-            CsbEvent::SetFinished(_) => "set_finished",
-            CsbEvent::CreateOmission(_) => "create_omission",
-            CsbEvent::UpdateOmission(_) => "update_omission",
-            CsbEvent::DeleteOmission { .. } => "delete_omission",
-            CsbEvent::UpdateCorrection(_) => "update_correction",
+            CsbAction::Import { .. } => "import",
+            CsbAction::CreateEmpty => "create_empty",
+            CsbAction::Delete => "delete",
+            CsbAction::PaperCorrectedUpdate(event) => event.key(),
+            CsbAction::SetFinished(_) => "set_finished",
+            CsbAction::CreateOmission(_) => "create_omission",
+            CsbAction::UpdateOmission(_) => "update_omission",
+            CsbAction::DeleteOmission { .. } => "delete_omission",
+            CsbAction::UpdateCorrection(_) => "update_correction",
         }
     }
 
     fn description(&self, locale: crate::Locale) -> String {
         match self {
-            CsbEvent::Import { .. } => trans!("audit_log.event.import", locale),
-            CsbEvent::Delete => trans!("audit_log.event.delete", locale),
-            CsbEvent::CreateEmpty => trans!("audit_log.event.create_empty", locale),
-            CsbEvent::PaperCorrectedUpdate(event) => event.description(locale),
-            CsbEvent::SetFinished(_) => trans!("audit_log.event.set_finished", locale),
-            CsbEvent::CreateOmission(_) => trans!("audit_log.event.create_omission", locale),
-            CsbEvent::UpdateOmission(_) => trans!("audit_log.event.update_omission", locale),
-            CsbEvent::DeleteOmission { .. } => trans!("audit_log.event.delete_omission", locale),
-            CsbEvent::UpdateCorrection { .. } => {
+            CsbAction::Import { .. } => trans!("audit_log.event.import", locale),
+            CsbAction::Delete => trans!("audit_log.event.delete", locale),
+            CsbAction::CreateEmpty => trans!("audit_log.event.create_empty", locale),
+            CsbAction::PaperCorrectedUpdate(event) => event.description(locale),
+            CsbAction::SetFinished(_) => trans!("audit_log.event.set_finished", locale),
+            CsbAction::CreateOmission(_) => trans!("audit_log.event.create_omission", locale),
+            CsbAction::UpdateOmission(_) => trans!("audit_log.event.update_omission", locale),
+            CsbAction::DeleteOmission { .. } => trans!("audit_log.event.delete_omission", locale),
+            CsbAction::UpdateCorrection { .. } => {
                 trans!("audit_log.event.update_correction", locale)
             }
         }
@@ -92,7 +136,7 @@ impl Event for CsbEvent {
 
     fn details(&self) -> String {
         match self {
-            CsbEvent::Import {
+            CsbAction::Import {
                 hash,
                 source_stream_id,
                 ..
@@ -102,19 +146,21 @@ impl Event for CsbEvent {
                     format_hash(hash, true)
                 )
             }
-            CsbEvent::Delete => String::new(),
-            CsbEvent::CreateEmpty => String::new(),
-            CsbEvent::PaperCorrectedUpdate(event) => event.details(),
-            CsbEvent::SetFinished(value) => value.to_string(),
-            CsbEvent::CreateOmission(o) | CsbEvent::UpdateOmission(o) => o.description.to_string(),
-            CsbEvent::DeleteOmission { omission_id } => omission_id.to_string(),
-            CsbEvent::UpdateCorrection(_) => String::new(),
+            CsbAction::Delete => String::new(),
+            CsbAction::CreateEmpty => String::new(),
+            CsbAction::PaperCorrectedUpdate(event) => event.details(),
+            CsbAction::SetFinished(value) => value.to_string(),
+            CsbAction::CreateOmission(o) | CsbAction::UpdateOmission(o) => {
+                o.description.to_string()
+            }
+            CsbAction::DeleteOmission { omission_id } => omission_id.to_string(),
+            CsbAction::UpdateCorrection(_) => String::new(),
         }
     }
 
     fn changes(&self, locale: crate::Locale) -> Vec<crate::structs::audit_log::FieldChange> {
         match self {
-            CsbEvent::UpdateCorrection(correction) => vec![correction.change(locale)],
+            CsbAction::UpdateCorrection(correction) => vec![correction.change(locale)],
             _ => vec![],
         }
     }
@@ -125,11 +171,12 @@ mod tests {
     use super::*;
 
     fn import_event() -> CsbEvent {
-        CsbEvent::Import {
+        CsbAction::Import {
             hash: [42; 32],
             source_stream_id: StreamId::default(),
             snapshot: Box::new(PgStoreData::default()),
         }
+        .by(CsbUser::new_test())
     }
 
     #[test]
@@ -146,7 +193,7 @@ mod tests {
     /// app event, under its own category.
     #[test]
     fn paper_corrected_update_delegates_to_inner_event() {
-        let event = CsbEvent::PaperCorrectedUpdate(Box::new(PgEvent::UpdatePoliticalGroup(
+        let event = CsbAction::PaperCorrectedUpdate(Box::new(PgEvent::UpdatePoliticalGroup(
             crate::structs::political_groups::PoliticalGroup::default(),
         )));
 

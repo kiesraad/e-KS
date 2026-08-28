@@ -126,6 +126,7 @@ async fn create_sessions_table(conn: &mut sqlx::PgConnection) -> Result<(), AppE
           last_activity TIMESTAMPTZ NOT NULL,
           saml_name_id TEXT NOT NULL DEFAULT '',
           scope TEXT NOT NULL DEFAULT 'political_group',
+          csb_user JSONB,
           created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
           user_agent_hash TEXT,
           csrf_token TEXT NOT NULL
@@ -137,6 +138,11 @@ async fn create_sessions_table(conn: &mut sqlx::PgConnection) -> Result<(), AppE
 
     // Upgrade path for databases created before paper corrections existed.
     sqlx::query("ALTER TABLE sessions ADD COLUMN IF NOT EXISTS paper_correction_stream_id UUID")
+        .execute(&mut *conn)
+        .await?;
+
+    // Upgrade path for databases created before CSB logins carried a user.
+    sqlx::query("ALTER TABLE sessions ADD COLUMN IF NOT EXISTS csb_user JSONB")
         .execute(&mut *conn)
         .await?;
 

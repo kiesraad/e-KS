@@ -398,7 +398,7 @@ mod tests {
     /// corrections, never the source stream's own events.
     #[tokio::test]
     async fn paper_corrections_mode_lists_only_csb_corrections() -> Result<(), AppError> {
-        use crate::{CsbEvent, CsbStore, StreamId, test_utils::sample_political_group};
+        use crate::{CsbAction, CsbStore, CsbUser, StreamId, test_utils::sample_political_group};
 
         // Source stream with an event of its own.
         let source = PgStore::new_for_test();
@@ -411,14 +411,17 @@ mod tests {
         let snapshot = crate::PgStoreData::snapshot_until(&events, usize::MAX);
         let csb_store = CsbStore::new_for_test();
         csb_store
-            .update(CsbEvent::Import {
-                hash: [1; 32],
-                source_stream_id: StreamId::new(),
-                snapshot: Box::new(snapshot),
-            })
+            .update(
+                CsbAction::Import {
+                    hash: [1; 32],
+                    source_stream_id: StreamId::new(),
+                    snapshot: Box::new(snapshot),
+                }
+                .by(CsbUser::new_test()),
+            )
             .await?;
 
-        let store = PgStore::paper_corrections(csb_store);
+        let store = PgStore::paper_corrections(csb_store, CsbUser::new_test());
         sample_political_group().update(&store).await?;
 
         let response = audit_log(
@@ -445,18 +448,21 @@ mod tests {
     /// synthetic entry, so the numbering starts at 1 rather than 2.
     #[tokio::test]
     async fn paper_corrections_mode_lists_the_import_as_event_one() -> Result<(), AppError> {
-        use crate::{CsbEvent, CsbStore, StreamId, test_utils::sample_political_group};
+        use crate::{CsbAction, CsbStore, CsbUser, StreamId, test_utils::sample_political_group};
 
         let csb_store = CsbStore::new_for_test();
         csb_store
-            .update(CsbEvent::Import {
-                hash: [1; 32],
-                source_stream_id: StreamId::new(),
-                snapshot: Box::new(crate::PgStoreData::default()),
-            })
+            .update(
+                CsbAction::Import {
+                    hash: [1; 32],
+                    source_stream_id: StreamId::new(),
+                    snapshot: Box::new(crate::PgStoreData::default()),
+                }
+                .by(CsbUser::new_test()),
+            )
             .await?;
 
-        let store = PgStore::paper_corrections(csb_store);
+        let store = PgStore::paper_corrections(csb_store, CsbUser::new_test());
         sample_political_group().update(&store).await?;
 
         let response = audit_log(
@@ -483,17 +489,20 @@ mod tests {
     /// under the "import" type and is excluded from unrelated types.
     #[tokio::test]
     async fn paper_corrections_import_entry_respects_event_type_filter() -> Result<(), AppError> {
-        use crate::{CsbEvent, CsbStore, StreamId, test_utils::sample_political_group};
+        use crate::{CsbAction, CsbStore, CsbUser, StreamId, test_utils::sample_political_group};
 
         let csb_store = CsbStore::new_for_test();
         csb_store
-            .update(CsbEvent::Import {
-                hash: [1; 32],
-                source_stream_id: StreamId::new(),
-                snapshot: Box::new(crate::PgStoreData::default()),
-            })
+            .update(
+                CsbAction::Import {
+                    hash: [1; 32],
+                    source_stream_id: StreamId::new(),
+                    snapshot: Box::new(crate::PgStoreData::default()),
+                }
+                .by(CsbUser::new_test()),
+            )
             .await?;
-        let store = PgStore::paper_corrections(csb_store);
+        let store = PgStore::paper_corrections(csb_store, CsbUser::new_test());
         sample_political_group().update(&store).await?;
 
         let filtered = |event_type: &str| {

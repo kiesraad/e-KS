@@ -6,7 +6,7 @@ use axum::{
 use serde::Deserialize;
 
 use crate::{
-    AppError, AppRequestState, Context, CsbContext, CsbEvent, Form, HtmlTemplate, Locale,
+    AppError, AppRequestState, Context, CsbAction, CsbContext, CsbUser, Form, HtmlTemplate, Locale,
     PgStoreData, StreamId,
     csb::examination::{CsbExaminationOverviewPath, CsbPoliticalGroupPath},
     filters,
@@ -74,7 +74,8 @@ pub async fn import_submit<S: AppRequestState>(
 ) -> Result<Response, AppError> {
     let hash = form.hash.clone();
     let locale = context.session.locale;
-    match do_import(&state, form, locale).await {
+    let user = context.user()?;
+    match do_import(&state, form, user, locale).await {
         Ok(ImportOutcome::Imported(response)) => Ok(response),
         Ok(ImportOutcome::AlreadyImported { appellation }) => Ok(render_import(
             context,
@@ -99,13 +100,14 @@ pub async fn import_submit<S: AppRequestState>(
 
 /// Locates the political-group event whose hash matches the entry, replays that
 /// stream up to the event into an [`PgStoreData`] snapshot (its event log
-/// excluded), and records the snapshot in a [`CsbEvent::Import`] persisted under
+/// excluded), and records the snapshot in a [`CsbAction::Import`] persisted under
 /// a fresh CSB stream keyed on the source election. The source `stream_id` is
 /// carried on the event for reference; it is never reused as the CSB partition,
 /// which would collide with the PG stream's own events there.
 async fn do_import<S: AppRequestState>(
     state: &S,
     form: ImportForm,
+    user: CsbUser,
     locale: Locale,
 ) -> Result<ImportOutcome, AppError> {
     let hash_prefix = parse_hash_prefix(&form.hash)
@@ -125,7 +127,7 @@ async fn do_import<S: AppRequestState>(
         for store in state.csb_store_registry().stores_by_scope().await? {
             let already_imported_and_not_deleted =
                 store.data.read().events.first().is_some_and(|e| {
-                    matches!(&e.payload, CsbEvent::Import { source_stream_id: sid, .. } if *sid == source_stream_id) &&
+                    matches!(&e.payload.action, CsbAction::Import { source_stream_id: sid, .. } if *sid == source_stream_id) &&
                     !store.is_deleted()
                 });
             if already_imported_and_not_deleted {
@@ -157,11 +159,14 @@ async fn do_import<S: AppRequestState>(
         .csb_store_for_stream(StreamId::new(), source_election)
         .await?;
     csb_store
-        .update(CsbEvent::Import {
-            hash: full_hash,
-            source_stream_id,
-            snapshot: Box::new(snapshot),
-        })
+        .update(
+            CsbAction::Import {
+                hash: full_hash,
+                source_stream_id,
+                snapshot: Box::new(snapshot),
+            }
+            .by(user),
+        )
         .await?;
 
     Ok(ImportOutcome::Imported(redirect_success(
@@ -180,7 +185,9 @@ pub async fn create_empty<S: AppRequestState>(
     let csb_store = state
         .csb_store_for_stream(StreamId::new(), context.election)
         .await?;
-    csb_store.update(CsbEvent::CreateEmpty).await?;
+    csb_store
+        .update(CsbAction::CreateEmpty.by(context.user()?))
+        .await?;
     Ok(redirect_success(CsbPoliticalGroupPath {
         stream_id: csb_store.stream_id,
     }))
@@ -192,7 +199,7 @@ mod tests {
     use axum::http::StatusCode;
 
     use crate::{
-        AppState, CsbContext, CsbEvent::Delete, ElectionConfig, PgEvent,
+        AppState, CsbAction::Delete, CsbContext, ElectionConfig, PgEvent,
         test_utils::response_body_string, utils::format_hash,
     };
 
@@ -312,7 +319,7 @@ mod tests {
         let csb_stores = state.csb_store_registry().stores_by_scope().await?;
         assert_eq!(csb_stores.len(), 1);
         let imported = csb_stores[0].data.read().events.first().is_some_and(|e| {
-            matches!(&e.payload, CsbEvent::Import { source_stream_id, .. } if *source_stream_id == source_stream)
+            matches!(&e.payload.action, CsbAction::Import { source_stream_id, .. } if *source_stream_id == source_stream)
         });
         assert!(imported);
 
@@ -386,8 +393,8 @@ mod tests {
         assert_eq!(csb_stores.len(), 1);
         let data = csb_stores[0].data.read();
         assert!(matches!(
-            data.events.first().unwrap().payload,
-            CsbEvent::CreateEmpty
+            data.events.first().unwrap().payload.action,
+            CsbAction::CreateEmpty
         ));
 
         Ok(())
@@ -417,7 +424,7 @@ mod tests {
         assert_eq!(csb_stores.len(), 1);
 
         // mark imported store as deleted
-        csb_stores[0].update(Delete).await?;
+        csb_stores[0].update(Delete.by(CsbUser::new_test())).await?;
 
         // Re-importing the same source stream needs no confirmation when the
         // earlier import was deleted (the duplicate check consults the live
@@ -442,9 +449,9 @@ mod tests {
         assert_eq!(csb_stores.iter().filter(|s| s.is_deleted()).count(), 1);
         assert_eq!(csb_stores.iter().filter(|s| !s.is_deleted()).count(), 1);
         for store in csb_stores {
-            if let CsbEvent::Import {
+            if let CsbAction::Import {
                 hash: import_hash, ..
-            } = store.data.read().events.first().unwrap().payload
+            } = store.data.read().events.first().unwrap().payload.action
             {
                 assert_eq!(hash.clone(), format_hash(&import_hash, false));
             } else {

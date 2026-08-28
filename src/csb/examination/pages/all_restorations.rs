@@ -48,7 +48,7 @@ mod tests {
     use reqwest::StatusCode;
 
     use crate::{
-        CsbEvent, ElectoralDistrict,
+        CsbAction, CsbUser, ElectoralDistrict,
         structs::{
             candidate_lists::{CandidateList, CandidateListId},
             common::{PlaceOfResidence, UtcDateTime},
@@ -70,7 +70,7 @@ mod tests {
             "description".parse().unwrap(),
             Some("help_text".parse().unwrap()),
         )
-        .create(store)
+        .create(store, CsbUser::new_test())
         .await
     }
 
@@ -210,12 +210,15 @@ mod tests {
             .insert(person_id, sample_person(person_id));
 
         store
-            .update(CsbEvent::UpdateCorrection(Correction::Person(
-                person_id,
-                PersonCorrection::PlaceOfResidence(PlaceOfResidence::Known(
-                    "Amsterdam".to_string(),
-                )),
-            )))
+            .update(
+                CsbAction::UpdateCorrection(Correction::Person(
+                    person_id,
+                    PersonCorrection::PlaceOfResidence(PlaceOfResidence::Known(
+                        "Amsterdam".to_string(),
+                    )),
+                ))
+                .by(CsbUser::new_test()),
+            )
             .await?;
 
         let response = all_restorations(

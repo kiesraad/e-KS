@@ -202,6 +202,7 @@ impl Omission {
 #[cfg(test)]
 pub mod tests {
     use super::*;
+    use crate::CsbUser;
     use crate::{AppError, CsbStore};
 
     pub fn sample_omission(category: OmissionCategory) -> Omission {
@@ -239,7 +240,7 @@ pub mod tests {
         let store = CsbStore::new_for_test();
         let omission = sample_omission(OmissionCategory::PoliticalGroup);
 
-        omission.create(&store).await?;
+        omission.create(&store, CsbUser::new_test()).await?;
 
         let loaded = store.get_omission(omission.id)?;
         assert_eq!(loaded.id, omission.id);
@@ -253,10 +254,10 @@ pub mod tests {
         let store = CsbStore::new_for_test();
         let mut omission = sample_omission(OmissionCategory::PoliticalGroup);
 
-        omission.create(&store).await?;
+        omission.create(&store, CsbUser::new_test()).await?;
 
         omission.description = "Updated description".parse().unwrap();
-        omission.update(&store).await?;
+        omission.update(&store, CsbUser::new_test()).await?;
 
         let updated = store.get_omission(omission.id)?;
         assert_eq!(updated.description.to_string(), "Updated description");
@@ -269,8 +270,8 @@ pub mod tests {
         let store = CsbStore::new_for_test();
         let omission = sample_omission(OmissionCategory::PoliticalGroup);
 
-        omission.create(&store).await?;
-        omission.delete(&store).await?;
+        omission.create(&store, CsbUser::new_test()).await?;
+        omission.delete(&store, CsbUser::new_test()).await?;
 
         let missing = store.get_omission(omission.id);
         assert!(missing.is_err());

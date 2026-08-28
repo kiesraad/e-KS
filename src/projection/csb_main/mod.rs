@@ -1,7 +1,7 @@
 mod event;
 mod extractor;
 
-pub use event::CsbMainEvent;
+pub use event::{CsbMainAction, CsbMainEvent};
 
 use serde::{Deserialize, Serialize};
 
@@ -27,8 +27,8 @@ impl StoreData for CsbMainStoreData {
 
     fn apply(&mut self, event: StoreEvent<CsbMainEvent>) {
         self.events.push(event.clone());
-        match event.payload {
-            CsbMainEvent::DeveloperLogin { .. } => {}
+        match event.payload.action {
+            CsbMainAction::Login => {}
         }
     }
 
