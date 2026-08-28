@@ -34,6 +34,7 @@ no_previous_election_results: Previous election results
 no_problems: Complete
 no_representative: No authorised person
 no_substitute_submitter: No substitute submitter
+position_warning: "More than {} candidates on this list"
 representative: Authorised person
 too_few_authorized_names: "{} statutory names too few"
 too_few_authorized_names_one: 1 statutory name too few

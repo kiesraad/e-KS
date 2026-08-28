@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use validate::Validate;
 
 use crate::{
-    common::{DutchAddressForm, FullNameForm},
+    common::{DutchAddressForm, MinimalNameForm},
     structs::persons::Representative,
 };
 
@@ -12,7 +12,7 @@ use crate::{
 pub struct RepresentativeForm {
     #[validate(flatten)]
     #[serde(flatten)]
-    pub name: FullNameForm,
+    pub name: MinimalNameForm,
     #[validate(flatten)]
     #[serde(flatten)]
     pub address: DutchAddressForm,
@@ -27,7 +27,7 @@ impl RepresentativeForm {
 impl From<Representative> for RepresentativeForm {
     fn from(representative: Representative) -> Self {
         Self {
-            name: FullNameForm::from(representative.name),
+            name: MinimalNameForm::from(representative.name),
             address: DutchAddressForm::from(representative.address),
         }
     }

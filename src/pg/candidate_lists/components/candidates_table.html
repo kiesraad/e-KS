@@ -33,10 +33,9 @@
             ({{ country }})
           {% endif %}
         </td>
-        <td>
+        <td {% if let Some(summary) = candidate.problems.problem_summary(locale) %}title="{{ summary }}"{% endif %}>
           <a href="{{ candidate.data.update_position_path() }}"
-             aria-label="{{ "action.edit"|trans }}"
-             {% if let Some(summary) = candidate.problems.problem_summary(locale) %}title="{{ summary }}"{% endif %}>
+             aria-label="{{ "action.edit"|trans }}">
             <span>{{ "action.edit"|trans }}</span>
           </a>
         </td>

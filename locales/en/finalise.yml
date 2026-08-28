@@ -17,15 +17,14 @@ delivery:
 follow_up_steps:
   description: "After printing the documents, there are a few more steps to take outside of e-KS. Below, the rest of the nomination process up to and including the public session is described."
   title: Follow-up steps
-header:
-  description: "You have created your candidates and lists of candidates. To finalise, there are a few more steps to complete. These steps are outlined on this page."
-  title: A few more steps
 hearing:
   date: "The session is on <strong>{}</strong> at <strong>{}</strong>"
   description: "During this session, the central electoral committee determines which parties will appear on the ballot, and if necessary, the order of the parties will be decided by lot."
   open_to_public: You may attend the session.
   title: Public session
 print:
+  eml: "Foreach candidate list, an EML file of the candidate list is also included. EML is a file format that is processable with software. It is not required to submit this document."
+  eml_title: EML210 Candidate list
   errors_warning: "Before you can print the documents, you must first resolve all errors in step 1."
   h1_description: "With the H 1, as the submitter of the list of candidates, you nominate candidates for an election."
   h1_title: H 1 List of candidates

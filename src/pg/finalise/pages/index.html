@@ -5,10 +5,6 @@
   {% let max_candidates = "max_candidates"|integer_value %}
   {% let election = "election"|election_value %}
   <div class="finalise">
-    <div class="content-header">
-      <h3>{{ "finalise.header.title"|trans }}</h3>
-      <p>{{ "finalise.header.description"|trans }}</p>
-    </div>
     <div class="step {{ problems.highest_severity_class() }} illustration-errors">
       <div class="step-main">
         <div class="step-header">
@@ -188,6 +184,10 @@
                   <br>
                   {{ "finalise.print.h9_identity"|trans }}
                 </p>
+              </div>
+              <div>
+                <h5>{{ "finalise.print.eml_title"|trans }}</h5>
+                <p>{{ "finalise.print.eml"|trans }}</p>
               </div>
             </div>
             <div class="card">

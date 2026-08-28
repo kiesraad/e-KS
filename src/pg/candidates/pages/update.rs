@@ -11,7 +11,7 @@ use crate::{
     structs::{
         candidate_lists::FullCandidateList,
         candidates::Candidate,
-        common::{HasSeverity, Problematic},
+        common::{HasSeverity, PlaceOfResidence, Problematic},
     },
 };
 
@@ -23,6 +23,7 @@ struct CandidateUpdateTemplate {
     candidate: Candidate,
     form: FormData<PersonalDataForm>,
     overlay: Overlay,
+    locality_unknown: bool,
 }
 
 pub async fn update_person(
@@ -36,6 +37,9 @@ pub async fn update_person(
         CandidateUpdateTemplate {
             form: FormData::new_with_data(PersonalDataForm::from(candidate.person.clone())),
             overlay: Overlay::new(&query),
+            locality_unknown: PlaceOfResidence::is_unknown_opt(
+                &candidate.person.personal_data.place_of_residence,
+            ),
             candidate,
             full_list,
         },
@@ -56,6 +60,9 @@ pub async fn update_person_submit(
         Err(form_data) => Ok(HtmlTemplate(
             CandidateUpdateTemplate {
                 full_list,
+                locality_unknown: PlaceOfResidence::is_unknown_opt(
+                    &candidate.person.personal_data.place_of_residence,
+                ),
                 candidate,
                 form: *form_data,
                 overlay: Overlay::new(&query),
@@ -76,6 +83,8 @@ pub async fn update_person_submit(
 
 #[cfg(test)]
 mod tests {
+    use std::str::FromStr;
+
     use super::*;
     use crate::{
         Context, Form, PgStore, QueryParamState,
@@ -221,6 +230,45 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
         assert!(body.contains("This field must not be empty."));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn update_person_renders_warning_unknown_bag_locality() -> Result<(), AppError> {
+        let store = PgStore::new_for_test();
+        let list_id = CandidateListId::new();
+        let list = sample_candidate_list(list_id);
+        let mut person = sample_person(PersonId::new());
+
+        person.personal_data.place_of_residence = PlaceOfResidence::from_str("Fantasy City").ok();
+
+        list.create(&store).await?;
+        person.create(&store).await?;
+        list.clone().update_order(&store, &[person.id]).await?;
+
+        let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
+        let candidate = store
+            .get_candidate_list(list_id)?
+            .get_candidate(&store, person.id)
+            .await?;
+
+        let response = update_person(
+            CandidateListUpdatePersonPath {
+                list_id,
+                person_id: person.id,
+            },
+            Context::new_test_without_db(),
+            full_list,
+            candidate,
+            Query(QueryParamState::default()),
+        )
+        .await?
+        .into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        assert!(body.contains("Place of residence not found in the BAG"));
 
         Ok(())
     }

@@ -24,6 +24,8 @@
       {{ "person.fields.locality_suggestion"|trans }}
       <button type="button" id="locality-suggestion-name"></button>
     </span>
+    <span class="warning {% if locality_unknown|default(false) %} {% else %} hidden {% endif %}"
+          id="unknown-locality">{{ "problems.unknown_place_of_residence"|trans }}</span>
     {% for error in form|error("personal_data.place_of_residence") %}<span class="error">{{ error }}</span>{% endfor %}
   </p>
 </div>
