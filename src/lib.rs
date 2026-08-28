@@ -136,8 +136,8 @@ pub(crate) use auth::{
 #[cfg(feature = "tls")]
 pub(crate) use core::TlsConfig;
 pub(crate) use core::{
-    AnyLocale, ElectionConfig, ElectionType, ElectoralDistrict, GithubUserId, HtmlTemplate, Locale,
-    LocaleValues, Province, Scope, SessionPageValues, WaterCouncil,
+    AnyLocale, ElectionConfig, ElectionType, ElectoralDistrict, GithubOauthConfig, GithubUserId,
+    HtmlTemplate, Locale, LocaleValues, Province, Scope, SessionPageValues, WaterCouncil,
     constants::{self, MAX_CANDIDATES},
     http_trace, translate,
 };

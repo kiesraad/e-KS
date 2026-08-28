@@ -487,6 +487,7 @@ Runtime configuration is read from environment variables once at startup into a
 | `ACME_ROOT_CA_PATH` | Optional extra trust root for the ACME directory's own TLS (pebble testing only). |
 | `SERVER_NAME` | Short server identifier shown in the page footer. |
 | `EKS_KEY` | Optional shared secret for the `x-eks-key` request gate. |
+| `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` / `GITHUB_ALLOWED_USER_IDS` | Enable the CSB GitHub OAuth login (`/csb/login`): the GitHub OAuth app's credentials and the comma-separated numeric GitHub account ids allowed to log in; all three or none. The client secret is a secret like the master keys. |
 | `BIND_ADDRESS` | Address the server binds to (also accepted as a CLI argument). |
 
 The binary itself only reads `env::var`, but the deployment can supply these

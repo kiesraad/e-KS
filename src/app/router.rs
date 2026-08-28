@@ -74,9 +74,7 @@ pub fn create(state: AppState) -> Router<AppState> {
     #[cfg(not(feature = "dev-features"))]
     let router = app_router;
 
-    let router = router
-        .merge(auth_service::router())
-        .merge(common::public_router());
+    let router = router.merge(public_router());
 
     let router = router
         .layer(middleware::from_fn_with_state(
@@ -119,6 +117,15 @@ pub fn create(state: AppState) -> Router<AppState> {
 /// registration in `auth_service::router`, so route and bypass cannot drift.
 fn csrf_layer() -> CsrfLayer {
     CsrfLayer::new().with_insecure_bypass(|_, uri| uri.path() == SamlLogoutPath::PATH)
+}
+
+/// Routes mounted outside the session middleware (no session required): the
+/// SAML auth-service endpoints, the PG login and logged-out pages, and the
+/// CSB GitHub login.
+fn public_router() -> Router<AppState> {
+    auth_service::router()
+        .merge(common::public_router())
+        .merge(csb::login::public_router())
 }
 
 /// The application's feature routes (everything that sits behind the session

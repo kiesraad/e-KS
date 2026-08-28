@@ -168,7 +168,7 @@ postcard = { workspace = true }
 rand = { workspace = true }
 rcgen = { workspace = true, optional = true }
 regex = { workspace = true }
-reqwest = { workspace = true }
+reqwest = { workspace = true, features = ["form", "rustls"] }
 rustls = { workspace = true, optional = true }
 secrecy = { workspace = true }
 serde = { workspace = true }

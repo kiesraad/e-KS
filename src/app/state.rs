@@ -52,6 +52,10 @@ impl AppRequestState for AppState {
         &self.id_deriver
     }
 
+    fn pending_requests(&self) -> &PendingRequestStore {
+        &self.pending_requests
+    }
+
     fn csb_store_registry(&self) -> &StoreRegistry<CsbStoreData> {
         &self.csb_store_registry
     }
