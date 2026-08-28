@@ -402,6 +402,48 @@ mod tests {
         ));
     }
 
+    /// Signing out a committee session is recorded on the shared CSB main
+    /// stream, not on a PG stream.
+    #[tokio::test]
+    async fn logout_is_recorded_on_the_csb_main_stream() {
+        use auth_service::AuthState;
+
+        let state = github_test_state().await;
+        let config = state.config.github_oauth.clone().expect("github config");
+
+        let response = complete_login(
+            &state,
+            &config,
+            test_support::allowed_user_id(),
+            CookieJar::new(),
+            &HeaderMap::new(),
+        )
+        .await
+        .expect("response");
+        let token = session_token(&response).expect("session cookie");
+
+        let jar = CookieJar::new().add(axum_extra::extract::cookie::Cookie::new(
+            crate::SESSION_COOKIE_NAME,
+            token,
+        ));
+        let _ = state.logout_session(jar).await;
+
+        let store = state
+            .csb_main_store(CSB_LOGIN_ELECTION)
+            .await
+            .expect("main store");
+        assert!(
+            store.data.read().events.iter().any(|event| matches!(
+                event.payload,
+                crate::CsbMainEvent {
+                    user: CsbUser::Github { .. },
+                    action: CsbMainAction::Logout,
+                }
+            )),
+            "logout must be recorded on the CSB main stream"
+        );
+    }
+
     #[tokio::test]
     async fn complete_login_drops_previous_session() {
         let state = github_test_state().await;

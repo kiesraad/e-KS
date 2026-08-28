@@ -202,8 +202,7 @@ impl Omission {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use crate::CsbUser;
-    use crate::{AppError, CsbStore};
+    use crate::{AppError, CsbStore, CsbUser};
 
     pub fn sample_omission(category: OmissionCategory) -> Omission {
         Omission::new(

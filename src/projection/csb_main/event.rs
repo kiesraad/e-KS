@@ -19,6 +19,8 @@ pub enum CsbMainAction {
     /// A committee member logged in; the login method is carried by the
     /// event's [`CsbUser`].
     Login,
+    /// A committee member signed out.
+    Logout,
 }
 
 impl CsbMainAction {
@@ -37,25 +39,27 @@ impl HasCsbUser for CsbMainEvent {
 impl Event for CsbMainEvent {
     fn category(&self) -> &'static str {
         match self.action {
-            CsbMainAction::Login => "system",
+            CsbMainAction::Login | CsbMainAction::Logout => "system",
         }
     }
 
     fn key(&self) -> &'static str {
         match self.action {
             CsbMainAction::Login => "login",
+            CsbMainAction::Logout => "logout",
         }
     }
 
     fn description(&self, locale: crate::Locale) -> String {
         match self.action {
             CsbMainAction::Login => trans!("audit_log.event.login", locale),
+            CsbMainAction::Logout => trans!("audit_log.event.logout", locale),
         }
     }
 
     fn details(&self) -> String {
         match self.action {
-            CsbMainAction::Login => String::new(),
+            CsbMainAction::Login | CsbMainAction::Logout => String::new(),
         }
     }
 }

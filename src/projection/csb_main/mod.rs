@@ -28,7 +28,7 @@ impl StoreData for CsbMainStoreData {
     fn apply(&mut self, event: StoreEvent<CsbMainEvent>) {
         self.events.push(event.clone());
         match event.payload.action {
-            CsbMainAction::Login => {}
+            CsbMainAction::Login | CsbMainAction::Logout => {}
         }
     }
 

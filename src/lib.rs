@@ -119,8 +119,7 @@ pub(crate) use projection::{
     AppRequestState, CsbAction, CsbMainAction, CsbMainStore, CsbMainStoreData, CsbStore,
     CsbStoreData, PgEvent, PgStore, PgStoreData,
 };
-#[cfg(test)]
-pub(crate) use projection::{CsbEvent, CsbMainEvent};
+pub use projection::{CsbEvent, CsbMainEvent};
 
 #[cfg(not(feature = "memory-serve"))]
 pub(crate) use app::middleware::proxy_handler;

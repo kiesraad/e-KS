@@ -73,9 +73,8 @@ pub async fn update_political_group_submit(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::CsbUser;
     use crate::{
-        AppError, Context, Form, PgStore, QueryParamState,
+        AppError, Context, CsbUser, Form, PgStore, QueryParamState,
         structs::{
             common::{Appellation, PreviousElectionResults},
             name_authorisations::NameAuthorisationId,

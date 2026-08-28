@@ -10,7 +10,7 @@ use axum_extra::extract::CookieJar;
 use tracing::{error, info, warn};
 
 use crate::{
-    AppError, AppState, Locale, PgEvent, PgStore, Session, StreamId,
+    AppError, AppState, CsbMainAction, Locale, PgEvent, PgStore, Session, StreamId,
     auth::session_extractor::{
         SESSION_COOKIE_NAME, build_removal_cookie, build_session_cookie, user_agent_hash,
     },
@@ -55,6 +55,28 @@ impl AppState {
 
         if let Err(err) = recorded {
             error!("failed to record session event on stream: {err}");
+        }
+    }
+
+    /// Record the logout in the audit log of the session's stream: the shared
+    /// CSB main stream for committee sessions, the PG stream otherwise.
+    async fn record_logout(&self, session: &Session) {
+        let Some(user) = session.csb_user.clone() else {
+            self.record_on_session_stream(session, PgEvent::Logout)
+                .await;
+            return;
+        };
+        let Some(election) = session.current_election else {
+            return;
+        };
+
+        let recorded = match self.csb_main_store(election).await {
+            Ok(store) => store.update(CsbMainAction::Logout.by(user)).await,
+            Err(err) => Err(err),
+        };
+
+        if let Err(err) = recorded {
+            error!("failed to record logout on the CSB main stream: {err}");
         }
     }
 
@@ -120,8 +142,7 @@ impl AuthState for AppState {
         let name_id = match jar.get(SESSION_COOKIE_NAME).map(|c| c.value().to_string()) {
             Some(token) => match self.sessions.remove(&token).await {
                 Some(session) => {
-                    self.record_on_session_stream(&session, PgEvent::Logout)
-                        .await;
+                    self.record_logout(&session).await;
                     info!(
                         event = "auth.logout",
                         stream_id = ?session.stream_id,
