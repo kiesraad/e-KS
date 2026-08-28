@@ -13,13 +13,6 @@ use crate::{
     },
 };
 
-/// Default endpoint path for the BRP "personen" lookup, relative to
-/// `BrpConfig::base_url`.
-pub(crate) const BRP_PERSONS_ENDPOINT: &str = "haalcentraal/api/brp/personen";
-
-/// Default request timeout (in seconds) for BRP lookups.
-const BRP_TIMEOUT: u64 = 30;
-
 #[derive(Clone)]
 pub struct BrpClient {
     http_client: Client,
@@ -42,10 +35,12 @@ impl BrpClient {
 
     #[cfg(test)]
     pub fn new_for_test() -> Self {
+        use crate::constants;
+
         BrpClient::new(
             "http://localhost:5010",
             "",
-            BRP_PERSONS_ENDPOINT,
+            constants::BRP_PERSONS_ENDPOINT,
             Duration::from_secs(5),
         )
     }

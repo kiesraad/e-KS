@@ -246,6 +246,8 @@ impl Config {
 
     #[cfg(test)]
     pub fn new_test() -> Self {
+        use crate::constants;
+
         Self {
             storage_url: SecretString::from("memory://"),
             id_derivation_key: SecretString::from("test-secret-123"),
@@ -258,7 +260,7 @@ impl Config {
             brp_client: BrpConfig {
                 base_url: "http://localhost:5010".to_string(),
                 api_key: "".to_string(),
-                persons_endpoint: "haalcentraal/api/brp/personen".to_string(),
+                persons_endpoint: constants::BRP_PERSONS_ENDPOINT.to_string(),
                 timeout: Duration::from_secs(5),
             },
         }
