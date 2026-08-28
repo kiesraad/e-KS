@@ -139,8 +139,13 @@ fn app_feature_router() -> Router<AppState> {
         .merge(substitute_list_submitters::router())
 }
 
-/// Deny every powerful browser feature; the app uses none. Unknown directives
-/// are ignored, so naming retired and proposed features costs nothing.
+/// Deny every powerful browser feature; the app uses none. The names are the
+/// union of the directives listed on MDN
+/// (<https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Permissions-Policy>)
+/// and in the W3C feature registry
+/// (<https://github.com/w3c/webappsec-permissions-policy/blob/main/features.md>).
+/// Unknown directives are ignored, so naming retired and proposed features
+/// costs nothing.
 const PERMISSIONS_POLICY: &str = concat!(
     "accelerometer=(), ambient-light-sensor=(), attribution-reporting=(), autoplay=(), ",
     "battery=(), bluetooth=(), browsing-topics=(), camera=(), captured-surface-control=(), ",

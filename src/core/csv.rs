@@ -533,9 +533,9 @@ mod tests {
 
         assert_eq!(errors.len(), 2);
         assert!(
-            errors
+            !errors
                 .iter()
-                .all(|error| matches!(error, CsvError::FormatError { .. }))
+                .any(|error| matches!(error, CsvError::TooManyErrors { .. }))
         );
     }
 

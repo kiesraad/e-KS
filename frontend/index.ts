@@ -11,6 +11,7 @@ import addressLookup from "./scripts/form-inputs/lookup";
 import omissionPreset from "./scripts/form-inputs/omission-preset";
 import setupPositionPreview from "./scripts/form-inputs/position-preview";
 import setupSelectAllCheckbox from "./scripts/form-inputs/select-all-checkbox";
+import setupBfcacheReload from "./scripts/generic-ui/bfcache-reload";
 import setupModal from "./scripts/generic-ui/modal";
 import setupHintPopover from "./scripts/generic-ui/hint-popover";
 import setupOverlay from "./scripts/generic-ui/overlay";
@@ -52,6 +53,7 @@ listDesignation();
 omissionPreset();
 
 // generic UI
+setupBfcacheReload();
 setupStickyNav();
 setupModal();
 setupHintPopover();
