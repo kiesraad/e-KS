@@ -134,6 +134,17 @@ impl OmissionCategory {
     }
 }
 
+#[derive(Default, Debug, Clone, Copy, Serialize, Eq, PartialEq, Deserialize)]
+pub enum OmissionStatus {
+    /// Not yet assessed in the "Herstelde lijsten" phase.
+    #[default]
+    Pending,
+    /// The omission was recovered ("hersteld").
+    Recovered,
+    /// The omission was not recovered and is now permanent.
+    NotRecovered,
+}
+
 /// An omission ("verzuim") signifies something was wrong with the submitted data
 #[derive(Default, Debug, Serialize, Eq, PartialEq, Deserialize, Clone)]
 pub struct Omission {
@@ -151,6 +162,8 @@ pub struct Omission {
     pub(crate) help_text: Option<OmissionText>,
     #[serde(default = "recoverable_by_default")]
     pub recoverable: bool,
+    #[serde(default)]
+    pub status: OmissionStatus,
     pub updated_at: UtcDateTime,
 }
 
@@ -214,6 +227,8 @@ pub mod tests {
         }"#;
         let omission: Omission = serde_json::from_str(json).unwrap();
         assert!(omission.recoverable);
+        // Events persisted before the status existed start out pending.
+        assert_eq!(omission.status, OmissionStatus::Pending);
         // Legacy events persisted "no help text" as an empty string; the
         // accessor hides it.
         assert_eq!(omission.help_text(), None);
