@@ -316,7 +316,7 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
-        assert!(body.contains("omission-badge"));
+        assert!(body.contains("restoration-tag"));
         assert!(body.contains("Missing consent"));
     }
 

@@ -16,13 +16,6 @@ impl RestorationStatus {
         }
     }
 
-    pub fn for_declarations_of_support(store: &CsbStore) -> Self {
-        RestorationStatus {
-            has_omissions: !store.get_all_declarations_of_support_omissions().is_empty(),
-            has_corrections: false,
-        }
-    }
-
     pub fn for_candidate_list(
         store: &CsbStore,
         list_id: CandidateListId,
@@ -58,7 +51,7 @@ mod tests {
     use std::str::FromStr;
 
     use crate::{
-        CsbEvent, ElectoralDistrict,
+        CsbEvent,
         structs::{
             common::{Appellation, Initials},
             csb::{Correction, OmissionCategory, PersonCorrection, sample_omission},
@@ -97,34 +90,6 @@ mod tests {
 
         assert!(status.has_omissions());
         assert!(status.has_corrections());
-
-        Ok(())
-    }
-
-    #[test]
-    fn for_declarations_of_support_no_changes() {
-        let store = CsbStore::new_for_test();
-
-        let status = RestorationStatus::for_declarations_of_support(&store);
-
-        assert!(!status.has_omissions());
-        assert!(!status.has_corrections());
-    }
-
-    #[tokio::test]
-    async fn for_declarations_of_support_omission() -> Result<(), AppError> {
-        let store = CsbStore::new_for_test();
-
-        store
-            .update(CsbEvent::CreateOmission(sample_omission(
-                OmissionCategory::DeclarationsOfSupport(vec![ElectoralDistrict::UT]),
-            )))
-            .await?;
-
-        let status = RestorationStatus::for_declarations_of_support(&store);
-
-        assert!(status.has_omissions());
-        assert!(!status.has_corrections());
 
         Ok(())
     }

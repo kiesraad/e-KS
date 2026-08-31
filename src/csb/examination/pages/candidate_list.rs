@@ -148,7 +148,7 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
-        assert!(body.contains("omission-badge"));
+        assert!(body.contains("restoration-tag"));
         // The badge shows the short title, not the long description.
         assert!(body.contains("Too many candidates"));
         assert!(!body.contains("The list holds more candidates than allowed."));

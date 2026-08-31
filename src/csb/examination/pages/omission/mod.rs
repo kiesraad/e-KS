@@ -355,7 +355,7 @@ mod tests {
         assert!(body.contains("name=\"help_text\""));
         // The dialog title renders with a resolved translation (the test session
         // uses the English locale).
-        assert!(body.contains("Add omissions"));
+        assert!(body.contains("Add omission"));
         // The pill shows the short preset title, while the full description and
         // help text ride along in data attributes for the client to fill in.
         assert!(body.contains("De aanduiding(en) is/zijn niet geregistreerd"));

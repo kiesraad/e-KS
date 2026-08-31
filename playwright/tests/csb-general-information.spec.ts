@@ -39,7 +39,7 @@ test.describe("check general information and add corrections and omissions", asy
       await generalInformationPage.linkAddOmission.click();
       await page.waitForURL(/\/omission\//);
       await expect(
-        page.getByRole("heading", { name: "Verzuimen - Basisgegevens (KDP)" }),
+        page.getByRole("heading", { name: "Verzuimen: Basisgegevens (KDP)" }),
       ).toBeVisible();
       await button.click();
       if (resolvable) {
@@ -163,7 +163,7 @@ test.describe("check general information and add corrections and omissions", asy
       await page.waitForURL(/\/omission\//);
       await expect(
         page.getByRole("heading", {
-          name: "Verzuimen - Basisgegevens (TP/TP2)",
+          name: "Verzuimen: Basisgegevens (TP/TP2)",
         }),
       ).toBeVisible();
       await button.click();

@@ -1,0 +1,28 @@
+{# The controls that act on the examination as a whole, in a row above the page
+   content: the switch that finishes or reopens it, and — where the page offers
+   it — the action that deletes the political group. Set `include_delete` before
+   including this. #}
+<div class="examination-controls">
+  <div class="switch-group {% if political_group.is_examination_finished %}finished{% else %}unfinished{% endif %}">
+    <p>
+      {% if political_group.is_examination_finished %}
+        {{ "csb.group.finished"|trans }}
+      {% else %}
+        {{ "csb.group.unfinished"|trans }}
+      {% endif %}
+    </p>
+    <form method="post"
+          action="{{ political_group.examination_toggle_finish_path(toggle_redirect_url) }}">
+      {{ macros::csrf_field() }}
+      <label class="switch" aria-label="{{ "csb.group.toggle"|trans }}">
+        <input type="submit">
+        <span class="slider"></span>
+      </label>
+    </form>
+  </div>
+  {% if include_delete | default(false) %}
+    <span class="examination-controls-divider" aria-hidden="true"></span>
+    <a class="button tertiary-destructive icon-trash-end"
+       href="{{ political_group.delete_path() }}">{{ "action.delete"|trans }}</a>
+  {% endif %}
+</div>

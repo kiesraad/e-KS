@@ -29,11 +29,8 @@ pub(super) struct CandidateListOption {
 pub(super) struct CsbAddOmissionTemplate {
     pub(super) form: FormData<OmissionForm>,
     pub(super) overlay: Overlay,
-    /// Where the close button and the post-save redirect return to.
     pub(super) close_action: String,
-    /// Quick-fill suggestions for this type, with placeholders interpolated.
-    pub(super) presets: Vec<PresetView>,
-    /// target to generate urls from, for the steps sidebar.
+    pub(super) presets: Vec<PresetGroupView>,
     pub(super) omission_target: OmissionTarget,
     /// Districts that appear on at least one paper-corrected candidate list of
     /// this political group. The districts section is hidden when this is
@@ -84,6 +81,12 @@ pub(super) struct PresetView {
     help_text: String,
     /// Whether this preset describes a recoverable omission ("herstelbaar").
     recoverable: bool,
+}
+
+/// The presets of one category, listed together under [`Self::title`].
+pub(super) struct PresetGroupView {
+    title: Option<String>,
+    presets: Vec<PresetView>,
 }
 
 /// Resolve the placeholder values that can be derived from the referenced item.
@@ -145,21 +148,29 @@ pub(super) fn available_electoral_districts(store: &CsbStore) -> Vec<ElectoralDi
     districts
 }
 
-/// The presets for this type with their descriptions interpolated.
-pub(super) fn preset_views(target: &OmissionTarget, store: &CsbStore) -> Vec<PresetView> {
+pub(super) fn preset_views(target: &OmissionTarget, store: &CsbStore) -> Vec<PresetGroupView> {
     let placeholders = placeholders_for(target, store);
 
-    target
-        .omission_type
-        .presets()
-        .iter()
-        .map(|preset| PresetView {
+    let mut groups: Vec<PresetGroupView> = Vec::new();
+    for preset in target.omission_type.presets() {
+        let view = PresetView {
             title: preset.title.clone(),
             description: placeholders.interpolate(&preset.description),
             help_text: preset.help_text.clone(),
             recoverable: preset.recoverable,
-        })
-        .collect()
+        };
+
+        match groups.iter_mut().find(|group| group.title == preset.group) {
+            Some(group) => group.presets.push(view),
+            None => groups.push(PresetGroupView {
+                title: preset.group.clone(),
+                presets: vec![view],
+            }),
+        }
+    }
+
+    groups.sort_by_key(|group| group.title.is_none());
+    groups
 }
 
 /// The omissions already added to the entity the dialog was opened for, shown

@@ -207,12 +207,12 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
-        assert!(body.contains("omission-badge"));
+        assert!(body.contains("restoration-tag"));
         // The badge shows the short title, not the long description.
         assert!(body.contains("Deposit missing"));
         assert!(!body.contains("The deposit has not been paid."));
         // A recoverable omission is not highlighted as an error.
-        assert!(!body.contains("omission-badge-unrecoverable"));
+        assert!(!body.contains("restoration-tag-unrecoverable"));
     }
 
     #[tokio::test]
@@ -239,6 +239,6 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
-        assert!(body.contains("omission-badge-unrecoverable"));
+        assert!(body.contains("restoration-tag-unrecoverable"));
     }
 }

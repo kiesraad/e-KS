@@ -1,7 +1,7 @@
 {% extends "csb/components/overlay.html" %}
 {% set submit_label = "csb.omission.form.submit"|trans %}
 {% block overlay_class %}omission-overlay{% endblock %}
-{% block overlay_title %}<span class="omission-icon" aria-hidden="true"></span>{{ "csb.omission.title"|trans }} - {{ title_suffix }}{% endblock %}
+{% block overlay_title %}<span class="omission-icon" aria-hidden="true"></span>{{ "csb.omission.title"|trans }}: {{ title_suffix }}{% endblock %}
 {% block overlay_steps %}
   {% set is_overview = false %}
   {% include "csb/examination/pages/omission_steps.html" %}
@@ -9,8 +9,8 @@
 {% block overlay_form %}
   <fieldset class="omission-form">
     {% if !available_candidate_lists.is_empty() %}
-      <div class="form-row card">
-        <p>{{ "csb.omission.form.applies_to"|trans }}</p>
+      <div class="omission-form-section">
+        <h3>{{ "csb.omission.form.applies_to"|trans }}</h3>
         <div class="checkbox select-all-checkbox">
           <input type="checkbox"
                  for-checklist="omission_candidate_list"
@@ -33,8 +33,8 @@
       </div>
     {% endif %}
     {% if !available_districts.is_empty() %}
-      <div class="form-row card">
-        <p>{{ "csb.omission.form.applies_to"|trans }}</p>
+      <div class="omission-form-section">
+        <h3>{{ "csb.omission.form.applies_to"|trans }}</h3>
         <div class="checkbox select-all-checkbox">
           <input type="checkbox"
                  for-checklist="omission_district_list"
@@ -60,61 +60,72 @@
       </div>
     {% endif %}
     {% if !presets.is_empty() %}
-      <p class="form-field">
-        <span class="label">{{ "csb.omission.form.presets_heading"|trans }}</span>
-        <ul class="omission-presets">
-          {% for preset in presets %}
-            <li>
-              <button type="button"
-                      class="omission-preset{% if !preset.recoverable %} omission-preset-unrecoverable{% endif %}"
-                      data-omission-preset
-                      data-title="{{ preset.title }}"
-                      data-description="{{ preset.description }}"
-                      data-help-text="{{ preset.help_text }}"
-                      data-recoverable="{{ preset.recoverable }}">{{ preset.title }}</button>
-            </li>
-          {% endfor %}
-        </ul>
-      </p>
+      <div class="omission-form-section">
+        <h3>{{ "csb.omission.form.presets_heading"|trans }}</h3>
+        {% for group in presets %}
+          {% if let Some(group_title) = group.title.as_deref() %}
+            <h4 class="omission-preset-group">{{ group_title }}</h4>
+          {% endif %}
+          <ul class="omission-presets">
+            {% for preset in group.presets %}
+              <li>
+                <button type="button"
+                        class="omission-preset{% if !preset.recoverable %} omission-preset-unrecoverable{% endif %}"
+                        data-omission-preset
+                        data-title="{{ preset.title }}"
+                        data-description="{{ preset.description }}"
+                        data-help-text="{{ preset.help_text }}"
+                        data-recoverable="{{ preset.recoverable }}">{{ preset.title }}</button>
+              </li>
+            {% endfor %}
+          </ul>
+        {% endfor %}
+      </div>
     {% endif %}
-    <div class="form-row">
-      <p class="form-field form-field-xl">
-        <label for="title">{{ "csb.omission.form.title_label"|trans }}</label>
-        <input type="text"
-               name="title"
-               id="title"
-               value="{{ form.data.title }}"
-               data-omission-title />
-        {% for error in form|error("title") %}<span class="error">{{ error }}</span>{% endfor %}
-      </p>
-    </div>
-    <div class="form-row">
-      <p class="form-field form-field-xl">
-        <label for="description">{{ "csb.omission.form.description_label"|trans }}</label>
-        <textarea name="description"
-                  id="description"
-                  rows="5"
-                  data-omission-description>{{ form.data.description }}</textarea>
-        {% for error in form|error("description") %}<span class="error">{{ error }}</span>{% endfor %}
-        <span class="warning hidden" data-omission-placeholder-warning>{{ "csb.omission.form.placeholder_warning"|trans }}</span>
-      </p>
-    </div>
-    <div class="form-row">
-      <p class="form-field form-field-xl">
-        <label for="help_text">{{ "csb.omission.form.help_text_label"|trans }}</label>
-        <textarea name="help_text" id="help_text" rows="5" data-omission-help-text>{{ form.data.help_text }}</textarea>
-        {% for error in form|error("help_text") %}<span class="error">{{ error }}</span>{% endfor %}
-      </p>
-    </div>
-    <div class="form-row">
-      <div class="checkbox">
-        <input type="checkbox"
-               name="recoverable"
-               id="recoverable"
-               value="true"
-               data-omission-recoverable
-               {% if form.data.recoverable %}checked{% endif %} />
-        <label for="recoverable">{{ "csb.omission.form.recoverable_label"|trans }}</label>
+    <div class="omission-form-section">
+      <h3>{{ "csb.omission.form.edit_heading"|trans }}</h3>
+      <div class="form-row">
+        <p class="form-field form-field-xl">
+          <label for="title">{{ "csb.omission.form.title_label"|trans }}</label>
+          <input type="text"
+                 name="title"
+                 id="title"
+                 value="{{ form.data.title }}"
+                 data-omission-title />
+          {% for error in form|error("title") %}<span class="error">{{ error }}</span>{% endfor %}
+        </p>
+      </div>
+      <div class="form-row">
+        <p class="form-field form-field-xl">
+          <label for="description">{{ "csb.omission.form.description_label"|trans }}</label>
+          <textarea name="description"
+                    id="description"
+                    rows="5"
+                    data-omission-description>{{ form.data.description }}</textarea>
+          {% for error in form|error("description") %}<span class="error">{{ error }}</span>{% endfor %}
+          <span class="warning hidden" data-omission-placeholder-warning>{{ "csb.omission.form.placeholder_warning"|trans }}</span>
+        </p>
+      </div>
+      <div class="form-row">
+        <p class="form-field form-field-xl">
+          <label for="help_text">{{ "csb.omission.form.help_text_label"|trans }}</label>
+          <textarea name="help_text" id="help_text" rows="5" data-omission-help-text>{{ form.data.help_text }}</textarea>
+          {% for error in form|error("help_text") %}<span class="error">{{ error }}</span>{% endfor %}
+        </p>
+      </div>
+      <div class="form-row">
+        <div class="form-field form-field-xl">
+          <div class="checkbox">
+            <input type="checkbox"
+                   name="recoverable"
+                   id="recoverable"
+                   value="true"
+                   data-omission-recoverable
+                   {% if form.data.recoverable %}checked{% endif %} />
+            <label for="recoverable">{{ "csb.omission.form.recoverable_label"|trans }}</label>
+          </div>
+          <span class="hint">{{ "csb.omission.form.recoverable_hint"|trans }}</span>
+        </div>
       </div>
     </div>
   </fieldset>

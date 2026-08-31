@@ -4,18 +4,17 @@ action:
   finish: Afronden
 added: Toegevoegd
 all_restorations:
-  add_note: Voeg een notitie toe
-  add_note_explanation: "Voeg extra notities toe voor onderaan de verzuimbrief:"
   corrections_explanation: Alle aangemaakte ambtshalve correcties vindt u hier.
+  corrections_title: Overzicht gecorrigeerde acties
   explanation: Bekijk hier alle verzuimen en correcties voordat u het onderzoek afrondt.
   omissions_explanation: Alle aangemaakte verzuimen vindt u hier.
-  title: Alle verzuimen
+  omissions_title: Overzicht verzuimen
+  title: Verzuimen en correcties
 brp:
   correct: Correct
   errors: Fouten
 candidate:
   add_candidate_text: Voeg verzuimen toe voor deze kandidaat
-  overview_text: Toegevoegde verzuimen kandidaat
   personal_details: Persoonsgegevens
 correction:
   form:
@@ -25,7 +24,6 @@ correction:
   overlay:
     title: Ambtshalve correctie aanpassen
   paper_corrected: Papieren correctie
-  title: Ambtshalve correcties
 declarations_of_support:
   instruction: Meld problemen met de ondersteunings\u00ADverklaringen
   title: Ondersteunings\u00ADverklaringen
@@ -44,12 +42,9 @@ form:
 general:
   add_text: Voeg verzuimen toe voor basisgegevens
   group_info: Gegevens Politieke groepering
-  overview_text: Toegevoegde verzuimen basisgegevens
   personalia: Personalia
 group:
   added_on_paper: Toegevoegd bij papieren correcties
-  all_brp_errors: Alle BRP fouten
-  all_brp_errors_note: Hier vindt u alle BRP fouten verzameld terug
   brp_errors:
     none: Geen BRP fouten
     plural: "{} BRP fouten"
@@ -58,7 +53,9 @@ group:
   confirm_delete: "Weet u zeker dat u de politieke groepering “{}“ wilt verwijderen?"
   delete_note: "Het is altijd mogelijk om een politieke groepering te herimporteren maar aangemaakte papieren- en ambtshalve correcties, en verzuimen zullen verloren gaan!"
   deleted_label: verwijderd
-  examine_all: Alle BRP fouten controleren
+  discovered_errors: Ontdekte fouten
+  discovered_errors_note: Hier vindt u alle BRP fouten verzameld terug
+  examine_all: Naar alle fouten
   examine_general: Basisgegevens controleren
   examine_list: Kandidatenlijst controleren
   finished: Onderzoek afgerond
@@ -95,7 +92,6 @@ index:
 list:
   add_text: Voeg verzuimen toe voor deze kandidatenlijst
   brp_errors: BRP fouten
-  overview_text: Toegevoegde verzuimen kandidatenlijst
 monitoring:
   cache: Lokale cache
   created_at: Aangemaakt
@@ -112,18 +108,16 @@ no_unfinished_political_groups: Er zijn geen onafgeronde onderzoeken naar politi
 omission:
   action:
     add: Verzuim toevoegen
-    manage: Verzuimen beheren
-  add:
-    title: Toevoegen
   form:
     applies_to: "Dit verzuim geldt voor:"
-    description_label: I1 verzuim toevoegen
+    description_label: I 1 verzuim toevoegen
+    edit_heading: Type of bewerk hier het verzuim
     help_text_label: Verzuimbriefnotitie toevoegen
     placeholder_warning: De tekst bevat nog niet ingevulde placeholders.
-    presets_heading: Voeg één van deze verzuimen toe
+    presets_heading: Gebruik deze verzuimen als sjabloon (optioneel)
+    recoverable_hint: "Een herstelbaar verzuim kan de politieke groepering nog herstellen, een onherstelbaar verzuim niet."
     recoverable_label: Herstelbaar verzuim
     submit: Toevoegen en sluiten
-    title: Verzuimen toevoegen
     title_label: Titel verzuim
   overview:
     description: Omschrijving
@@ -134,10 +128,16 @@ omission:
     recoverable: Herstelbaar
     title: Overzicht
   title: Verzuimen
+  title_for:
+    candidate: "Verzuimen {}"
+    candidate_list: Verzuimen kandidatenlijst
+    general: Verzuimen basisgegevens
 paper_corrections:
+  added: Papieren correctie toegevoegd
   banner: "U corrigeert {}. Neem alleen correcties over die met de hand op de ingeleverde papieren documenten zijn geschreven, verder niets."
   instruction: Neem handgeschreven correcties van de ingeleverde papieren documenten over in de geïmporteerde gegevens
-  start: Correcties overnemen
+  none: Er zijn nog geen papieren correcties overgenomen.
+  start: Ga naar gegevens
   stop: Terug naar onderzoek
   title: Papieren correcties
 progress: Voortgang

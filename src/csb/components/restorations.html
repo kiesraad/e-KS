@@ -1,0 +1,47 @@
+{# The panel at the top of an examination page: what has to be reported for
+   this item, the action that adds a new omission, and a strip listing the
+   omissions already added with a link to their overview. #}
+{% macro omission_panel(title, explanation, add_url, overview_url, omissions) %}
+  <div class="examination-panel">
+    <div class="examination-panel-header">
+      <div>
+        <h2 class="h3">{{ title }}</h2>
+        <p>{{ explanation }}</p>
+      </div>
+      <a class="button secondary icon-plus-end" href="{{ add_url }}">{{ "csb.omission.action.add"|trans }}</a>
+    </div>
+    {{ omission_strip(overview_url, omissions) }}
+  </div>
+{% endmacro omission_panel %}
+{# The omissions of one part of the examination, each linking back to the page
+   it was added on. #}
+{% macro omission_group(label, omissions) %}
+  <h3 class="examination-panel-group">{{ label }}</h3>
+  <div class="restoration-strip restoration-strip-omission">
+    <ul class="restoration-tags">
+      {% for view in omissions %}
+        <li>
+          <a class="restoration-tag{% if !view.omission.recoverable %} restoration-tag-unrecoverable{% endif %}"
+             href="{{ view.path }}">{{ view.omission.title }}</a>
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+{% endmacro omission_group %}
+{# The omissions added to one item, as a hatched strip of tags. #}
+{% macro omission_strip(overview_url, omissions) %}
+  <div class="restoration-strip restoration-strip-omission">
+    {% if omissions.is_empty() %}
+      <span class="restoration-strip-empty">{{ "csb.omission.overview.no_omissions"|trans }}</span>
+    {% else %}
+      <ul class="restoration-tags">
+        {% for omission in omissions %}
+          <li>
+            <span class="restoration-tag{% if !omission.recoverable %} restoration-tag-unrecoverable{% endif %}">{{ omission.title }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+    <a class="restoration-strip-link" href="{{ overview_url }}">{{ "csb.omission.overview.title"|trans }}</a>
+  </div>
+{% endmacro omission_strip %}

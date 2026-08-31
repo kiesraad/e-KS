@@ -56,6 +56,14 @@ impl CsbStore {
         data.is_deleted
     }
 
+    pub fn has_paper_corrections(&self) -> bool {
+        let data = self.data.read();
+
+        data.events
+            .iter()
+            .any(|event| matches!(event.payload, crate::CsbEvent::PaperCorrectedUpdate(_)))
+    }
+
     pub fn get_omission(&self, omission_id: OmissionId) -> Result<Omission, AppError> {
         let data = self.data.read();
 
