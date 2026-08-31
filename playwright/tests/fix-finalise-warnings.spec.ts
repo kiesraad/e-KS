@@ -1,3 +1,12 @@
+// Use cases:
+// De applicatie valideert dat alle benodigde gegevens correct zijn ingevuld.
+// Er staan kandidaten op die niet op de lijst horen, de lijstinleveraar verwijdert kandidaten
+// gegevens kloppen niet (kandidatenlijsten), de lijstinleveraar corrigeert de gegevens (kandidatenlijsten)
+// gegevens kloppen niet (basisgegevens), de lijstinleveraar corrigeert de gegevens (basisgegevens)
+// Gegevens zijn niet volledig (basisgegevens), lijstinleveraar vult de gegevens aan
+// Na validatie: gegevens kloppen niet, applicatie geeft (blocking) waarschuwing, lijstinleveraar corrigeert de gegevens
+// Na validatie: gegevens zijn niet volledig, applicatie geeft (blocking) waarschuwing, lijstinleveraar vult de gegevens aan
+
 import { expect } from "@playwright/test";
 import { test } from "./fixtures.ts";
 import type { NameAuthorisation } from "./models/nameAuthorisation.ts";

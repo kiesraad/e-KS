@@ -1,12 +1,8 @@
 import type { Locator, Page } from "@playwright/test";
 
-export class csbOmissionsPartyPage {
+export class CsbOmissionsPartyPage {
   readonly linkAdd: Locator;
   readonly linkOverview: Locator;
-  readonly buttonAuthoriseAppelation: Locator;
-  readonly buttonAuthoriseCombination: Locator;
-  readonly buttonAuthorisedAgent: Locator;
-  readonly buttonAuthorisedAgentCombination: Locator;
   readonly buttonRegisterAppelation: Locator;
   readonly buttonRegisterCombination: Locator;
   readonly textfieldTitle: Locator;
@@ -15,23 +11,11 @@ export class csbOmissionsPartyPage {
   readonly checkboxRecoverable: Locator;
   readonly buttonAddAndClose: Locator;
   readonly linkClose: Locator;
-  readonly buttonRemoveOmission: Locator;
+  private readonly buttonRemoveOmission: Locator;
 
   constructor(protected readonly page: Page) {
     this.linkAdd = this.page.getByRole("link", { name: "Verzuimen toevoegen" });
     this.linkOverview = this.page.getByRole("link", { name: "Overzicht" });
-    this.buttonAuthoriseAppelation = this.page.getByRole("button", {
-      name: "De machtiging aanduiding ontbreekt",
-    });
-    this.buttonAuthoriseCombination = this.page.getByRole("button", {
-      name: "De machtiging samenvoeging ontbreekt",
-    });
-    this.buttonAuthorisedAgent = this.page.getByRole("button", {
-      name: "De gemachtigde is niet geregistreerd",
-    });
-    this.buttonAuthorisedAgentCombination = this.page.getByRole("button", {
-      name: "De gemachtigde(n) is/zijn niet geregistreerd",
-    });
     this.buttonRegisterAppelation = this.page.getByRole("button", {
       name: "De aanduiding is niet geregistreerd",
     });
@@ -57,5 +41,13 @@ export class csbOmissionsPartyPage {
     this.buttonRemoveOmission = this.page.getByRole("button", {
       name: "Verwijderen",
     });
+  }
+
+  async clickRemoveOmission() {
+    // wait for the animation to finish before attempting click
+    await this.page
+      .locator(".animation")
+      .evaluate((el) => Promise.all(el.getAnimations().map((a) => a.finished)));
+    await this.buttonRemoveOmission.click();
   }
 }

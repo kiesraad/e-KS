@@ -92,7 +92,11 @@
               <tr class="clickable">
                 <td>{{ pg.csb_appellation() }}</td>
                 <td>
-                  <div class="status approved">{{ "csb.status.approved"|trans }}</div>
+                  {% if pg.omission_count == 0 %}
+                    <div class="status approved">{{ "csb.status.approved"|trans }}</div>
+                  {% else %}
+                    <div class="status omission">{{ "csb.status.omission"|trans }}</div>
+                  {% endif %}
                 </td>
                 <td>
                   <ul class="tags-list">

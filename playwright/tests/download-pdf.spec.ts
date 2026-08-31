@@ -1,3 +1,8 @@
+// Use cases:
+// De applicatie genereert de benodigde documenten.
+// De lijstinleveraar downloadt de benodigde documenten in pdf.
+// Er zijn na het printen toch fouten, de lijstinleveraar geeft in de applicatie aan dat er fouten zijn, de lijstinleveraar bewerkt de gegevens
+
 import { stat } from "node:fs/promises";
 import { expect, type Page } from "@playwright/test";
 import { test } from "./fixtures.ts";

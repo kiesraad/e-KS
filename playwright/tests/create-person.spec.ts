@@ -1,3 +1,7 @@
+// Use cases:
+// De lijstinleveraar vult de benodigde personalia (personalia kandidaat H1) in
+// Er ontbreken kandidaten, de lijstinleveraar vult de missende kandidaten in
+
 import { expect } from "@playwright/test";
 import { test } from "./fixtures.ts";
 import type { AuthorisedPerson } from "./models/authorisedPerson";

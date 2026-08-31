@@ -1,3 +1,6 @@
+// Use cases:
+// Politieke groepering selecteert een bestaande lijst als sjabloon
+
 import { expect } from "@playwright/test";
 import { test } from "./fixtures.ts";
 import { CandidateListsOverviewPage } from "./pages/pg/candidateListsOverviewPage.ts";

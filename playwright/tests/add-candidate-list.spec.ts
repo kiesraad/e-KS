@@ -1,3 +1,9 @@
+// Use cases:
+// politieke groepering maakt een lijst aan
+// Politieke groepering vinkt aan voor welke kieskringen de lijst geldig is
+// Politieke groepering vult de lijst door personen toe te voegen
+// Er ontbreken kandidaten, de lijstinleveraar vult de missende kandidaten in
+
 import { expect } from "@playwright/test";
 import { test } from "./fixtures.ts";
 import type { Candidate } from "./models/candidate";

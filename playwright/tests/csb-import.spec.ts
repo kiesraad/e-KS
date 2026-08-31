@@ -3,6 +3,7 @@ import { test } from "./fixtures.ts";
 import { CsbExaminationPage } from "./pages/csb/csbExaminationPage.ts";
 import { CsbImportPage } from "./pages/csb/csbImportPage.ts";
 import { CsbOverviewPage } from "./pages/csb/csbOverviewPage.ts";
+import { CsbPoliticalGroupPage } from "./pages/csb/csbPoliticalGroupPage.ts";
 
 test("import a political group in the CSB dashboard by hash", async ({
   csbLogin,
@@ -13,6 +14,7 @@ test("import a political group in the CSB dashboard by hash", async ({
   const overviewPage = new CsbOverviewPage(page);
   const examinationPage = new CsbExaminationPage(page);
   const importPage = new CsbImportPage(page);
+  const politicalGroupPage = new CsbPoliticalGroupPage(page);
 
   await expect(overviewPage.headerElection).toBeVisible();
   await overviewPage.linkExamination.click();
@@ -28,4 +30,5 @@ test("import a political group in the CSB dashboard by hash", async ({
   ]);
 
   await expect(page.getByRole("heading", { name: groupName })).toBeVisible();
+  await politicalGroupPage.deleteGroup();
 });
