@@ -6,13 +6,12 @@ use crate::AppRequestState;
 mod callback;
 mod login;
 
-/// Routes mounted outside the session middleware: the login start page and
-/// the OAuth callback both run before a session exists. Cross-site POSTs are
-/// blocked by the global fetch-metadata CSRF layer.
+/// Routes mounted outside the session middleware: they all run before a
+/// session exists. Every one is a GET, so the whole flow is plain navigation.
 pub fn public_router<S: AppRequestState>() -> Router<S> {
     Router::new()
         .typed_get(login::login_start::<S>)
-        .typed_post(login::login_submit::<S>)
+        .typed_get(login::login_redirect::<S>)
         .typed_get(callback::callback::<S>)
 }
 
@@ -64,7 +63,7 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
-        assert!(body.contains("action=\"/csb/login\""));
+        assert!(body.contains("href=\"/csb/login/start\""));
     }
 
     #[tokio::test]
@@ -72,7 +71,7 @@ mod tests {
         let state = AppState::new_for_tests().await;
         let app = crate::app::router::create(state.clone()).with_state(state);
 
-        for uri in ["/csb/login", "/csb/login/callback"] {
+        for uri in ["/csb/login", "/csb/login/start", "/csb/login/callback"] {
             let request = Request::builder()
                 .uri(uri)
                 .body(Body::empty())
@@ -83,15 +82,15 @@ mod tests {
         }
     }
 
-    /// The POST mints a nonce that is registered server-side, bound to the
-    /// browser via the state cookie, and carried to GitHub's consent page.
+    /// Following the login link mints a nonce that is registered server-side,
+    /// bound to the browser via the state cookie, and carried to GitHub's
+    /// consent page.
     #[tokio::test]
-    async fn login_submit_redirects_to_github_with_bound_state() {
+    async fn login_link_redirects_to_github_with_bound_state() {
         let (state, app) = test_app().await;
 
         let request = Request::builder()
-            .method("POST")
-            .uri("/csb/login")
+            .uri("/csb/login/start")
             .body(Body::empty())
             .expect("valid request");
         let response = app.oneshot(request).await.expect("response");

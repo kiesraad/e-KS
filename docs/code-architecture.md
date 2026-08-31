@@ -279,7 +279,7 @@ The CSB section has two projections of its own on the shared store machinery
   suffices) and the import locates the matching event
   (`find_event_by_hash_prefix`, backed by the `events_hash_idx` index),
   replays the source stream up to it (`PgStoreData::snapshot_until`), and
-  persists the snapshot as a `CsbEvent::Import` on a **fresh** `ImportedByCsb`
+  persists the snapshot as a `CsbAction::Import` on a **fresh** `ImportedByCsb`
   stream. The political group's own stream is never written to, and importing
   the same source stream twice is rejected (might change with #999).
 - **`examination`**: the examination of the imported lists. An overview
@@ -302,7 +302,7 @@ An **omission** (*verzuim*) is a defect found during examination.
 `OmissionCategory` ties each omission to what it concerns: the political
 group itself, a candidate list (with the affected electoral districts), or a
 candidate (with the affected lists). Recoverable omissions feed the I 4
-notice. A **correction** (*ambtshalve correctie*) (`CsbEvent::UpdateCorrection`) records a fix to
+notice. A **correction** (*ambtshalve correctie*) (`CsbAction::UpdateCorrection`) records a fix to
 the imported political group appellation and person data (initials, last name,
 date of birth, place of residence); corrections on persons are kept in a separate
 map in the projection (`csb_corrected_persons`), so the imported snapshot itself stays untouched.
@@ -319,7 +319,7 @@ against the newly selected stream). While the mode is active, the regular app
 routes serve the familiar political-group interface over the imported
 stream's `paper_corrected_data`, through the same handlers the PG side uses:
 `store_middleware` hands them a `PgStore` in paper-corrections mode, whose
-writes wrap each `PgEvent` in `CsbEvent::PaperCorrectedUpdate` and append it
+writes wrap each `PgEvent` in `CsbAction::PaperCorrectedUpdate` and append it
 to the CSB stream. The source political group's stream is never touched, and
 the finalise/document-generation routes are blocked: the documents were
 already handed in on paper.
@@ -335,8 +335,11 @@ order on an incoming request is:
    key is unset this layer is a no-op. Intended for gating the app behind a
    known upstream.
 2. **Tracing and security headers.** HTTP tracing is opened, and the security
-2. **Tracing and security headers.** HTTP tracing is opened, and the security
-response headers (CSP, `X-Frame-Options`, etc.) are scheduled for development.
+   response headers (CSP, `X-Frame-Options`, etc.) are scheduled. They are
+   written by a layer rather than by handlers, so no handler can weaken them,
+   and the CSP is one policy for the whole app: closed by default
+   (`default-src 'none'`, no inline or eval, Trusted Types enforced) with
+   `form-action 'self'` and no per-route exception.
 3. **`session_middleware`.** Reads the `EKS_SESSION_ID` cookie and looks the
    session up in the `SessionStore`. A missing or invalid session redirects to
    `/login`. Otherwise the session's `last_activity` is refreshed and the
@@ -512,6 +515,19 @@ In `dev-features` builds a missing variable falls back to a built-in development
 default; in a production build a missing required variable is a startup error
 (`AppError::MissingEnvVar`).
 
+For local development, `bin/dev` reads `.env` and then `.env.local` (which
+wins) from the repository root and hands the variables to the processes it
+starts; a variable already set in the surrounding shell is left alone. Both
+files are optional. `.env.local` is gitignored, so it is where the credentials
+that must not be committed belong, in particular the GitHub OAuth ones that
+have no development default:
+
+```sh
+GITHUB_CLIENT_ID=Ov23li...
+GITHUB_CLIENT_SECRET=...
+GITHUB_ALLOWED_USER_IDS=1234567
+```
+
 ### Cargo features
 
 The build is tailored through Cargo features (`Cargo.toml`). The `default` set
@@ -653,7 +669,7 @@ parameterized over a projection type `D`:
   stream, and `update(event)` appends `PgEvent`s there. For a committee
   session in paper-corrections mode the projection is a request-local
   snapshot of the imported stream's `paper_corrected_data`, and every
-  `PgEvent` is wrapped in `CsbEvent::PaperCorrectedUpdate` and appended to
+  `PgEvent` is wrapped in `CsbAction::PaperCorrectedUpdate` and appended to
   the CSB stream instead. Handlers are agnostic to which target they write
   to.
 

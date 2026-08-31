@@ -1,10 +1,43 @@
-use std::path::{Path, PathBuf};
+use std::{
+    collections::BTreeMap,
+    path::{Path, PathBuf},
+};
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use tokio::{
     process::Command,
     time::{Duration, sleep, timeout},
 };
+
+/// Variables to hand to the development processes, read from `.env` and then
+/// `.env.local` (which wins). Both files are optional. `.env.local` is
+/// gitignored, so it is where credentials that must not be committed belong,
+/// such as the CSB GitHub OAuth ones (`GITHUB_CLIENT_ID`,
+/// `GITHUB_CLIENT_SECRET`, `GITHUB_ALLOWED_USER_IDS`).
+///
+/// A variable already set in the caller's own environment is skipped, so
+/// `DEFAULT_ELECTION=PS27:GR bin/dev` still wins over the file.
+pub fn dotenv_variables() -> Result<Vec<(String, String)>> {
+    let mut variables = BTreeMap::new();
+
+    for file in [".env", ".env.local"] {
+        let entries = match dotenvy::from_filename_iter(file) {
+            Ok(entries) => entries,
+            Err(error) if error.not_found() => continue,
+            Err(error) => return Err(error).with_context(|| format!("read {file}")),
+        };
+
+        for entry in entries {
+            let (name, value) = entry.with_context(|| format!("parse {file}"))?;
+            variables.insert(name, value);
+        }
+    }
+
+    Ok(variables
+        .into_iter()
+        .filter(|(name, _)| std::env::var_os(name).is_none())
+        .collect())
+}
 
 pub async fn run(command: &str, args: &[&str]) -> Result<()> {
     println!("$> {command} {}", args.join(" "));

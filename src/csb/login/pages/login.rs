@@ -1,5 +1,6 @@
-//! GET/POST `/csb/login`: start page and flow initiation for the CSB GitHub
-//! login. Both answer 404 unless [`crate::GithubOauthConfig`] is present.
+//! `GET /csb/login`: start page for the CSB GitHub login, and
+//! `GET /csb/login/start`: the flow initiation its button links to. Both
+//! answer 404 unless [`crate::GithubOauthConfig`] is present.
 
 use askama::Template;
 use axum::{
@@ -13,7 +14,7 @@ use serde::Deserialize;
 use crate::{
     AppError, AppRequestState, Context, HtmlTemplate, Locale, LocaleValues,
     csb::login::{
-        CsbLoginPath, github, pending_state_id, require_github_oauth,
+        CsbLoginPath, CsbLoginStartPath, github, pending_state_id, require_github_oauth,
         state_cookie::build_state_cookie,
     },
     filters,
@@ -51,10 +52,12 @@ pub async fn login_start<S: AppRequestState>(
     .into_response())
 }
 
-/// POST `/csb/login`: registers a one-shot `state` nonce, binds it to this
-/// browser with a short-lived cookie, and redirects to GitHub's consent page.
-pub async fn login_submit<S: AppRequestState>(
-    _: CsbLoginPath,
+/// GET `/csb/login/start`: registers a one-shot `state` nonce, binds it to
+/// this browser with a short-lived cookie, and redirects to GitHub's consent
+/// page. A link rather than a form post, so the cross-origin redirect is an
+/// ordinary navigation that `form-action 'self'` never sees.
+pub async fn login_redirect<S: AppRequestState>(
+    _: CsbLoginStartPath,
     State(state): State<S>,
     jar: CookieJar,
 ) -> Result<Response, AppError> {
@@ -100,10 +103,10 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn login_submit_is_not_found_without_github_config() {
+    async fn login_redirect_is_not_found_without_github_config() {
         let state = crate::AppState::new_for_tests().await;
 
-        let err = login_submit(CsbLoginPath, State(state), CookieJar::new())
+        let err = login_redirect(CsbLoginStartPath, State(state), CookieJar::new())
             .await
             .expect_err("404 without config");
 
@@ -123,8 +126,10 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
-        assert!(body.contains("action=\"/csb/login\""));
-        assert!(body.contains("method=\"post\""));
+        // A link, not a form: a form post would be blocked by `form-action`
+        // once it redirected to GitHub.
+        assert!(body.contains("href=\"/csb/login/start\""));
+        assert!(!body.contains("<form"));
         assert!(body.contains("GitHub"));
         assert!(!body.contains("alert-error"));
     }

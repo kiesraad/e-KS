@@ -6,9 +6,7 @@
       <h2>{{ "csb.auth.start.title"|trans }}</h2>
       {% if show_error %}<div class="alert alert-error">{{ "csb.auth.error.message"|trans }}</div>{% endif %}
       <p>{{ "csb.auth.start.intro"|trans }}</p>
-      <form method="post" action="{{ crate::csb::login::CsbLoginPath }}">
-        <button type="submit" class="button">{{ "csb.auth.button.github"|trans }}</button>
-      </form>
+      <a href="{{ crate::csb::login::CsbLoginStartPath }}" class="button">{{ "csb.auth.button.github"|trans }}</a>
     </div>
   </main>
 {% endblock %}

@@ -246,9 +246,8 @@ mod tests {
     }
 
     /// The fixtures-only CSB shortcut replaces the political-group session
-    /// with a brand-new committee session: the old token is dead, the new one
-    /// reaches CSB routes (regression: the in-place escalation used to lose
-    /// the committee identity on persist and 401 on the first CSB request).
+    /// with a brand-new committee session: the submitted token is dead
+    /// afterwards, and the freshly minted one reaches CSB routes.
     #[cfg(feature = "fixtures")]
     #[tokio::test]
     async fn login_as_csb_replaces_the_session_with_a_committee_one() {

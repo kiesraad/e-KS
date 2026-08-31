@@ -171,6 +171,10 @@ const PERMISSIONS_POLICY: &str = concat!(
 /// Fetch directives `default-src 'none'` already covers are spelled out anyway,
 /// so a change to a browser's fallback chain cannot widen the policy. Trusted
 /// Types is enforced because the bundle assigns to no injection sink.
+///
+/// `form-action 'self'` holds for every page with no exception: the one flow
+/// that leaves the origin, the CSB GitHub login, starts from a link rather
+/// than a form, so it is an ordinary navigation this directive never governs.
 const CONTENT_SECURITY_POLICY: &str = concat!(
     "default-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'; ",
     "script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src 'self'; ",

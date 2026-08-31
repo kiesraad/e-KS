@@ -7,14 +7,18 @@
 //! [`crate::GithubOauthConfig`]).
 //!
 //! Flow and defences:
-//! - `POST /csb/login` registers a one-shot random `state` nonce in the
-//!   pending-request store (15-minute TTL, single use) and binds it to the
-//!   browser with a short-lived cookie, then redirects to GitHub.
+//! - `GET /csb/login/start`, the target of the login button, registers a
+//!   one-shot random `state` nonce in the pending-request store (15-minute
+//!   TTL, single use) and binds it to the browser with a short-lived cookie,
+//!   then redirects to GitHub. Nothing an attacker can forge a request to
+//!   reach: a cross-site hit only mints a nonce for the victim's own browser,
+//!   which is useless without the matching cookie, and the login-CSRF defence
+//!   sits on the callback, where the nonce and cookie must agree.
 //! - `GET /csb/login/callback` accepts the nonce only when it matches the
 //!   browser's cookie (constant-time) and is still pending; the code is then
 //!   exchanged server-side and the account id checked against the allowlist.
 //! - A successful login drops any pre-existing session (fixation defence) and
-//!   creates a session scoped to [`crate::Scope::CentralElectoralCommittee`],
+//!   creates a [`crate::SessionUser::CentralElectoralCommittee`] session,
 //!   recording the login on the shared CSB main stream for the audit log.
 
 mod github;
@@ -23,7 +27,7 @@ mod paths;
 mod state_cookie;
 
 pub use pages::public_router;
-pub use paths::{CsbLoginCallbackPath, CsbLoginPath};
+pub use paths::{CsbLoginCallbackPath, CsbLoginPath, CsbLoginStartPath};
 
 use crate::{AppError, Config, GithubOauthConfig};
 

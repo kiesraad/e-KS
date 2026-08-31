@@ -132,32 +132,6 @@ async fn create_sessions_table(conn: &mut sqlx::PgConnection) -> Result<(), AppE
     .execute(&mut *conn)
     .await?;
 
-    // Upgrade path from the multi-column session layout: pre-refactor rows are
-    // dropped (sessions are short-lived; their users just log in again), the
-    // old identity columns removed.
-    sqlx::query("ALTER TABLE sessions ADD COLUMN IF NOT EXISTS identity JSONB")
-        .execute(&mut *conn)
-        .await?;
-    sqlx::query("DELETE FROM sessions WHERE identity IS NULL")
-        .execute(&mut *conn)
-        .await?;
-    sqlx::query("ALTER TABLE sessions ALTER COLUMN identity SET NOT NULL")
-        .execute(&mut *conn)
-        .await?;
-    sqlx::query(
-        r#"
-        ALTER TABLE sessions
-          DROP COLUMN IF EXISTS stream_id,
-          DROP COLUMN IF EXISTS paper_correction_stream_id,
-          DROP COLUMN IF EXISTS current_election,
-          DROP COLUMN IF EXISTS saml_name_id,
-          DROP COLUMN IF EXISTS scope,
-          DROP COLUMN IF EXISTS csb_user
-        "#,
-    )
-    .execute(&mut *conn)
-    .await?;
-
     sqlx::query(
         r#"CREATE INDEX IF NOT EXISTS sessions_last_activity_idx
            ON sessions(last_activity)"#,
