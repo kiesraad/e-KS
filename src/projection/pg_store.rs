@@ -1,7 +1,7 @@
 //! [`PgStore`]: the store handle used by the app feature handlers, including
 //! the CSB paper-corrections write target.
 
-use crate::{AppError, CsbEvent, CsbStore, PgEvent, PgStoreData, store::Store};
+use crate::{AppError, CsbEvent, CsbStore, MAX_CANDIDATES, PgEvent, PgStoreData, store::Store};
 
 /// Store handle used by the app feature handlers: reads come from the
 /// [`PgStoreData`] projection, writes dispatch [`PgEvent`]s to the write
@@ -85,6 +85,19 @@ impl PgStore {
         }
     }
 
+    /// Hard cap on the number of candidates a single list may hold.
+    ///
+    /// Paper corrections record the list exactly as it was handed in on paper,
+    /// so an over-long list has to be enterable there: the surplus candidates
+    /// are scratched later, they are not kept out of the data. The cap only
+    /// applies to a political group entering its own data.
+    pub fn candidate_limit(&self) -> usize {
+        match &self.target {
+            WriteTarget::Own => MAX_CANDIDATES,
+            WriteTarget::PaperCorrections(_) => usize::MAX,
+        }
+    }
+
     /// The CSB stream receiving paper corrections, when this handle is in
     /// paper-corrections mode.
     pub fn paper_corrections_stream_id(&self) -> Option<crate::StreamId> {
@@ -144,5 +157,25 @@ impl PgStore {
             },
             data: std::sync::Arc::new(parking_lot::RwLock::new(data)),
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The hard maximum guards a political group's own data; paper
+    /// corrections must be able to record an over-long list as handed in.
+    #[tokio::test]
+    async fn candidate_limit_is_lifted_while_correcting() -> Result<(), AppError> {
+        assert_eq!(PgStore::new_for_test().candidate_limit(), MAX_CANDIDATES);
+        assert_eq!(
+            crate::test_utils::paper_corrections_store()
+                .await?
+                .candidate_limit(),
+            usize::MAX
+        );
+
+        Ok(())
     }
 }

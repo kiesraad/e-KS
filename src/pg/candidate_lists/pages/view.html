@@ -46,6 +46,7 @@
       {{ "candidate_list.view.import_capped"|trans(max_candidates, max_candidates) }}
     </div>
   {% endif %}
+  {% let candidate_limit = "candidate_limit"|integer_value %}
   <nav class="sticky-nav">
     <div class="sticky-nav-bar">
       <div>
@@ -56,7 +57,7 @@
              title="{{ "candidate_list.actions.import_export"|trans }}"></a>
         {% endif %}
       </div>
-      {% if full_list.candidates.len() < crate::MAX_CANDIDATES %}
+      {% if full_list.candidates.len() < candidate_limit %}
         <div>
           <p>{{ "candidate_list.actions.add_candidates"|trans }}:</p>
           <div class="buttons">
