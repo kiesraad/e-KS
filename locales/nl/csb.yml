@@ -40,6 +40,7 @@ form:
   create_empty_explanation: "Of voeg een lege politieke groepering toe om de papieren gegevens handmatig over te nemen:"
   hash: Voer het begin van de hash code in (minimaal 8 tekens)
   import: Importeren
+  import_anyway: Toch importeren
   import_political_group: Politieke groepering importeren
 general:
   add_text: Voeg verzuimen toe voor basisgegevens
@@ -68,10 +69,11 @@ group:
   unfinished: Onderzoek afronden
 import:
   error:
-    already_imported: Deze politieke groepering is al geïmporteerd.
     ambiguous_hash: De ingevoerde hash code komt overeen met meer dan één dataset; voer meer tekens in.
     invalid_hash: "Voer een geldige hash code in (tenminste 4 paren van hexadecimale tekens, bijv. AB12 C3D4)."
     not_found: Er is geen data gevonden voor de ingevoerde hash code.
+  warning:
+    already_imported: "De politieke groepering “{}” is al geïmporteerd. Kies “Toch importeren” om deze opnieuw te importeren."
 index:
   closes_on: Sluit op
   feature:
