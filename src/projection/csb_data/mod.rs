@@ -1,5 +1,4 @@
 mod event;
-mod extractor;
 mod getters;
 
 pub use event::{CsbAction, CsbEvent};
@@ -152,7 +151,7 @@ impl CsbStoreData {
 }
 
 #[cfg(test)]
-impl crate::CsbStore {
+impl crate::CsbStream {
     pub fn new_for_test() -> Self {
         use crate::StreamId;
 

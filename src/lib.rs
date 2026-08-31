@@ -117,7 +117,7 @@ pub(crate) use pg::{
 };
 pub(crate) use projection::{
     AppRequestState, CsbAction, CsbMainAction, CsbMainStore, CsbMainStoreData, CsbStore,
-    CsbStoreData, PgEvent, PgStore, PgStoreData,
+    CsbStoreData, CsbStream, PgEvent, PgStore, PgStoreData,
 };
 pub use projection::{CsbEvent, CsbMainEvent};
 

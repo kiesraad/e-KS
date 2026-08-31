@@ -118,9 +118,7 @@ mod tests {
     async fn renders_detail_for_main_stream_event() -> Result<(), AppError> {
         let main_store = CsbMainStore::new_for_test();
         main_store
-            .update(CsbMainAction::Login.by(CsbUser::Developer {
-                stream_id: CSB_MAIN_STREAM_ID,
-            }))
+            .update(CsbMainAction::Login.by(CsbUser::Developer))
             .await?;
 
         let state = AppState::new_for_tests().await;
@@ -150,9 +148,7 @@ mod tests {
     async fn close_link_returns_to_redirect_target() -> Result<(), AppError> {
         let main_store = CsbMainStore::new_for_test();
         main_store
-            .update(CsbMainAction::Login.by(CsbUser::Developer {
-                stream_id: CSB_MAIN_STREAM_ID,
-            }))
+            .update(CsbMainAction::Login.by(CsbUser::Developer))
             .await?;
 
         let state = AppState::new_for_tests().await;

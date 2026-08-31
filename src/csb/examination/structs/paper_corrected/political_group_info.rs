@@ -1,6 +1,6 @@
 use super::PaperCorrected;
 use crate::{
-    CsbStore, Locale,
+    CsbStream, Locale,
     projection::WithCorrections,
     structs::{
         common::PreviousElectionResults, list_designation::ListDesignation,
@@ -17,7 +17,7 @@ pub struct PaperCorrectedPoliticalGroupInfo {
 }
 
 impl PaperCorrectedPoliticalGroupInfo {
-    pub fn new(store: &CsbStore, locale: Locale) -> Self {
+    pub fn new(store: &CsbStream, locale: Locale) -> Self {
         let imported_group = store.get_political_group(WithCorrections::None);
         let paper_corrected_group = store.get_political_group(WithCorrections::Paper);
 

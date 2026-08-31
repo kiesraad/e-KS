@@ -6,8 +6,8 @@ use axum::{
 use serde::Deserialize;
 
 use crate::{
-    AppError, AppRequestState, Context, CsbAction, CsbContext, CsbUser, Form, HtmlTemplate, Locale,
-    PgStoreData, StreamId,
+    AppError, AppRequestState, Context, CsbAction, CsbContext, CsbStore, CsbUser, Form,
+    HtmlTemplate, Locale, PgStoreData, StreamId,
     csb::examination::{CsbExaminationOverviewPath, CsbPoliticalGroupPath},
     filters,
     projection::WithCorrections,
@@ -155,18 +155,18 @@ async fn do_import<S: AppRequestState>(
     let snapshot = PgStoreData::snapshot_until(&events, event_id);
 
     // Persist the import under a fresh CSB stream.
-    let csb_store = state
-        .csb_store_for_stream(StreamId::new(), source_election)
-        .await?;
+    let csb_store = CsbStore::acting_as(
+        state
+            .csb_store_for_stream(StreamId::new(), source_election)
+            .await?,
+        user,
+    );
     csb_store
-        .update(
-            CsbAction::Import {
-                hash: full_hash,
-                source_stream_id,
-                snapshot: Box::new(snapshot),
-            }
-            .by(user),
-        )
+        .update(CsbAction::Import {
+            hash: full_hash,
+            source_stream_id,
+            snapshot: Box::new(snapshot),
+        })
         .await?;
 
     Ok(ImportOutcome::Imported(redirect_success(
@@ -182,12 +182,13 @@ pub async fn create_empty<S: AppRequestState>(
     State(state): State<S>,
     context: CsbContext,
 ) -> Result<Response, AppError> {
-    let csb_store = state
-        .csb_store_for_stream(StreamId::new(), context.election)
-        .await?;
-    csb_store
-        .update(CsbAction::CreateEmpty.by(context.user()?))
-        .await?;
+    let csb_store = CsbStore::acting_as(
+        state
+            .csb_store_for_stream(StreamId::new(), context.election)
+            .await?,
+        context.user()?,
+    );
+    csb_store.update(CsbAction::CreateEmpty).await?;
     Ok(redirect_success(CsbPoliticalGroupPath {
         stream_id: csb_store.stream_id,
     }))

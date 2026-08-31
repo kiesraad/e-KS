@@ -2,7 +2,7 @@
 
 use crate::{
     AppError, Config, ElectionConfig, IdDeriver, PendingRequestStore, SessionStore, StreamId,
-    projection::{CsbMainStore, CsbMainStoreData, CsbStore, CsbStoreData, PgStoreData},
+    projection::{CsbMainStore, CsbMainStoreData, CsbStoreData, CsbStream, PgStoreData},
     store::{Store, StoreRegistry},
 };
 
@@ -36,7 +36,7 @@ pub trait AppRequestState: Clone + Send + Sync + 'static {
         &self,
         stream_id: StreamId,
         election: ElectionConfig,
-    ) -> impl Future<Output = Result<CsbStore, AppError>> + Send;
+    ) -> impl Future<Output = Result<CsbStream, AppError>> + Send;
 
     /// Fetch (or create) the single global CSB main store for an election.
     fn csb_main_store(

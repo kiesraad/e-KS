@@ -51,7 +51,7 @@ mod tests {
     use super::*;
     use axum::http::StatusCode;
 
-    use crate::{AppState, CsbAction, CsbUser, ElectionConfig, PgStoreData, StreamId};
+    use crate::{AppState, CsbAction, ElectionConfig, PgStoreData, StreamId};
 
     /// Persist a CSB stream carrying a single import event and return its id.
     async fn seed_csb_store(state: &AppState) -> StreamId {
@@ -59,16 +59,14 @@ mod tests {
         let store = state
             .csb_store_for_stream(stream_id, ElectionConfig::EK27)
             .await
-            .unwrap();
+            .unwrap()
+            .acting_as_test_user();
         store
-            .update(
-                CsbAction::Import {
-                    hash: [0u8; 32],
-                    source_stream_id: StreamId::new(),
-                    snapshot: Box::new(PgStoreData::default()),
-                }
-                .by(CsbUser::new_test()),
-            )
+            .update(CsbAction::Import {
+                hash: [0u8; 32],
+                source_stream_id: StreamId::new(),
+                snapshot: Box::new(PgStoreData::default()),
+            })
             .await
             .unwrap();
         stream_id
@@ -81,7 +79,8 @@ mod tests {
         let store = state
             .csb_store_for_stream(stream_id, ElectionConfig::EK27)
             .await
-            .unwrap();
+            .unwrap()
+            .acting_as_test_user();
         let session = Session::new_test_committee();
         let token = session.token_string();
         let old_csrf = session.csrf_token().to_string();

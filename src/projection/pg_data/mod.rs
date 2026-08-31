@@ -674,11 +674,11 @@ mod tests {
     #[tokio::test]
     async fn paper_corrections_store_wraps_events_and_refreshes_its_snapshot()
     -> Result<(), AppError> {
-        use crate::{CsbAction, CsbStore, CsbUser, test_utils::sample_political_group};
+        use crate::{CsbAction, CsbStore, test_utils::sample_political_group};
 
         let csb_store = CsbStore::new_for_test();
         csb_store.set_political_group(sample_political_group());
-        let store = PgStore::paper_corrections(csb_store.clone(), CsbUser::new_test());
+        let store = csb_store.paper_corrections();
 
         // Reads serve a snapshot of the corrected projection.
         assert_eq!(

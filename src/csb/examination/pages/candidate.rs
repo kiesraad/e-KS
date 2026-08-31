@@ -82,7 +82,7 @@ pub async fn overview(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::CsbUser;
+
     use axum::http::StatusCode;
 
     use crate::{
@@ -298,7 +298,7 @@ mod tests {
             "The declaration of consent is missing.".parse().unwrap(),
             None,
         )
-        .create(&store, CsbUser::new_test())
+        .create(&store)
         .await
         .unwrap();
 

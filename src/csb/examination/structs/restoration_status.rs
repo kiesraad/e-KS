@@ -1,5 +1,5 @@
 use crate::{
-    AppError, CsbStore,
+    AppError, CsbStream,
     structs::{candidate_lists::CandidateListId, persons::PersonId},
 };
 
@@ -9,7 +9,7 @@ pub struct RestorationStatus {
 }
 
 impl RestorationStatus {
-    pub fn for_political_group(store: &CsbStore) -> Self {
+    pub fn for_political_group(store: &CsbStream) -> Self {
         RestorationStatus {
             has_omissions: !store.get_political_group_omissions().is_empty(),
             has_corrections: store.get_political_group_csb_corrections_count() > 0,
@@ -17,7 +17,7 @@ impl RestorationStatus {
     }
 
     pub fn for_candidate_list(
-        store: &CsbStore,
+        store: &CsbStream,
         list_id: CandidateListId,
     ) -> Result<Self, AppError> {
         Ok(RestorationStatus {
@@ -26,7 +26,7 @@ impl RestorationStatus {
         })
     }
 
-    pub fn for_candidate(store: &CsbStore, person_id: PersonId, list_id: CandidateListId) -> Self {
+    pub fn for_candidate(store: &CsbStream, person_id: PersonId, list_id: CandidateListId) -> Self {
         RestorationStatus {
             has_omissions: store.has_candidate_omissions(person_id, list_id),
             has_corrections: store.has_candidate_csb_corrections(person_id),
@@ -51,7 +51,7 @@ mod tests {
     use std::str::FromStr;
 
     use crate::{
-        CsbAction, CsbUser,
+        CsbAction, CsbStore,
         structs::{
             common::{Appellation, Initials},
             csb::{Correction, OmissionCategory, PersonCorrection, sample_omission},
@@ -76,18 +76,14 @@ mod tests {
         let store = CsbStore::new_for_test();
 
         store
-            .update(
-                CsbAction::CreateOmission(sample_omission(OmissionCategory::PoliticalGroup))
-                    .by(CsbUser::new_test()),
-            )
+            .update(CsbAction::CreateOmission(sample_omission(
+                OmissionCategory::PoliticalGroup,
+            )))
             .await?;
         store
-            .update(
-                CsbAction::UpdateCorrection(Correction::Appellation(
-                    Appellation::from_str("Correction Party").unwrap(),
-                ))
-                .by(CsbUser::new_test()),
-            )
+            .update(CsbAction::UpdateCorrection(Correction::Appellation(
+                Appellation::from_str("Correction Party").unwrap(),
+            )))
             .await?;
 
         let status = RestorationStatus::for_political_group(&store);
@@ -110,12 +106,9 @@ mod tests {
 
         // add omission belonging to another list
         store
-            .update(
-                CsbAction::CreateOmission(sample_omission(OmissionCategory::CandidateList(vec![
-                    list_id2,
-                ])))
-                .by(CsbUser::new_test()),
-            )
+            .update(CsbAction::CreateOmission(sample_omission(
+                OmissionCategory::CandidateList(vec![list_id2]),
+            )))
             .await?;
 
         let status = RestorationStatus::for_candidate_list(&store, list_id1).unwrap();
@@ -135,12 +128,9 @@ mod tests {
         store.add_candidate_list(sample_candidate_list(list_id));
 
         store
-            .update(
-                CsbAction::CreateOmission(sample_omission(OmissionCategory::CandidateList(vec![
-                    list_id,
-                ])))
-                .by(CsbUser::new_test()),
-            )
+            .update(CsbAction::CreateOmission(sample_omission(
+                OmissionCategory::CandidateList(vec![list_id]),
+            )))
             .await?;
 
         let status = RestorationStatus::for_candidate_list(&store, list_id).unwrap();
@@ -167,23 +157,19 @@ mod tests {
         store.add_person(sample_person(person_id));
 
         store
-            .update(
-                CsbAction::CreateOmission(sample_omission(OmissionCategory::Candidate {
+            .update(CsbAction::CreateOmission(sample_omission(
+                OmissionCategory::Candidate {
                     person: person_id,
                     lists: vec![list_id],
-                }))
-                .by(CsbUser::new_test()),
-            )
+                },
+            )))
             .await?;
 
         store
-            .update(
-                CsbAction::UpdateCorrection(Correction::Person(
-                    person_id,
-                    PersonCorrection::Initials(Initials::from_str("A.B.").unwrap()),
-                ))
-                .by(CsbUser::new_test()),
-            )
+            .update(CsbAction::UpdateCorrection(Correction::Person(
+                person_id,
+                PersonCorrection::Initials(Initials::from_str("A.B.").unwrap()),
+            )))
             .await?;
 
         let status = RestorationStatus::for_candidate_list(&store, list_id).unwrap();
@@ -215,13 +201,12 @@ mod tests {
 
         // add omission for only 1 of the lists
         store
-            .update(
-                CsbAction::CreateOmission(sample_omission(OmissionCategory::Candidate {
+            .update(CsbAction::CreateOmission(sample_omission(
+                OmissionCategory::Candidate {
                     person: person_id,
                     lists: vec![list_id1],
-                }))
-                .by(CsbUser::new_test()),
-            )
+                },
+            )))
             .await?;
 
         // retrieve status for the other list
@@ -249,23 +234,19 @@ mod tests {
         store.add_candidate_list(list);
 
         store
-            .update(
-                CsbAction::CreateOmission(sample_omission(OmissionCategory::Candidate {
+            .update(CsbAction::CreateOmission(sample_omission(
+                OmissionCategory::Candidate {
                     person: person_id,
                     lists: vec![list_id],
-                }))
-                .by(CsbUser::new_test()),
-            )
+                },
+            )))
             .await?;
 
         store
-            .update(
-                CsbAction::UpdateCorrection(Correction::Person(
-                    person_id,
-                    PersonCorrection::Initials(Initials::from_str("A.B.").unwrap()),
-                ))
-                .by(CsbUser::new_test()),
-            )
+            .update(CsbAction::UpdateCorrection(Correction::Person(
+                person_id,
+                PersonCorrection::Initials(Initials::from_str("A.B.").unwrap()),
+            )))
             .await?;
 
         let status = RestorationStatus::for_candidate(&store, person_id, list_id);

@@ -1,5 +1,5 @@
 use super::PaperCorrected;
-use crate::{CsbStore, projection::WithCorrections};
+use crate::{CsbStream, projection::WithCorrections};
 
 /// A name authorisation with its rows diffed against the corrections.
 pub struct PaperCorrectedNameAuthorisation {
@@ -12,7 +12,7 @@ pub struct PaperCorrectedNameAuthorisation {
 /// by id; entities added by the corrections are appended, entities deleted by
 /// the corrections are hidden.
 pub fn paper_corrected_name_authorisations(
-    store: &CsbStore,
+    store: &CsbStream,
 ) -> Vec<PaperCorrectedNameAuthorisation> {
     let imported = store.get_name_authorisations(WithCorrections::None);
     let corrected = store.get_name_authorisations(WithCorrections::Paper);

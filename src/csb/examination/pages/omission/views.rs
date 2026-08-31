@@ -2,7 +2,7 @@ use askama::Template;
 use axum_extra::routing::TypedPath;
 
 use crate::{
-    AppError, Context, CsbStore, ElectoralDistrict, Locale, Overlay,
+    AppError, Context, CsbStream, ElectoralDistrict, Locale, Overlay,
     csb::examination::{OmissionForm, pages::CsbDeleteOmissionPath},
     filters,
     form::FormData,
@@ -90,7 +90,7 @@ pub(super) struct PresetGroupView {
 }
 
 /// Resolve the placeholder values that can be derived from the referenced item.
-fn placeholders_for(target: &OmissionTarget, store: &CsbStore) -> OmissionPlaceholders {
+fn placeholders_for(target: &OmissionTarget, store: &CsbStream) -> OmissionPlaceholders {
     match target.omission_type {
         OmissionType::Candidate => {
             let person = PersonId::from(target.reference);
@@ -120,7 +120,7 @@ fn placeholders_for(target: &OmissionTarget, store: &CsbStore) -> OmissionPlaceh
 /// containing a specific candidate. When `person_id` is `None`, returns all
 /// lists; when `Some`, returns only lists this candidate appears on.
 pub(super) fn candidate_list_options(
-    store: &CsbStore,
+    store: &CsbStream,
     locale: Locale,
     person_filter: Option<PersonId>,
 ) -> Vec<CandidateListOption> {
@@ -137,7 +137,7 @@ pub(super) fn candidate_list_options(
 
 /// All paper-corrected candidate list districts of the political group
 /// for the candidate list omission form (mainly declarations of support)
-pub(super) fn available_electoral_districts(store: &CsbStore) -> Vec<ElectoralDistrict> {
+pub(super) fn available_electoral_districts(store: &CsbStream) -> Vec<ElectoralDistrict> {
     let mut districts: Vec<_> = store
         .get_candidate_lists(WithCorrections::All)
         .into_iter()
@@ -148,7 +148,7 @@ pub(super) fn available_electoral_districts(store: &CsbStore) -> Vec<ElectoralDi
     districts
 }
 
-pub(super) fn preset_views(target: &OmissionTarget, store: &CsbStore) -> Vec<PresetGroupView> {
+pub(super) fn preset_views(target: &OmissionTarget, store: &CsbStream) -> Vec<PresetGroupView> {
     let placeholders = placeholders_for(target, store);
 
     let mut groups: Vec<PresetGroupView> = Vec::new();
@@ -178,7 +178,7 @@ pub(super) fn preset_views(target: &OmissionTarget, store: &CsbStore) -> Vec<Pre
 /// list-scoped and general.
 pub(super) fn omission_views(
     target: &OmissionTarget,
-    store: &CsbStore,
+    store: &CsbStream,
 ) -> Result<Vec<OmissionView>, AppError> {
     let omissions = match target.omission_type {
         OmissionType::PoliticalGroup => store.get_political_group_omissions(),

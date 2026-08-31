@@ -72,10 +72,7 @@ mod tests {
     #[test]
     fn from_main_event_sets_fields() {
         let sid = stream_id();
-        let event = StoreEvent::new(
-            1,
-            CsbMainAction::Login.by(CsbUser::Developer { stream_id: sid }),
-        );
+        let event = StoreEvent::new(1, CsbMainAction::Login.by(CsbUser::Developer));
 
         let entry = CsbAuditLogEntry::from_event(&event, sid, "Main CSB stream".to_string(), EN);
 
@@ -89,11 +86,7 @@ mod tests {
     fn from_main_event_preserves_timestamp() {
         let sid = stream_id();
         let timestamp = chrono::DateTime::from_timestamp(1_700_000_000, 0).unwrap();
-        let event = StoreEvent::new_at(
-            2,
-            CsbMainAction::Login.by(CsbUser::Developer { stream_id: sid }),
-            timestamp,
-        );
+        let event = StoreEvent::new_at(2, CsbMainAction::Login.by(CsbUser::Developer), timestamp);
 
         let entry = CsbAuditLogEntry::from_event(&event, sid, "Main CSB stream".to_string(), EN);
 
@@ -178,8 +171,7 @@ mod tests {
 
     #[test]
     fn event_category_and_key_are_set_correctly() {
-        let sid = stream_id();
-        let event = CsbMainAction::Login.by(CsbUser::Developer { stream_id: sid });
+        let event = CsbMainAction::Login.by(CsbUser::Developer);
         assert_eq!(event.category(), "system");
         assert_eq!(event.key(), "login");
 

@@ -30,8 +30,6 @@ async fn main() -> Result<()> {
         println!("📄 From .env/.env.local: {}", names.join(", "));
     }
 
-    // Handed to each child rather than set on this process: `set_var` is
-    // unsafe and the workspace forbids unsafe code.
     let child_env: Vec<(String, String)> = wild_env
         .into_iter()
         .map(|(name, value)| (name.to_string(), value.to_string()))

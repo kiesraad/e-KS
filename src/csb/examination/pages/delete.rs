@@ -42,10 +42,9 @@ pub async fn delete(
 
 pub async fn delete_submit(
     _: CsbPoliticalGroupDeletePath,
-    context: CsbContext,
     store: CsbStore,
 ) -> Result<Response, AppError> {
-    store.update(CsbAction::Delete.by(context.user()?)).await?;
+    store.update(CsbAction::Delete).await?;
     Ok(Redirect::to(&CsbExaminationOverviewPath.to_string()).into_response())
 }
 

@@ -15,7 +15,7 @@ use serde::{Serialize, de::DeserializeOwned};
 
 use super::maintenance::handle_db_error;
 use crate::{
-    AppError, AppState, PgStore, SESSION_COOKIE_NAME, Session, SessionUser,
+    AppError, AppState, CsbStore, PgStore, SESSION_COOKIE_NAME, Session, SessionUser,
     auth::{csrf_guard::enforce_csrf, session_extractor::user_agent_hash},
     common::{LoginStartPath, PgIndexPath, SelectElectionPath},
     csb::index::CsbIndexPath,
@@ -127,7 +127,7 @@ pub async fn store_middleware(
                 .get_store(stream_id, *election)
                 .await;
             inject_loaded_store(&state, resolved, request, next, |store| {
-                PgStore::paper_corrections(store, user)
+                CsbStore::acting_as(store, user).paper_corrections()
             })
             .await
         }

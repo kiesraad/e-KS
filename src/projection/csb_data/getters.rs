@@ -6,7 +6,7 @@ use parking_lot::{
 };
 
 use crate::{
-    AppError, CsbStore, Locale, PgStoreData,
+    AppError, CsbStream, Locale, PgStoreData,
     structs::{
         candidate_lists::{CandidateList, CandidateListId},
         csb::{Omission, OmissionCategory, OmissionId},
@@ -28,7 +28,7 @@ pub enum WithCorrections {
     All,
 }
 
-impl CsbStore {
+impl CsbStream {
     pub fn read(
         &self,
         corrections: WithCorrections,
@@ -375,7 +375,7 @@ impl CsbStore {
 mod tests {
     use super::*;
     use crate::{
-        CsbStore, ElectoralDistrict,
+        CsbStore, CsbStream, ElectoralDistrict,
         structs::{
             candidate_lists::CandidateList,
             csb::{OmissionCategory, sample_omission},
@@ -384,12 +384,12 @@ mod tests {
         test_utils::{sample_candidate_list, sample_person_with},
     };
 
-    fn insert(store: &CsbStore, category: OmissionCategory) {
+    fn insert(store: &CsbStream, category: OmissionCategory) {
         let omission = sample_omission(category);
         store.data.write().omissions.insert(omission.id, omission);
     }
 
-    fn insert_list(store: &CsbStore, list_id: CandidateListId, districts: Vec<ElectoralDistrict>) {
+    fn insert_list(store: &CsbStream, list_id: CandidateListId, districts: Vec<ElectoralDistrict>) {
         let list = CandidateList {
             id: list_id,
             electoral_districts: districts,

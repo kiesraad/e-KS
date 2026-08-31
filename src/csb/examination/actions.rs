@@ -3,7 +3,7 @@
 use std::collections::BTreeMap;
 
 use crate::{
-    AnyLocale, AppError, CsbAction, CsbStore, CsbStoreData, CsbUser, ElectionConfig,
+    AnyLocale, AppError, CsbAction, CsbStore, CsbStoreData, CsbStream, ElectionConfig,
     ElectoralDistrict,
     models::{
         i1::{DistrictLists, SubmittedList},
@@ -46,7 +46,7 @@ pub async fn submitted_lists(
 
 /// The rows one political group contributes to the submitted lists section,
 /// paired with the district they belong to.
-fn store_submitted_lists(store: &CsbStore) -> Vec<(ElectoralDistrict, SubmittedList)> {
+fn store_submitted_lists(store: &CsbStream) -> Vec<(ElectoralDistrict, SubmittedList)> {
     let appellation = store.get_appellation(WithCorrections::All);
     let mut lists = store.get_candidate_lists(WithCorrections::All);
     lists.sort_unstable_by_key(|list| list.created_at);
@@ -127,7 +127,7 @@ impl OmissionCategory {
     /// Returns the electoral district string for use in models I 1 and I 4.
     pub fn electoral_district(
         &self,
-        store: &CsbStore,
+        store: &CsbStream,
         election: &ElectionConfig,
     ) -> Result<String, AppError> {
         match self {
@@ -169,26 +169,19 @@ fn format_districts(districts: &[ElectoralDistrict], election: &ElectionConfig) 
 }
 
 impl Omission {
-    pub async fn create(&self, store: &CsbStore, user: CsbUser) -> Result<(), AppError> {
-        store
-            .update(CsbAction::CreateOmission(self.clone()).by(user))
-            .await
+    pub async fn create(&self, store: &CsbStore) -> Result<(), AppError> {
+        store.update(CsbAction::CreateOmission(self.clone())).await
     }
 
-    pub async fn update(&self, store: &CsbStore, user: CsbUser) -> Result<(), AppError> {
-        store
-            .update(CsbAction::UpdateOmission(self.clone()).by(user))
-            .await
+    pub async fn update(&self, store: &CsbStore) -> Result<(), AppError> {
+        store.update(CsbAction::UpdateOmission(self.clone())).await
     }
 
-    pub async fn delete(&self, store: &CsbStore, user: CsbUser) -> Result<(), AppError> {
+    pub async fn delete(&self, store: &CsbStore) -> Result<(), AppError> {
         store
-            .update(
-                CsbAction::DeleteOmission {
-                    omission_id: self.id,
-                }
-                .by(user),
-            )
+            .update(CsbAction::DeleteOmission {
+                omission_id: self.id,
+            })
             .await
     }
 }
@@ -197,8 +190,8 @@ impl Omission {
 mod tests {
     use super::*;
     use crate::{
-        AppRequestState, AppState, ElectionConfig, ElectoralDistrict, PgStoreData, Province,
-        StreamId,
+        AppRequestState, AppState, CsbStore, ElectionConfig, ElectoralDistrict, PgStoreData,
+        Province, StreamId,
         structs::{
             candidate_lists::{CandidateList, CandidateListId},
             common::UtcDateTime,
@@ -249,7 +242,8 @@ mod tests {
         let store = state
             .csb_store_for_stream(StreamId::new(), EK)
             .await
-            .unwrap();
+            .unwrap()
+            .acting_as_test_user();
 
         let mut snapshot = PgStoreData {
             political_group,
@@ -263,14 +257,11 @@ mod tests {
         }
 
         store
-            .update(
-                CsbAction::Import {
-                    hash: [0u8; 32],
-                    source_stream_id: StreamId::new(),
-                    snapshot: Box::new(snapshot),
-                }
-                .by(CsbUser::new_test()),
-            )
+            .update(CsbAction::Import {
+                hash: [0u8; 32],
+                source_stream_id: StreamId::new(),
+                snapshot: Box::new(snapshot),
+            })
             .await
             .unwrap();
 
@@ -280,7 +271,7 @@ mod tests {
     async fn create_omission(store: &CsbStore, category: OmissionCategory, description: &str) {
         let mut omission = sample_omission(category);
         omission.description = description.parse().unwrap();
-        omission.create(store, CsbUser::new_test()).await.unwrap();
+        omission.create(store).await.unwrap();
     }
 
     #[test]
@@ -613,10 +604,7 @@ mod tests {
         let without = seed_csb_store(&state, named_group("Zonder Verzuimen"), vec![], vec![]).await;
         let mut irreparable = sample_omission(OmissionCategory::PoliticalGroup);
         irreparable.recoverable = false;
-        irreparable
-            .create(&without, CsbUser::new_test())
-            .await
-            .unwrap();
+        irreparable.create(&without).await.unwrap();
 
         let with = seed_csb_store(&state, named_group("Met Verzuimen"), vec![], vec![]).await;
         create_omission(

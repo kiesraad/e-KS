@@ -2,7 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::{GithubUserId, Locale, StreamId, trans, utils::abbreviate_str};
+use crate::{GithubUserId, Locale, trans};
 
 /// The committee member behind a CSB session, recorded on every CSB event so
 /// the audit log can show who triggered it.
@@ -12,8 +12,8 @@ use crate::{GithubUserId, Locale, StreamId, trans, utils::abbreviate_str};
 /// stay unchanged.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum CsbUser {
-    /// Dev-login bypass, identified only by the session's derived stream id.
-    Developer { stream_id: StreamId },
+    /// Dev-login bypass, with no identity beyond the login method itself.
+    Developer,
     /// GitHub OAuth login, identified by the account's numeric id.
     Github { user_id: GithubUserId },
 }
@@ -28,11 +28,7 @@ impl CsbUser {
     /// Human-readable label shown in the audit log.
     pub fn describe(&self, locale: Locale) -> String {
         match self {
-            CsbUser::Developer { stream_id } => format!(
-                "{} {}",
-                trans!("audit_log.user.developer", locale),
-                abbreviate_str(&stream_id.to_string())
-            ),
+            CsbUser::Developer => trans!("audit_log.user.developer", locale),
             CsbUser::Github { user_id } => {
                 format!("{} {user_id}", trans!("audit_log.user.github", locale))
             }
@@ -41,9 +37,7 @@ impl CsbUser {
 
     #[cfg(test)]
     pub fn new_test() -> Self {
-        CsbUser::Developer {
-            stream_id: StreamId::new(),
-        }
+        CsbUser::Developer
     }
 }
 
@@ -59,11 +53,7 @@ mod tests {
         assert_eq!(github.describe(Locale::En), "GitHub user 583231");
         assert_eq!(github.describe(Locale::Nl), "GitHub-gebruiker 583231");
 
-        let stream_id = StreamId::new();
-        let developer = CsbUser::Developer { stream_id };
-        let label = developer.describe(Locale::En);
-        assert!(label.starts_with("Developer "));
-        assert!(label.contains(&abbreviate_str(&stream_id.to_string())));
+        assert_eq!(CsbUser::Developer.describe(Locale::En), "Developer");
     }
 
     #[test]

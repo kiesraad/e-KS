@@ -1,7 +1,7 @@
 use axum_extra::routing::TypedPath;
 
 use crate::{
-    AppError, CsbStore, QueryParamState,
+    AppError, CsbStream, QueryParamState,
     csb::examination::extractors::CsbPoliticalGroup,
     structs::{
         candidate_lists::CandidateListId,
@@ -27,7 +27,7 @@ pub struct OmissionWithPath {
     pub path: String,
 }
 
-impl CsbStore {
+impl CsbStream {
     pub fn get_all_omissions(
         &self,
         political_group: &CsbPoliticalGroup,
@@ -135,13 +135,12 @@ fn candidate_path(
 #[cfg(test)]
 mod tests {
     use crate::{
-        StreamId,
+        CsbStore, StreamId,
         structs::csb::OmissionType,
         test_utils::{sample_candidate_list, sample_person},
     };
 
     use super::*;
-    use crate::CsbUser;
 
     fn redirect_param(stream_id: StreamId) -> String {
         format!("&redirect_to=%2Fcsb%2Fexamination%2F{stream_id}%2Fomissions")
@@ -256,7 +255,7 @@ mod tests {
             "description".parse().unwrap(),
             "help_text".parse().ok(),
         )
-        .create(&store, CsbUser::new_test())
+        .create(&store)
         .await
         .expect("Couldn't create omission");
 
@@ -288,7 +287,7 @@ mod tests {
                 "description".parse().unwrap(),
                 "help_text".parse().ok(),
             )
-            .create(&store, CsbUser::new_test())
+            .create(&store)
             .await
             .expect("Couldn't create omission");
         }

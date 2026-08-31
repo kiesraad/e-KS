@@ -263,7 +263,7 @@ mod tests {
     #[tokio::test]
     async fn paper_corrections_detail_diffs_against_the_imported_snapshot() -> Result<(), AppError>
     {
-        use crate::{CsbAction, CsbStore, CsbUser, PgEvent, StreamId};
+        use crate::{CsbAction, CsbStore, PgEvent, StreamId};
 
         // Source stream with an imported person.
         let source = PgStore::new_for_test();
@@ -275,18 +275,15 @@ mod tests {
         let snapshot = crate::PgStoreData::snapshot_until(&events, usize::MAX);
         let csb_store = CsbStore::new_for_test();
         csb_store
-            .update(
-                CsbAction::Import {
-                    hash: [1; 32],
-                    source_stream_id: StreamId::new(),
-                    snapshot: Box::new(snapshot),
-                }
-                .by(CsbUser::new_test()),
-            )
+            .update(CsbAction::Import {
+                hash: [1; 32],
+                source_stream_id: StreamId::new(),
+                snapshot: Box::new(snapshot),
+            })
             .await?;
 
         // Correct the imported person's first name.
-        let store = PgStore::paper_corrections(csb_store, CsbUser::new_test());
+        let store = csb_store.paper_corrections();
         let mut corrected = store.get_person(person_id)?;
         corrected.name.first_name = Some("Gecorrigeerd".parse().unwrap());
         store.update(PgEvent::UpdatePerson(corrected)).await?;

@@ -83,10 +83,9 @@ pub async fn appellation_correction_submit(
         )),
         Ok(appellation) => {
             store
-                .update(
-                    crate::CsbAction::UpdateCorrection(Correction::Appellation(appellation))
-                        .by(context.user()?),
-                )
+                .update(crate::CsbAction::UpdateCorrection(Correction::Appellation(
+                    appellation,
+                )))
                 .await?;
             Ok(query.redirect_or(close_action))
         }
@@ -142,13 +141,10 @@ pub async fn person_correction_submit(
         )),
         Ok(person_correction) => {
             store
-                .update(
-                    crate::CsbAction::UpdateCorrection(Correction::Person(
-                        path.person_id,
-                        person_correction,
-                    ))
-                    .by(context.user()?),
-                )
+                .update(crate::CsbAction::UpdateCorrection(Correction::Person(
+                    path.person_id,
+                    person_correction,
+                )))
                 .await?;
             Ok(query.redirect_or(close_action))
         }

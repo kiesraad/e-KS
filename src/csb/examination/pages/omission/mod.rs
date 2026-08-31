@@ -6,7 +6,8 @@ use axum_extra::routing::TypedPath;
 use uuid::Uuid;
 
 use crate::{
-    AppError, CsbContext, CsbStore, Form, HtmlTemplate, Locale, Overlay, QueryParamState, StreamId,
+    AppError, CsbContext, CsbStore, CsbStream, Form, HtmlTemplate, Locale, Overlay,
+    QueryParamState, StreamId,
     csb::examination::{
         OmissionForm,
         extractors::CsbPoliticalGroup,
@@ -68,7 +69,7 @@ impl OmissionTarget {
         form: FormData<OmissionForm>,
         query: &QueryParamState,
         context: CsbContext,
-        store: &CsbStore,
+        store: &CsbStream,
     ) -> Result<Response, AppError> {
         let available_districts = self
             .omission_type
@@ -107,7 +108,7 @@ impl OmissionTarget {
         .into_response())
     }
 
-    fn generate_title_suffix(&self, store: &CsbStore, locale: Locale) -> Result<String, AppError> {
+    fn generate_title_suffix(&self, store: &CsbStream, locale: Locale) -> Result<String, AppError> {
         let first_candidate = store.get_first_candidate_name(WithCorrections::All);
         let appellation = store
             .get_political_group(WithCorrections::All)
@@ -265,7 +266,7 @@ pub async fn add_omission_submit(
                     candidate_lists,
                 )
             };
-            omission.create(&store, context.user()?).await?;
+            omission.create(&store).await?;
 
             let political_group = CsbPoliticalGroup::new_from_csb_store(&store);
             Ok(query.redirect_or(return_path(&target, &political_group)))
@@ -278,7 +279,6 @@ pub async fn add_omission_submit(
 /// the overlay marker across the redirect.
 pub async fn delete_omission(
     path: CsbDeleteOmissionPath,
-    context: CsbContext,
     store: CsbStore,
     Query(query): Query<QueryParamState>,
 ) -> Result<Response, AppError> {
@@ -288,7 +288,7 @@ pub async fn delete_omission(
     } = path;
     let omission = store.get_omission(omission_id)?;
     let overview = overview_url_for(&omission.category, stream_id);
-    omission.delete(&store, context.user()?).await?;
+    omission.delete(&store).await?;
     Ok(Redirect::to(
         &overview
             .with_query_params(QueryParamState::overlay(
@@ -302,7 +302,7 @@ pub async fn delete_omission(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::CsbUser;
+
     use axum::http::StatusCode;
 
     use crate::{
@@ -608,7 +608,7 @@ mod tests {
             "De waarborgsom ontbreekt.".parse().unwrap(),
             Some("Betaal de waarborgsom.".parse().unwrap()),
         )
-        .create(&store, CsbUser::new_test())
+        .create(&store)
         .await
         .unwrap();
         let mut irreparable = Omission::new(
@@ -618,10 +618,7 @@ mod tests {
             None,
         );
         irreparable.recoverable = false;
-        irreparable
-            .create(&store, CsbUser::new_test())
-            .await
-            .unwrap();
+        irreparable.create(&store).await.unwrap();
 
         let response = overview(
             CsbOmissionOverviewPath {
@@ -676,7 +673,7 @@ mod tests {
             "De waarborgsom ontbreekt.".parse().unwrap(),
             None,
         );
-        omission.create(&store, CsbUser::new_test()).await.unwrap();
+        omission.create(&store).await.unwrap();
         let omission_id = omission.id;
         assert_eq!(store.get_candidate_list_omissions(list).unwrap().len(), 1);
 
@@ -685,7 +682,6 @@ mod tests {
                 stream_id,
                 omission_id,
             },
-            CsbContext::new_test(),
             store.clone(),
             Query(QueryParamState::default()),
         )
@@ -721,7 +717,7 @@ mod tests {
             "The deposit is missing.".parse().unwrap(),
             None,
         );
-        omission.create(&store, CsbUser::new_test()).await.unwrap();
+        omission.create(&store).await.unwrap();
         let omission_id = omission.id;
 
         let response = delete_omission(
@@ -729,7 +725,6 @@ mod tests {
                 stream_id,
                 omission_id,
             },
-            CsbContext::new_test(),
             store.clone(),
             Query(QueryParamState::redirect_to("/back/here".to_string())),
         )

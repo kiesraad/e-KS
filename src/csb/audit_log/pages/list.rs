@@ -126,7 +126,7 @@ fn filter_events<'a, E: Event + crate::HasCsbUser + 'a>(
 /// Collects the filtered audit log entries of the selected stream: the import
 /// stream the `stream` filter points at, or the committee main stream.
 fn collect_entries(
-    import_stores: &[crate::projection::CsbStore],
+    import_stores: &[crate::projection::CsbStream],
     main_store: &CsbMainStore,
     filter: &CsbAuditLogFilter,
     locale: Locale,
@@ -233,10 +233,7 @@ mod tests {
     use std::str::FromStr;
 
     use super::*;
-    use crate::{
-        projection::{CSB_MAIN_STREAM_ID, WithCorrections},
-        structs::common::Appellation,
-    };
+    use crate::{projection::WithCorrections, structs::common::Appellation};
     use axum::{
         extract::{Query, State},
         http::StatusCode,
@@ -295,9 +292,7 @@ mod tests {
     async fn renders_main_stream_events() -> Result<(), AppError> {
         let main_store = CsbMainStore::new_for_test();
         main_store
-            .update(CsbMainAction::Login.by(CsbUser::Developer {
-                stream_id: CSB_MAIN_STREAM_ID,
-            }))
+            .update(CsbMainAction::Login.by(CsbUser::Developer))
             .await?;
 
         let response = call(main_store, AppState::new_for_tests().await, no_filter()).await?;
@@ -425,9 +420,7 @@ mod tests {
         let main_store = CsbMainStore::new_for_test();
         for _ in 0..PER_PAGE + 5 {
             main_store
-                .update(CsbMainAction::Login.by(CsbUser::Developer {
-                    stream_id: CSB_MAIN_STREAM_ID,
-                }))
+                .update(CsbMainAction::Login.by(CsbUser::Developer))
                 .await?;
         }
 
@@ -445,9 +438,7 @@ mod tests {
     async fn filters_by_main_stream() -> Result<(), AppError> {
         let main_store = CsbMainStore::new_for_test();
         main_store
-            .update(CsbMainAction::Login.by(CsbUser::Developer {
-                stream_id: CSB_MAIN_STREAM_ID,
-            }))
+            .update(CsbMainAction::Login.by(CsbUser::Developer))
             .await?;
 
         let state = AppState::new_for_tests().await;
@@ -471,9 +462,7 @@ mod tests {
     async fn filters_by_import_stream() -> Result<(), AppError> {
         let main_store = CsbMainStore::new_for_test();
         main_store
-            .update(CsbMainAction::Login.by(CsbUser::Developer {
-                stream_id: CSB_MAIN_STREAM_ID,
-            }))
+            .update(CsbMainAction::Login.by(CsbUser::Developer))
             .await?;
 
         let state = AppState::new_for_tests().await;
@@ -506,9 +495,7 @@ mod tests {
     async fn filters_by_event_type() -> Result<(), AppError> {
         let main_store = CsbMainStore::new_for_test();
         main_store
-            .update(CsbMainAction::Login.by(CsbUser::Developer {
-                stream_id: CSB_MAIN_STREAM_ID,
-            }))
+            .update(CsbMainAction::Login.by(CsbUser::Developer))
             .await?;
 
         let state = AppState::new_for_tests().await;
@@ -542,9 +529,7 @@ mod tests {
     async fn searches_by_description() -> Result<(), AppError> {
         let main_store = CsbMainStore::new_for_test();
         main_store
-            .update(CsbMainAction::Login.by(CsbUser::Developer {
-                stream_id: CSB_MAIN_STREAM_ID,
-            }))
+            .update(CsbMainAction::Login.by(CsbUser::Developer))
             .await?;
 
         let state = AppState::new_for_tests().await;
@@ -576,9 +561,7 @@ mod tests {
     async fn reset_button_only_shown_when_filter_active() -> Result<(), AppError> {
         let main_store = CsbMainStore::new_for_test();
         main_store
-            .update(CsbMainAction::Login.by(CsbUser::Developer {
-                stream_id: CSB_MAIN_STREAM_ID,
-            }))
+            .update(CsbMainAction::Login.by(CsbUser::Developer))
             .await?;
 
         let state = AppState::new_for_tests().await;
@@ -606,9 +589,7 @@ mod tests {
     async fn detail_links_preserve_filter_as_redirect() -> Result<(), AppError> {
         let main_store = CsbMainStore::new_for_test();
         main_store
-            .update(CsbMainAction::Login.by(CsbUser::Developer {
-                stream_id: CSB_MAIN_STREAM_ID,
-            }))
+            .update(CsbMainAction::Login.by(CsbUser::Developer))
             .await?;
 
         let response = call(

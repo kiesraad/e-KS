@@ -84,9 +84,7 @@ pub async fn select_election_submit<S: AppRequestState>(
     // in `establish_session`), it is never mutated into one.
     #[cfg(feature = "fixtures")]
     if form.login_as_csb() {
-        let user = crate::CsbUser::Developer {
-            stream_id: crate::StreamId::new(),
-        };
+        let user = crate::CsbUser::Developer;
 
         if form.load_fixtures() {
             crate::csb::import::fixture::import_csb_fixture(&state, election, user.clone()).await?;

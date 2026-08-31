@@ -77,22 +77,18 @@ struct DevLogin<'a> {
 }
 
 impl<'a> DevLogin<'a> {
-    /// Builds the session: its identity from `csb` (a committee member with a
-    /// random developer id, or a political group with its stream derived from
-    /// `bsn`), and its locale and user agent from the request headers.
+    /// Builds the session: its identity from `csb` (a committee member, or a
+    /// political group with its stream derived from `bsn`), and its locale and
+    /// user agent from the request headers.
     fn new(state: &'a AppState, query: &'a DevLoginQuery, headers: &axum::http::HeaderMap) -> Self {
         let locale = Locale::from_headers(headers);
         let mut session = match query.csb {
-            // Committee members share the CSB main stream; the developer
-            // identity only distinguishes them in the audit log, so a random
-            // id suffices and no BSN-derived stream is involved.
-            Some(true) => Session::for_committee(
-                CsbUser::Developer {
-                    stream_id: StreamId::new(),
-                },
-                state.config.default_election,
-                locale,
-            ),
+            // Committee members share the CSB main stream, and dev logins are
+            // not told apart in the audit log, so no BSN-derived stream is
+            // involved.
+            Some(true) => {
+                Session::for_committee(CsbUser::Developer, state.config.default_election, locale)
+            }
             _ => Session::for_political_group(
                 derive_dev_stream_id(state, query.bsn.as_deref()),
                 DEV_LOGIN_NAME_ID.to_string(),
@@ -411,7 +407,7 @@ mod tests {
             store.data.read().events.as_slice(),
             &[StoreEvent {
                 payload: CsbMainEvent {
-                    user: CsbUser::Developer { .. },
+                    user: CsbUser::Developer,
                     action: CsbMainAction::Login,
                 },
                 ..

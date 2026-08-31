@@ -1,4 +1,6 @@
-use crate::{AppError, AppRequestState, CsbAction, CsbUser, ElectionConfig, PgStoreData, StreamId};
+use crate::{
+    AppError, AppRequestState, CsbAction, CsbStore, CsbUser, ElectionConfig, PgStoreData, StreamId,
+};
 
 /// Marks CSB imports that were created from fixtures
 pub const FIXTURE_IMPORT_HASH: [u8; 32] = [0; 32];
@@ -25,18 +27,18 @@ pub async fn import_csb_fixture<S: AppRequestState>(
     let events = app_store.data.read().events.clone();
     let snapshot = PgStoreData::snapshot_until(&events, usize::MAX);
 
-    state
-        .csb_store_for_stream(StreamId::new(), election)
-        .await?
-        .update(
-            CsbAction::Import {
-                hash: FIXTURE_IMPORT_HASH,
-                source_stream_id: pg_stream_id,
-                snapshot: Box::new(snapshot),
-            }
-            .by(user),
-        )
-        .await?;
+    CsbStore::acting_as(
+        state
+            .csb_store_for_stream(StreamId::new(), election)
+            .await?,
+        user,
+    )
+    .update(CsbAction::Import {
+        hash: FIXTURE_IMPORT_HASH,
+        source_stream_id: pg_stream_id,
+        snapshot: Box::new(snapshot),
+    })
+    .await?;
 
     Ok(())
 }

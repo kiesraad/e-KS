@@ -74,7 +74,7 @@ pub async fn update_political_group_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppError, Context, CsbUser, Form, PgStore, QueryParamState,
+        AppError, Context, Form, PgStore, QueryParamState,
         structs::{
             common::{Appellation, PreviousElectionResults},
             name_authorisations::NameAuthorisationId,
@@ -120,7 +120,7 @@ mod tests {
     -> Result<(), AppError> {
         let csb_store = crate::CsbStore::new_for_test();
         csb_store.set_political_group(crate::test_utils::sample_political_group());
-        let store = PgStore::paper_corrections(csb_store.clone(), CsbUser::new_test());
+        let store = csb_store.paper_corrections();
         let context = Context::new(
             &store,
             crate::Session::new_test_with_locale(crate::Locale::En),
