@@ -74,15 +74,15 @@ impl Person {
     }
 
     pub fn after_update_path(&self) -> String {
-        if self.lives_in_nl() {
-            self.update_address_path().to_string()
-        } else {
+        if self.needs_representative() {
             self.update_representative_path().to_string()
+        } else {
+            self.update_address_path().to_string()
         }
     }
 
     pub fn after_create_path(&self) -> String {
-        if self.lives_in_nl() {
+        if !self.needs_representative() {
             UpdatePersonAddressPath { person_id: self.id }
                 .with_query_params(QueryParamState::created())
                 .to_string()

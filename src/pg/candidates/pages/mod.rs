@@ -114,6 +114,18 @@ mod tests {
             person: foreign_person,
         };
 
+        let mut caribbean_person = sample_person(PersonId::new());
+        caribbean_person.personal_data.country =
+            Some("NL".parse::<CountryCode>().expect("country code"));
+        caribbean_person.personal_data.place_of_residence = Some(
+            crate::structs::common::PlaceOfResidence::Known("Kralendijk".to_string()),
+        );
+        let caribbean_candidate = Candidate {
+            list_id,
+            position: 1,
+            person: caribbean_person,
+        };
+
         let expected_dutch = format!(
             "/candidate-lists/{}/address/{}?&initial=true&success=true",
             dutch_candidate.list_id, dutch_candidate.person.id
@@ -121,6 +133,10 @@ mod tests {
         let expected_foreign = format!(
             "/candidate-lists/{}/representative/{}?&initial=true&success=true",
             foreign_candidate.list_id, foreign_candidate.person.id
+        );
+        let expected_caribbean = format!(
+            "/candidate-lists/{}/representative/{}?&initial=true&success=true",
+            caribbean_candidate.list_id, caribbean_candidate.person.id
         );
 
         assert_eq!(
@@ -130,6 +146,10 @@ mod tests {
         assert_eq!(
             foreign_candidate.after_create_path().to_string(),
             expected_foreign
+        );
+        assert_eq!(
+            caribbean_candidate.after_create_path().to_string(),
+            expected_caribbean
         );
     }
 

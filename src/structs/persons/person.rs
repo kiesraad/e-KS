@@ -33,10 +33,10 @@ impl Problematic<ElectionConfig> for Person {
         Problems::merge(vec![
             self.name.get_problems(Severity::Error),
             self.personal_data.get_problems(election),
-            if self.lives_in_nl() {
-                self.address.get_problems(Severity::Warn)
-            } else {
+            if self.needs_representative() {
                 self.representative.get_problems(self)
+            } else {
+                self.address.get_problems(Severity::Warn)
             },
         ])
     }
@@ -50,7 +50,7 @@ pub struct Representative {
 
 impl Problematic<&Person> for Option<Representative> {
     fn get_problems(&self, associated_person: &Person) -> Problems {
-        if associated_person.lives_in_nl() {
+        if !associated_person.needs_representative() {
             return Problems {
                 potential_problems: Vec::new(),
                 info_problems: Vec::new(),
@@ -99,6 +99,11 @@ impl Person {
 
     pub fn lives_in_nl(&self) -> bool {
         self.personal_data.lives_in_nl()
+    }
+
+    /// See [`PersonalData::needs_representative`].
+    pub fn needs_representative(&self) -> bool {
+        self.personal_data.needs_representative()
     }
 
     pub fn gender_key(&self) -> &'static str {
@@ -150,7 +155,7 @@ mod tests {
         AppError, PgStore,
         pagination::SortDirection,
         structs::{
-            common::{BsnOrNoneConfirmed, CountryCode, EmptyAddressProblems},
+            common::{BsnOrNoneConfirmed, CountryCode, EmptyAddressProblems, PlaceOfResidence},
             persons::PersonSort,
         },
         test_utils::{
@@ -374,6 +379,26 @@ mod tests {
                 .potential_problems
                 .contains(&PotentialProblems::NoRepresentative)
         );
+    }
+
+    #[test]
+    fn caribbean_nl_person_without_representative_produces_warning() {
+        let mut person = sample_person(PersonId::new());
+        person.personal_data.place_of_residence =
+            Some(PlaceOfResidence::Known("Kralendijk".to_string()));
+        // the (empty) correspondence address must not be flagged: a
+        // representative is required instead
+        person.address = DutchAddress::default();
+
+        let problems = person.get_problems(ElectionConfig::EK27);
+        assert!(
+            problems
+                .potential_problems
+                .contains(&PotentialProblems::NoRepresentative)
+        );
+
+        person.representative = Some(complete_representative());
+        assert!(person.get_problems(ElectionConfig::EK27).is_all_good());
     }
 
     #[test]

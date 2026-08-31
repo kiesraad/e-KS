@@ -140,6 +140,7 @@ impl From<CandidateRecordCsv> for CandidateRecord {
 
 impl From<Person> for CandidateRecordCsv {
     fn from(person: Person) -> Self {
+        let needs_representative = person.needs_representative();
         let Person {
             name: candidate_name,
             personal_data: candidate_personal_data,
@@ -148,14 +149,16 @@ impl From<Person> for CandidateRecordCsv {
             ..
         } = person;
 
-        let representative = match candidate_personal_data.country.as_ref() {
-            Some(country) if !country.is_nl() => person_representative.unwrap_or_default(),
-            _ => Representative::default(),
+        let representative = if needs_representative {
+            person_representative.unwrap_or_default()
+        } else {
+            Representative::default()
         };
 
-        let address = match candidate_personal_data.country.as_ref() {
-            Some(country) if country.is_nl() => person_address,
-            _ => DutchAddress::default(),
+        let address = if needs_representative {
+            DutchAddress::default()
+        } else {
+            person_address
         };
 
         CandidateRecordCsv {
@@ -229,7 +232,13 @@ fn bsn_from_csv(value: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use crate::{structs::common::Gender, test_utils::display_opt};
+    use crate::{
+        structs::{
+            common::{FullName, Gender, PlaceOfResidence},
+            persons::PersonId,
+        },
+        test_utils::{display_opt, sample_dutch_address, sample_person},
+    };
 
     use super::*;
 
@@ -392,5 +401,37 @@ mod tests {
             "Mooiere Straat",
             "'s-Gravenhage",
         );
+    }
+
+    #[test]
+    fn csv_export_uses_representative_for_caribbean_nl_residents() {
+        let mut person = sample_person(PersonId::new());
+        person.representative = Some(Representative {
+            name: FullName {
+                first_name: None,
+                last_name: "Puk".parse().expect("last name"),
+                last_name_prefix: None,
+                initials: "P.".parse().expect("initials"),
+            },
+            address: sample_dutch_address("Den Haag", "5678 CD", "34", "b", "Mooiere Straat"),
+        });
+
+        // a Dutch resident exports the correspondence address, not the representative
+        let csv = CandidateRecordCsv::from(person.clone());
+        assert_eq!(csv.correspondentie_plaats, "Juinen");
+        assert_eq!(csv.gemachtigde_achternaam, "");
+        assert_eq!(csv.gemachtigde_postcode, "");
+
+        // a Caribbean Netherlands resident (country NL) exports the representative
+        person.personal_data.place_of_residence =
+            Some(PlaceOfResidence::Known("Bonaire".to_string()));
+        let csv = CandidateRecordCsv::from(person);
+        assert_eq!(csv.landcode, "NL");
+        assert_eq!(csv.woonplaats, "Bonaire");
+        assert_eq!(csv.correspondentie_plaats, "");
+        assert_eq!(csv.correspondentie_postcode, "");
+        assert_eq!(csv.gemachtigde_achternaam, "Puk");
+        assert_eq!(csv.gemachtigde_postcode, "5678CD");
+        assert_eq!(csv.gemachtigde_plaats, "'s-Gravenhage");
     }
 }

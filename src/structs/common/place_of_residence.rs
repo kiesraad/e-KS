@@ -19,6 +19,14 @@ use crate::{
     utils::{bag, locality_aliases::replace_locality_alias},
 };
 
+/// Localities (Kralendijk, Rincon) and municipalities (Bonaire, Saba, Sint
+/// Eustatius) of the Caribbean Netherlands. Residents of these places have
+/// country code NL but need an authorised person (gemachtigde) instead of a
+/// Dutch correspondence address. Mirrors bagatel's private `CN_LOCALITIES`
+/// and `CN_MUNICIPALITIES` (bagatel 0.8.3).
+pub const CARIBBEAN_NL_PLACES: &[&str] =
+    &["Kralendijk", "Rincon", "Bonaire", "Saba", "Sint Eustatius"];
+
 /// A validated place of residence, tagged by whether it exists in the BAG.
 ///
 /// Both variants wrap the same kind of normalized locality name; the
@@ -80,6 +88,16 @@ impl PlaceOfResidence {
     pub fn is_unknown_opt(por: &Option<Self>) -> bool {
         matches!(por, Some(PlaceOfResidence::Unknown(_)))
     }
+
+    /// Whether this place lies in the Caribbean Netherlands (see
+    /// [`CARIBBEAN_NL_PLACES`]). Case-insensitive, so a manually typed
+    /// [`Unknown`](PlaceOfResidence::Unknown) variant like "kralendijk" still
+    /// matches.
+    pub fn is_caribbean_nl(&self) -> bool {
+        CARIBBEAN_NL_PLACES
+            .iter()
+            .any(|place| place.eq_ignore_ascii_case(self.as_ref()))
+    }
 }
 
 #[cfg(test)]
@@ -90,5 +108,15 @@ mod tests {
     fn place_of_residence_can_be_single_character() {
         "E".parse::<PlaceOfResidence>()
             .expect("names of length one should be allowed");
+    }
+
+    #[test]
+    fn caribbean_nl_places_are_detected_case_insensitively() {
+        for place in CARIBBEAN_NL_PLACES {
+            assert!(PlaceOfResidence::Known(place.to_string()).is_caribbean_nl());
+            assert!(PlaceOfResidence::Unknown(place.to_lowercase()).is_caribbean_nl());
+        }
+
+        assert!(!PlaceOfResidence::Known("Amsterdam".to_string()).is_caribbean_nl());
     }
 }
