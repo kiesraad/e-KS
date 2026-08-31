@@ -15,7 +15,7 @@ use crate::{
     csb::index::CsbIndexPath,
     store::Store,
     structs::{common::Appellation, political_groups::PoliticalGroup},
-    utils::{format_hash, random_bsn},
+    utils::format_hash,
 };
 
 pub const DEV_LOGIN_PATH: &str = "/dev/login";
@@ -217,21 +217,13 @@ impl<'a> DevLogin<'a> {
     }
 }
 
-/// Derives the dev stream id from the requested BSN, or a random BSN if none
-/// was given.
-///
-/// The stream id is derived from the BSN only, not the scope. In real use a
-/// person has a single role, so a BSN maps to one scope. These dev endpoints
-/// don't enforce that: logging in with the *same* BSN as both a political
-/// group and the committee would point both an app store and a CSB store at
-/// the same `(stream_id, election)` partition (one cipher, two event types),
-/// which fails to decode. Accepted as a dev-only limitation; use distinct
-/// BSNs for the two roles.
+/// Derives the dev stream id from the requested BSN, or mints a fresh stream
+/// when no BSN was given.
 fn derive_dev_stream_id(state: &AppState, bsn: Option<&str>) -> StreamId {
-    let id_code: SecretString = bsn
-        .filter(|s| !s.is_empty())
-        .map(SecretString::from)
-        .unwrap_or_else(random_bsn);
+    let Some(id_code) = bsn.filter(|s| !s.is_empty()).map(SecretString::from) else {
+        return StreamId::new();
+    };
+
     state.id_deriver.derive_stream_id(&id_code)
 }
 
@@ -492,6 +484,34 @@ mod tests {
             .to_str()
             .expect("ascii header");
         assert_eq!(header, crate::utils::format_hash(&last_hash, false));
+    }
+
+    /// Dev logins that pass no BSN each get their own political group, so
+    /// end-to-end tests running in parallel against one server never share a
+    /// stream.
+    #[tokio::test]
+    async fn dev_login_without_bsn_gets_a_stream_of_its_own() {
+        let (state, app) = test_app().await;
+        let mut stream_ids = std::collections::HashSet::new();
+
+        for _ in 0..8 {
+            let response = app
+                .clone()
+                .oneshot(
+                    Request::builder()
+                        .uri("/dev/login?fixtures=false")
+                        .body(Body::empty())
+                        .expect("valid request"),
+                )
+                .await
+                .expect("response");
+
+            let stream_id = session_from(&state, &response)
+                .await
+                .stream_id
+                .expect("stream id");
+            assert!(stream_ids.insert(stream_id), "reused stream {stream_id}");
+        }
     }
 
     #[tokio::test]
