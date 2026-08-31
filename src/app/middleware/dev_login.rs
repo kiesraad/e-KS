@@ -9,8 +9,8 @@ use serde::Deserialize;
 
 use crate::{
     AppError, AppState, CsbMainAction, CsbUser, ElectionConfig, Locale, PgEvent, PgStoreData,
-    Scope, Session, StreamId,
-    auth::session_extractor::{build_session_cookie, user_agent_hash},
+    Session, SessionUser, StreamId,
+    auth::session_extractor::{establish_session, user_agent_hash},
     common::{PgIndexPath, SelectElectionPath},
     csb::index::CsbIndexPath,
     store::Store,
@@ -36,13 +36,12 @@ pub struct DevLoginQuery {
     name: Option<String>,
 }
 
-/// Dev login. By default the session and its stream are scoped to
-/// [`Scope::PoliticalGroup`] and the group only sees its own stream.
+/// Dev login. By default the session belongs to a political group
+/// ([`SessionUser::PoliticalGroup`]) that only sees its own stream.
 ///
 /// When `csb=true` the login is instead a member of the central electoral
-/// committee (CSB): the session is scoped to
-/// [`Scope::CentralElectoralCommittee`], giving access to the shared committee
-/// main stream and to all streams scoped to [`Scope::ImportedByCsb`]. No
+/// committee ([`SessionUser::CentralElectoralCommittee`]), giving access to
+/// the shared committee main stream and to all imported streams. No
 /// per-session committee stream is created.
 pub async fn dev_login(
     State(state): State<AppState>,
@@ -54,11 +53,8 @@ pub async fn dev_login(
     let (redirect_to, last_event_hash) = login.run().await?;
     let session = login.session;
 
-    state.sessions.cleanup_expired().await;
-    state.sessions.insert(session.clone()).await;
-
     let mut response = (
-        jar.add(build_session_cookie(&session)),
+        establish_session(&state.sessions, jar, session).await,
         Redirect::to(&redirect_to),
     )
         .into_response();
@@ -77,44 +73,53 @@ pub async fn dev_login(
 struct DevLogin<'a> {
     state: &'a AppState,
     query: &'a DevLoginQuery,
-    stream_id: StreamId,
     session: Session,
 }
 
 impl<'a> DevLogin<'a> {
-    /// Builds the session: its scope from `csb`, its stream from `bsn`, and its
-    /// locale and user agent from the request headers.
+    /// Builds the session: its identity from `csb` (a committee member with a
+    /// random developer id, or a political group with its stream derived from
+    /// `bsn`), and its locale and user agent from the request headers.
     fn new(state: &'a AppState, query: &'a DevLoginQuery, headers: &axum::http::HeaderMap) -> Self {
-        let scope = match query.csb {
-            Some(true) => Scope::CentralElectoralCommittee,
-            _ => Scope::PoliticalGroup,
+        let locale = Locale::from_headers(headers);
+        let mut session = match query.csb {
+            // Committee members share the CSB main stream; the developer
+            // identity only distinguishes them in the audit log, so a random
+            // id suffices and no BSN-derived stream is involved.
+            Some(true) => Session::for_committee(
+                CsbUser::Developer {
+                    stream_id: StreamId::new(),
+                },
+                state.config.default_election,
+                locale,
+            ),
+            _ => Session::for_political_group(
+                derive_dev_stream_id(state, query.bsn.as_deref()),
+                DEV_LOGIN_NAME_ID.to_string(),
+                None,
+                locale,
+            ),
         };
-        let stream_id = derive_dev_stream_id(state, query.bsn.as_deref());
-
-        let mut session = Session::new_with_locale(Locale::from_headers(headers));
-        session.set_stream_id(stream_id);
-        session.set_scope(scope);
         session.set_user_agent_hash(user_agent_hash(headers));
-        session.saml_name_id = DEV_LOGIN_NAME_ID.to_string();
 
         Self {
             state,
             query,
-            stream_id,
             session,
         }
     }
 
-    /// Sets up the stores the session's scope gives access to, and returns the
-    /// redirect path plus the chain hash of the stream's last event.
+    /// Sets up the stores the session's identity gives access to, and returns
+    /// the redirect path plus the chain hash of the stream's last event.
     async fn run(&mut self) -> Result<(String, Option<String>), AppError> {
-        // Checked for every scope, so a malformed name is rejected up front.
+        // Checked for every identity, so a malformed name is rejected up front.
         let fixture_name = self.fixture_name()?;
 
-        match self.session.scope {
-            Scope::CentralElectoralCommittee => Ok((self.csb().await?, None)),
-            Scope::ImportedByCsb => Err(AppError::Unauthorised),
-            Scope::PoliticalGroup => self.pg(fixture_name).await,
+        match self.session.user.clone() {
+            SessionUser::CentralElectoralCommittee { user, election, .. } => {
+                Ok((self.csb(user, election).await?, None))
+            }
+            SessionUser::PoliticalGroup { stream_id, .. } => self.pg(stream_id, fixture_name).await,
         }
     }
 
@@ -132,23 +137,17 @@ impl<'a> DevLogin<'a> {
 
     /// Logs the login on the shared committee main stream, optionally imports
     /// the CSB fixture, and returns the redirect path.
-    async fn csb(&mut self) -> Result<String, AppError> {
-        // All committee members share a single stream
-        // The session's own stream_id is not used for CSB state (other than for logging)
-        let election = ElectionConfig::EK27;
-        let user = CsbUser::Developer {
-            stream_id: self.stream_id,
-        };
-        self.session.set_csb_user(user.clone());
-
+    async fn csb(&mut self, user: CsbUser, election: ElectionConfig) -> Result<String, AppError> {
+        // All committee members share a single stream.
         let store = self.state.csb_main_store(election).await?;
         store.update(CsbMainAction::Login.by(user.clone())).await?;
-        self.session.set_current_election(election);
 
         #[cfg(feature = "fixtures")]
         if self.query.fixtures.unwrap_or(false) {
             crate::csb::import::fixture::import_csb_fixture(self.state, election, user).await?;
         }
+        #[cfg(not(feature = "fixtures"))]
+        let _ = user;
 
         Ok(CsbIndexPath {}.to_string())
     }
@@ -157,21 +156,18 @@ impl<'a> DevLogin<'a> {
     /// plus the chain hash of the stream's last event (for end-to-end tests).
     async fn pg(
         &mut self,
+        stream_id: StreamId,
         fixture_name: Option<Appellation>,
     ) -> Result<(String, Option<String>), AppError> {
         if self.query.select_election.unwrap_or(false) {
             return Ok((SelectElectionPath.to_string(), None));
         }
 
-        let election = ElectionConfig::EK27;
-        let (store, was_new) = self.ensure_store(fixture_name, election).await?;
+        let election = self.state.config.default_election;
+        let (store, was_new) = self.ensure_store(stream_id, fixture_name, election).await?;
 
         if was_new {
-            store
-                .update(PgEvent::DeveloperLogin {
-                    stream_id: self.stream_id,
-                })
-                .await?;
+            store.update(PgEvent::DeveloperLogin { stream_id }).await?;
         }
         let last_event_hash = store
             .data
@@ -180,7 +176,12 @@ impl<'a> DevLogin<'a> {
             .last()
             .map(|e| format_hash(&e.hash, false));
 
-        self.session.set_current_election(election);
+        if let SessionUser::PoliticalGroup {
+            election: current, ..
+        } = &mut self.session.user
+        {
+            *current = Some(election);
+        }
         Ok((PgIndexPath.to_string(), last_event_hash))
     }
 
@@ -188,13 +189,14 @@ impl<'a> DevLogin<'a> {
     /// fixtures, if asked for) when the stream is still empty.
     async fn ensure_store(
         &self,
+        stream_id: StreamId,
         fixture_name: Option<Appellation>,
         election: ElectionConfig,
     ) -> Result<(Store<PgStoreData>, bool), AppError> {
         let store = self
             .state
             .store_registry
-            .get_or_create(self.stream_id, election)
+            .get_or_create(stream_id, election)
             .await?;
         let store_is_empty = store.data.read().events.is_empty();
 
@@ -356,8 +358,8 @@ mod tests {
         let session = session_from(&state, &response).await;
         assert_eq!(session.locale, Locale::En);
         assert_eq!(
-            session.stream_id,
-            Some(derive_test_id(&state, TEST_ID_CODE))
+            session.test_stream_id(),
+            derive_test_id(&state, TEST_ID_CODE)
         );
     }
 
@@ -434,10 +436,10 @@ mod tests {
 
         let session = session_from(&state, &response).await;
         assert_eq!(
-            session.stream_id,
-            Some(derive_test_id(&state, TEST_ID_CODE))
+            session.test_stream_id(),
+            derive_test_id(&state, TEST_ID_CODE)
         );
-        assert_eq!(session.current_election, None);
+        assert_eq!(session.user.election(), None);
     }
 
     #[cfg(feature = "fixtures")]
@@ -511,10 +513,7 @@ mod tests {
                 .await
                 .expect("response");
 
-            let stream_id = session_from(&state, &response)
-                .await
-                .stream_id
-                .expect("stream id");
+            let stream_id = session_from(&state, &response).await.test_stream_id();
             assert!(stream_ids.insert(stream_id), "reused stream {stream_id}");
         }
     }
@@ -529,7 +528,7 @@ mod tests {
             .expect("response");
 
         let session = session_from(&state, &response).await;
-        assert_eq!(session.scope, Scope::PoliticalGroup);
+        assert_eq!(session.scope(), Scope::PoliticalGroup);
     }
 
     /// A `GET /dev/login?csb=true` request for the given query.
@@ -596,12 +595,8 @@ mod tests {
         assert_eq!(response.headers().get(header::LOCATION).unwrap(), "/csb");
 
         let session = session_from(&state, &response).await;
-        assert_eq!(session.scope, Scope::CentralElectoralCommittee);
-        assert_eq!(
-            session.stream_id,
-            Some(derive_test_id(&state, TEST_ID_CODE))
-        );
-        assert_eq!(session.current_election, Some(ElectionConfig::EK27));
+        assert_eq!(session.scope(), Scope::CentralElectoralCommittee);
+        assert_eq!(session.user.election(), Some(ElectionConfig::EK27));
     }
 
     /// A committee session can reach the CSB import page.

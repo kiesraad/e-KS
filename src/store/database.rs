@@ -114,19 +114,15 @@ async fn create_events_table(conn: &mut sqlx::PgConnection) -> Result<(), AppErr
 
 #[cfg(feature = "migrations")]
 async fn create_sessions_table(conn: &mut sqlx::PgConnection) -> Result<(), AppError> {
-    // `token` holds the token's SHA-256 hash, not the token itself.
+    // `token` holds the token's SHA-256 hash, not the token itself; `identity`
+    // holds the serialized `SessionUser`.
     sqlx::query(
         r#"
         CREATE TABLE IF NOT EXISTS sessions (
           token TEXT PRIMARY KEY,
-          stream_id UUID,
-          paper_correction_stream_id UUID,
-          current_election JSONB,
+          identity JSONB NOT NULL,
           locale TEXT NOT NULL,
           last_activity TIMESTAMPTZ NOT NULL,
-          saml_name_id TEXT NOT NULL DEFAULT '',
-          scope TEXT NOT NULL DEFAULT 'political_group',
-          csb_user JSONB,
           created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
           user_agent_hash TEXT,
           csrf_token TEXT NOT NULL
@@ -136,15 +132,31 @@ async fn create_sessions_table(conn: &mut sqlx::PgConnection) -> Result<(), AppE
     .execute(&mut *conn)
     .await?;
 
-    // Upgrade path for databases created before paper corrections existed.
-    sqlx::query("ALTER TABLE sessions ADD COLUMN IF NOT EXISTS paper_correction_stream_id UUID")
+    // Upgrade path from the multi-column session layout: pre-refactor rows are
+    // dropped (sessions are short-lived; their users just log in again), the
+    // old identity columns removed.
+    sqlx::query("ALTER TABLE sessions ADD COLUMN IF NOT EXISTS identity JSONB")
         .execute(&mut *conn)
         .await?;
-
-    // Upgrade path for databases created before CSB logins carried a user.
-    sqlx::query("ALTER TABLE sessions ADD COLUMN IF NOT EXISTS csb_user JSONB")
+    sqlx::query("DELETE FROM sessions WHERE identity IS NULL")
         .execute(&mut *conn)
         .await?;
+    sqlx::query("ALTER TABLE sessions ALTER COLUMN identity SET NOT NULL")
+        .execute(&mut *conn)
+        .await?;
+    sqlx::query(
+        r#"
+        ALTER TABLE sessions
+          DROP COLUMN IF EXISTS stream_id,
+          DROP COLUMN IF EXISTS paper_correction_stream_id,
+          DROP COLUMN IF EXISTS current_election,
+          DROP COLUMN IF EXISTS saml_name_id,
+          DROP COLUMN IF EXISTS scope,
+          DROP COLUMN IF EXISTS csb_user
+        "#,
+    )
+    .execute(&mut *conn)
+    .await?;
 
     sqlx::query(
         r#"CREATE INDEX IF NOT EXISTS sessions_last_activity_idx

@@ -4,10 +4,11 @@ use axum::{
     http::{HeaderValue, header},
     response::{Html, IntoResponse, Redirect, Response},
 };
+use axum_extra::extract::CookieJar;
 
 use crate::{
-    AnyLocale, AppError, AppRequestState, Context, Province, Scope, Session, SessionPageValues,
-    WaterCouncil,
+    AnyLocale, AppError, AppRequestState, Context, Province, Session, SessionPageValues,
+    SessionUser, WaterCouncil,
     common::{PgIndexPath, SelectElectionForm},
     csb::index::CsbIndexPath,
     filters,
@@ -29,7 +30,7 @@ pub async fn select_election<S: AppRequestState>(
     session: Session,
     State(state): State<S>,
 ) -> Result<Response, AppError> {
-    if session.current_election.is_some() {
+    if session.user.election().is_some() {
         return Ok(Redirect::to(&PgIndexPath.to_string()).into_response());
     }
 
@@ -60,12 +61,16 @@ pub async fn select_election<S: AppRequestState>(
 pub async fn select_election_submit<S: AppRequestState>(
     _: SelectElectionPath,
     State(state): State<S>,
+    jar: CookieJar,
     mut session: Session,
     axum::Form(form): axum::Form<SelectElectionForm>,
 ) -> Result<Response, AppError> {
+    #[cfg(not(feature = "fixtures"))]
+    let _ = jar;
+
     // Committee sessions use CSB stores, not app stores; never create an
     // `PgStore` in their `(stream_id, election)` partition.
-    if session.scope == Scope::CentralElectoralCommittee {
+    if matches!(session.user, SessionUser::CentralElectoralCommittee { .. }) {
         return Ok(Redirect::to(&CsbIndexPath {}.to_string()).into_response());
     }
 
@@ -74,36 +79,45 @@ pub async fn select_election_submit<S: AppRequestState>(
     };
 
     // Only available with the `fixtures` feature: this is a test/dev shortcut
-    // into the committee (CSB) scope
+    // into the committee (CSB) role. An explicit escalation: a brand-new
+    // committee session replaces the political-group one (the old token dies
+    // in `establish_session`), it is never mutated into one.
     #[cfg(feature = "fixtures")]
     if form.login_as_csb() {
-        let stream_id = crate::StreamId::new();
-        let user = crate::CsbUser::Developer { stream_id };
-        session.stream_id = Some(stream_id);
-        session.scope = Scope::CentralElectoralCommittee;
-        session.set_csb_user(user.clone());
-        session.set_current_election(election);
+        let user = crate::CsbUser::Developer {
+            stream_id: crate::StreamId::new(),
+        };
 
         if form.load_fixtures() {
-            crate::csb::import::fixture::import_csb_fixture(&state, election, user).await?;
+            crate::csb::import::fixture::import_csb_fixture(&state, election, user.clone()).await?;
         }
 
-        session.rotate_csrf_token();
-        state.sessions().update(&session).await;
+        let mut committee = Session::for_committee(user, election, session.locale);
+        if let Some(user_agent_hash) = session.user_agent_hash.clone() {
+            committee.set_user_agent_hash(user_agent_hash);
+        }
+        let jar =
+            crate::auth::session_extractor::establish_session(state.sessions(), jar, committee)
+                .await;
 
-        return Ok(Redirect::to(&CsbIndexPath {}.to_string()).into_response());
+        return Ok((jar, Redirect::to(&CsbIndexPath {}.to_string())).into_response());
     }
 
     // use the stream ID derived from the authenticated login
-    let Some(stream_id) = session.stream_id else {
-        return Ok(Redirect::to(&SelectElectionPath.to_string()).into_response());
+    let SessionUser::PoliticalGroup {
+        stream_id,
+        election: current,
+        ..
+    } = &mut session.user
+    else {
+        return Ok(Redirect::to(&CsbIndexPath {}.to_string()).into_response());
     };
 
     let _store = state
-        .store_for_stream(stream_id, election, form.load_fixtures())
+        .store_for_stream(*stream_id, election, form.load_fixtures())
         .await?;
 
-    session.set_current_election(election);
+    *current = Some(election);
     // Invalidate forms rendered before an election was picked, so a stale tab
     // cannot submit against the election chosen here.
     session.rotate_csrf_token();
@@ -139,8 +153,7 @@ mod tests {
             .with_state(state.clone());
 
         let mut session = Session::new_test();
-        session.set_stream_id(crate::StreamId::new());
-        session.set_current_election(ElectionConfig::EK27);
+        session.set_test_election(ElectionConfig::EK27);
         let token = session.token_string();
         state.sessions().insert(session).await;
 
@@ -174,8 +187,7 @@ mod tests {
             ))
             .with_state(state.clone());
 
-        let mut session = Session::new_test();
-        session.set_stream_id(crate::StreamId::new());
+        let session = Session::new_test();
         let token = session.token_string();
         state.sessions().insert(session).await;
 
@@ -230,6 +242,82 @@ mod tests {
             .await
             .expect("load session")
             .expect("session");
-        assert_eq!(session.current_election, Some(ElectionConfig::EK27));
+        assert_eq!(session.user.election(), Some(ElectionConfig::EK27));
+    }
+
+    /// The fixtures-only CSB shortcut replaces the political-group session
+    /// with a brand-new committee session: the old token is dead, the new one
+    /// reaches CSB routes (regression: the in-place escalation used to lose
+    /// the committee identity on persist and 401 on the first CSB request).
+    #[cfg(feature = "fixtures")]
+    #[tokio::test]
+    async fn login_as_csb_replaces_the_session_with_a_committee_one() {
+        let state = AppState::new_for_tests().await;
+        let app = Router::new()
+            .typed_post(select_election_submit::<crate::AppState>)
+            .layer(middleware::from_fn_with_state(
+                state.clone(),
+                session_middleware,
+            ))
+            .with_state(state.clone());
+
+        let session = Session::new_test();
+        let old_token = session.token_string();
+        let csrf = session.csrf_token().to_string();
+        state.sessions().insert(session).await;
+
+        let body = format!("csrf_token={csrf}&election=EK27&login_as_csb=true");
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/select-election")
+                    .header(
+                        header::COOKIE,
+                        format!("{}={}", crate::SESSION_COOKIE_NAME, old_token),
+                    )
+                    .header(header::CONTENT_TYPE, "application/x-www-form-urlencoded")
+                    .body(Body::from(body))
+                    .unwrap(),
+            )
+            .await
+            .expect("response");
+
+        assert_eq!(response.status(), StatusCode::SEE_OTHER);
+        assert_eq!(response.headers().get(header::LOCATION).unwrap(), "/csb");
+
+        // The escalation minted a fresh session and killed the old token.
+        let new_token = response
+            .headers()
+            .get_all(header::SET_COOKIE)
+            .iter()
+            .filter_map(|value| value.to_str().ok())
+            .filter_map(|value| value.split(';').next())
+            .filter_map(|pair| pair.split_once('='))
+            .find(|(name, _)| *name == crate::SESSION_COOKIE_NAME)
+            .map(|(_, token)| token.to_string())
+            .expect("new session cookie");
+        assert_ne!(new_token, old_token);
+        assert!(
+            state
+                .sessions
+                .get(&old_token)
+                .await
+                .expect("load")
+                .is_none(),
+            "the political-group session must not survive the escalation"
+        );
+
+        // The new session is a complete committee identity that survives
+        // persistence and passes the CSB gate.
+        let committee = state
+            .sessions
+            .get(&new_token)
+            .await
+            .expect("load session")
+            .expect("session");
+        assert_eq!(committee.scope(), crate::Scope::CentralElectoralCommittee);
+        assert!(committee.require_csb_user().is_ok());
+        assert_eq!(committee.user.election(), Some(ElectionConfig::EK27));
     }
 }

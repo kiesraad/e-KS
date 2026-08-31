@@ -55,8 +55,7 @@ mod tests {
             .uri(format!("/candidate-lists/{}", list.id))
             .body(Body::empty())
             .unwrap();
-        let mut session = crate::Session::new_test_with_locale(Locale::En);
-        session.set_stream_id(crate::StreamId::new());
+        let session = crate::Session::new_test_with_locale(Locale::En);
         request.extensions_mut().insert(session);
         request.extensions_mut().insert(store.clone());
 
@@ -91,8 +90,7 @@ mod tests {
                     .header(header::ACCEPT_LANGUAGE, "en")
                     .body(Body::empty())
                     .unwrap();
-                let mut session = crate::Session::new_test_with_locale(Locale::En);
-                session.set_stream_id(crate::StreamId::new());
+                let session = crate::Session::new_test_with_locale(Locale::En);
                 request.extensions_mut().insert(session);
                 request.extensions_mut().insert(store.clone());
                 request

@@ -2,7 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::{AppError, GithubUserId, Locale, Session, StreamId, trans, utils::abbreviate_str};
+use crate::{GithubUserId, Locale, StreamId, trans, utils::abbreviate_str};
 
 /// The committee member behind a CSB session, recorded on every CSB event so
 /// the audit log can show who triggered it.
@@ -44,14 +44,6 @@ impl CsbUser {
         CsbUser::Developer {
             stream_id: StreamId::new(),
         }
-    }
-}
-
-impl Session {
-    /// The committee identity of this session, or `Unauthorised` when the
-    /// session was not established through a CSB login (or predates one).
-    pub fn require_csb_user(&self) -> Result<CsbUser, AppError> {
-        self.csb_user.clone().ok_or(AppError::Unauthorised)
     }
 }
 

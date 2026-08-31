@@ -18,7 +18,7 @@ pub async fn start_paper_corrections<S: AppRequestState>(
     mut session: Session,
     store: CsbStore,
 ) -> Result<Response, AppError> {
-    session.paper_correction_stream_id = Some(store.stream_id);
+    session.set_paper_correction_stream_id(Some(store.stream_id))?;
     // Invalidate forms rendered before the switch, so a stale tab cannot
     // submit changes against this stream's data.
     session.rotate_csrf_token();
@@ -33,7 +33,7 @@ pub async fn stop_paper_corrections<S: AppRequestState>(
     State(state): State<S>,
     mut session: Session,
 ) -> Result<Response, AppError> {
-    session.paper_correction_stream_id = None;
+    session.set_paper_correction_stream_id(None)?;
     session.rotate_csrf_token();
     state.sessions().update(&session).await;
 
@@ -82,7 +82,7 @@ mod tests {
             .csb_store_for_stream(stream_id, ElectionConfig::EK27)
             .await
             .unwrap();
-        let session = Session::new_test();
+        let session = Session::new_test_committee();
         let token = session.token_string();
         let old_csrf = session.csrf_token().to_string();
         // The session middleware only hands a handler a session that is in the
@@ -106,7 +106,7 @@ mod tests {
             .await
             .unwrap()
             .unwrap();
-        assert_eq!(stored.paper_correction_stream_id, Some(stream_id));
+        assert_eq!(stored.test_paper_correction_stream_id(), Some(stream_id));
         // Forms rendered before the switch no longer pass the CSRF guard.
         assert!(!stored.csrf_matches(&old_csrf));
     }
@@ -115,8 +115,10 @@ mod tests {
     async fn stop_clears_correction_stream_and_redirects_to_examination() {
         let state = crate::AppState::new_for_tests().await;
         let stream_id = StreamId::new();
-        let mut session = Session::new_test();
-        session.paper_correction_stream_id = Some(stream_id);
+        let mut session = Session::new_test_committee();
+        session
+            .set_paper_correction_stream_id(Some(stream_id))
+            .expect("committee session");
         let token = session.token_string();
         let old_csrf = session.csrf_token().to_string();
         state.sessions.insert(session.clone()).await;
@@ -140,7 +142,7 @@ mod tests {
             .await
             .unwrap()
             .unwrap();
-        assert_eq!(stored.paper_correction_stream_id, None);
+        assert_eq!(stored.test_paper_correction_stream_id(), None);
         assert!(!stored.csrf_matches(&old_csrf));
     }
 }

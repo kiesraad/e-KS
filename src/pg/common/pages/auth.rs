@@ -362,8 +362,12 @@ mod tests {
     #[tokio::test]
     async fn logout_session_returns_name_id_and_clears_cookie() {
         let state = crate::AppState::new_for_tests().await;
-        let mut session = Session::new();
-        session.saml_name_id = "name-id-xyz".to_string();
+        let session = Session::for_political_group(
+            crate::StreamId::new(),
+            "name-id-xyz".to_string(),
+            None,
+            crate::Locale::default(),
+        );
         let token = session.token_string();
         state.sessions().insert(session).await;
 
@@ -385,7 +389,7 @@ mod tests {
     async fn logout_session_with_empty_name_id_still_clears_and_ends_session() {
         // An empty NameID must still clear the cookie and end the session.
         let state = crate::AppState::new_for_tests().await;
-        let session = Session::new(); // saml_name_id defaults to ""
+        let session = Session::new_test(); // saml_name_id defaults to ""
         let token = session.token_string();
         state.sessions().insert(session).await;
 
@@ -407,7 +411,7 @@ mod tests {
     async fn on_authenticated_invalidates_prior_session() {
         // A fresh login must not leave the pre-login session alive server-side.
         let state = crate::AppState::new_for_tests().await;
-        let old = Session::new();
+        let old = Session::new_test();
         let old_token = old.token_string();
         state.sessions().insert(old).await;
 
@@ -435,7 +439,7 @@ mod tests {
     async fn on_authentication_failed_terminates_local_session() {
         // TVS L10: a failed authentication must end any existing local session.
         let state = crate::AppState::new_for_tests().await;
-        let session = Session::new();
+        let session = Session::new_test();
         let token = session.token_string();
         state.sessions().insert(session).await;
 

@@ -5,7 +5,7 @@ use std::{env, path::PathBuf};
 
 use secrecy::SecretString;
 
-use crate::{AppError, GithubUserId};
+use crate::{AppError, ElectionConfig, GithubUserId};
 
 #[cfg(feature = "dev-features")]
 mod dev_defaults {
@@ -20,11 +20,14 @@ mod dev_defaults {
     pub(super) const DEFAULT_MASTER_ENCRYPTION_KEY: &str =
         "eks-dev-master-encryption-key-not-for-production";
 
+    pub(super) const DEFAULT_ELECTION: &str = "EK27";
+
     pub(super) fn lookup(name: &'static str) -> Result<String, std::env::VarError> {
         std::collections::HashMap::from([
             ("STORAGE_URL", STORAGE_URL),
             ("ID_DERIVATION_KEY", ID_DERIVATION_KEY),
             ("MASTER_ENCRYPTION_KEY", DEFAULT_MASTER_ENCRYPTION_KEY),
+            ("DEFAULT_ELECTION", DEFAULT_ELECTION),
         ])
         .get(name)
         .map(|value| (*value).to_string())
@@ -95,6 +98,11 @@ pub struct Config {
     /// GitHub OAuth login for CSB users; the `/csb/login` routes answer 404
     /// when unset.
     pub github_oauth: Option<GithubOauthConfig>,
+    /// Election a login lands on when the flow has no election selection of
+    /// its own (CSB logins, dev logins). Set via `DEFAULT_ELECTION` as the
+    /// election code, with the region appended after a colon where the type
+    /// needs one (e.g. `EK27`, `PS27:GR`).
+    pub default_election: ElectionConfig,
 }
 
 fn get_env_with<F>(name: &'static str, lookup: &mut F) -> Result<String, AppError>
@@ -201,6 +209,20 @@ where
     }
 }
 
+/// Parses `DEFAULT_ELECTION`: the election code, with the region appended
+/// after a colon where the election type needs one (e.g. `EK27`, `PS27:GR`).
+fn parse_default_election(raw: &str) -> Result<ElectionConfig, AppError> {
+    let (code, region) = match raw.split_once(':') {
+        Some((code, region)) => (code, Some(region)),
+        None => (raw, None),
+    };
+    ElectionConfig::from_code_and_region(code.trim(), region.map(str::trim)).ok_or_else(|| {
+        AppError::ConfigLoadError(format!(
+            "DEFAULT_ELECTION {raw:?} is not a known election (expected e.g. EK27 or PS27:GR)"
+        ))
+    })
+}
+
 /// Parses the comma-separated `GITHUB_ALLOWED_USER_IDS` allowlist. Strict: a
 /// single malformed entry rejects the whole configuration rather than silently
 /// shrinking the allowlist.
@@ -265,6 +287,8 @@ impl Config {
         let tls = tls_from_env(&mut lookup)?;
         let acme = acme_from_env(&mut lookup, tls.is_some())?;
         let github_oauth = github_oauth_from_env(&mut lookup)?;
+        let default_election =
+            parse_default_election(&get_env_with("DEFAULT_ELECTION", &mut lookup)?)?;
 
         let server_name = lookup("SERVER_NAME").ok().filter(|s| !s.is_empty());
 
@@ -290,6 +314,7 @@ impl Config {
             eks_key,
             disable_auth_service,
             github_oauth,
+            default_election,
         })
     }
 
@@ -305,6 +330,7 @@ impl Config {
             eks_key: None,
             disable_auth_service: false,
             github_oauth: None,
+            default_election: ElectionConfig::EK27,
         }
     }
 }
@@ -604,6 +630,31 @@ mod tests {
 
         let err = Config::from_env_with(lookup).expect_err("err");
         assert!(matches!(err, AppError::ConfigLoadError(_)));
+    }
+
+    #[test]
+    fn parse_default_election_accepts_code_and_optional_region() {
+        assert_eq!(
+            parse_default_election("EK27").expect("EK27"),
+            ElectionConfig::EK27
+        );
+        assert_eq!(
+            parse_default_election("PS27:GR").expect("PS27:GR"),
+            ElectionConfig::PS27(crate::Province::GR)
+        );
+    }
+
+    #[test]
+    fn parse_default_election_rejects_unknown_values() {
+        for raw in ["", "EK99", "PS27", "PS27:XX"] {
+            assert!(
+                matches!(
+                    parse_default_election(raw),
+                    Err(AppError::ConfigLoadError(_))
+                ),
+                "{raw:?} must be rejected"
+            );
+        }
     }
 
     #[test]

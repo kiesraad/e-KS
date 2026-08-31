@@ -9,14 +9,13 @@ use axum::{
     response::{IntoResponse, Redirect, Response},
 };
 use axum_extra::extract::CookieJar;
-use secrecy::SecretString;
 use serde::Deserialize;
 use tracing::{info, warn};
 
 use crate::{
-    AppError, AppRequestState, CsbMainAction, CsbUser, ElectionConfig, GithubOauthConfig,
-    GithubUserId, Locale, Scope, Session,
-    auth::session_extractor::{SESSION_COOKIE_NAME, build_session_cookie, user_agent_hash},
+    AppError, AppRequestState, CsbMainAction, CsbUser, GithubOauthConfig, GithubUserId, Locale,
+    Session,
+    auth::session_extractor::{establish_session, user_agent_hash},
     csb::{
         index::CsbIndexPath,
         login::{
@@ -26,13 +25,6 @@ use crate::{
     },
     form::csrf_token_matches,
 };
-
-/// Election a committee login lands on; hardcoded until the CSB gets election
-/// selection (mirrors the dev login).
-const CSB_LOGIN_ELECTION: ElectionConfig = ElectionConfig::EK27;
-
-/// Placeholder `NameID`: GitHub sessions never take part in SAML logout.
-const GITHUB_LOGIN_NAME_ID: &str = "github-login-no-saml-name-id";
 
 #[derive(Debug, Deserialize)]
 pub struct CallbackQuery {
@@ -119,48 +111,33 @@ async fn complete_login<S: AppRequestState>(
         warn!("GitHub user {github_user_id} is not on the CSB allowlist");
         return Ok(login_failed(jar));
     }
-    establish_session(state, github_user_id, jar, headers).await
+    establish_committee_session(state, github_user_id, jar, headers).await
 }
 
-/// Creates the committee-scoped session for an allowlisted GitHub user and
-/// records the login on the shared CSB main stream for the audit log.
-async fn establish_session<S: AppRequestState>(
+/// Creates the committee session for an allowlisted GitHub user and records
+/// the login on the shared CSB main stream for the audit log.
+async fn establish_committee_session<S: AppRequestState>(
     state: &S,
     github_user_id: GithubUserId,
     jar: CookieJar,
     headers: &HeaderMap,
 ) -> Result<Response, AppError> {
-    // Drop any session the browser already holds, so a pre-login session
-    // can't linger server-side (session-fixation defence).
-    if let Some(old_token) = jar.get(SESSION_COOKIE_NAME).map(|c| c.value().to_string()) {
-        state.sessions().remove(&old_token).await;
-    }
-
-    // Namespaced so GitHub ids can never collide with BSN-derived stream ids.
-    let id_code = SecretString::from(format!("github:{github_user_id}"));
-    let stream_id = state.id_deriver().derive_stream_id(&id_code);
     let user = CsbUser::Github {
         user_id: github_user_id,
     };
+    let election = state.config().default_election;
 
-    let mut session = Session::new_with_locale(Locale::from_headers(headers));
-    session.set_scope(Scope::CentralElectoralCommittee);
-    session.set_stream_id(stream_id);
-    session.set_csb_user(user.clone());
+    let mut session = Session::for_committee(user.clone(), election, Locale::from_headers(headers));
     session.set_user_agent_hash(user_agent_hash(headers));
-    session.set_current_election(CSB_LOGIN_ELECTION);
-    session.saml_name_id = GITHUB_LOGIN_NAME_ID.to_string();
 
-    let store = state.csb_main_store(CSB_LOGIN_ELECTION).await?;
+    let store = state.csb_main_store(election).await?;
     store.update(CsbMainAction::Login.by(user)).await?;
 
-    state.sessions().cleanup_expired().await;
-    state.sessions().insert(session.clone()).await;
+    let jar = establish_session(state.sessions(), jar, session).await;
 
     info!("GitHub user {github_user_id} logged in to the CSB");
     Ok((
-        jar.remove(build_state_removal_cookie())
-            .add(build_session_cookie(&session)),
+        jar.remove(build_state_removal_cookie()),
         Redirect::to(&CsbIndexPath {}.to_string()),
     )
         .into_response())
@@ -382,12 +359,11 @@ mod tests {
             .await
             .expect("load session")
             .expect("session");
-        assert_eq!(session.scope, Scope::CentralElectoralCommittee);
-        assert_eq!(session.current_election, Some(CSB_LOGIN_ELECTION));
-        assert!(session.stream_id.is_some());
+        assert_eq!(session.scope(), crate::Scope::CentralElectoralCommittee);
+        assert_eq!(session.user.election(), Some(state.config.default_election));
 
         let store = state
-            .csb_main_store(CSB_LOGIN_ELECTION)
+            .csb_main_store(state.config.default_election)
             .await
             .expect("main store");
         assert!(matches!(
@@ -429,7 +405,7 @@ mod tests {
         let _ = state.logout_session(jar).await;
 
         let store = state
-            .csb_main_store(CSB_LOGIN_ELECTION)
+            .csb_main_store(state.config.default_election)
             .await
             .expect("main store");
         assert!(

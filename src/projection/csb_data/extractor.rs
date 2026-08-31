@@ -88,7 +88,7 @@ mod tests {
 
         let mut request = Request::builder().uri(uri).body(Body::empty()).unwrap();
         let mut session = Session::new_test_with_locale(Locale::En);
-        session.set_current_election(election);
+        session.set_test_election(election);
         request.extensions_mut().insert(session);
 
         app.oneshot(request).await.unwrap()

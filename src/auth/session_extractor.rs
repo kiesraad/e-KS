@@ -4,9 +4,12 @@ use axum::{
     extract::FromRequestParts,
     http::{HeaderMap, header::USER_AGENT, request::Parts},
 };
-use axum_extra::extract::cookie::{Cookie, SameSite};
+use axum_extra::extract::{
+    CookieJar,
+    cookie::{Cookie, SameSite},
+};
 
-use crate::{AppError, Session, utils::sha256_hex};
+use crate::{AppError, Session, SessionStore, utils::sha256_hex};
 
 /// Name of the session cookie. The `__Host-` prefix (production only) forbids a
 /// `Domain` and requires `Secure` + `Path=/`, blocking sibling-subdomain
@@ -53,6 +56,25 @@ fn apply_session_cookie_attributes(cookie: &mut Cookie<'static>) {
     cookie.set_secure(true);
     cookie.set_same_site(SameSite::Lax);
     cookie.set_path("/");
+}
+
+/// Establishes a freshly created session, shared by every login flow: drops
+/// any session the browser already holds (session-fixation defence), sweeps
+/// expired sessions, stores the new session, and returns the jar with its
+/// cookie set. Role changes go through here too: an existing session is
+/// replaced, never escalated in place.
+pub(crate) async fn establish_session(
+    sessions: &SessionStore,
+    jar: CookieJar,
+    session: Session,
+) -> CookieJar {
+    if let Some(old_token) = jar.get(SESSION_COOKIE_NAME).map(|c| c.value().to_string()) {
+        sessions.remove(&old_token).await;
+    }
+    sessions.cleanup_expired().await;
+    let cookie = build_session_cookie(&session);
+    sessions.insert(session).await;
+    jar.add(cookie)
 }
 
 /// Truncated (64-bit) hex SHA-256 of the request `User-Agent` for session

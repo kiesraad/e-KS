@@ -13,7 +13,7 @@ use parking_lot::RwLock;
 use tracing::error;
 use tracing::info;
 
-use crate::{AppError, Locale, Session, auth::session::hash_token, utils::StorageScheme};
+use crate::{AppError, Session, auth::session::hash_token, utils::StorageScheme};
 
 #[cfg(feature = "database")]
 use crate::auth::session_db;
@@ -110,17 +110,22 @@ impl SessionStore {
     /// Persists changes to a stored session. Unlike [`Self::insert`] this never
     /// re-creates the entry, so an in-flight request holding a clone cannot undo
     /// a concurrent logout. Use [`Self::insert`] only for a new session.
+    ///
+    /// The identity is written as one value (within its role: an update whose
+    /// identity changes role is refused, mirroring the database backend —
+    /// role changes go through session establishment, never through mutation);
+    /// `created_at` and `user_agent_hash` stay fixed at login.
     pub async fn update(&self, session: &Session) {
         match self {
             SessionStore::InMemory(inner) => {
                 if let Some(existing) = inner.write().get_mut(session.token_hash()) {
-                    // Mutable fields only, mirroring the database backend.
+                    if existing.user.scope() != session.user.scope() {
+                        tracing::error!("refusing session update that changes the session's role");
+                        return;
+                    }
                     existing.csrf_token = session.csrf_token.clone();
                     existing.last_activity = session.last_activity;
-                    existing.stream_id = session.stream_id;
-                    existing.paper_correction_stream_id = session.paper_correction_stream_id;
-                    existing.scope = session.scope;
-                    existing.current_election = session.current_election;
+                    existing.user = session.user.clone();
                     existing.locale = session.locale;
                 }
             }
@@ -169,13 +174,6 @@ impl SessionStore {
                 session
             }
         }
-    }
-
-    /// Creates, stores, and returns a new session.
-    pub async fn create_new(&self, locale: Locale) -> Session {
-        let session = Session::new_with_locale(locale);
-        self.insert(session.clone()).await;
-        session
     }
 
     /// Removes all expired sessions from the store.
@@ -251,20 +249,6 @@ mod tests {
         assert_eq!(loaded, Some(session));
     }
 
-    /// Creates and stores a new session when requested.
-    #[tokio::test]
-    async fn create_new_inserts_session() {
-        let store = SessionStore::default();
-        let session = store.create_new(Locale::default()).await;
-
-        let loaded = store
-            .get(&session.token_string())
-            .await
-            .expect("load session");
-
-        assert_eq!(loaded, Some(session));
-    }
-
     /// `touch` refreshes activity but never re-creates a removed session, so
     /// a logout that races an in-flight request stays terminal.
     #[tokio::test]
@@ -296,11 +280,15 @@ mod tests {
 
         let old_csrf = session.csrf_token().to_string();
         session.rotate_csrf_token();
-        session.set_current_election(crate::ElectionConfig::EK27);
+        session.set_test_election(crate::ElectionConfig::EK27);
         store.update(&session).await;
 
         let updated = store.get(&token).await.expect("load").expect("present");
-        assert_eq!(updated.current_election, Some(crate::ElectionConfig::EK27));
+        assert_eq!(
+            updated.user.election(),
+            Some(crate::ElectionConfig::EK27),
+            "the identity must be written as a whole"
+        );
         assert!(!updated.csrf_matches(&old_csrf));
 
         store.remove(&token).await;
@@ -308,26 +296,36 @@ mod tests {
         assert!(store.get(&token).await.expect("load").is_none());
     }
 
-    /// The login-time facts of a session are not writable after the fact.
+    /// The login-time facts of a session are not writable after the fact, and
+    /// an update can never change the session's role: role changes go through
+    /// session establishment (a new session), not mutation.
     #[tokio::test]
-    async fn update_leaves_login_time_fields_alone() {
+    async fn update_leaves_login_time_fields_and_role_alone() {
         let store = SessionStore::default();
         let mut session = Session::new_test();
-        session.saml_name_id = "nid-1".to_string();
         session.set_user_agent_hash("ua-hash".to_string());
         let token = session.token_string();
         let created_at = session.created_at;
+        let original_user = session.user.clone();
         store.insert(session.clone()).await;
 
         session.created_at = created_at + Duration::hours(1);
-        session.saml_name_id = "attacker".to_string();
         session.set_user_agent_hash("other-ua".to_string());
+        // Attempt a role escalation through the mutable-session path.
+        session.user = crate::SessionUser::CentralElectoralCommittee {
+            user: crate::CsbUser::new_test(),
+            election: crate::ElectionConfig::EK27,
+            paper_correction_stream_id: None,
+        };
         store.update(&session).await;
 
         let stored = store.get(&token).await.expect("load").expect("present");
         assert_eq!(stored.created_at, created_at);
-        assert_eq!(stored.saml_name_id, "nid-1");
         assert_eq!(stored.user_agent_hash.as_deref(), Some("ua-hash"));
+        assert_eq!(
+            stored.user, original_user,
+            "role escalation must be refused"
+        );
     }
 
     /// Removes expired sessions on lookup.
@@ -385,7 +383,7 @@ mod tests {
         }
     }
 
-    /// Postgres round-trip: hash-at-rest, NameID/UA persistence, `created_at`
+    /// Postgres round-trip: hash-at-rest, identity/UA persistence, `created_at`
     /// fixed across a touch, and `remove`.
     #[cfg(feature = "database")]
     #[cfg_attr(not(feature = "db-tests"), ignore = "requires database")]
@@ -394,16 +392,22 @@ mod tests {
         crate::store::database::migrate(&pool).await?;
         let store = SessionStore::Database(pool);
 
-        let mut session = Session::new_test();
-        session.saml_name_id = "nid-1".to_string();
+        let stream_id = crate::StreamId::new();
+        let mut session = crate::Session::for_political_group(
+            stream_id,
+            "nid-1".to_string(),
+            None,
+            crate::Locale::default(),
+        );
         session.set_user_agent_hash("ua-hash-xyz".to_string());
         let token = session.token_string();
         let created_at = session.created_at;
+        let original_user = session.user.clone();
         store.insert(session).await;
 
         // Look up by the raw cookie token (hashed internally).
         let loaded = store.get(&token).await?.expect("session present");
-        assert_eq!(loaded.saml_name_id, "nid-1");
+        assert_eq!(loaded.user, original_user);
         assert_eq!(loaded.user_agent_hash.as_deref(), Some("ua-hash-xyz"));
         assert_eq!(loaded.token_hash(), hash_token(&token));
         assert!(
@@ -424,16 +428,28 @@ mod tests {
             reloaded.created_at,
         );
 
-        // `update` writes the mutable fields and leaves the login-time ones.
+        // `update` writes the identity within its role and the CSRF token.
         let mut changed = reloaded.clone();
-        changed.set_current_election(crate::ElectionConfig::EK27);
+        changed.set_test_election(crate::ElectionConfig::EK27);
         changed.rotate_csrf_token();
-        changed.saml_name_id = "attacker".to_string();
         store.update(&changed).await;
         let updated = store.get(&token).await?.expect("still present");
-        assert_eq!(updated.current_election, Some(crate::ElectionConfig::EK27));
+        assert_eq!(updated.user.election(), Some(crate::ElectionConfig::EK27));
         assert!(updated.csrf_matches(&changed.csrf_token().0));
-        assert_eq!(updated.saml_name_id, "nid-1");
+
+        // An update that changes the session's role is refused.
+        let mut escalated = updated.clone();
+        escalated.user = crate::SessionUser::CentralElectoralCommittee {
+            user: crate::CsbUser::new_test(),
+            election: crate::ElectionConfig::EK27,
+            paper_correction_stream_id: None,
+        };
+        store.update(&escalated).await;
+        let unchanged = store.get(&token).await?.expect("still present");
+        assert_eq!(
+            unchanged.user, changed.user,
+            "role escalation must be refused"
+        );
 
         store.remove(&token).await;
         assert!(store.get(&token).await?.is_none());
@@ -442,6 +458,34 @@ mod tests {
         store.touch(&reloaded).await;
         store.update(&reloaded).await;
         assert!(store.get(&token).await?.is_none());
+        Ok(())
+    }
+
+    /// A stored row whose identity does not parse is dropped on load (fail
+    /// closed), never mapped to a default identity.
+    #[cfg(feature = "database")]
+    #[cfg_attr(not(feature = "db-tests"), ignore = "requires database")]
+    #[sqlx::test(migrations = false)]
+    async fn database_backend_drops_unreadable_identity(
+        pool: sqlx::PgPool,
+    ) -> Result<(), AppError> {
+        crate::store::database::migrate(&pool).await?;
+
+        let session = Session::new_test();
+        let token = session.token_string();
+        let store = SessionStore::Database(pool.clone());
+        store.insert(session).await;
+
+        sqlx::query("UPDATE sessions SET identity = '{\"Unknown\":{}}'::jsonb")
+            .execute(&pool)
+            .await?;
+
+        assert!(store.get(&token).await?.is_none());
+        // The corrupt row itself is deleted, not retried forever.
+        let remaining: i64 = sqlx::query_scalar("SELECT count(*) FROM sessions")
+            .fetch_one(&pool)
+            .await?;
+        assert_eq!(remaining, 0);
         Ok(())
     }
 }

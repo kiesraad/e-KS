@@ -288,8 +288,7 @@ mod tests {
 
         let mut request = Request::builder().uri("/").body(Body::empty()).unwrap();
         let mut session = crate::Session::new_test();
-        session.set_stream_id(crate::StreamId::new());
-        session.set_current_election(crate::ElectionConfig::EK27);
+        session.set_test_election(crate::ElectionConfig::EK27);
         let token = session.token_string();
         state.sessions.insert(session).await;
         let store = crate::PgStore::new_for_test();
@@ -682,8 +681,7 @@ mod tests {
             .body(Body::empty())
             .unwrap();
         let mut session = crate::Session::new_test();
-        session.set_stream_id(crate::StreamId::new());
-        session.set_current_election(crate::ElectionConfig::EK27);
+        session.set_test_election(crate::ElectionConfig::EK27);
         let token = session.token_string();
         state.sessions.insert(session).await;
         let store = crate::PgStore::new_for_test();

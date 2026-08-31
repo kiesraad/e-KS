@@ -131,6 +131,7 @@ pub(crate) use auth::{
     pending_request_store::PendingRequestStore,
     session::Session,
     session_store::SessionStore,
+    session_user::SessionUser,
 };
 #[cfg(feature = "tls")]
 pub(crate) use core::TlsConfig;

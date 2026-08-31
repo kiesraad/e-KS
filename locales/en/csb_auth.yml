@@ -1,7 +1,0 @@
-button:
-  github: Sign in with GitHub
-error:
-  message: Signing in did not succeed. Check that you have been granted access and try again.
-start:
-  intro: You sign in with your GitHub account. Only accounts that have been granted access in advance can sign in to the central electoral committee.
-  title: Sign in to the central electoral committee

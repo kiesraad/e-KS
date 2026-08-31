@@ -3,11 +3,11 @@
   {% include "pg/common/components/public_header.html" %}
   <main>
     <div class="container auth-container">
-      <h2>{{ "csb_auth.start.title"|trans }}</h2>
-      {% if show_error %}<div class="alert alert-error">{{ "csb_auth.error.message"|trans }}</div>{% endif %}
-      <p>{{ "csb_auth.start.intro"|trans }}</p>
+      <h2>{{ "csb.auth.start.title"|trans }}</h2>
+      {% if show_error %}<div class="alert alert-error">{{ "csb.auth.error.message"|trans }}</div>{% endif %}
+      <p>{{ "csb.auth.start.intro"|trans }}</p>
       <form method="post" action="{{ crate::csb::login::CsbLoginPath }}">
-        <button type="submit" class="button">{{ "csb_auth.button.github"|trans }}</button>
+        <button type="submit" class="button">{{ "csb.auth.button.github"|trans }}</button>
       </form>
     </div>
   </main>

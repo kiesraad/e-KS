@@ -57,9 +57,8 @@ mod tests {
                 .expect("store"),
         );
 
-        let mut session = crate::Session::new();
-        session.set_stream_id(stream_id);
-        session.set_current_election(ElectionConfig::EK27);
+        let mut session = crate::Session::new_test_for_stream(stream_id);
+        session.set_test_election(ElectionConfig::EK27);
         let token = session.token_string();
         let csrf = session.csrf_token().clone();
         state.sessions.insert(session).await;
