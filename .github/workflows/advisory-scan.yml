@@ -1,0 +1,69 @@
+name: Advisory scan
+
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: advisory-scan
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    name: Scan dependencies for advisories
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - id: deny
+        continue-on-error: true
+        uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25
+        with:
+          arguments: --workspace --all-features --locked
+          command: check advisories
+
+      - name: Open an issue on a finding
+        if: steps.deny.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          existing="$(gh issue list --repo "$REPO" --label advisory --state open \
+            --search 'in:title "Advisory scan on main is failing"' --json number --jq '.[0].number // ""')"
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --repo "$REPO" \
+              --body "Scan of $(date -u '+%Y-%m-%d') is still failing: $RUN_URL"
+            exit 0
+          fi
+          gh issue create --repo "$REPO" --label advisory \
+            --title "Advisory scan on main is failing" \
+            --body "$(cat <<EOF
+          The daily \`cargo-deny check advisories\` on \`main\` reports a finding.
+
+          Run: $RUN_URL
+
+          Assess the advisory according to the patch management policy:
+
+          - [ ] Severity determined, and with it the applicable remediation deadline
+          - [ ] Assessed whether the vulnerable code path is actually reachable
+          - [ ] Decision made: patch, expedited patch, or mitigate with an improvement plan
+          - [ ] Decision recorded where it is not already evident from the PRs
+
+          Only close this issue once the finding has been resolved, or once an exception has been
+          recorded in \`deny.toml\` with justification.
+          EOF
+          )"
+
+      - name: Fail the run if the scan reported a finding
+        if: steps.deny.outcome == 'failure'
+        run: exit 1
