@@ -34,6 +34,10 @@ struct PostFormTemplate<'a> {
 /// takes precedence over the router-wide default (the outer layer only sets
 /// the header if it is not already present).
 ///
+/// Everything the global policy locks down is repeated here (the auto-submit
+/// script assigns to no injection sink, so Trusted Types stays enforced); only
+/// `form-action` is widened, by exactly `action_url`.
+///
 /// `script-src 'self'` is emitted *before* the `form-action` directive that
 /// carries `action_url`: per the CSP first-occurrence-wins rule, this guarantees
 /// our `script-src` cannot be displaced even if `action_url` somehow contained a
@@ -42,6 +46,7 @@ struct PostFormTemplate<'a> {
 pub fn autosubmit_csp(action_url: &str) -> String {
     format!(
         "default-src 'none'; base-uri 'none'; script-src 'self'; \
+         require-trusted-types-for 'script'; trusted-types 'none'; \
          form-action 'self' {action_url}; frame-ancestors 'none';"
     )
 }
@@ -139,6 +144,13 @@ mod tests {
         let csp = autosubmit_csp("https://idp.example.com/sso");
         assert!(csp.contains("form-action 'self' https://idp.example.com/sso"));
         assert!(csp.contains("script-src 'self'"));
+        // Only `form-action` is widened: the page keeps the global lockdown.
+        assert!(csp.contains("default-src 'none'"));
+        assert!(csp.contains("base-uri 'none'"));
+        assert!(csp.contains("frame-ancestors 'none'"));
+        assert!(csp.contains("require-trusted-types-for 'script'"));
+        assert!(csp.contains("trusted-types 'none'"));
+        assert!(!csp.contains("unsafe-inline") && !csp.contains("unsafe-eval"));
     }
 
     #[test]
