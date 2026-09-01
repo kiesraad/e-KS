@@ -75,10 +75,10 @@ impl<'a, 'input> Validator<'a, 'input> {
             let second = find_nested_status_code(self.doc, node);
             let message = find_samlp_text(self.doc, node, "StatusMessage");
             self.error(format!(
-                "{label} status: {}{}{}",
+                "{label} status: {} ({}) - {}",
                 status_code.as_deref().unwrap_or("unknown"),
-                second.map(|s| format!(" ({s})")).unwrap_or_default(),
-                message.map(|m| format!(" - {m}")).unwrap_or_default()
+                second.map(|s| format!("{s}")).unwrap_or_default(),
+                message.map(|m| format!("{m}")).unwrap_or_default()
             ));
         }
         status_code
@@ -93,7 +93,7 @@ impl<'a, 'input> Validator<'a, 'input> {
     /// unparseable value fails closed rather than skipping the freshness bound.
     ///
     /// The spec sets no explicit freshness window (it bounds the Assertion only via
-    /// `Conditions`), so `MESSAGE_FRESHNESS_SECONDS` is our own ceiling: the
+    /// `Conditions`), so [MESSAGE_FRESHNESS_SECONDS] is our own ceiling: the
     /// envelope types carry no `Conditions` at all, which would otherwise leave
     /// them unbounded in time. The future bound matters for the same reason:
     /// without it a far-future instant would never expire.
@@ -110,7 +110,7 @@ impl<'a, 'input> Validator<'a, 'input> {
             Ok(t) if t - self.skew > self.now => {
                 self.error(format!("{label} is in the future: issued at {s}"));
             }
-            Ok(_) => {}
+            Ok(_) => {} // neither too old or in the future, freshness OK
             Err(_) => self.error(format!("{label} has an invalid timestamp: {s}")),
         }
     }

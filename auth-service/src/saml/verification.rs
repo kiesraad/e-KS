@@ -93,7 +93,7 @@ pub fn verify_xml_signature(
     expected_root: Option<&ExpectedRoot<'_>>,
 ) -> VerifyResult {
     debug!(
-        "[verify] Verifying XML signature (xml_len={}, trusted_keys={})",
+        "[verify] Verifying XML signature (xml_len={}, trusted_key_count={})",
         xml.len(),
         trusted_keys.len()
     );
@@ -108,12 +108,13 @@ pub fn verify_xml_signature(
         ),
         Err(e) => errors.push(format!("XML parse error: {e}")),
     }
+    let result = VerifyResult { errors };
     debug!(
-        "[verify] Signature verification done: valid={}, errors={}",
-        errors.is_empty(),
-        errors.len()
+        "[verify] Signature verification done: valid={}, error_count={}",
+        result.is_valid(),
+        result.errors.len()
     );
-    VerifyResult { errors }
+    result
 }
 
 /// The structural signature checks over one parsed document, sharing the error
@@ -171,9 +172,16 @@ impl<'a, 'input> SignatureChecks<'a, 'input> {
     /// extracted from its own tree. Runs first, so a mismatch never reaches the
     /// crypto backend. See [`ExpectedRoot`].
     fn check_expected_root(&mut self, root: NodeId, expected: Option<&ExpectedRoot<'_>>) -> bool {
+        // `expected_root` is only allowed to be `None` in tests.
+        #[cfg(not(test))]
+        if expected.is_none() {
+            self.error("expected root is None".to_string());
+            return false;
+        }
         let Some(expected) = expected else {
             return true;
         };
+        
         let Some(node) = self.doc.node_qname(root) else {
             self.error("Signed document has no root element".to_string());
             return false;
