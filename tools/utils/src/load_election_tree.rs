@@ -36,6 +36,11 @@ fn num(r: &MetRegion) -> u16 {
     r.key.number.unwrap_or(0)
 }
 
+/// RegionNumber of the "NBSB" pseudo-municipality (Nationaal Brief Stembureau),
+/// It only applies to TK and EP elections, which we don't generate districts for
+/// yet, so it is filtered out of every municipality we generate here.
+const NBSB_REGION_NUMBER: u16 = 9010;
+
 /// Regions from MasterElectionTree, sorted by category and election type
 #[derive(Default)]
 struct Districts<'a> {
@@ -176,6 +181,7 @@ impl<'a> From<&'a MasterElectionTree> for Districts<'a> {
                             .subregions
                             .iter()
                             .filter(of(RegionCategory::Municipality))
+                            .filter(|r| num(r) != NBSB_REGION_NUMBER)
                         {
                             d.gm.push((gm, pk_num, prov_num));
                         }

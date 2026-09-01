@@ -70,6 +70,22 @@ mod tests {
     }
 
     #[test]
+    fn ps_zuid_holland_excludes_nbsb() {
+        // Zuid-Holland's 's-Gravenhage PROVINCIAAL_KIESKRING has both the
+        // 's-Gravenhage municipality and the NBSB pseudo-municipality, but
+        // NBSB must not surface as a PS sub-district.
+        assert!(
+            crate::Province::ZuidHolland
+                .ps_districts()
+                .contains(&ElectoralDistrict::PsSGravenhage)
+        );
+
+        let sub_districts = ElectoralDistrict::PsSGravenhage.sub_districts();
+        assert_eq!(sub_districts, &[ElectoralDistrict::GmSGravenhage]);
+        assert!(!sub_districts.iter().any(|d| d.title() == "NBSB"));
+    }
+
+    #[test]
     fn similar_districts_have_same_title_but_differ_in_code() {
         // Fryslân appears as both a province (EK) and a waterschap; titles match,
         // codes differ by prefix: "prov2" vs "ws2".
