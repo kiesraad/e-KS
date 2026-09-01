@@ -12,6 +12,7 @@ pub struct PaperCorrectedSubmitter {
     pub locality: PaperCorrected,
     pub state_or_province: PaperCorrected,
     pub country: PaperCorrected,
+    pub is_foreign: bool,
 }
 
 impl PaperCorrectedSubmitter {
@@ -45,7 +46,22 @@ impl PaperCorrectedSubmitter {
             country: PaperCorrected::from_field(imported, corrected, |s| {
                 s.address.country().unwrap_or_default()
             }),
+            is_foreign: Self::is_foreign(imported, corrected),
         }
+    }
+    /// foreign if:
+    /// 1. Both imported and corrected aren't [None]
+    /// 2. Both are not Dutch addresses
+    /// 
+    /// In any other case, a submitter is not considered foreign
+    fn is_foreign(imported: Option<&ListSubmitter>, corrected: Option<&ListSubmitter>) -> bool {
+        let Some(imported) = imported else {
+            return false;
+        };
+        let Some(corrected) = corrected else {
+            return false;
+        };
+        !imported.address.is_dutch() || !corrected.address.is_dutch()
     }
 }
 
@@ -97,7 +113,15 @@ pub fn paper_corrected_substitute_submitters(store: &CsbStream) -> Vec<PaperCorr
 mod tests {
     use super::*;
     use crate::{
-        CsbStore, structs::list_submitters::ListSubmitterId, test_utils::sample_list_submitter,
+        CsbStore,
+        structs::{
+            common::{
+                Address::{self},
+                DutchAddress, InternationalAddress,
+            },
+            list_submitters::ListSubmitterId,
+        },
+        test_utils::sample_list_submitter,
     };
 
     #[test]
@@ -161,5 +185,38 @@ mod tests {
 
         let rows = paper_corrected_substitute_submitters(&store);
         assert_eq!(rows.len(), 1);
+    }
+
+    #[test]
+    fn is_foreign() {
+        let dutch = Address::Dutch(DutchAddress {
+            ..Default::default()
+        });
+        let foreign = Address::International(InternationalAddress {
+            ..Default::default()
+        });
+
+        let mut s1 = sample_list_submitter(ListSubmitterId::new());
+        let mut s2 = sample_list_submitter(ListSubmitterId::new());
+        s1.address = foreign.clone();
+        s2.address = foreign.clone();
+
+        assert!(PaperCorrectedSubmitter::is_foreign(Some(&s1), Some(&s2)));
+
+        s1.address = dutch.clone();
+        assert!(PaperCorrectedSubmitter::is_foreign(Some(&s1), Some(&s2)));
+        assert!(PaperCorrectedSubmitter::is_foreign(Some(&s2), Some(&s1)));
+
+        assert!(!PaperCorrectedSubmitter::is_foreign(None, Some(&s2)));
+        assert!(!PaperCorrectedSubmitter::is_foreign(Some(&s2), None));
+
+        s2.address = dutch.clone();
+        assert!(!PaperCorrectedSubmitter::is_foreign(Some(&s1), Some(&s2)));
+        assert!(!PaperCorrectedSubmitter::is_foreign(Some(&s2), Some(&s1)));
+
+        assert!(!PaperCorrectedSubmitter::is_foreign(None, Some(&s2)));
+        assert!(!PaperCorrectedSubmitter::is_foreign(Some(&s2), None));
+
+        assert!(!PaperCorrectedSubmitter::is_foreign(None, None));
     }
 }
