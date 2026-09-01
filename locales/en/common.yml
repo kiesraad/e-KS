@@ -5,6 +5,7 @@ development:
   login_as_csb: Login as CSB
 download_warning: "Warning: the documents have already been downloaded. The data on paper is leading. If any changes are still needed, make sure to reprint the documents and submit the correct version."
 electoral_districts: Electoral districts
+error_code: "Error code {}"
 finalise: Finalise
 finalise_description:
   download_documents: Download all required documents
@@ -33,6 +34,11 @@ maintenance:
 political_group: Political group
 possible_problems: "{} possible problems"
 possible_problems_one: 1 possible problem
+rate_limit:
+  cap_message: "The maximum number of changes for this account has been reached. You can still view everything you entered, but no new changes can be saved."
+  downloads_message: Too many downloads in a short time. Please wait a while before trying again.
+  events_message: Too many changes in a short time. Please wait a while before trying again.
+  title: Too many requests
 request_error:
   csrf_message: "The submitted form could not be verified because it was invalid or had expired. Go back, refresh the page, and try again."
   csrf_title: Form expired

@@ -18,6 +18,7 @@ use crate::{
 enum ErrorResponseVariant {
     Unauthorised,
     BadRequest,
+    TooManyRequests,
     InternalServerError,
     ServiceUnavailable,
     NotFound,
@@ -28,6 +29,7 @@ impl ErrorResponseVariant {
         match self {
             ErrorResponseVariant::NotFound => StatusCode::NOT_FOUND,
             ErrorResponseVariant::BadRequest => StatusCode::BAD_REQUEST,
+            ErrorResponseVariant::TooManyRequests => StatusCode::TOO_MANY_REQUESTS,
             ErrorResponseVariant::Unauthorised => StatusCode::UNAUTHORIZED,
             ErrorResponseVariant::InternalServerError => StatusCode::INTERNAL_SERVER_ERROR,
             ErrorResponseVariant::ServiceUnavailable => StatusCode::SERVICE_UNAVAILABLE,
@@ -38,9 +40,42 @@ impl ErrorResponseVariant {
         match self {
             ErrorResponseVariant::Unauthorised => "Unauthorised",
             ErrorResponseVariant::BadRequest => "Bad request",
+            ErrorResponseVariant::TooManyRequests => "Too many requests",
             ErrorResponseVariant::InternalServerError => "Internal server error",
             ErrorResponseVariant::ServiceUnavailable => "Service unavailable",
             ErrorResponseVariant::NotFound => "Not found",
+        }
+    }
+}
+
+/// The rate-limit (429) page texts. The locale is not known where an
+/// [`AppError`] becomes a response, so these are translated at render time.
+#[derive(Clone, Copy, Serialize)]
+enum LimitMessage {
+    Downloads,
+    Events,
+    Cap,
+}
+
+impl LimitMessage {
+    fn from_error(err: &AppError) -> Option<Self> {
+        match err {
+            AppError::TooManyDownloads { .. } => Some(Self::Downloads),
+            AppError::TooManyEvents { .. } => Some(Self::Events),
+            AppError::EventLimitReached { .. } => Some(Self::Cap),
+            _ => None,
+        }
+    }
+
+    fn title(self, locale: Locale) -> String {
+        trans!("common.rate_limit.title", locale)
+    }
+
+    fn message(self, locale: Locale) -> String {
+        match self {
+            Self::Downloads => trans!("common.rate_limit.downloads_message", locale),
+            Self::Events => trans!("common.rate_limit.events_message", locale),
+            Self::Cap => trans!("common.rate_limit.cap_message", locale),
         }
     }
 }
@@ -50,6 +85,8 @@ impl ErrorResponseVariant {
 pub struct ErrorResponse {
     error: ErrorResponseVariant,
     message: String,
+    /// Set for rate-limit errors, whose texts are translated at render time.
+    limit: Option<LimitMessage>,
 }
 
 #[derive(Template, Clone)]
@@ -58,18 +95,36 @@ pub struct ErrorTemplate {
     pub status_code: StatusCode,
     pub title: String,
     message: String,
+    limit: Option<LimitMessage>,
+}
+
+impl ErrorTemplate {
+    /// Swap in the localised texts where they exist (the 429 pages); other
+    /// errors keep their English text.
+    fn localise(mut self, locale: Locale) -> Self {
+        if let Some(limit) = self.limit {
+            self.title = limit.title(locale);
+            self.message = limit.message(locale);
+        }
+        self
+    }
 }
 
 /// Convert ErrorResponse into an HTTP response
 impl IntoResponse for ErrorResponse {
     fn into_response(self) -> Response {
-        let ErrorResponse { error, message } = self;
+        let ErrorResponse {
+            error,
+            message,
+            limit,
+        } = self;
         let status_code = error.status_code();
 
         let error_template = ErrorTemplate {
             status_code,
             title: error.title().to_string(),
             message,
+            limit,
         };
 
         let mut response = status_code.into_response();
@@ -122,11 +177,14 @@ pub async fn render_error_pages(context: Context, request: Request, next: Next) 
 
     match response.extensions_mut().remove::<ErrorTemplate>() {
         None => response,
-        Some(error_template) => (
-            error_template.status_code,
-            HtmlTemplate(error_template, context),
-        )
-            .into_response(),
+        Some(error_template) => {
+            let error_template = error_template.localise(context.session.locale);
+            (
+                error_template.status_code,
+                HtmlTemplate(error_template, context),
+            )
+                .into_response()
+        }
     }
 }
 
@@ -165,6 +223,7 @@ impl ErrorResponse {
             error: ErrorResponseVariant::ServiceUnavailable,
             message: "The service is temporarily unavailable. Please try again shortly."
                 .to_string(),
+            limit: None,
         }
     }
 
@@ -194,6 +253,12 @@ impl ErrorResponse {
             | AppError::UserError(_)
             | AppError::TooManyCandidates { .. }
             | AppError::AmbiguousHash => (BadRequest, err.to_string()),
+            AppError::TooManyDownloads { .. }
+            | AppError::TooManyEvents { .. }
+            | AppError::EventLimitReached { .. } => LimitMessage::from_error(err)
+                .map_or_else(internal, |limit| {
+                    (TooManyRequests, limit.message(Locale::En))
+                }),
             AppError::EmlError(err) => (BadRequest, format!("EML error: {err}")),
             AppError::IncompleteData(err) => (
                 BadRequest,
@@ -217,7 +282,11 @@ impl ErrorResponse {
             | AppError::AuthError(_) => internal(),
         };
 
-        ErrorResponse { error, message }
+        ErrorResponse {
+            error,
+            message,
+            limit: LimitMessage::from_error(err),
+        }
     }
 }
 
@@ -228,6 +297,7 @@ fn log_app_error(err: &AppError, response: &ErrorResponse) {
             error!(error = ?err, "5xx error");
         }
         ErrorResponseVariant::BadRequest
+        | ErrorResponseVariant::TooManyRequests
         | ErrorResponseVariant::Unauthorised
         | ErrorResponseVariant::NotFound => log_client_error(err),
     }
@@ -259,6 +329,9 @@ fn message_is_safe_to_log(err: &AppError) -> bool {
             | AppError::UserError(_)
             | AppError::NotFound(_)
             | AppError::IncompleteData(_)
+            | AppError::TooManyDownloads { .. }
+            | AppError::TooManyEvents { .. }
+            | AppError::EventLimitReached { .. }
     )
 }
 
@@ -299,7 +372,7 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::NOT_FOUND);
         let body = test_utils::response_body_string(response).await;
-        assert!(body.contains("Error 404"));
+        assert!(body.contains("Error code 404"));
         assert!(body.contains("missing"));
     }
 
@@ -342,6 +415,64 @@ mod tests {
         let response = app.oneshot(request).await.expect("response");
 
         assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
+    }
+
+    /// Both rate-limit errors become a 429 whose page is translated with the
+    /// session locale.
+    #[tokio::test]
+    async fn rate_limit_errors_map_to_too_many_requests() {
+        let cases = [
+            (
+                AppError::TooManyDownloads {
+                    max: 20,
+                    window_secs: 3600,
+                },
+                Locale::En,
+                "Too many downloads",
+            ),
+            (
+                AppError::EventLimitReached { max: 20_000 },
+                Locale::En,
+                "You can still view everything you entered",
+            ),
+            (
+                AppError::TooManyEvents {
+                    max: 20,
+                    window_secs: 3600,
+                },
+                Locale::Nl,
+                "Te veel wijzigingen",
+            ),
+            (
+                AppError::EventLimitReached { max: 20_000 },
+                Locale::Nl,
+                "Te veel verzoeken",
+            ),
+        ];
+
+        for (error, locale, expected) in cases {
+            let response = error.into_response();
+
+            assert_eq!(response.status(), StatusCode::TOO_MANY_REQUESTS);
+
+            let error_template = response
+                .extensions()
+                .get::<ErrorTemplate>()
+                .expect("error template")
+                .clone()
+                .localise(locale);
+            let html = test_utils::response_body_string(
+                (
+                    error_template.status_code,
+                    HtmlTemplate(error_template, Context::new_test_without_db()),
+                )
+                    .into_response(),
+            )
+            .await;
+
+            assert!(html.contains("Error code 429"), "{html}");
+            assert!(html.contains(expected), "{html}");
+        }
     }
 
     fn get_multipart_error_request() -> Request<Body> {

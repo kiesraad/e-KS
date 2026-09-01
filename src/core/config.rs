@@ -5,6 +5,7 @@ use std::{env, path::PathBuf};
 
 use secrecy::SecretString;
 
+use super::rate_limit::RateLimits;
 use crate::{AppError, ElectionConfig, GithubUserId};
 
 #[cfg(feature = "dev-features")]
@@ -103,6 +104,9 @@ pub struct Config {
     /// election code, with the region appended after a colon where the type
     /// needs one (e.g. `EK27`, `PS27:GR`).
     pub default_election: ElectionConfig,
+    /// Per-stream rate limits guarding against denial of service through the
+    /// regular interface; see [`RateLimits`].
+    pub rate_limits: RateLimits,
 }
 
 fn get_env_with<F>(name: &'static str, lookup: &mut F) -> Result<String, AppError>
@@ -304,6 +308,8 @@ impl Config {
             )
         });
 
+        let rate_limits = RateLimits::from_env_with(&mut lookup)?;
+
         Ok(Self {
             storage_url: SecretString::from(storage_url),
             id_derivation_key,
@@ -315,6 +321,7 @@ impl Config {
             disable_auth_service,
             github_oauth,
             default_election,
+            rate_limits,
         })
     }
 
@@ -331,6 +338,7 @@ impl Config {
             disable_auth_service: false,
             github_oauth: None,
             default_election: ElectionConfig::EK27,
+            rate_limits: RateLimits::default(),
         }
     }
 }

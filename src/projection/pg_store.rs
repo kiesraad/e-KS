@@ -1,7 +1,13 @@
 //! [`PgStore`]: the store handle used by the app feature handlers, including
 //! the CSB paper-corrections write target.
 
-use crate::{AppError, CsbAction, CsbStore, MAX_CANDIDATES, PgEvent, PgStoreData, store::Store};
+use chrono::Utc;
+use tracing::warn;
+
+use crate::{
+    AppError, CsbAction, CsbStore, MAX_CANDIDATES, PgEvent, PgStoreData, RateLimit, RateLimits,
+    store::{Store, StoreData},
+};
 
 /// Store handle used by the app feature handlers: reads come from the
 /// [`PgStoreData`] projection, writes dispatch [`PgEvent`]s to the write
@@ -18,6 +24,8 @@ pub struct PgStore {
     /// `store.data` and the getters working unchanged.
     projection: Store<PgStoreData>,
     target: WriteTarget,
+    /// Limits enforced on writes; `None` disables them (paper corrections).
+    limits: Option<RateLimits>,
 }
 
 #[derive(Clone)]
@@ -45,7 +53,15 @@ impl PgStore {
         Self {
             projection: store,
             target: WriteTarget::Own,
+            limits: Some(RateLimits::default()),
         }
+    }
+
+    /// Enforce the configured (rather than the built-in default) limits on
+    /// this handle's writes.
+    pub fn with_limits(mut self, limits: RateLimits) -> Self {
+        self.limits = Some(limits);
+        self
     }
 
     /// Build a paper-corrections handle over a loaded CSB store: reads serve a
@@ -61,6 +77,8 @@ impl PgStore {
                 ..projection
             },
             target: WriteTarget::PaperCorrections { store: csb_store },
+            // Recording what was handed in on paper must not be cut off.
+            limits: None,
         }
     }
 
@@ -72,7 +90,10 @@ impl PgStore {
     /// Persist an event on the write target and apply it to the projection.
     pub async fn update(&self, event: PgEvent) -> Result<(), AppError> {
         match &self.target {
-            WriteTarget::Own => self.projection.update(event).await,
+            WriteTarget::Own => {
+                self.check_rate_limits(&event)?;
+                self.projection.update(event).await
+            }
             WriteTarget::PaperCorrections { store: csb_store } => {
                 csb_store
                     .update(CsbAction::PaperCorrectedUpdate(Box::new(event)))
@@ -85,6 +106,82 @@ impl PgStore {
                 Ok(())
             }
         }
+    }
+
+    /// Refuse the write when one of the configured [`RateLimits`] is reached,
+    /// counted from the stream's own event log. Best-effort under concurrent
+    /// writes: the projection can briefly lag, so a limit may overshoot by the
+    /// number of in-flight requests.
+    ///
+    /// Session events (login/logout) are exempt from the absolute cap so a
+    /// capped group can still sign in; the self-clearing window limits do
+    /// apply to them.
+    fn check_rate_limits(&self, event: &PgEvent) -> Result<(), AppError> {
+        let Some(RateLimits {
+            downloads,
+            events: event_limit,
+            events_total,
+        }) = self.limits
+        else {
+            return Ok(());
+        };
+
+        let data = self.projection.data.read();
+        let events = data.events();
+        let now = Utc::now();
+
+        if events_total > 0 && events.len() >= events_total && !is_session_event(event) {
+            return Err(self.limit_hit(
+                "events_total",
+                AppError::EventLimitReached { max: events_total },
+            ));
+        }
+
+        // Events are appended in order, so the window is a tail of the log.
+        let in_window = |limit: &RateLimit| {
+            let start = limit.window_start(now);
+            &events[events.partition_point(|event| event.created_at <= start)..]
+        };
+
+        if event_limit.is_reached(in_window(&event_limit).len()) {
+            return Err(self.limit_hit(
+                "events",
+                AppError::TooManyEvents {
+                    max: event_limit.max,
+                    window_secs: event_limit.window_secs,
+                },
+            ));
+        }
+
+        if matches!(event, PgEvent::DownloadFile { .. }) {
+            let count = in_window(&downloads)
+                .iter()
+                .filter(|event| matches!(event.payload, PgEvent::DownloadFile { .. }))
+                .count();
+            if downloads.is_reached(count) {
+                return Err(self.limit_hit(
+                    "downloads",
+                    AppError::TooManyDownloads {
+                        max: downloads.max,
+                        window_secs: downloads.window_secs,
+                    },
+                ));
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Emit the monitoring marker for a refused write and pass the error on.
+    /// Alerting matches on `event = "rate_limit.hit"`.
+    fn limit_hit(&self, limit: &'static str, err: AppError) -> AppError {
+        warn!(
+            event = "rate_limit.hit",
+            limit,
+            stream_id = %self.projection.stream_id,
+            "rate limit hit"
+        );
+        err
     }
 
     /// Hard cap on the number of candidates a single list may hold.
@@ -139,6 +236,17 @@ impl PgStore {
     }
 }
 
+/// Whether this event only records session activity rather than user data.
+///
+/// These are the events the application writes on the user's behalf when a
+/// session starts or ends; see [`PgStore::check_rate_limits`].
+fn is_session_event(event: &PgEvent) -> bool {
+    matches!(
+        event,
+        PgEvent::Login | PgEvent::Logout | PgEvent::DeveloperLogin { .. }
+    )
+}
+
 #[cfg(test)]
 impl PgStore {
     pub fn new_for_test() -> Self {
@@ -166,7 +274,170 @@ impl PgStore {
 
 #[cfg(test)]
 mod tests {
+    use chrono::TimeDelta;
+
     use super::*;
+    use crate::{
+        store::StoreEvent,
+        structs::{candidate_lists::CandidateListId, persons::PersonId},
+    };
+
+    /// A store holding `count` events that all happened `age` ago.
+    fn store_with_events(limits: RateLimits, count: usize, age: TimeDelta) -> PgStore {
+        let store = PgStore::new_for_test().with_limits(limits);
+        let created_at = Utc::now() - age;
+
+        for event_id in 1..=count {
+            store.apply_event(StoreEvent::new_at(
+                event_id,
+                PgEvent::DeletePerson {
+                    person_id: PersonId::new(),
+                },
+                created_at,
+            ));
+        }
+
+        store
+    }
+
+    fn download_event() -> PgEvent {
+        PgEvent::DownloadFile {
+            file_name: "documents.zip".to_string(),
+            download_path: "/generate/nl".to_string(),
+        }
+    }
+
+    fn data_event() -> PgEvent {
+        PgEvent::DeleteCandidateList(CandidateListId::new())
+    }
+
+    /// The absolute cap stops new data events, but never a read (nothing in
+    /// this module gates reads) and never logging in: a political group whose
+    /// stream is capped must still be able to sign in and look at its data.
+    #[tokio::test]
+    async fn absolute_event_cap_stops_data_events_but_not_logging_in() {
+        let limits = RateLimits::new_for_test(0, 0, 3, 60);
+        let store = store_with_events(limits, 3, TimeDelta::days(30));
+
+        let err = store
+            .update(data_event())
+            .await
+            .expect_err("cap must be enforced");
+        assert!(
+            matches!(err, AppError::EventLimitReached { max: 3 }),
+            "got {err:?}"
+        );
+
+        store.update(PgEvent::Login).await.expect("login recorded");
+        store
+            .update(PgEvent::Logout)
+            .await
+            .expect("logout recorded");
+
+        // Reads never pass through the limit check, so the stream stays
+        // viewable while the cap is in force.
+        assert_eq!(
+            store.get_political_group().appellation,
+            crate::test_utils::sample_political_group().appellation
+        );
+    }
+
+    /// Below the cap, writes go through.
+    #[tokio::test]
+    async fn absolute_event_cap_allows_writes_below_the_maximum() {
+        let limits = RateLimits::new_for_test(0, 0, 4, 60);
+        let store = store_with_events(limits, 3, TimeDelta::days(30));
+
+        store.update(data_event()).await.expect("below the cap");
+    }
+
+    /// The sliding window counts every event, and only the recent ones.
+    #[tokio::test]
+    async fn event_window_limit_blocks_a_burst_and_expires() {
+        let limits = RateLimits::new_for_test(0, 2, 0, 60);
+
+        let recent = store_with_events(limits, 2, TimeDelta::seconds(30));
+        let err = recent
+            .update(data_event())
+            .await
+            .expect_err("window limit must be enforced");
+        assert!(
+            matches!(
+                err,
+                AppError::TooManyEvents {
+                    max: 2,
+                    window_secs: 60,
+                }
+            ),
+            "got {err:?}"
+        );
+
+        let expired = store_with_events(limits, 2, TimeDelta::seconds(61));
+        expired
+            .update(data_event())
+            .await
+            .expect("events outside the window no longer count");
+    }
+
+    /// The download limit only counts (and only blocks) downloads: other
+    /// changes keep working while it is in force.
+    #[tokio::test]
+    async fn download_limit_blocks_only_downloads() {
+        let limits = RateLimits::new_for_test(2, 0, 0, 60);
+        let store = store_with_events(limits, 0, TimeDelta::zero());
+
+        store.update(download_event()).await.expect("first");
+        store.update(download_event()).await.expect("second");
+
+        let err = store
+            .update(download_event())
+            .await
+            .expect_err("download limit must be enforced");
+        assert!(
+            matches!(err, AppError::TooManyDownloads { max: 2, .. }),
+            "got {err:?}"
+        );
+
+        store
+            .update(data_event())
+            .await
+            .expect("other changes are unaffected");
+    }
+
+    /// Paper corrections are recorded by the committee on the CSB stream and
+    /// are not rate limited.
+    #[tokio::test]
+    async fn paper_corrections_are_not_rate_limited() -> Result<(), AppError> {
+        let store = crate::test_utils::paper_corrections_store().await?;
+
+        for _ in 0..5 {
+            store.update(download_event()).await?;
+        }
+
+        Ok(())
+    }
+
+    /// A refused write emits the monitoring marker.
+    #[tracing_test::traced_test]
+    #[tokio::test]
+    async fn a_limit_hit_logs_a_monitoring_marker() {
+        let limits = RateLimits::new_for_test(0, 1, 0, 60);
+        let store = store_with_events(limits, 1, TimeDelta::seconds(1));
+
+        store.update(data_event()).await.expect_err("limit hit");
+
+        assert!(logs_contain("rate_limit.hit"));
+        assert!(logs_contain("limit=\"events\""));
+    }
+
+    /// A store built by the middleware carries the configured limits.
+    #[tokio::test]
+    async fn with_limits_overrides_the_defaults() {
+        let store = PgStore::new_for_test().with_limits(RateLimits::new_for_test(0, 1, 0, 60));
+
+        store.update(data_event()).await.expect("first");
+        assert!(store.update(data_event()).await.is_err());
+    }
 
     /// The hard maximum guards a political group's own data; paper
     /// corrections must be able to record an over-long list as handed in.
