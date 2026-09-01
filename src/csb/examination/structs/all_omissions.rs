@@ -5,7 +5,7 @@ use crate::{
     csb::examination::extractors::CsbPoliticalGroup,
     structs::{
         candidate_lists::CandidateListId,
-        csb::{Omission, OmissionCategory},
+        csb::{CsbPhase, Omission, OmissionCategory},
         persons::{Person, PersonId},
     },
 };
@@ -92,31 +92,44 @@ impl CsbStream {
     }
 }
 
+// In examination mode an omission links to the manage-omissions overlay it can
+// be edited in; in recovery mode there is nothing to edit, so it links to the
+// page of the item it applies to instead.
+
 fn general_path(political_group: &CsbPoliticalGroup) -> String {
-    political_group
-        .manage_political_group_omissions_path()
-        .with_query_params(QueryParamState::redirect_to(
-            political_group.all_restorations_path().to_string(),
-        ))
-        .to_string()
+    match political_group.mode {
+        CsbPhase::Examination => political_group
+            .manage_political_group_omissions_path()
+            .with_query_params(QueryParamState::redirect_to(
+                political_group.all_restorations_path(),
+            ))
+            .to_string(),
+        CsbPhase::Recovery => political_group.general_information_path(),
+    }
 }
 
 fn candidate_list_path(political_group: &CsbPoliticalGroup, list_id: &CandidateListId) -> String {
-    political_group
-        .manage_candidate_list_omissions_path(list_id)
-        .with_query_params(QueryParamState::redirect_to(
-            political_group.all_restorations_path().to_string(),
-        ))
-        .to_string()
+    match political_group.mode {
+        CsbPhase::Examination => political_group
+            .manage_candidate_list_omissions_path(list_id)
+            .with_query_params(QueryParamState::redirect_to(
+                political_group.all_restorations_path(),
+            ))
+            .to_string(),
+        CsbPhase::Recovery => political_group.candidate_list_path(list_id),
+    }
 }
 
 fn declarations_of_support_path(political_group: &CsbPoliticalGroup) -> String {
-    political_group
-        .manage_declarations_of_support_omissions_path()
-        .with_query_params(QueryParamState::redirect_to(
-            political_group.all_restorations_path().to_string(),
-        ))
-        .to_string()
+    match political_group.mode {
+        CsbPhase::Examination => political_group
+            .manage_declarations_of_support_omissions_path()
+            .with_query_params(QueryParamState::redirect_to(
+                political_group.all_restorations_path(),
+            ))
+            .to_string(),
+        CsbPhase::Recovery => political_group.group_path(),
+    }
 }
 
 fn candidate_path(
@@ -124,12 +137,15 @@ fn candidate_path(
     person: &PersonId,
     list: &CandidateListId,
 ) -> String {
-    political_group
-        .manage_candidate_omissions_path(person, list)
-        .with_query_params(QueryParamState::redirect_to(
-            political_group.all_restorations_path().to_string(),
-        ))
-        .to_string()
+    match political_group.mode {
+        CsbPhase::Examination => political_group
+            .manage_candidate_omissions_path(person, list)
+            .with_query_params(QueryParamState::redirect_to(
+                political_group.all_restorations_path(),
+            ))
+            .to_string(),
+        CsbPhase::Recovery => political_group.candidate_path(list, person),
+    }
 }
 
 #[cfg(test)]

@@ -2,26 +2,49 @@
 {% import "csb/components/paper_corrected.html" as paper_corrected %}
 {% import "csb/components/restorations.html" as restorations %}
 {% block breadcrumbs %}
-  {{ breadcrumb(crate::csb::examination::CsbExaminationOverviewPath, "csb.examination") }}
-  {{ breadcrumb(political_group.examination_path() , political_group.csb_appellation(), is_translatable=false) }}
+  {{ breadcrumb(political_group.overview_path() , political_group.overview_title_key()) }}
+  {{ breadcrumb(political_group.group_path() , political_group.csb_appellation(), is_translatable=false) }}
   {{ breadcrumb(political_group.candidate_list_path(list_id) , "candidate_list.title_single") }}
   {{ breadcrumb(political_group.candidate_path(list_id, candidate.id) , candidate.name.display() , is_translatable=false) }}
 {% endblock %}
 {% block page_title %}
-  {{ paper_corrected::position_badge(position, "candidate-number") }}
-  {{ candidate.name.display() }}
+  {% if political_group.mode.is_recovery() %}
+    {% if let Some(recovery_position) = recovery_position %}
+      {{ paper_corrected::position_number(recovery_position, "candidate-number") }}
+    {% endif %}
+  {% else %}
+    {{ paper_corrected::position_badge(position, "candidate-number") }}
+  {% endif %}
+  {% if political_group.mode.is_recovery() && is_scrapped %}
+    <s class="imported-value">{{ candidate.name.display() }}</s>
+    <span class="restoration-tag restoration-tag-error">{{ "csb.recovery.scrapped"|trans }}</span>
+  {% else %}
+    {{ candidate.name.display() }}
+  {% endif %}
 {% endblock %}
 {% block page_sub_title %}
   {% let election = "election"|election_value %}
   <div class="tags">
     <h5 class="tags-label">{{ "common.electoral_districts"|trans }}:</h5>
     {% if electoral_districts.len() == election.electoral_districts().len() %}
-      <p>{{ "candidate_list.districts.all"|trans }}</p>
+      {% if political_group.mode.is_recovery() && all_districts_scrapped %}
+        <p>
+          <s class="imported-value">{{ "candidate_list.districts.all"|trans }}</s>
+        </p>
+      {% else %}
+        <p>{{ "candidate_list.districts.all"|trans }}</p>
+      {% endif %}
     {% else %}
       <ul class="tags-list">
         {% for district in electoral_districts %}
           <li class="tag">
-            <a class="unclickable">{{ district|district_name }}</a>
+            {% if political_group.mode.is_recovery() && scrapped_districts.contains(district) %}
+              <a class="unclickable">
+                <s class="imported-value">{{ district|district_name }}</s>
+              </a>
+            {% else %}
+              <a class="unclickable">{{ district|district_name }}</a>
+            {% endif %}
           </li>
         {% endfor %}
       </ul>
@@ -34,18 +57,22 @@
 {% endblock %}
 {% block content %}
   <section class="general-information">
-    {{ restorations::omission_panel("csb.omission.title_for.candidate"|trans(&candidate.name.display() ) , "csb.candidate.add_candidate_text"|trans, political_group.add_candidate_omission_path(candidate.id, list_id) , political_group.manage_candidate_omissions_path(candidate.id, list_id) , candidate_omissions.as_slice()) }}
+    {% if political_group.mode.is_examination() %}
+      {{ restorations::omission_panel("csb.omission.title_for.candidate"|trans(&candidate.name.display() ) , "csb.candidate.add_candidate_text"|trans, political_group.add_candidate_omission_path(candidate.id, list_id) , political_group.manage_candidate_omissions_path(candidate.id, list_id) , candidate_omissions.as_slice()) }}
+    {% else %}
+      {{ restorations::status_panel(political_group, "csb.omission.title_for.candidate"|trans(&candidate.name.display() ) , "csb.recovery.omissions_explanation"|trans, candidate_omissions.as_slice() , political_group.candidate_path(list_id, candidate.id)) }}
+    {% endif %}
     <h2>{{ "csb.candidate.personal_details"|trans }}</h2>
     <table class="detail-table">
       {{ paper_corrected::columns_head("person.personal_details"|trans) }}
       <tbody>
-        {{ paper_corrected::editable_data_row("person.fields.initials"|trans, details.initials, political_group.correction_person_path(candidate.id, crate::csb::examination::structs::CandidateCorrectionField::Initials, list_id) ) }}
+        {{ paper_corrected::maybe_editable_data_row("person.fields.initials"|trans, details.initials, political_group.correction_person_path(candidate.id, crate::csb::examination::structs::CandidateCorrectionField::Initials, list_id) , political_group.mode.is_examination()) }}
         {{ paper_corrected::data_row("person.fields.first_name"|trans, details.first_name) }}
-        {{ paper_corrected::editable_data_row("person.fields.last_name"|trans, details.last_name, political_group.correction_person_path(candidate.id, crate::csb::examination::structs::CandidateCorrectionField::LastName, list_id) ) }}
+        {{ paper_corrected::maybe_editable_data_row("person.fields.last_name"|trans, details.last_name, political_group.correction_person_path(candidate.id, crate::csb::examination::structs::CandidateCorrectionField::LastName, list_id) , political_group.mode.is_examination()) }}
         {{ paper_corrected::data_row("person.fields.gender"|trans, details.gender) }}
-        {{ paper_corrected::editable_data_row("person.fields.date_of_birth"|trans, details.date_of_birth, political_group.correction_person_path(candidate.id, crate::csb::examination::structs::CandidateCorrectionField::DateOfBirth, list_id) ) }}
+        {{ paper_corrected::maybe_editable_data_row("person.fields.date_of_birth"|trans, details.date_of_birth, political_group.correction_person_path(candidate.id, crate::csb::examination::structs::CandidateCorrectionField::DateOfBirth, list_id) , political_group.mode.is_examination()) }}
         {{ paper_corrected::data_row("person.fields.bsn"|trans, details.bsn) }}
-        {{ paper_corrected::editable_data_row("person.fields.place_of_residence"|trans, details.place_of_residence, political_group.correction_person_path(candidate.id, crate::csb::examination::structs::CandidateCorrectionField::PlaceOfResidence, list_id) ) }}
+        {{ paper_corrected::maybe_editable_data_row("person.fields.place_of_residence"|trans, details.place_of_residence, political_group.correction_person_path(candidate.id, crate::csb::examination::structs::CandidateCorrectionField::PlaceOfResidence, list_id) , political_group.mode.is_examination()) }}
       </tbody>
     </table>
     <table class="detail-table">

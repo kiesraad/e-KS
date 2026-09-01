@@ -10,7 +10,11 @@ use crate::{
     },
     filters,
     projection::WithCorrections,
-    structs::{candidate_lists::CandidateListId, csb::Omission, persons::Person},
+    structs::{
+        candidate_lists::CandidateListId,
+        csb::{CsbPhase, Omission},
+        persons::{Person, PersonId},
+    },
 };
 
 #[derive(Template)]
@@ -23,6 +27,10 @@ struct CsbCandidateTemplate {
     details: PaperCorrectedPersonDetails,
     position: PaperCorrected,
     candidate_omissions: Vec<Omission>,
+    is_scrapped: bool,
+    recovery_position: Option<usize>,
+    scrapped_districts: Vec<ElectoralDistrict>,
+    all_districts_scrapped: bool,
 }
 
 pub async fn overview(
@@ -32,7 +40,19 @@ pub async fn overview(
     context: CsbContext,
     store: CsbStore,
 ) -> Result<Response, AppError> {
-    let political_group = CsbPoliticalGroup::new_from_csb_store(&store);
+    render(list_id, person_id, context, store, CsbPhase::Examination).await
+}
+
+/// The candidate detail page, shared between the examination and the recovery
+/// ("Herstelde lijsten") phase.
+pub(in crate::csb) async fn render(
+    list_id: CandidateListId,
+    person_id: PersonId,
+    context: CsbContext,
+    store: CsbStore,
+    mode: CsbPhase,
+) -> Result<Response, AppError> {
+    let political_group = CsbPoliticalGroup::new_from_csb_store(&store).with_mode(mode);
 
     let imported = store.get_person(person_id, WithCorrections::None);
     let corrected = store.get_person(person_id, WithCorrections::Paper);
@@ -63,6 +83,9 @@ pub async fn overview(
         .map(|list| list.electoral_districts)
         .ok_or(AppError::GenericNotFound)?;
     let candidate_omissions = store.get_candidate_omissions(person_id);
+    let scrapped_districts = store.get_candidate_list_scrapped_districts(list_id);
+    let all_districts_scrapped =
+        !electoral_districts.is_empty() && scrapped_districts.len() == electoral_districts.len();
 
     Ok(HtmlTemplate(
         CsbCandidateTemplate {
@@ -73,6 +96,10 @@ pub async fn overview(
             details,
             position,
             candidate_omissions,
+            is_scrapped: store.is_candidate_scrapped(person_id, list_id),
+            recovery_position: store.get_recovery_position(list_id, person_id),
+            scrapped_districts,
+            all_districts_scrapped,
         },
         context,
     )

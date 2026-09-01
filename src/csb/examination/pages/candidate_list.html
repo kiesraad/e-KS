@@ -2,24 +2,40 @@
 {% import "csb/components/paper_corrected.html" as paper_corrected %}
 {% import "csb/components/restorations.html" as restorations %}
 {% block breadcrumbs %}
-  {{ breadcrumb(crate::csb::examination::CsbExaminationOverviewPath, "csb.examination") }}
-  {{ breadcrumb(political_group.examination_path() , political_group.csb_appellation(), is_translatable=false) }}
+  {{ breadcrumb(political_group.overview_path() , political_group.overview_title_key()) }}
+  {{ breadcrumb(political_group.group_path() , political_group.csb_appellation(), is_translatable=false) }}
   {{ breadcrumb(political_group.candidate_list_path(list_id) , "candidate_list.title_single") }}
 {% endblock %}
 {% block page_title %}
-  {{ "candidate_list.title_single"|trans }}
+  {% if political_group.mode.is_recovery() && is_scrapped %}
+    <s class="imported-value">{{ "candidate_list.title_single"|trans }}</s>
+  {% else %}
+    {{ "candidate_list.title_single"|trans }}
+  {% endif %}
 {% endblock %}
 {% block page_sub_title %}
   {% let election = "election"|election_value %}
   <div class="tags">
     <h5 class="tags-label">{{ "common.electoral_districts"|trans }}:</h5>
     {% if electoral_districts.len() == election.electoral_districts().len() %}
-      <p>{{ "candidate_list.districts.all"|trans }}</p>
+      {% if political_group.mode.is_recovery() && all_districts_scrapped %}
+        <p>
+          <s class="imported-value">{{ "candidate_list.districts.all"|trans }}</s>
+        </p>
+      {% else %}
+        <p>{{ "candidate_list.districts.all"|trans }}</p>
+      {% endif %}
     {% else %}
       <ul class="tags-list">
         {% for district in electoral_districts %}
           <li class="tag">
-            <a class="unclickable">{{ district|district_name }}</a>
+            {% if political_group.mode.is_recovery() && scrapped_districts.contains(district) %}
+              <a class="unclickable">
+                <s class="imported-value">{{ district|district_name }}</s>
+              </a>
+            {% else %}
+              <a class="unclickable">{{ district|district_name }}</a>
+            {% endif %}
           </li>
         {% endfor %}
       </ul>
@@ -27,12 +43,16 @@
   </div>
 {% endblock %}
 {% block header_action %}
-  {% set back_url = political_group.examination_path() %}
+  {% set back_url = political_group.group_path() %}
   {% include "csb/components/header_examination_actions.html" %}
 {% endblock %}
 {% block content %}
   <section class="general-information candidate-list">
-    {{ restorations::omission_panel("csb.omission.title_for.candidate_list"|trans, "csb.list.add_text"|trans, political_group.add_candidate_list_omission_path(list_id) , political_group.manage_candidate_list_omissions_path(list_id) , omissions.as_slice()) }}
+    {% if political_group.mode.is_examination() %}
+      {{ restorations::omission_panel("csb.omission.title_for.candidate_list"|trans, "csb.list.add_text"|trans, political_group.add_candidate_list_omission_path(list_id) , political_group.manage_candidate_list_omissions_path(list_id) , omissions.as_slice()) }}
+    {% else %}
+      {{ restorations::status_panel(political_group, "csb.omission.title_for.candidate_list"|trans, "csb.recovery.omissions_explanation"|trans, omissions.as_slice() , political_group.candidate_list_path(list_id)) }}
+    {% endif %}
     {% if candidates.is_empty() %}
       <p class="font-italic">{{ "candidate_list.view.empty"|trans }}</p>
     {% else %}
@@ -50,13 +70,28 @@
         <tbody>
           {% for candidate in candidates %}
             <tr class="clickable">
-              <td>{{ paper_corrected::position_badge(candidate.position, "") }}</td>
               <td>
-                {% if candidate.name.differs() || candidate.name.csb_corrected.is_some() %}
-                  {{ paper_corrected::value(candidate.name) }}
+                {% if political_group.mode.is_recovery() %}
+                  {% if let Some(position) = candidate.recovery_position %}
+                    {{ paper_corrected::position_number(position, "") }}
+                  {% endif %}
                 {% else %}
-                  <strong>{{ candidate.person.name.last_name_with_prefix_appended() }},</strong>
-                  {{ candidate.person|initials_as_printed_on_list }}
+                  {{ paper_corrected::position_badge(candidate.position, "") }}
+                {% endif %}
+              </td>
+              <td>
+                {% if political_group.mode.is_recovery() && candidate.is_scrapped %}
+                  <s class="imported-value">
+                  {% endif %}
+                  {% if candidate.name.differs() || candidate.name.csb_corrected.is_some() %}
+                    {{ paper_corrected::value(candidate.name) }}
+                  {% else %}
+                    <strong>{{ candidate.person.name.last_name_with_prefix_appended() }},</strong>
+                    {{ candidate.person|initials_as_printed_on_list }}
+                  {% endif %}
+                  {% if political_group.mode.is_recovery() && candidate.is_scrapped %}
+                  </s>
+                  <span class="restoration-tag restoration-tag-error">{{ "csb.recovery.scrapped"|trans }}</span>
                 {% endif %}
               </td>
               <td>

@@ -255,3 +255,45 @@
   --card-padding: var(--space-8);
   --card-min-height: 16.5rem;
 }
+
+.omission-status-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  list-style: none;
+  margin: 0 0 var(--space-5);
+  padding: 0;
+}
+
+.omission-status-row {
+  align-items: center;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--rounded-xs);
+  display: flex;
+  gap: var(--space-6);
+  justify-content: space-between;
+  padding: var(--space-4) var(--space-5);
+
+  .omission-status-text {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+
+    .restoration-tag {
+      align-self: flex-start;
+    }
+
+    p {
+      color: var(--gray-600);
+      font-size: var(--font-size-sm);
+      line-height: var(--leading-sm);
+      margin: 0;
+    }
+  }
+}
+
+.omission-status-control {
+  display: flex;
+  flex-shrink: 0;
+  gap: var(--space-2);
+}
