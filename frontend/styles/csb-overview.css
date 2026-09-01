@@ -111,11 +111,6 @@
 
   td:nth-child(2) {
     padding: var(--space-2) var(--space-4);
-
-    .omission-badges {
-      margin: 0;
-      display: inline-block;
-    }
   }
 
   .status {
@@ -146,52 +141,38 @@
   }
 }
 
-.header-controls {
+.switch-group {
   display: flex;
   align-items: center;
-  background-color: var(--gray-25);
-  border-radius: var(--rounded-lg);
-  border: 1px solid var(--card-border-color, var(--gray-200));
-  padding: var(--space-2);
-  gap: var(--space-2);
 
-  .switch-group {
-    display: flex;
-    align-items: center;
+  > * {
+    margin-right: var(--space-1);
+  }
 
-    p {
-      min-width: 10rem;
+  &.unfinished {
+    color: var(--gray-600);
+
+    .slider {
+      border: 1px solid var(--gray-600);
     }
 
-    > * {
-      margin-right: var(--space-1);
+    .slider:before {
+      --slider-color: var(--gray-600);
+    }
+  }
+
+  &.finished {
+    color: var(--green-600);
+
+    .slider {
+      border: 1px solid var(--green-600);
     }
 
-    &.unfinished {
-      color: var(--red-600);
-
-      .slider {
-        border: 1px solid var(--red-600);
-      }
-
-      .slider:before {
-        --slider-color: var(--red-600);
-      }
-    }
-
-    &.finished {
-      color: var(--green-600);
-
-      .slider {
-        border: 1px solid var(--green-600);
-      }
-
-      .slider:before {
-        --slider-color: var(--green-600);
-        -webkit-transform: translateX(16px);
-        -ms-transform: translateX(16px);
-        transform: translateX(16px);
-      }
+    .slider:before {
+      --slider-color: var(--green-600);
+      -webkit-transform: translateX(16px);
+      -ms-transform: translateX(16px);
+      transform: translateX(16px);
     }
   }
 }
@@ -244,10 +225,10 @@
 .correction-icon {
   background-position: center;
   background-repeat: no-repeat;
-  border-radius: var(--rounded-lg);
+  border-radius: var(--rounded-md);
   flex-shrink: 0;
-  height: var(--space-11);
-  width: var(--space-11);
+  height: var(--space-10);
+  width: var(--space-10);
 }
 
 .omission-icon {
@@ -258,48 +239,6 @@
 .correction-icon {
   background-color: var(--blue-200);
   background-image: url("../icons/correction.svg");
-}
-
-.omission-cards {
-  background-color: var(--base-white);
-  padding: var(--space-6);
-
-  & > h3 {
-    align-items: center;
-    display: flex;
-    gap: var(--space-3);
-    margin-top: 0;
-    margin-bottom: var(--space-4);
-  }
-
-  .tag.link a.warning::after,
-  .tag.link a.error::after {
-    mask-image: url("../icons/arrowNarrowRight.svg");
-  }
-
-  & > h4 {
-    align-content: center;
-    height: 2.75rem;
-    text-align: left;
-    font-size: var(--font-size-xs);
-    border-bottom: 1px solid var(--gray-200);
-    padding: var(--space-2);
-    margin-bottom: var(--space-md);
-  }
-
-  .cards {
-    --card-gap: var(--space-3);
-    --card-padding: var(--space-6);
-    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
-  }
-
-  .card-content {
-    color: var(--gray-500);
-  }
-
-  .omission-badges {
-    margin: 0;
-  }
 }
 
 .overlay.correction-overlay,
@@ -451,8 +390,6 @@
 .restoration_count {
   display: inline-flex;
   position: relative;
-  margin-left: -1em;
-  margin-top: -1em;
   align-items: center;
   justify-content: center;
   font-size: var(--font-size-xs);
@@ -584,11 +521,11 @@
 
 .icon-small {
   align-items: center;
-  border-radius: 50%;
-  aspect-ratio: 1 / 1;
+  border-radius: var(--rounded-lg);
   display: flex;
-  width: var(--space-8);
+  height: var(--space-8);
   justify-content: center;
+  width: var(--space-10);
 
   &.omission-icon-small {
     border: 1px solid var(--orange-600);
@@ -617,6 +554,6 @@
 
 .correction-icon-small::before {
   background-color: var(--blue-600);
-  height: var(--space-4);
-  mask-image: url("../icons/wand.svg");
+  height: var(--space-5);
+  mask-image: url("../icons/correction.svg");
 }

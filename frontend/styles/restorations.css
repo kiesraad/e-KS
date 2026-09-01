@@ -1,0 +1,257 @@
+/* The finish switch and the delete action, right-aligned above the panels. */
+.examination-controls {
+  align-items: center;
+  display: flex;
+  gap: var(--space-4);
+  justify-content: flex-end;
+  margin-bottom: var(--space-6);
+
+  /* Inside this row the delete action reads as a link, not as a button. */
+  .button.tertiary-destructive {
+    border-color: transparent;
+    box-shadow: none;
+  }
+}
+
+.examination-controls-divider {
+  align-self: stretch;
+  border-inline-start: 1px solid var(--gray-200);
+}
+
+.examination-panels {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+
+  &.disabled {
+    opacity: 50%;
+    pointer-events: none;
+  }
+}
+
+.examination-panel {
+  background-color: var(--base-white);
+  padding: var(--space-8);
+
+  > h2 {
+    margin-block: 0 var(--space-6);
+  }
+}
+
+.examination-panel-header {
+  align-items: flex-start;
+  display: flex;
+  gap: var(--space-8);
+  justify-content: space-between;
+  margin-bottom: var(--space-5);
+
+  h2 {
+    align-items: center;
+    display: flex;
+    gap: var(--space-3);
+    margin: 0;
+  }
+
+  p {
+    color: var(--gray-600);
+    font-size: var(--font-size-sm);
+    line-height: var(--leading-sm);
+    margin: var(--space-2) 0 0;
+    max-width: 40rem;
+  }
+
+  /* Keep the action from shrinking when the explanation is long. */
+  > :last-child {
+    flex-shrink: 0;
+  }
+}
+
+/* The heading above a single strip, naming the part of the examination the
+   omissions or corrections in that strip belong to. */
+.examination-panel-group {
+  color: var(--gray-600);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--leading-sm);
+  margin: var(--space-6) 0 var(--space-2);
+
+  &:first-of-type {
+    margin-top: 0;
+  }
+}
+
+.restoration-strip {
+  --restoration-strip-color: var(--gray-100);
+  align-items: center;
+  background-image: repeating-linear-gradient(
+    135deg,
+    var(--restoration-strip-color) 0 1px,
+    transparent 1px 10px
+  );
+  border: 1px solid var(--restoration-strip-color);
+  border-radius: var(--rounded-md);
+  column-gap: var(--space-6);
+  display: flex;
+  justify-content: space-between;
+  min-height: 3.5rem;
+  padding: var(--space-2) var(--space-4);
+}
+
+.restoration-strip-omission {
+  --restoration-strip-color: var(--orange-100);
+}
+
+.restoration-strip-correction {
+  --restoration-strip-color: var(--blue-100);
+}
+
+.restoration-strip-error {
+  --restoration-strip-color: var(--red-100);
+}
+
+.restoration-strip-empty {
+  color: var(--gray-500);
+  font-size: var(--font-size-sm);
+  font-style: italic;
+}
+
+.restoration-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.restoration-tag {
+  --restoration-tag-color: var(--orange-700);
+  --restoration-tag-bg: var(--orange-100);
+  --restoration-tag-icon: url("../icons/omission.svg");
+  align-items: center;
+  background-color: var(--restoration-tag-bg);
+  border: 1px solid var(--restoration-tag-color);
+  border-radius: var(--rounded-xl);
+  color: var(--restoration-tag-color);
+  display: inline-flex;
+  font-size: var(--font-size-sm);
+  gap: var(--space-2);
+  line-height: var(--leading-sm);
+  padding: var(--space-1) var(--space-3);
+  text-decoration: none;
+
+  &::before {
+    background-color: currentColor;
+    content: "";
+    flex-shrink: 0;
+    height: var(--space-5);
+    mask-image: var(--restoration-tag-icon);
+    mask-position: center;
+    mask-repeat: no-repeat;
+    mask-size: contain;
+    width: var(--space-5);
+  }
+
+  &:is(a):hover {
+    color: var(--restoration-tag-color);
+    text-decoration: underline;
+  }
+}
+
+/* Non-recoverable ("onherstelbaar") omissions are highlighted as errors. */
+.restoration-tag-unrecoverable {
+  --restoration-tag-color: var(--red-700);
+  --restoration-tag-bg: var(--red-100);
+}
+
+/* An ambtshalve correctie: a correction the committee made itself. */
+.restoration-tag-correction {
+  --restoration-tag-color: var(--blue-700);
+  --restoration-tag-bg: var(--blue-100);
+  --restoration-tag-icon: url("../icons/correction.svg");
+}
+
+/* A papieren correctie: a handwritten correction taken over from paper. */
+.restoration-tag-paper {
+  --restoration-tag-color: var(--blue-700);
+  --restoration-tag-bg: var(--blue-100);
+  --restoration-tag-icon: url("../icons/edit.svg");
+}
+
+/* Errors and their absence carry no fill, and state the count before the icon
+   rather than after it. */
+.restoration-tag-error,
+.restoration-tag-ok {
+  --restoration-tag-bg: transparent;
+  border-radius: var(--rounded-md);
+  flex-direction: row-reverse;
+}
+
+.restoration-tag-error {
+  --restoration-tag-color: var(--red-700);
+  --restoration-tag-icon: url("../icons/error.svg");
+}
+
+.restoration-tag-ok {
+  --restoration-tag-color: var(--green-700);
+  --restoration-tag-icon: url("../icons/checkmarkSmall.svg");
+}
+
+/* The link to the overview of everything registered for this item. */
+.restoration-strip-link {
+  align-items: center;
+  color: var(--gray-800);
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: var(--space-2);
+  margin-inline-start: auto;
+  text-decoration: none;
+  white-space: nowrap;
+
+  &::after {
+    background-color: currentColor;
+    content: "";
+    height: var(--space-5);
+    mask-image: url("../icons/chevronRight.svg");
+    mask-position: center;
+    mask-repeat: no-repeat;
+    width: var(--space-5);
+  }
+
+  &:hover,
+  &:visited {
+    color: var(--gray-800);
+  }
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+/* A card's strip sits against the footer, whatever else the card holds. */
+.card .restoration-strip {
+  margin-top: auto;
+}
+
+.restoration-strip .icon-container {
+  margin-inline-start: auto;
+
+  > :last-child {
+    margin-right: 0;
+  }
+}
+
+/* The electoral districts of a candidate list, read as one line. */
+.card-districts {
+  color: var(--gray-500);
+
+  .card-districts-separator {
+    color: var(--gray-300);
+    padding-inline: var(--space-1);
+  }
+}
+
+.examination-panel .cards-candidate-lists {
+  --card-padding: var(--space-8);
+  --card-min-height: 16.5rem;
+}

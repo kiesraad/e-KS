@@ -4,18 +4,17 @@ action:
   finish: Finish
 added: Added
 all_restorations:
-  add_note: Add a note
-  add_note_explanation: "Add extra notes used at the bottom of the omission letter:"
   corrections_explanation: All created corrections are displayed here.
+  corrections_title: Corrections overview
   explanation: Inspect all omissions and corrections here before concluding the examination.
   omissions_explanation: All created omissions are displayed here.
-  title: All omissions
+  omissions_title: Omissions overview
+  title: Omissions and corrections
 brp:
   correct: Correct
   errors: Errors
 candidate:
   add_candidate_text: Add omissions for this candidate
-  overview_text: Added omissions for this candidate
   personal_details: Personal details
 correction:
   form:
@@ -25,7 +24,6 @@ correction:
   overlay:
     title: Edit correction
   paper_corrected: Paper correction
-  title: Corrections
 declarations_of_support:
   instruction: Report problems with the declarations of support
   title: Declarations of support
@@ -45,12 +43,9 @@ form:
 general:
   add_text: Add omissions for the general information
   group_info: Political group information
-  overview_text: Added omissions for the general information
   personalia: Personal details
 group:
   added_on_paper: Added during paper corrections
-  all_brp_errors: All BRP errors
-  all_brp_errors_note: All BRP errors are collectively listed here
   brp_errors:
     none: No BRP errors
     plural: "{} BRP errors"
@@ -59,7 +54,9 @@ group:
   confirm_delete: "Are you sure you want to delete the political group “{}“?"
   delete_note: "It is always possible to re-import a political group but any created (paper) corrections, and omissions will be lost!"
   deleted_label: deleted
-  examine_all: Examine all BRP errors
+  discovered_errors: Errors found
+  discovered_errors_note: All BRP errors are collectively listed here
+  examine_all: To all errors
   examine_general: Examine general information
   examine_list: Examine candidate list
   finished: Examination finished
@@ -97,7 +94,6 @@ index:
 list:
   add_text: Add omissions for this candidate list
   brp_errors: BRP errors
-  overview_text: Added omissions for this candidate list
 monitoring:
   cache: Local cache
   created_at: Created
@@ -114,18 +110,16 @@ no_unfinished_political_groups: There are no unfinished examinations of any poli
 omission:
   action:
     add: Add omission
-    manage: Manage omissions
-  add:
-    title: Add
   form:
     applies_to: "This omission applies to:"
     description_label: Add I 1 omission
+    edit_heading: Type or edit the omission here
     help_text_label: Add omission letter note
     placeholder_warning: The text still contains unfilled placeholders.
-    presets_heading: Add one of these omissions
+    presets_heading: Use one of these omissions as a template (optional)
+    recoverable_hint: "A recoverable omission can still be remedied by the political group, an irreparable one cannot."
     recoverable_label: Recoverable omission
     submit: Add and close
-    title: Add omissions
     title_label: Omission title
   overview:
     description: Description
@@ -136,10 +130,16 @@ omission:
     recoverable: Recoverable
     title: Overview
   title: Omissions
+  title_for:
+    candidate: "Omissions {}"
+    candidate_list: Omissions candidate list
+    general: Omissions general information
 paper_corrections:
+  added: Paper correction added
   banner: "You are correcting {}. Only enter corrections that are handwritten on the submitted paper documents, nothing else."
   instruction: Copy handwritten corrections from the submitted paper documents into the imported data
-  start: Enter corrections
+  none: No paper corrections have been taken over yet.
+  start: Go to data
   stop: Back to examination
   title: Paper corrections
 progress: Progress

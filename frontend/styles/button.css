@@ -191,6 +191,40 @@ span.button {
     width: var(--space-5);
   }
 
+  &:is(.icon-plus-end, .icon-chevron-end, .icon-trash-end) {
+    padding-inline: var(--space-5) var(--space-4);
+  }
+
+  &.icon-plus-end::after {
+    background-color: currentColor;
+    content: "";
+    height: var(--space-5);
+    mask-image: url("../icons/plus.svg");
+    mask-size: contain;
+    width: var(--space-5);
+  }
+
+  &.icon-trash-end::after {
+    background-color: currentColor;
+    content: "";
+    height: var(--space-5);
+    mask-image: url("../icons/trash.svg");
+    mask-position: center;
+    mask-repeat: no-repeat;
+    mask-size: contain;
+    width: var(--space-5);
+  }
+
+  &.icon-chevron-end::after {
+    background-color: currentColor;
+    content: "";
+    height: var(--space-5);
+    mask-image: url("../icons/chevronRight.svg");
+    mask-position: center;
+    mask-repeat: no-repeat;
+    width: var(--space-5);
+  }
+
   &.icon-restoration::before {
     content: "";
     height: var(--space-5);

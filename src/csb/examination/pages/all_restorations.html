@@ -1,6 +1,7 @@
 {% extends "csb/components/layout.html" %}
 {% import "pg/common/components/macros.html" as macros %}
 {% import "csb/components/paper_corrected.html" as paper_corrected %}
+{% import "csb/components/restorations.html" as restorations %}
 {% block breadcrumbs %}
   {{ breadcrumb(crate::csb::examination::CsbExaminationOverviewPath, "csb.examination") }}
   {{ breadcrumb(political_group.examination_path() , political_group.csb_appellation(), is_translatable=false) }}
@@ -9,99 +10,78 @@
 {% block page_title %}
   {{ "csb.all_restorations.title"|trans }}
 {% endblock %}
+{% block page_sub_title %}
+  <span class="subtitle">{{ "csb.all_restorations.explanation"|trans }}</span>
+{% endblock %}
 {% block header_action %}
   {% set back_url = political_group.examination_path() %}
-  {% set include_finish_switch = true %}
-  {% set toggle_redirect_url = political_group.all_restorations_path() %}
   {% include "csb/components/header_examination_actions.html" %}
 {% endblock %}
 {% block content %}
-  <div class="content-header mb-xxl">
-    <p>{{ "csb.all_restorations.explanation"|trans }}</p>
-  </div>
-  <div class="omission-cards mb-xl">
-    <h3>
-      <span class="omission-icon" aria-hidden="true"></span>
-      {{ "csb.omission.title"|trans }}
-    </h3>
-    <p>{{ "csb.all_restorations.omissions_explanation"|trans }}</p>
-    {% if omission_count == 0 %}
-      <p class="font-italic mt-md">{{ "csb.omission.overview.no_omissions"|trans }}</p>
-    {% endif %}
-    {% if !all_omissions.general.is_empty() %}
-      <h4>{{ "common.general_information"|trans }}</h4>
-      <ul class="tags-list">
-        {% for omission in all_omissions.general %}
-          <li class="tag link">
-            <a class="{{ omission.omission.class() }}" href="{{ omission.path }}">{{ omission.omission.title }}</a>
-          </li>
+  {% set toggle_redirect_url = political_group.all_restorations_path() %}
+  {% include "csb/components/examination_controls.html" %}
+  <div class="examination-panels">
+    <div class="examination-panel">
+      <div class="examination-panel-header">
+        <div>
+          <h2 class="h3">
+            <span class="omission-icon" aria-hidden="true"></span>
+            {{ "csb.all_restorations.omissions_title"|trans }}
+          </h2>
+          <p>{{ "csb.all_restorations.omissions_explanation"|trans }}</p>
+        </div>
+      </div>
+      {% if omission_count == 0 %}
+        <p class="font-italic">{{ "csb.omission.overview.no_omissions"|trans }}</p>
+      {% else %}
+        {% if !all_omissions.general.is_empty() %}
+          {{ restorations::omission_group("common.general_information"|trans, all_omissions.general.as_slice() ) }}
+        {% endif %}
+        {% if !all_omissions.declarations_of_support.is_empty() %}
+          {{ restorations::omission_group("csb.declarations_of_support.title"|trans, all_omissions.declarations_of_support.as_slice() ) }}
+        {% endif %}
+        {% if !all_omissions.candidate_lists.is_empty() %}
+          {{ restorations::omission_group("candidate_list.title_plural"|trans, all_omissions.candidate_lists.as_slice() ) }}
+        {% endif %}
+        {% for candidate in all_omissions.candidates %}
+          {{ restorations::omission_group(candidate.person.name.display() , candidate.omissions.as_slice()) }}
         {% endfor %}
-      </ul>
-    {% endif %}
-    {% if !all_omissions.declarations_of_support.is_empty() %}
-      <h4>{{ "csb.declarations_of_support.title"|trans }}</h4>
-      <ul class="tags-list">
-        {% for omission in all_omissions.declarations_of_support %}
-          <li class="tag link">
-            <a class="{{ omission.omission.class() }}" href="{{ omission.path }}">{{ omission.omission.title }}</a>
-          </li>
-        {% endfor %}
-      </ul>
-    {% endif %}
-    {% if !all_omissions.candidate_lists.is_empty() %}
-      <h4>{{ "candidate_list.title_plural"|trans }}</h4>
-      <ul class="tags-list">
-        {% for omission in all_omissions.candidate_lists %}
-          <li class="tag link">
-            <a class="{{ omission.omission.class() }}" href="{{ omission.path }}">{{ omission.omission.title }}</a>
-          </li>
-        {% endfor %}
-      </ul>
-    {% endif %}
-    {% for candidate in all_omissions.candidates %}
-      <h4>{{ candidate.person.name.display() }}</h4>
-      <ul class="tags-list">
-        {% for omission in candidate.omissions %}
-          <li class="tag link">
-            <a class="{{ omission.omission.class() }}" href="{{ omission.path }}">{{ omission.omission.title }}</a>
-          </li>
-        {% endfor %}
-      </ul>
-    {% endfor %}
-    <p class="mt-md mb-sm">{{ "csb.all_restorations.add_note_explanation"|trans }}</p>
-    <button class="button secondary icon-plus">{{ "csb.all_restorations.add_note"|trans }}</button>
-  </div>
-  <div class="omission-cards">
-    <h3>
-      <span class="correction-icon" aria-hidden="true"></span>
-      {{ "csb.correction.title"|trans }}
-    </h3>
-    <p>{{ "csb.all_restorations.corrections_explanation"|trans }}</p>
-    {% if correction_count == 0 %}
-      <p class="font-italic mt-md">{{ "csb.omission.overview.no_corrections"|trans }}</p>
-    {% else %}
-      {% if !all_corrections.general.is_empty() %}
-        <table class="detail-table mt-md">
-          {{ paper_corrected::columns_head("common.general_information"|trans) }}
-          <tbody>
-            {% for correction in all_corrections.general %}
-              {{ paper_corrected::editable_data_row(correction.label, correction.corrected, correction.edit_path) }}
-            {% endfor %}
-          </tbody>
-        </table>
       {% endif %}
-      {% for candidate in all_corrections.candidates %}
-        <table class="detail-table mt-md">
-          {{ paper_corrected::columns_head(candidate.person.name.display() ) }}
-          <tbody>
-            {% for correction in candidate.corrections %}
-              {{ paper_corrected::editable_data_row(correction.label, correction.corrected, correction.edit_path) }}
-            {% endfor %}
-          </tbody>
-        </table>
-      {% endfor %}
-    {% endif %}
-    <p class="mt-md mb-sm">{{ "csb.all_restorations.add_note_explanation"|trans }}</p>
-    <button class="button secondary icon-plus">{{ "csb.all_restorations.add_note"|trans }}</button>
+    </div>
+    <div class="examination-panel">
+      <div class="examination-panel-header">
+        <div>
+          <h2 class="h3">
+            <span class="correction-icon" aria-hidden="true"></span>
+            {{ "csb.all_restorations.corrections_title"|trans }}
+          </h2>
+          <p>{{ "csb.all_restorations.corrections_explanation"|trans }}</p>
+        </div>
+      </div>
+      {% if correction_count == 0 %}
+        <p class="font-italic">{{ "csb.omission.overview.no_corrections"|trans }}</p>
+      {% else %}
+        {% if !all_corrections.general.is_empty() %}
+          <table class="detail-table">
+            {{ paper_corrected::columns_head("common.general_information"|trans) }}
+            <tbody>
+              {% for correction in all_corrections.general %}
+                {{ paper_corrected::editable_data_row(correction.label, correction.corrected, correction.edit_path) }}
+              {% endfor %}
+            </tbody>
+          </table>
+        {% endif %}
+        {% for candidate in all_corrections.candidates %}
+          <table class="detail-table">
+            {{ paper_corrected::columns_head(candidate.person.name.display() ) }}
+            <tbody>
+              {% for correction in candidate.corrections %}
+                {{ paper_corrected::editable_data_row(correction.label, correction.corrected, correction.edit_path) }}
+              {% endfor %}
+            </tbody>
+          </table>
+        {% endfor %}
+      {% endif %}
+    </div>
   </div>
 {% endblock %}

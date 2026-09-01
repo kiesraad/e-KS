@@ -1,5 +1,6 @@
 {% extends "csb/components/layout.html" %}
 {% import "csb/components/paper_corrected.html" as paper_corrected %}
+{% import "csb/components/restorations.html" as restorations %}
 {% block breadcrumbs %}
   {{ breadcrumb(crate::csb::examination::CsbExaminationOverviewPath, "csb.examination") }}
   {{ breadcrumb(political_group.examination_path() , political_group.csb_appellation(), is_translatable=false) }}
@@ -34,47 +35,7 @@
 {% endmacro %}
 {% block content %}
   <section class="general-information">
-    <div class="omission-cards">
-      <h3>
-        <span class="omission-icon" aria-hidden="true"></span>
-        {{ "csb.omission.title"|trans }}
-      </h3>
-      <div class="cards">
-        <div class="card omission-card"
-             data-href="{{ political_group.add_political_group_omission_path() }}">
-          <div class="card-header">
-            <div>
-              <h3 class="h4">{{ "csb.omission.add.title"|trans }}</h3>
-            </div>
-          </div>
-          <div class="card-content">
-            <p>{{ "csb.general.add_text"|trans }}</p>
-          </div>
-          <a class="card-footer"
-             href="{{ political_group.add_political_group_omission_path() }}">{{ "csb.omission.action.add"|trans }}</a>
-        </div>
-        <div class="card omission-card"
-             data-href="{{ political_group.manage_political_group_omissions_path() }}">
-          <div class="card-header">
-            <div>
-              <h3 class="h4">{{ "csb.omission.overview.title"|trans }}</h3>
-            </div>
-          </div>
-          <div class="card-content">
-            <p>{{ "csb.general.overview_text"|trans }}</p>
-            {% if !political_group_omissions.is_empty() %}
-              <ul class="omission-badges">
-                {% for omission in political_group_omissions %}
-                  <li class="omission-badge{% if !omission.recoverable %} omission-badge-unrecoverable{% endif %}">{{ omission.title }}</li>
-                {% endfor %}
-              </ul>
-            {% endif %}
-          </div>
-          <a class="card-footer"
-             href="{{ political_group.manage_political_group_omissions_path() }}">{{ "csb.omission.action.manage"|trans }}</a>
-        </div>
-      </div>
-    </div>
+    {{ restorations::omission_panel("csb.omission.title_for.general"|trans, "csb.general.add_text"|trans, political_group.add_political_group_omission_path() , political_group.manage_political_group_omissions_path() , political_group_omissions.as_slice()) }}
     <h2>{{ "csb.general.group_info"|trans }}</h2>
     <table class="detail-table">
       {{ paper_corrected::columns_head("common.general_information"|trans) }}

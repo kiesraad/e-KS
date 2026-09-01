@@ -8,12 +8,13 @@ export class CsbCandidateListPage {
   constructor(protected readonly page: Page) {
     this.headerCandidateList = this.page.getByRole("heading", {
       name: "Kandidatenlijst",
+      exact: true,
     });
     this.linkAddOmission = this.page.getByRole("link", {
       name: "Verzuim toevoegen",
     });
     this.linkManageOmissions = this.page.getByRole("link", {
-      name: "Verzuimen beheren",
+      name: "Overzicht",
     });
   }
 

@@ -1,32 +1,54 @@
-.omission-overlay .checklist.grid {
-  --checklist-column-min-width: 12em;
+.omission-overlay {
+  .checklist.grid {
+    --checklist-column-min-width: 12em;
+  }
+
+  /* The rule between the steps and the form runs the height of the dialog, so
+     it does not stop short on a form this long. */
+  .steps-nav {
+    border-right: none;
+  }
+
+  .overlay-content.steps > .form {
+    border-inline-start: 1px solid var(--gray-200);
+    padding-inline-start: var(--space-8);
+  }
 }
 
-.omission-presets,
-.omission-badges {
+.omission-form-section + .omission-form-section {
+  border-top: 1px solid var(--gray-200);
+  margin-top: var(--space-10);
+  padding-top: var(--space-10);
+}
+
+/* The category a group of presets is listed under. */
+.omission-preset-group {
+  color: var(--gray-800);
+  font-size: var(--font-size-md);
+  line-height: var(--leading-md);
+  margin: var(--space-6) 0 0;
+}
+
+.omission-presets {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
   list-style: none;
   padding: 0;
-  margin: var(--space-4) 0;
-}
-
-.omission-preset,
-.omission-badge {
-  background: none;
-  background-color: var(--orange-100);
-  border: 1px solid var(--orange-600);
-  border-radius: var(--rounded-lg);
-  color: var(--orange-700);
-  font-size: var(--font-size-sm);
-  line-height: var(--leading-sm);
-  padding: var(--space-1) var(--space-2);
-  text-align: left;
+  margin: var(--space-2) 0 var(--space-4);
 }
 
 .omission-preset {
+  background: none;
+  background-color: var(--orange-100);
+  border: 1px solid var(--orange-700);
+  border-radius: var(--rounded-xl);
+  color: var(--orange-700);
   cursor: pointer;
+  font-size: var(--font-size-sm);
+  line-height: var(--leading-sm);
+  padding: var(--space-1) var(--space-4);
+  text-align: left;
 }
 
 .omission-preset::before {
@@ -35,20 +57,29 @@
 
 .omission-preset:hover {
   background-color: var(--orange-200);
-  border-color: var(--orange-700);
+  border-color: var(--orange-800);
   color: var(--orange-800);
 }
 
 /* Non-recoverable ("onherstelbaar") omissions are highlighted as errors. */
-.omission-preset-unrecoverable,
-.omission-badge-unrecoverable {
+.omission-preset-unrecoverable {
   background-color: var(--red-100);
-  border-color: var(--red-600);
+  border-color: var(--red-700);
   color: var(--red-700);
 }
 
 .omission-preset-unrecoverable:hover {
   background-color: var(--red-200);
-  border-color: var(--red-700);
+  border-color: var(--red-800);
   color: var(--red-800);
+}
+
+/* The explanation under a checkbox lines up with its label, not its box. */
+.omission-form .checkbox + .hint {
+  padding-inline-start: calc(var(--checkbox-radio-size) + var(--space-2));
+}
+
+/* "Select all" stands apart from the options it toggles. */
+.omission-form .select-all-checkbox {
+  margin-bottom: var(--space-2);
 }

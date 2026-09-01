@@ -13,6 +13,8 @@ pub struct PresetOmission {
     pub help_text: String,
     #[serde(default = "super::recoverable_by_default")]
     pub recoverable: bool,
+    #[serde(default)]
+    pub group: Option<String>,
 }
 
 /// Values used to interpolate the `{token}` placeholders in an omission
@@ -107,6 +109,35 @@ pub mod tests {
                 .presets()
                 .iter()
                 .all(|p| p.recoverable || p.help_text.is_empty())
+        );
+    }
+
+    #[test]
+    fn candidate_presets_are_grouped_in_file_order() {
+        let groups: Vec<_> = OmissionType::Candidate
+            .presets()
+            .iter()
+            .map(|preset| preset.group.as_deref())
+            .collect();
+
+        let mut seen: Vec<Option<&str>> = Vec::new();
+        for group in &groups {
+            if seen.last() != Some(group) {
+                assert!(
+                    !seen.contains(group),
+                    "candidate presets of group {group:?} are split up in omissions.json"
+                );
+                seen.push(*group);
+            }
+        }
+
+        assert_eq!(
+            seen,
+            vec![
+                Some("Handtekeningen en ID bewijzen"),
+                Some("Over kandidaat en gemachtigde"),
+                Some("Datum ondertekening en kandidatenlijst"),
+            ]
         );
     }
 

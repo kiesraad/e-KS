@@ -17,7 +17,7 @@ export class CsbCandidatePage {
       name: "Verzuim toevoegen",
     });
     this.linkManageOmissions = this.page.getByRole("link", {
-      name: "Verzuimen beheren",
+      name: "Overzicht",
     });
     this.linkInitials = this.page.getByRole("cell", {
       name: "Voorletters",
