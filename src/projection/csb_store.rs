@@ -1,3 +1,5 @@
+//! [`CsbStore`]: the request-scoped write handle for a CSB stream.
+
 use std::{collections::HashMap, str::FromStr};
 
 use axum::{
@@ -5,7 +7,64 @@ use axum::{
     http::request::Parts,
 };
 
-use crate::{AppError, AppRequestState, CsbStore, Session, StreamId};
+use crate::{AppError, AppRequestState, CsbAction, CsbStream, CsbUser, PgStore, Session, StreamId};
+
+/// A CSB stream paired with the committee member acting on it in this request.
+///
+/// The [`CsbStream`] behind it is the process-wide handle handed out by the
+/// store registry and shared by every session, so the acting user cannot live
+/// there; it is bound here instead, once per request, by the extractor below.
+/// [`CsbStore::update`] then attaches it to every event, which is why handlers
+/// never pass a [`CsbUser`] and cannot attribute an event to anyone but the
+/// requester.
+///
+/// Reads go through [`std::ops::Deref`], so the getters on the stream keep
+/// working unchanged. Helpers that only read take `&CsbStream`.
+#[derive(Clone)]
+pub struct CsbStore {
+    stream: CsbStream,
+    user: CsbUser,
+}
+
+impl std::ops::Deref for CsbStore {
+    type Target = CsbStream;
+
+    fn deref(&self) -> &Self::Target {
+        &self.stream
+    }
+}
+
+impl CsbStore {
+    /// Bind `user` to `stream` as the member acting on it.
+    pub fn acting_as(stream: CsbStream, user: CsbUser) -> Self {
+        Self { stream, user }
+    }
+
+    /// Persist an action on the stream, recorded as triggered by the acting
+    /// committee member.
+    pub async fn update(&self, action: CsbAction) -> Result<(), AppError> {
+        self.stream.update(action.by(self.user.clone())).await
+    }
+
+    /// A paper-corrections handle over this stream, writing as the same member.
+    pub fn paper_corrections(&self) -> PgStore {
+        PgStore::paper_corrections(self.clone())
+    }
+
+    #[cfg(test)]
+    pub fn new_for_test() -> Self {
+        Self::acting_as(CsbStream::new_for_test(), CsbUser::new_test())
+    }
+}
+
+#[cfg(test)]
+impl CsbStream {
+    /// Bind the test user to a stream taken from the registry, as the
+    /// extractor does with the session's user for a real request.
+    pub fn acting_as_test_user(self) -> CsbStore {
+        CsbStore::acting_as(self, CsbUser::new_test())
+    }
+}
 
 impl<S: AppRequestState> FromRequestParts<S> for CsbStore {
     type Rejection = AppError;
@@ -23,18 +82,17 @@ impl<S: AppRequestState> FromRequestParts<S> for CsbStore {
 
         let registry = state.csb_store_registry();
 
-        let election = Session::from_request_parts(parts, state)
-            .await?
-            .require_current_election()?;
+        let session = Session::from_request_parts(parts, state).await?;
+        let election = session.require_current_election()?;
+        let user = session.require_csb_user()?;
 
-        let result = registry.get_store(stream_id, election).await;
+        let stream = registry.get_store(stream_id, election).await?;
 
-        if let Ok(store) = &result
-            && store.is_deleted()
-        {
+        if stream.is_deleted() {
             return Err(AppError::NotFound("Stream deleted".to_string()));
         }
-        result
+
+        Ok(Self::acting_as(stream, user))
     }
 }
 
@@ -49,17 +107,20 @@ mod tests {
     };
     use tower::ServiceExt;
 
-    use crate::{AppState, CsbEvent, CsbStoreData, ElectionConfig, Locale, PgStoreData};
+    use crate::{AppState, CsbStoreData, ElectionConfig, HasCsbUser, PgStoreData};
 
     /// Persist a CSB stream carrying a single import event and return its id.
     async fn seed_csb_store(state: &AppState, election: ElectionConfig) -> StreamId {
         let stream_id = StreamId::new();
-        let store = state
-            .csb_store_for_stream(stream_id, election)
-            .await
-            .unwrap();
+        let store = CsbStore::acting_as(
+            state
+                .csb_store_for_stream(stream_id, election)
+                .await
+                .unwrap(),
+            CsbUser::new_test(),
+        );
         store
-            .update(CsbEvent::Import {
+            .update(CsbAction::Import {
                 hash: [0u8; 32],
                 source_stream_id: StreamId::new(),
                 snapshot: Box::new(PgStoreData::default()),
@@ -70,11 +131,20 @@ mod tests {
     }
 
     /// Build a router whose single handler echoes the extracted store's id, and
-    /// drive a request for `uri` through it with `election` as current election.
+    /// drive a request for `uri` through it as a committee session.
     async fn request_store(
         state: AppState,
         uri: String,
         election: ElectionConfig,
+    ) -> axum::response::Response {
+        request_store_with_session(state, uri, election, Session::new_test_committee()).await
+    }
+
+    async fn request_store_with_session(
+        state: AppState,
+        uri: String,
+        election: ElectionConfig,
+        mut session: Session,
     ) -> axum::response::Response {
         let app = Router::new()
             .route(
@@ -84,8 +154,7 @@ mod tests {
             .with_state(state);
 
         let mut request = Request::builder().uri(uri).body(Body::empty()).unwrap();
-        let mut session = Session::new_test_with_locale(Locale::En);
-        session.set_current_election(election);
+        session.set_test_election(election);
         request.extensions_mut().insert(session);
 
         app.oneshot(request).await.unwrap()
@@ -106,6 +175,22 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
         let body = crate::test_utils::response_body_string(response).await;
         assert_eq!(body, stream_id.to_string());
+    }
+
+    #[tokio::test]
+    async fn rejects_a_political_group_session() {
+        let state = AppState::new_for_tests().await;
+        let stream_id = seed_csb_store(&state, ElectionConfig::EK27).await;
+
+        let response = request_store_with_session(
+            state,
+            format!("/csb/examination/{stream_id}"),
+            ElectionConfig::EK27,
+            Session::new_test(),
+        )
+        .await;
+
+        assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
     }
 
     #[tokio::test]
@@ -152,9 +237,12 @@ mod tests {
         let state = AppState::new_for_tests().await;
         let stream_id = StreamId::new();
         // create a new store
-        let csb_store = state
-            .csb_store_for_stream(stream_id, ElectionConfig::EK27)
-            .await?;
+        let csb_store = CsbStore::acting_as(
+            state
+                .csb_store_for_stream(stream_id, ElectionConfig::EK27)
+                .await?,
+            CsbUser::new_test(),
+        );
 
         let response = request_store(
             state.clone(),
@@ -167,7 +255,7 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
 
         // delete the store
-        csb_store.update(CsbEvent::Delete).await?;
+        csb_store.update(CsbAction::Delete).await?;
 
         let response = request_store(
             state,
@@ -178,6 +266,22 @@ mod tests {
 
         // store exists && deleted => Not Found
         assert_eq!(response.status(), StatusCode::NOT_FOUND);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn update_records_the_acting_user() -> Result<(), AppError> {
+        let user = CsbUser::Github {
+            user_id: "42".parse().expect("valid id"),
+        };
+        let store = CsbStore::acting_as(CsbStream::new_for_test(), user.clone());
+
+        store.update(CsbAction::SetFinished(true)).await?;
+
+        let events = store.data.read().events.clone();
+        assert_eq!(events.len(), 1);
+        assert_eq!(events[0].payload.csb_user(), &user);
 
         Ok(())
     }

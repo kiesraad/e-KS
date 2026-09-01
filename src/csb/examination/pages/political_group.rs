@@ -5,9 +5,9 @@ use axum::{
 };
 
 use crate::{
-    AppError, Context, CsbContext,
-    CsbEvent::{self},
-    CsbStore, HtmlTemplate, Overlay, QueryParamState,
+    AppError, Context,
+    CsbAction::{self},
+    CsbContext, CsbStore, HtmlTemplate, Overlay, QueryParamState,
     csb::examination::{
         extractors::CsbPoliticalGroup,
         pages::{CsbPoliticalGroupPath, CsbPoliticalGroupToggleFinishPath},
@@ -85,13 +85,14 @@ pub async fn toggle_examination_finish(
     store: CsbStore,
 ) -> Result<Response, AppError> {
     let finished = store.is_examination_finished();
-    store.update(CsbEvent::SetFinished(!finished)).await?;
+    store.update(CsbAction::SetFinished(!finished)).await?;
     Ok(query.redirect_or(CsbPoliticalGroup::new_from_csb_store(&store).examination_path()))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
     use axum::http::StatusCode;
 
     use crate::{

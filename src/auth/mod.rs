@@ -1,10 +1,16 @@
 //! Authentication and session helpers.
 
+/// The authenticated identity behind a CSB (committee) session.
+pub mod csb_user;
+
 /// BSN-based identifier derivation using HKDF-SHA256.
 pub mod derive_id;
 
 /// Session model and token utilities.
 pub mod session;
+
+/// The identity behind a session: one variant per role.
+pub mod session_user;
 
 /// Session storage with pluggable in-memory or Postgres backends.
 pub mod session_store;

@@ -15,7 +15,7 @@ use serde::{Serialize, de::DeserializeOwned};
 
 use super::maintenance::handle_db_error;
 use crate::{
-    AppError, AppState, PgStore, SESSION_COOKIE_NAME, Scope, Session,
+    AppError, AppState, CsbStore, PgStore, SESSION_COOKIE_NAME, Session, SessionUser,
     auth::{csrf_guard::enforce_csrf, session_extractor::user_agent_hash},
     common::{LoginStartPath, PgIndexPath, SelectElectionPath},
     csb::index::CsbIndexPath,
@@ -99,40 +99,53 @@ pub async fn store_middleware(
         return next.run(request).await;
     };
 
-    // A CSB session only reaches app routes while correcting the paper
-    // documents of an imported stream: it then gets a paper-corrections
-    // store view, so its events are wrapped and persisted on the CSB stream
-    // and it can never create an `PgStore` in its CSB stream partition.
-    // Otherwise it belongs on the CSB routes instead.
-    if session.scope == Scope::CentralElectoralCommittee {
-        let (Some(stream_id), Some(election)) =
-            (session.paper_correction_stream_id, session.current_election)
-        else {
-            return Redirect::to(&CsbIndexPath {}.to_string()).into_response();
-        };
+    match &session.user {
+        // A committee session only reaches app routes while correcting the
+        // paper documents of an imported stream: it then gets a
+        // paper-corrections store view, so its events are wrapped and
+        // persisted on the CSB stream and it can never create a `PgStore` in
+        // its CSB stream partition. Otherwise it belongs on the CSB routes.
+        SessionUser::CentralElectoralCommittee {
+            user,
+            election,
+            paper_correction_stream_id,
+        } => {
+            let Some(stream_id) = *paper_correction_stream_id else {
+                return Redirect::to(&CsbIndexPath {}.to_string()).into_response();
+            };
 
-        // Finalising (and generating documents) is not part of paper
-        // corrections: the documents were already handed in on paper.
-        let path = request.uri().path();
-        if path.starts_with(FinalisePath::PATH) || path.starts_with("/generate/") {
-            return Redirect::to(&PgIndexPath.to_string()).into_response();
+            // Finalising (and generating documents) is not part of paper
+            // corrections: the documents were already handed in on paper.
+            let path = request.uri().path();
+            if path.starts_with(FinalisePath::PATH) || path.starts_with("/generate/") {
+                return Redirect::to(&PgIndexPath.to_string()).into_response();
+            }
+
+            let user = user.clone();
+            let resolved = state
+                .csb_store_registry
+                .get_store(stream_id, *election)
+                .await;
+            inject_loaded_store(&state, resolved, request, next, |store| {
+                CsbStore::acting_as(store, user).paper_corrections()
+            })
+            .await
         }
+        SessionUser::PoliticalGroup {
+            stream_id,
+            election,
+            ..
+        } => {
+            // Redirect to `/select-election` when the session has not yet
+            // picked an election.
+            let Some(election) = *election else {
+                return Redirect::to(&SelectElectionPath.to_string()).into_response();
+            };
 
-        let resolved = state
-            .csb_store_registry
-            .get_store(stream_id, election)
-            .await;
-        return inject_loaded_store(&state, resolved, request, next, PgStore::paper_corrections)
-            .await;
+            let resolved = state.store_for_stream(*stream_id, election, false).await;
+            inject_loaded_store(&state, resolved, request, next, PgStore::own).await
+        }
     }
-
-    // Redirect to `/select-election` when the session has not yet picked an election
-    let (Some(stream_id), Some(election)) = (session.stream_id, session.current_election) else {
-        return Redirect::to(&SelectElectionPath.to_string()).into_response();
-    };
-
-    let resolved = state.store_for_stream(stream_id, election, false).await;
-    inject_loaded_store(&state, resolved, request, next, PgStore::own).await
 }
 
 /// Middleware that loads the global CSB main store for the session's current
@@ -146,18 +159,13 @@ pub async fn csb_store_middleware(
         return next.run(request).await;
     };
 
-    // Only the central electoral committee may reach CSB routes.
-    if session.scope != Scope::CentralElectoralCommittee {
+    // Only the central electoral committee may reach CSB routes; a committee
+    // identity always carries its election.
+    let SessionUser::CentralElectoralCommittee { election, .. } = &session.user else {
         return AppError::Unauthorised.into_response();
-    }
-
-    let Some(election) = session.current_election else {
-        // A committee session without an election is incomplete; send it back
-        // through login rather than the app's election picker.
-        return Redirect::to("/login").into_response();
     };
 
-    let resolved = state.csb_main_store(election).await;
+    let resolved = state.csb_main_store(*election).await;
     inject_loaded_store(&state, resolved, request, next, |store| store).await
 }
 
@@ -445,10 +453,10 @@ mod tests {
         state: &AppState,
         correcting: Option<crate::StreamId>,
     ) -> String {
-        let mut session = Session::new_test();
-        session.set_scope(crate::Scope::CentralElectoralCommittee);
-        session.set_current_election(crate::ElectionConfig::EK27);
-        session.paper_correction_stream_id = correcting;
+        let mut session = Session::new_test_committee();
+        session
+            .set_paper_correction_stream_id(correcting)
+            .expect("committee session");
         let token = session.token_string();
         state.sessions.insert(session).await;
         format!("{SESSION_COOKIE_NAME}={token}")
@@ -462,11 +470,14 @@ mod tests {
             .await
             .expect("csb store");
         store
-            .update(crate::CsbEvent::Import {
-                hash: [0u8; 32],
-                source_stream_id: crate::StreamId::new(),
-                snapshot: Box::new(crate::PgStoreData::default()),
-            })
+            .update(
+                crate::CsbAction::Import {
+                    hash: [0u8; 32],
+                    source_stream_id: crate::StreamId::new(),
+                    snapshot: Box::new(crate::PgStoreData::default()),
+                }
+                .by(crate::CsbUser::new_test()),
+            )
             .await
             .expect("import");
         stream_id

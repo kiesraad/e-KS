@@ -120,7 +120,7 @@ mod tests {
     -> Result<(), AppError> {
         let csb_store = crate::CsbStore::new_for_test();
         csb_store.set_political_group(crate::test_utils::sample_political_group());
-        let store = PgStore::paper_corrections(csb_store.clone());
+        let store = csb_store.paper_corrections();
         let context = Context::new(
             &store,
             crate::Session::new_test_with_locale(crate::Locale::En),

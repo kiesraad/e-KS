@@ -1,7 +1,7 @@
 use axum_extra::routing::TypedPath;
 
 use crate::{
-    AppError, CsbStore, QueryParamState,
+    AppError, CsbStream, QueryParamState,
     csb::examination::extractors::CsbPoliticalGroup,
     structs::{
         candidate_lists::CandidateListId,
@@ -27,7 +27,7 @@ pub struct OmissionWithPath {
     pub path: String,
 }
 
-impl CsbStore {
+impl CsbStream {
     pub fn get_all_omissions(
         &self,
         political_group: &CsbPoliticalGroup,
@@ -135,7 +135,7 @@ fn candidate_path(
 #[cfg(test)]
 mod tests {
     use crate::{
-        StreamId,
+        CsbStore, StreamId,
         structs::csb::OmissionType,
         test_utils::{sample_candidate_list, sample_person},
     };

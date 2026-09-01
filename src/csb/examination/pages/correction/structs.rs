@@ -1,5 +1,5 @@
 use crate::{
-    CsbStore, csb::examination::structs::CandidateCorrectionField, projection::WithCorrections,
+    CsbStream, csb::examination::structs::CandidateCorrectionField, projection::WithCorrections,
     structs::persons::PersonId,
 };
 
@@ -40,7 +40,7 @@ pub(crate) struct FieldValues {
 }
 
 impl FieldValues {
-    pub(crate) fn for_appellation(store: &CsbStore) -> Self {
+    pub(crate) fn for_appellation(store: &CsbStream) -> Self {
         let imported = store.get_appellation(WithCorrections::None);
         let paper_corrected =
             Some(store.get_appellation(WithCorrections::Paper)).filter(|d| d != &imported);
@@ -55,7 +55,7 @@ impl FieldValues {
     }
 
     pub(crate) fn for_person(
-        store: &CsbStore,
+        store: &CsbStream,
         person_id: PersonId,
         field: CandidateCorrectionField,
     ) -> Self {

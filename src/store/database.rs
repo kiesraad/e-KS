@@ -114,18 +114,15 @@ async fn create_events_table(conn: &mut sqlx::PgConnection) -> Result<(), AppErr
 
 #[cfg(feature = "migrations")]
 async fn create_sessions_table(conn: &mut sqlx::PgConnection) -> Result<(), AppError> {
-    // `token` holds the token's SHA-256 hash, not the token itself.
+    // `token` holds the token's SHA-256 hash, not the token itself; `identity`
+    // holds the serialized `SessionUser`.
     sqlx::query(
         r#"
         CREATE TABLE IF NOT EXISTS sessions (
           token TEXT PRIMARY KEY,
-          stream_id UUID,
-          paper_correction_stream_id UUID,
-          current_election JSONB,
+          identity JSONB NOT NULL,
           locale TEXT NOT NULL,
           last_activity TIMESTAMPTZ NOT NULL,
-          saml_name_id TEXT NOT NULL DEFAULT '',
-          scope TEXT NOT NULL DEFAULT 'political_group',
           created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
           user_agent_hash TEXT,
           csrf_token TEXT NOT NULL
@@ -134,11 +131,6 @@ async fn create_sessions_table(conn: &mut sqlx::PgConnection) -> Result<(), AppE
     )
     .execute(&mut *conn)
     .await?;
-
-    // Upgrade path for databases created before paper corrections existed.
-    sqlx::query("ALTER TABLE sessions ADD COLUMN IF NOT EXISTS paper_correction_stream_id UUID")
-        .execute(&mut *conn)
-        .await?;
 
     sqlx::query(
         r#"CREATE INDEX IF NOT EXISTS sessions_last_activity_idx

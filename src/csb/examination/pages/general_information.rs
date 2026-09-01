@@ -51,6 +51,7 @@ pub async fn overview(
 #[cfg(test)]
 mod tests {
     use super::*;
+
     use axum::http::StatusCode;
 
     use crate::{
@@ -87,7 +88,7 @@ mod tests {
     /// value struck through, the corrected value highlighted.
     #[tokio::test]
     async fn renders_corrected_value_next_to_differing_imported_value() {
-        use crate::{CsbEvent, PgEvent};
+        use crate::{CsbAction, PgEvent};
 
         let store = CsbStore::new_for_test();
         store.set_political_group(sample_political_group());
@@ -96,7 +97,7 @@ mod tests {
         let mut corrected_group = sample_political_group();
         corrected_group.appellation = Some("Gecorrigeerde Naam".parse().unwrap());
         store
-            .update(CsbEvent::PaperCorrectedUpdate(Box::new(
+            .update(CsbAction::PaperCorrectedUpdate(Box::new(
                 PgEvent::UpdatePoliticalGroup(corrected_group),
             )))
             .await
@@ -124,7 +125,7 @@ mod tests {
     #[tokio::test]
     async fn hides_substitute_submitter_deleted_by_the_corrections() {
         use crate::{
-            CsbEvent, PgEvent, structs::list_submitters::ListSubmitterId,
+            CsbAction, PgEvent, structs::list_submitters::ListSubmitterId,
             test_utils::sample_list_submitter,
         };
 
@@ -140,7 +141,7 @@ mod tests {
         }
 
         store
-            .update(CsbEvent::PaperCorrectedUpdate(Box::new(
+            .update(CsbAction::PaperCorrectedUpdate(Box::new(
                 PgEvent::DeleteSubstituteSubmitter {
                     substitute_submitter_id: submitter.id,
                 },

@@ -1,8 +1,7 @@
 mod event;
-mod extractor;
 mod getters;
 
-pub use event::CsbEvent;
+pub use event::{CsbAction, CsbEvent};
 pub use getters::WithCorrections;
 
 use std::collections::{HashMap, hash_map::Entry};
@@ -52,8 +51,8 @@ impl StoreData for CsbStoreData {
             ..
         } = event;
 
-        match event.payload {
-            CsbEvent::Import {
+        match event.payload.action {
+            CsbAction::Import {
                 snapshot,
                 hash: source_hash,
                 ..
@@ -70,9 +69,9 @@ impl StoreData for CsbStoreData {
                     hash,
                 });
             }
-            CsbEvent::CreateEmpty => {}
-            CsbEvent::Delete => self.is_deleted = true,
-            CsbEvent::PaperCorrectedUpdate(payload) => {
+            CsbAction::CreateEmpty => {}
+            CsbAction::Delete => self.is_deleted = true,
+            CsbAction::PaperCorrectedUpdate(payload) => {
                 // Replay the wrapped app event onto the corrected projection,
                 // keeping the CSB stream's event metadata.
                 self.paper_corrected_data.apply(StoreEvent {
@@ -82,26 +81,26 @@ impl StoreData for CsbStoreData {
                     hash,
                 });
             }
-            CsbEvent::SetFinished(value) => self.is_examination_finished = value,
-            CsbEvent::CreateOmission(mut omission) => {
+            CsbAction::SetFinished(value) => self.is_examination_finished = value,
+            CsbAction::CreateOmission(mut omission) => {
                 omission.updated_at = event_time;
                 self.omissions.insert(omission.id, omission);
             }
-            CsbEvent::UpdateOmission(mut omission) => {
+            CsbAction::UpdateOmission(mut omission) => {
                 omission.updated_at = event_time;
                 let omission_id = omission.id;
                 self.omissions.entry(omission_id).and_modify(|existing| {
                     *existing = omission;
                 });
             }
-            CsbEvent::DeleteOmission { omission_id } => {
+            CsbAction::DeleteOmission { omission_id } => {
                 self.omissions.remove(&omission_id);
             }
-            CsbEvent::UpdateCorrection(correction) => self.apply_correction(correction),
-            CsbEvent::BrpPersonValidated { person, valid } => {
+            CsbAction::UpdateCorrection(correction) => self.apply_correction(correction),
+            CsbAction::BrpPersonValidated { person, valid } => {
                 self.brp_validations.insert(person, valid);
             }
-            CsbEvent::SetBrpStatus(value) => self.brp_validation_status = value,
+            CsbAction::SetBrpStatus(value) => self.brp_validation_status = value,
         }
     }
 
@@ -159,7 +158,7 @@ impl CsbStoreData {
 }
 
 #[cfg(test)]
-impl crate::CsbStore {
+impl crate::CsbStream {
     pub fn new_for_test() -> Self {
         use crate::StreamId;
 
@@ -217,7 +216,7 @@ mod tests {
 
     use super::*;
     use crate::{
-        PgEvent, StreamId,
+        CsbUser, PgEvent, StreamId,
         structs::{
             common::{Initials, LastName, PlaceOfResidence},
             csb::PersonCorrection,
@@ -227,7 +226,7 @@ mod tests {
     };
 
     fn import_event() -> CsbEvent {
-        CsbEvent::Import {
+        CsbAction::Import {
             hash: [42; 32],
             source_stream_id: StreamId::new(),
             snapshot: Box::new(PgStoreData {
@@ -235,16 +234,18 @@ mod tests {
                 ..PgStoreData::default()
             }),
         }
+        .by(CsbUser::new_test())
     }
 
     fn import_event_with_person(person: Person) -> CsbEvent {
         let mut snapshot = PgStoreData::default();
         snapshot.persons.insert(person.id, person);
-        CsbEvent::Import {
+        CsbAction::Import {
             hash: [42; 32],
             source_stream_id: StreamId::new(),
             snapshot: Box::new(snapshot),
         }
+        .by(CsbUser::new_test())
     }
 
     #[test]
@@ -268,9 +269,10 @@ mod tests {
         corrected_group.appellation = Some("Gecorrigeerde Naam".parse().unwrap());
         data.apply(StoreEvent::new(
             2,
-            CsbEvent::PaperCorrectedUpdate(Box::new(PgEvent::UpdatePoliticalGroup(
+            CsbAction::PaperCorrectedUpdate(Box::new(PgEvent::UpdatePoliticalGroup(
                 corrected_group.clone(),
-            ))),
+            )))
+            .by(CsbUser::new_test()),
         ));
 
         assert_eq!(
@@ -294,17 +296,19 @@ mod tests {
             .insert(person.id, person.clone());
         data.apply(StoreEvent::new(
             1,
-            CsbEvent::UpdateCorrection(Correction::Person(
+            CsbAction::UpdateCorrection(Correction::Person(
                 person.id,
                 PersonCorrection::Initials(Initials::from_str("A.B.").unwrap()),
-            )),
+            ))
+            .by(CsbUser::new_test()),
         ));
         data.apply(StoreEvent::new(
             2,
-            CsbEvent::UpdateCorrection(Correction::Person(
+            CsbAction::UpdateCorrection(Correction::Person(
                 person.id,
                 PersonCorrection::LastName(LastName::from_str("Smit").unwrap()),
-            )),
+            ))
+            .by(CsbUser::new_test()),
         ));
 
         assert_eq!(data.csb_corrected_persons.len(), 1);
@@ -319,10 +323,11 @@ mod tests {
 
         data.apply(StoreEvent::new(
             3,
-            CsbEvent::UpdateCorrection(Correction::Person(
+            CsbAction::UpdateCorrection(Correction::Person(
                 person.id,
                 PersonCorrection::LastName(person.name.last_name),
-            )),
+            ))
+            .by(CsbUser::new_test()),
         ));
 
         assert_eq!(data.csb_corrected_persons.len(), 1);
@@ -337,10 +342,11 @@ mod tests {
 
         data.apply(StoreEvent::new(
             4,
-            CsbEvent::UpdateCorrection(Correction::Person(
+            CsbAction::UpdateCorrection(Correction::Person(
                 person.id,
                 PersonCorrection::Initials(person.name.initials),
-            )),
+            ))
+            .by(CsbUser::new_test()),
         ));
         assert_eq!(data.csb_corrected_persons.len(), 0);
     }
@@ -355,9 +361,10 @@ mod tests {
 
         data.apply(StoreEvent::new(
             1,
-            CsbEvent::UpdateCorrection(Correction::Appellation(
+            CsbAction::UpdateCorrection(Correction::Appellation(
                 Appellation::from_str("Partij").unwrap(),
-            )),
+            ))
+            .by(CsbUser::new_test()),
         ));
 
         assert_eq!(data.csb_corrected_appellation, None);
@@ -371,7 +378,8 @@ mod tests {
         let appellation: Appellation = "Gecorrigeerde Naam".parse().unwrap();
         data.apply(StoreEvent::new(
             2,
-            CsbEvent::UpdateCorrection(Correction::Appellation(appellation.clone())),
+            CsbAction::UpdateCorrection(Correction::Appellation(appellation.clone()))
+                .by(CsbUser::new_test()),
         ));
 
         assert_eq!(data.csb_corrected_appellation, Some(appellation));
@@ -397,7 +405,8 @@ mod tests {
         for (i, correction) in corrections.into_iter().enumerate() {
             data.apply(StoreEvent::new(
                 i + 2,
-                CsbEvent::UpdateCorrection(Correction::Person(person_id, correction.clone())),
+                CsbAction::UpdateCorrection(Correction::Person(person_id, correction.clone()))
+                    .by(CsbUser::new_test()),
             ));
             expected.insert(correction);
 

@@ -5,8 +5,8 @@ use axum::{
 };
 
 use crate::{
-    AnyLocale, AppError, AppRequestState, Context, ElectionConfig, HtmlTemplate, Province, Scope,
-    Session, WaterCouncil,
+    AnyLocale, AppError, AppRequestState, Context, ElectionConfig, HtmlTemplate, Province, Session,
+    SessionUser, WaterCouncil,
     common::{PgIndexPath, SwitchElectionForm},
     csb::index::CsbIndexPath,
     filters,
@@ -54,9 +54,12 @@ async fn existing_elections_for<S: AppRequestState>(
     state: &S,
     session: &Session,
 ) -> Result<Vec<ElectionConfig>, AppError> {
-    match session.stream_id {
-        Some(stream_id) => state.existing_elections_for_stream(stream_id).await,
-        None => Ok(Vec::new()),
+    match &session.user {
+        SessionUser::PoliticalGroup { stream_id, .. } => {
+            state.existing_elections_for_stream(*stream_id).await
+        }
+        // A committee session (in paper-corrections mode) has no PG stream.
+        SessionUser::CentralElectoralCommittee { .. } => Ok(Vec::new()),
     }
 }
 
@@ -66,31 +69,32 @@ pub async fn switch_election_submit<S: AppRequestState>(
     mut session: Session,
     axum::Form(form): axum::Form<SwitchElectionForm>,
 ) -> Result<Response, AppError> {
-    // Committee sessions use CSB stores, not app stores; never create an
-    // `PgStore` in their `(stream_id, election)` partition. Mirrors the guard
-    // in `select_election_submit`, which this route can otherwise bypass while
-    // a committee session is in paper-corrections mode.
-    if session.scope == Scope::CentralElectoralCommittee {
-        return Ok(Redirect::to(&CsbIndexPath {}.to_string()).into_response());
-    }
-
     let Some(election) = form.into_election_config() else {
         return Ok(Redirect::to(&SwitchElectionPath.to_string()).into_response());
     };
 
+    // Committee sessions use CSB stores, not app stores; never create an
+    // `PgStore` in their `(stream_id, election)` partition. Mirrors the guard
+    // in `select_election_submit`, which this route can otherwise bypass while
+    // a committee session is in paper-corrections mode.
+    let SessionUser::PoliticalGroup {
+        stream_id,
+        election: current,
+        ..
+    } = &mut session.user
+    else {
+        return Ok(Redirect::to(&CsbIndexPath {}.to_string()).into_response());
+    };
+
     // Short-circuit if already on this election.
-    if session.current_election == Some(election) {
+    if *current == Some(election) {
         return Ok(Redirect::to(&PgIndexPath.to_string()).into_response());
     }
 
-    let Some(stream_id) = session.stream_id else {
-        return Ok(Redirect::to(&SwitchElectionPath.to_string()).into_response());
-    };
-
     // Ensure the store exists for the new election.
-    state.store_for_stream(stream_id, election, false).await?;
+    state.store_for_stream(*stream_id, election, false).await?;
 
-    session.set_current_election(election);
+    *current = Some(election);
     // Invalidate forms rendered for the previous election, so a stale tab
     // cannot submit its data against the newly selected one.
     session.rotate_csrf_token();
@@ -137,9 +141,8 @@ mod tests {
             .await
             .expect("store");
 
-        let mut session = crate::Session::new();
-        session.set_stream_id(stream_id);
-        session.set_current_election(ElectionConfig::EK27);
+        let mut session = crate::Session::new_test_for_stream(stream_id);
+        session.set_test_election(ElectionConfig::EK27);
         let token_value = session.token_string();
         let csrf_token = session.csrf_token().clone();
         state.sessions().insert(session).await;
@@ -171,9 +174,9 @@ mod tests {
             .await
             .expect("load session")
             .expect("session");
-        assert_eq!(session.stream_id, Some(stream_id));
+        assert_eq!(session.test_stream_id(), stream_id);
         assert_eq!(
-            session.current_election,
+            session.user.election(),
             Some(ElectionConfig::PS27(Province::GR))
         );
     }

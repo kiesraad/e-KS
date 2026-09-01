@@ -84,6 +84,7 @@ fields:
   stream: Stream
   subject_id: Subject-ID
   timestamp: Tijdstip
+  user: Gebruiker
 filter:
   all_events: Alle gebeurtenissen
   apply: Filteren
@@ -108,3 +109,6 @@ filter:
   search_placeholder: "Zoek op naam, ID..."
   stream: Stream filteren
 title: Logboek
+user:
+  developer: Ontwikkelaar
+  github: GitHub-gebruiker

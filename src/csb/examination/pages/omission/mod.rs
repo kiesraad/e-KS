@@ -6,7 +6,8 @@ use axum_extra::routing::TypedPath;
 use uuid::Uuid;
 
 use crate::{
-    AppError, CsbContext, CsbStore, Form, HtmlTemplate, Locale, Overlay, QueryParamState, StreamId,
+    AppError, CsbContext, CsbStore, CsbStream, Form, HtmlTemplate, Locale, Overlay,
+    QueryParamState, StreamId,
     csb::examination::{
         OmissionForm,
         extractors::CsbPoliticalGroup,
@@ -68,7 +69,7 @@ impl OmissionTarget {
         form: FormData<OmissionForm>,
         query: &QueryParamState,
         context: CsbContext,
-        store: &CsbStore,
+        store: &CsbStream,
     ) -> Result<Response, AppError> {
         let available_districts = self
             .omission_type
@@ -107,7 +108,7 @@ impl OmissionTarget {
         .into_response())
     }
 
-    fn generate_title_suffix(&self, store: &CsbStore, locale: Locale) -> Result<String, AppError> {
+    fn generate_title_suffix(&self, store: &CsbStream, locale: Locale) -> Result<String, AppError> {
         let first_candidate = store.get_first_candidate_name(WithCorrections::All);
         let appellation = store
             .get_political_group(WithCorrections::All)
@@ -278,7 +279,6 @@ pub async fn add_omission_submit(
 /// the overlay marker across the redirect.
 pub async fn delete_omission(
     path: CsbDeleteOmissionPath,
-    _context: CsbContext,
     store: CsbStore,
     Query(query): Query<QueryParamState>,
 ) -> Result<Response, AppError> {
@@ -302,6 +302,7 @@ pub async fn delete_omission(
 #[cfg(test)]
 mod tests {
     use super::*;
+
     use axum::http::StatusCode;
 
     use crate::{
@@ -681,7 +682,6 @@ mod tests {
                 stream_id,
                 omission_id,
             },
-            CsbContext::new_test(),
             store.clone(),
             Query(QueryParamState::default()),
         )
@@ -725,7 +725,6 @@ mod tests {
                 stream_id,
                 omission_id,
             },
-            CsbContext::new_test(),
             store.clone(),
             Query(QueryParamState::redirect_to("/back/here".to_string())),
         )

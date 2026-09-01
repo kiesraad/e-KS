@@ -183,7 +183,7 @@ mod tests {
     use tower::ServiceExt;
 
     use crate::{
-        AppState, Locale, Session, StreamId,
+        AppState, Locale, Session,
         structs::candidate_lists::CandidateListId,
         test_utils::{response_body_string, sample_candidate_list},
     };
@@ -225,8 +225,7 @@ mod tests {
             .body(body)
             .unwrap();
 
-        let mut session = Session::new_test_with_locale(Locale::En);
-        session.set_stream_id(StreamId::new());
+        let session = Session::new_test_with_locale(Locale::En);
         request.extensions_mut().insert(session);
         request.extensions_mut().insert(store);
 

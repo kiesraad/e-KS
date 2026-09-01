@@ -6,8 +6,8 @@ use axum::{
 use chrono::{DateTime, Utc};
 
 use crate::{
-    AppError, AppRequestState, Context, CsbContext, CsbMainStore, Event, HtmlTemplate, Locale,
-    Overlay, QueryParamState, csb::audit_log::pages::CsbAuditLogDetailPath, filters,
+    AppError, AppRequestState, Context, CsbContext, CsbMainStore, Event, HasCsbUser, HtmlTemplate,
+    Locale, Overlay, QueryParamState, csb::audit_log::pages::CsbAuditLogDetailPath, filters,
     projection::CSB_MAIN_STREAM_ID, store::StoreEvent, structs::audit_log::FieldChange, trans,
 };
 
@@ -15,6 +15,8 @@ struct CsbEventDetail {
     event_id: usize,
     stream_label: String,
     description: String,
+    /// Human-readable label for the committee member that triggered the event
+    user: String,
     details: String,
     created_at: DateTime<Utc>,
     changes: Vec<FieldChange>,
@@ -22,7 +24,7 @@ struct CsbEventDetail {
 
 impl CsbEventDetail {
     /// Look up `event_id` in a stream's events and build its detail view.
-    fn find<E: Event>(
+    fn find<E: Event + HasCsbUser>(
         events: &[StoreEvent<E>],
         event_id: usize,
         stream_label: String,
@@ -36,6 +38,7 @@ impl CsbEventDetail {
             event_id: event.event_id,
             stream_label,
             description: event.payload.description(locale),
+            user: event.payload.csb_user().describe(locale),
             details: event.payload.details(),
             changes: event.payload.changes(locale),
             created_at: event.created_at,
@@ -106,8 +109,8 @@ mod tests {
     };
 
     use crate::{
-        AppError, AppState, CsbContext, CsbEvent, CsbMainEvent, CsbMainStore, ElectionConfig,
-        QueryParamState, StreamId, csb::audit_log::pages::CsbAuditLogDetailPath,
+        AppError, AppState, CsbAction, CsbContext, CsbMainAction, CsbMainStore, CsbUser,
+        ElectionConfig, QueryParamState, StreamId, csb::audit_log::pages::CsbAuditLogDetailPath,
         test_utils::response_body_string,
     };
 
@@ -115,9 +118,7 @@ mod tests {
     async fn renders_detail_for_main_stream_event() -> Result<(), AppError> {
         let main_store = CsbMainStore::new_for_test();
         main_store
-            .update(CsbMainEvent::DeveloperLogin {
-                stream_id: CSB_MAIN_STREAM_ID,
-            })
+            .update(CsbMainAction::Login.by(CsbUser::Developer))
             .await?;
 
         let state = AppState::new_for_tests().await;
@@ -138,7 +139,7 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
-        assert!(body.contains("Developer login"));
+        assert!(body.contains("Signed in"));
 
         Ok(())
     }
@@ -147,13 +148,11 @@ mod tests {
     async fn close_link_returns_to_redirect_target() -> Result<(), AppError> {
         let main_store = CsbMainStore::new_for_test();
         main_store
-            .update(CsbMainEvent::DeveloperLogin {
-                stream_id: CSB_MAIN_STREAM_ID,
-            })
+            .update(CsbMainAction::Login.by(CsbUser::Developer))
             .await?;
 
         let state = AppState::new_for_tests().await;
-        let return_url = "/csb/audit-log?per_page=20&event_type=developer_login";
+        let return_url = "/csb/audit-log?per_page=20&event_type=login";
 
         let response = csb_audit_log_detail(
             CsbAuditLogDetailPath {
@@ -173,9 +172,7 @@ mod tests {
         let body = response_body_string(response).await;
         // The overlay close link points back at the filtered list, not the bare
         // audit-log path. `&` is HTML-escaped in the rendered attribute.
-        assert!(
-            body.contains("href=\"/csb/audit-log?per_page=20&#38;event_type=developer_login\"")
-        );
+        assert!(body.contains("href=\"/csb/audit-log?per_page=20&#38;event_type=login\""));
 
         Ok(())
     }
@@ -187,7 +184,9 @@ mod tests {
         let csb_store = state
             .csb_store_for_stream(stream_id, ElectionConfig::EK27)
             .await?;
-        csb_store.update(CsbEvent::SetFinished(true)).await?;
+        csb_store
+            .update(CsbAction::SetFinished(true).by(CsbUser::new_test()))
+            .await?;
 
         let response = csb_audit_log_detail(
             CsbAuditLogDetailPath {

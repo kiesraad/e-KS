@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use axum_extra::routing::TypedPath;
 
 use crate::{
-    CsbStore, Locale, QueryParamState,
+    CsbStream, Locale, QueryParamState,
     constants::DEFAULT_DATE_FORMAT,
     csb::examination::{
         extractors::CsbPoliticalGroup,
@@ -34,7 +34,7 @@ pub struct CandidateCorrections {
     pub corrections: Vec<PaperCorrectedField>,
 }
 
-impl CsbStore {
+impl CsbStream {
     pub fn get_all_corrections(
         &self,
         political_group: &CsbPoliticalGroup,
@@ -174,7 +174,8 @@ mod tests {
 
     use crate::{
         AppError,
-        CsbEvent::{self},
+        CsbAction::{self},
+        CsbStore,
         structs::{
             common::{Appellation, Initials, LastName, PlaceOfResidence},
             csb::Correction,
@@ -183,21 +184,23 @@ mod tests {
     };
 
     use super::*;
+    use crate::CsbUser;
 
-    fn all_corrections(store: &CsbStore) -> AllCsbCorrections {
+    fn all_corrections(store: &CsbStream) -> AllCsbCorrections {
         store.get_all_corrections(&CsbPoliticalGroup::new_from_csb_store(store), Locale::Nl)
     }
 
     /// Record a CSB correction on a person.
     async fn correct(
-        store: &CsbStore,
+        store: &CsbStream,
         person: PersonId,
         correction: PersonCorrection,
     ) -> Result<(), AppError> {
         store
-            .update(CsbEvent::UpdateCorrection(Correction::Person(
-                person, correction,
-            )))
+            .update(
+                CsbAction::UpdateCorrection(Correction::Person(person, correction))
+                    .by(CsbUser::new_test()),
+            )
             .await
     }
 
@@ -213,7 +216,7 @@ mod tests {
     /// Asserts that the candidate has a correction to `value` with the
     /// expected edit path segment and label.
     fn assert_correction(
-        store: &CsbStore,
+        store: &CsbStream,
         candidate: &CandidateCorrections,
         person: PersonId,
         value: &str,

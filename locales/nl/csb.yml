@@ -10,6 +10,14 @@ all_restorations:
   omissions_explanation: Alle aangemaakte verzuimen vindt u hier.
   omissions_title: Overzicht verzuimen
   title: Verzuimen en correcties
+auth:
+  button:
+    github: Inloggen met GitHub
+  error:
+    message: Inloggen is niet gelukt. Controleer of u toegang heeft en probeer het opnieuw.
+  start:
+    intro: U logt in met uw GitHub-account. Alleen accounts die vooraf toegang hebben gekregen kunnen inloggen bij het centraal stembureau.
+    title: Inloggen bij het centraal stembureau
 brp:
   correct: Correct
   errors: Fouten
