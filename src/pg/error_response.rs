@@ -193,6 +193,7 @@ impl ErrorResponse {
             | AppError::QueryRejection(_)
             | AppError::UserError(_)
             | AppError::TooManyCandidates { .. }
+            | AppError::BrpError(_)
             | AppError::AmbiguousHash => (BadRequest, err.to_string()),
             AppError::EmlError(err) => (BadRequest, format!("EML error: {err}")),
             AppError::IncompleteData(err) => (

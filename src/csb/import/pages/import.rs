@@ -254,8 +254,11 @@ async fn verify_candidates(
     }
 
     tracing::info!(
-        "Finished checking candidates on list {:?}",
-        store.data.read().imported_data.political_group
+        "Finished checking candidates on list {}",
+        store
+            .get_political_group(WithCorrections::All)
+            .appellation
+            .unwrap_or_default()
     );
 
     store
@@ -267,7 +270,7 @@ async fn verify_candidates(
 /// it does not stop the rest of the sweep in [`verify_candidates`].
 async fn check_candidate(store: &Store<CsbStoreData>, brp_client: &BrpClient, person: &Person) {
     match verify_candidate(store, brp_client, person).await {
-        Err(err) => tracing::error!("BRP verification failed for {}: {err}", person.id),
+        Err(err) => tracing::error!("{}", err),
         Ok(()) => tracing::info!("Checked person {} against the brp", person.id),
     }
 }

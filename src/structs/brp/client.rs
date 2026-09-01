@@ -136,17 +136,14 @@ fn brp_query_for(person: &Person) -> Result<BrpQuery, AppError> {
             ],
         }),
         Some(BsnOrNoneConfirmed::NoneConfirmed) => {
-            // TODO: This needs to be implemented
-            tracing::error!(
-                "Person {} has BSN none confirmed. Use BRP search with address? Or manual verification",
-                person.id
-            );
-            Err(AppError::GenericNotFound)
+            let error_text = format!("Person {} has BSN none confirmed", person.id);
+            tracing::error!(error_text);
+            Err(AppError::BrpError(error_text))
         }
         None => {
-            // TODO: This needs to be implemented
-            tracing::warn!("Person {} does not have a BSN filled in", person.id);
-            Err(AppError::GenericNotFound)
+            let error_text = format!("Person {} does not have a BSN filled in", person.id);
+            tracing::warn!(error_text);
+            Err(AppError::BrpError(error_text))
         }
     }
 }
