@@ -32,21 +32,47 @@ const BRP_COURTESY_TIMEOUT: Duration = Duration::from_secs(1);
 struct CsbImportTemplate {
     hash: String,
     error: Option<String>,
+    warning: Option<String>,
 }
 
-fn render_import(context: CsbContext, hash: String, error: Option<String>) -> Response {
-    HtmlTemplate(CsbImportTemplate { hash, error }, context).into_response()
+fn render_import(
+    context: CsbContext,
+    hash: String,
+    error: Option<String>,
+    warning: Option<String>,
+) -> Response {
+    HtmlTemplate(
+        CsbImportTemplate {
+            hash,
+            error,
+            warning,
+        },
+        context,
+    )
+    .into_response()
 }
 
 /// Render the placeholder import page.
 pub async fn import(_: CsbImportPath, context: CsbContext) -> Result<Response, AppError> {
-    Ok(render_import(context, String::new(), None))
+    Ok(render_import(context, String::new(), None, None))
 }
 
-/// Form payload for the import page: the chain hash of the package to import.
+/// Form payload for the import page: the chain hash of the package to import,
+/// and the hash for which a duplicate-import warning was already confirmed.
 #[derive(Debug, Deserialize)]
 pub struct ImportForm {
     pub hash: String,
+    pub confirmed_hash: Option<String>,
+}
+
+/// Outcome of an import attempt that did not fail outright.
+enum ImportOutcome {
+    Imported(Response),
+    /// The source stream was already imported into a live CSB store carrying
+    /// this appellation; the user must confirm before importing again.
+    AlreadyImported {
+        appellation: String,
+    },
 }
 
 /// Import the package identified by the submitted chain hash.
@@ -59,12 +85,23 @@ pub async fn import_submit<S: AppRequestState>(
     let hash = form.hash.clone();
     let locale = context.session.locale;
     match do_import(&state, form, locale).await {
-        Ok(response) => Ok(response),
-        Err(AppError::UserError(msg)) => Ok(render_import(context, hash, Some(msg))),
+        Ok(ImportOutcome::Imported(response)) => Ok(response),
+        Ok(ImportOutcome::AlreadyImported { appellation }) => Ok(render_import(
+            context,
+            hash,
+            None,
+            Some(trans!(
+                "csb.import.warning.already_imported",
+                locale,
+                appellation
+            )),
+        )),
+        Err(AppError::UserError(msg)) => Ok(render_import(context, hash, Some(msg), None)),
         Err(AppError::AmbiguousHash) => Ok(render_import(
             context,
             hash,
             Some(trans!("csb.import.error.ambiguous_hash", locale)),
+            None,
         )),
         Err(e) => Err(e),
     }
@@ -80,7 +117,7 @@ async fn do_import<S: AppRequestState>(
     state: &S,
     form: ImportForm,
     locale: Locale,
-) -> Result<Response, AppError> {
+) -> Result<ImportOutcome, AppError> {
     let hash_prefix = parse_hash_prefix(&form.hash)
         .ok_or_else(|| AppError::UserError(trans!("csb.import.error.invalid_hash", locale)))?;
 
@@ -91,17 +128,20 @@ async fn do_import<S: AppRequestState>(
         .await?
         .ok_or_else(|| AppError::UserError(trans!("csb.import.error.not_found", locale)))?;
 
-    // Reject if this source stream has already been imported.
-    for store in state.csb_store_registry().stores_by_scope().await? {
-        let already_imported_and_not_deleted = store.data.read().events.first().is_some_and(|e| {
-            matches!(&e.payload, CsbEvent::Import { source_stream_id: sid, .. } if *sid == source_stream_id) &&
-            !store.is_deleted()
-        });
-        if already_imported_and_not_deleted {
-            return Err(AppError::UserError(trans!(
-                "csb.import.error.already_imported",
-                locale
-            )));
+    // Importing a source stream that was already imported is allowed, but only
+    // after the user confirms the warning for this exact hash entry.
+    let confirmed = form.confirmed_hash.as_deref() == Some(form.hash.as_str());
+    if !confirmed {
+        for store in state.csb_store_registry().stores_by_scope().await? {
+            let already_imported_and_not_deleted =
+                store.data.read().events.first().is_some_and(|e| {
+                    matches!(&e.payload, CsbEvent::Import { source_stream_id: sid, .. } if *sid == source_stream_id) &&
+                    !store.is_deleted()
+                });
+            if already_imported_and_not_deleted {
+                let appellation = store.get_appellation(WithCorrections::All);
+                return Ok(ImportOutcome::AlreadyImported { appellation });
+            }
         }
     }
 
@@ -136,9 +176,11 @@ async fn do_import<S: AppRequestState>(
 
     do_brp_verification(&csb_store, state.brp_client()).await?;
 
-    Ok(redirect_success(CsbPoliticalGroupPath {
-        stream_id: csb_store.stream_id,
-    }))
+    Ok(ImportOutcome::Imported(redirect_success(
+        CsbPoliticalGroupPath {
+            stream_id: csb_store.stream_id,
+        },
+    )))
 }
 
 /// Create a new empty CSB store without importing from a political-group stream.
@@ -298,6 +340,25 @@ mod tests {
         panic!("BRP verification did not finish in time");
     }
 
+    /// Submit the import form against a fresh test context.
+    async fn submit(
+        state: &AppState,
+        hash: &str,
+        confirmed_hash: Option<&str>,
+    ) -> Result<Response, AppError> {
+        Ok(import_submit(
+            CsbImportPath {},
+            State(state.clone()),
+            CsbContext::new_test(),
+            Form(ImportForm {
+                hash: hash.to_string(),
+                confirmed_hash: confirmed_hash.map(str::to_string),
+            }),
+        )
+        .await?
+        .into_response())
+    }
+
     #[tokio::test]
     async fn import_renders_placeholder_page() -> Result<(), AppError> {
         let response = import(CsbImportPath {}, CsbContext::new_test())
@@ -323,6 +384,7 @@ mod tests {
             context,
             Form(ImportForm {
                 hash: "not-a-hash".to_string(),
+                confirmed_hash: None,
             }),
         )
         .await
@@ -345,6 +407,7 @@ mod tests {
             context,
             Form(ImportForm {
                 hash: "F381 3DE7 96D3 8033".to_string(),
+                confirmed_hash: None,
             }),
         )
         .await
@@ -365,7 +428,10 @@ mod tests {
             CsbImportPath {},
             State(state.clone()),
             context,
-            Form(ImportForm { hash }),
+            Form(ImportForm {
+                hash,
+                confirmed_hash: None,
+            }),
         )
         .await?
         .into_response();
@@ -385,40 +451,48 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn import_submit_rejects_already_imported_in_memory_store() -> Result<(), AppError> {
+    async fn import_submit_warns_on_already_imported() -> Result<(), AppError> {
         let state = AppState::new_for_tests().await;
         let (_, hash) = seed_source_event(&state).await?;
 
         // First import succeeds.
-        let context = CsbContext::new_test();
-        let response = import_submit(
-            CsbImportPath {},
-            State(state.clone()),
-            context,
-            Form(ImportForm { hash: hash.clone() }),
-        )
-        .await?
-        .into_response();
+        let response = submit(&state, &hash, None).await?;
         assert_eq!(response.status(), StatusCode::SEE_OTHER);
 
-        // Re-importing the same source stream is rejected against the cached CSB
-        // store (the in-memory backend persists nothing, so the duplicate check
-        // must consult the live registry).
-        let context = CsbContext::new_test();
-        let response = import_submit(
-            CsbImportPath {},
-            State(state.clone()),
-            context,
-            Form(ImportForm { hash }),
-        )
-        .await?
-        .into_response();
-
+        // Re-importing the same source stream without confirmation re-renders
+        // the form with a warning; nothing is imported yet.
+        let response = submit(&state, &hash, None).await?;
         assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        assert!(body.contains("alert-warning"));
+        assert!(body.contains(&hash));
 
-        // Only the first import was recorded.
         let csb_stores = state.csb_store_registry().stores_by_scope().await?;
         assert_eq!(csb_stores.len(), 1);
+
+        // A confirmation for a different hash entry does not count.
+        let response = submit(&state, &hash, Some("F381 3DE7 96D3 8033")).await?;
+        assert_eq!(response.status(), StatusCode::OK);
+        let csb_stores = state.csb_store_registry().stores_by_scope().await?;
+        assert_eq!(csb_stores.len(), 1);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn import_submit_imports_already_imported_after_confirm() -> Result<(), AppError> {
+        let state = AppState::new_for_tests().await;
+        let (_, hash) = seed_source_event(&state).await?;
+
+        let response = submit(&state, &hash, None).await?;
+        assert_eq!(response.status(), StatusCode::SEE_OTHER);
+
+        // Confirming the warned hash imports the same source stream again.
+        let response = submit(&state, &hash, Some(&hash)).await?;
+        assert_eq!(response.status(), StatusCode::SEE_OTHER);
+
+        let csb_stores = state.csb_store_registry().stores_by_scope().await?;
+        assert_eq!(csb_stores.len(), 2);
 
         Ok(())
     }
@@ -546,7 +620,10 @@ mod tests {
             CsbImportPath {},
             State(state.clone()),
             context,
-            Form(ImportForm { hash: hash.clone() }),
+            Form(ImportForm {
+                hash: hash.clone(),
+                confirmed_hash: None,
+            }),
         )
         .await?
         .into_response();
@@ -559,20 +636,21 @@ mod tests {
         // mark imported store as deleted
         csb_stores[0].update(Delete).await?;
 
-        // Re-importing the same source stream is rejected against the cached CSB
-        // store (the in-memory backend persists nothing, so the duplicate check
-        // must consult the live registry).
+        // Re-importing the same source stream needs no confirmation when the
+        // earlier import was deleted (the duplicate check consults the live
+        // registry, as the in-memory backend persists nothing).
         let context = CsbContext::new_test();
         let response = import_submit(
             CsbImportPath {},
             State(state.clone()),
             context,
-            Form(ImportForm { hash: hash.clone() }),
+            Form(ImportForm {
+                hash: hash.clone(),
+                confirmed_hash: None,
+            }),
         )
         .await?
         .into_response();
-
-        dbg!(&response);
 
         // second import succeeds too as first import got deleted
         assert_eq!(response.status(), StatusCode::SEE_OTHER);

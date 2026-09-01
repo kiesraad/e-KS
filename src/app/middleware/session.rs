@@ -424,6 +424,10 @@ mod tests {
                 }),
             )
             .route("/finalise", get(|| async { "finalise" }))
+            .route(
+                "/generate/{locale}/documents.zip",
+                get(|| async { "documents" }),
+            )
             .layer(middleware::from_fn_with_state(
                 state.clone(),
                 store_middleware,
@@ -514,25 +518,30 @@ mod tests {
         assert_eq!(body, stream_id.to_string());
     }
 
-    /// The finalise flow is not reachable while correcting paper documents.
+    /// Neither the finalise flow nor the document ZIP it generates is
+    /// reachable while correcting paper documents.
     #[tokio::test]
-    async fn csb_session_in_corrections_mode_cannot_reach_finalise() {
+    async fn csb_session_in_corrections_mode_cannot_reach_finalise_or_documents() {
         let state = AppState::new_for_tests().await;
         let stream_id = seed_csb_stream(&state).await;
         let cookie = insert_committee_session(&state, Some(stream_id)).await;
+        let app = store_app(state);
 
-        let response = store_app(state)
-            .oneshot(
-                HttpRequest::builder()
-                    .uri("/finalise")
-                    .header(header::COOKIE, &cookie)
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
-            .expect("response");
+        for uri in ["/finalise", "/generate/nl/documents.zip"] {
+            let response = app
+                .clone()
+                .oneshot(
+                    HttpRequest::builder()
+                        .uri(uri)
+                        .header(header::COOKIE, &cookie)
+                        .body(Body::empty())
+                        .unwrap(),
+                )
+                .await
+                .expect("response");
 
-        assert_eq!(response.status(), StatusCode::SEE_OTHER);
-        assert_eq!(response.headers().get(header::LOCATION).unwrap(), "/");
+            assert_eq!(response.status(), StatusCode::SEE_OTHER, "{uri}");
+            assert_eq!(response.headers().get(header::LOCATION).unwrap(), "/");
+        }
     }
 }

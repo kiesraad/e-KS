@@ -90,10 +90,9 @@ span.button {
   }
 
   &.tertiary-destructive {
-    --button-border-width: 0px;
     background: transparent;
     color: var(--red-700);
-    border: 1px solid var(--red-700);
+    border-color: var(--red-700);
 
     &:not(:hover, :active) {
       box-shadow: none;

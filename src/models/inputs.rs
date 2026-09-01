@@ -211,14 +211,7 @@ pub struct DetailedCandidate {
 
 impl DetailedCandidate {
     pub fn try_from(candidate: &AppCandidate, locale: ModelLocale) -> Result<Self, AppError> {
-        let (representative, postal_address) = if candidate.person.lives_in_nl() {
-            (
-                None,
-                Some(PostalAddress::from(&Address::Dutch(
-                    candidate.person.address.clone(),
-                ))),
-            )
-        } else {
+        let (representative, postal_address) = if candidate.person.needs_representative() {
             (
                 Some(Person::from(
                     candidate
@@ -228,6 +221,13 @@ impl DetailedCandidate {
                         .ok_or(AppError::IncompleteData("missing representative"))?,
                 )),
                 None,
+            )
+        } else {
+            (
+                None,
+                Some(PostalAddress::from(&Address::Dutch(
+                    candidate.person.address.clone(),
+                ))),
             )
         };
 

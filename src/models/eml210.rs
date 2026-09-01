@@ -222,11 +222,11 @@ impl TryInto<eml_nl::documents::nomination::NominationCandidate> for &Candidate 
                     country => Some(CountryNameCode::new(country.to_string())),
                 },
             ),
-            contact: self
-                .person
-                .lives_in_nl()
+            contact: (!self.person.needs_representative())
                 .then(|| (&Address::Dutch(self.person.address.clone())).into()),
-            agent: (!self.person.lives_in_nl())
+            agent: self
+                .person
+                .needs_representative()
                 .then(|| self.person.representative.as_ref().map(Into::into))
                 .flatten(),
             date_of_birth_annex: None,

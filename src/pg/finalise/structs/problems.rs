@@ -5,7 +5,7 @@ use crate::{
     common::PgIndexPath,
     finalise::FinalisePath,
     structs::{
-        candidate_lists::{CandidateList, CandidateListSummary, FullCandidateList},
+        candidate_lists::{CandidateList, CandidateListSummary},
         common::{HasSeverity, InfoProblems, PotentialProblems, Problematic, Severity},
         list_designation::ListDesignation,
         list_submitters::ListSubmitter,
@@ -85,13 +85,13 @@ impl AllProblems {
         let candidate_lists = CandidateListSummary::list(store);
         let (general, general_info) = Self::find_general_problems(store);
         let (candidates, candidates_info) = Self::find_candidate_problems(store, &candidate_lists);
-        let (lists, lists_info) = Self::find_list_problems(&candidate_lists, store)?;
+        let lists = Self::find_list_problems(&candidate_lists, store);
 
         let mut all_problems = Self {
             general,
             candidates,
             lists,
-            info_problems: [general_info, candidates_info, lists_info]
+            info_problems: [general_info, candidates_info]
                 .into_iter()
                 .flatten()
                 .collect(),
@@ -267,13 +267,11 @@ impl AllProblems {
     pub fn find_list_problems(
         candidate_lists: &[CandidateListSummary],
         store: &PgStore,
-    ) -> Result<(ListProblems, Vec<EntityInfoProblems>), AppError> {
+    ) -> ListProblems {
         let mut list_problems = Vec::new();
-        let mut info_problems = Vec::new();
         let mut seen_duplicate_district = false;
         for candidate_list in candidate_lists {
-            let mut problems =
-                candidate_list.get_problems(FullCandidateList::get(store, candidate_list.list.id)?);
+            let mut problems = candidate_list.get_problems(());
             if problems
                 .potential_problems
                 .contains(&PotentialProblems::DuplicateDistricts)
@@ -291,16 +289,6 @@ impl AllProblems {
                     problems: problems.potential_problems,
                 })
             }
-            info_problems.extend(
-                problems
-                    .info_problems
-                    .into_iter()
-                    .map(|problem| EntityInfoProblems::List {
-                        list: candidate_list.list.clone(),
-                        problem,
-                    })
-                    .collect::<Vec<_>>(),
-            );
         }
 
         let general = if store.get_candidate_list_count() == 0 {
@@ -309,13 +297,10 @@ impl AllProblems {
             Vec::new()
         };
 
-        Ok((
-            ListProblems {
-                general,
-                per_list: list_problems,
-            },
-            info_problems,
-        ))
+        ListProblems {
+            general,
+            per_list: list_problems,
+        }
     }
 
     fn flatten_problems(&self) -> impl Iterator<Item = &PotentialProblems> {
@@ -428,10 +413,6 @@ impl ListProblems {
 #[cfg_attr(test, derive(PartialEq, Clone))]
 pub enum EntityInfoProblems {
     AnyProblem(InfoProblems),
-    List {
-        list: CandidateList,
-        problem: InfoProblems,
-    },
     Submitter {
         problem: InfoProblems,
     },
@@ -466,7 +447,6 @@ impl EntityInfoProblems {
             }
             EntityInfoProblems::AnyProblem(..) => PgIndexPath.to_string(),
 
-            EntityInfoProblems::List { list, .. } => list.view_path().to_string(),
             EntityInfoProblems::SubstituteSubmitter { submitter, .. } => submitter
                 .substitute_update_path()
                 .with_query_params(QueryParamState::redirect_to(finalise))
@@ -489,7 +469,6 @@ impl EntityInfoProblems {
     pub fn translate(&self, locale: &Locale) -> String {
         match self {
             EntityInfoProblems::AnyProblem(problem) => problem.translate(locale),
-            EntityInfoProblems::List { problem, .. } => problem.translate(locale),
             EntityInfoProblems::Submitter { problem, .. } => problem.translate(locale),
             EntityInfoProblems::SubstituteSubmitter { problem, .. } => problem.translate(locale),
             EntityInfoProblems::Person { problem, .. } => problem.translate(locale),
@@ -500,7 +479,6 @@ impl EntityInfoProblems {
     pub fn severity(&self) -> Severity {
         match self {
             EntityInfoProblems::AnyProblem(problem) => problem.severity(),
-            EntityInfoProblems::List { problem, .. } => problem.severity(),
             EntityInfoProblems::Submitter { problem, .. } => problem.severity(),
             EntityInfoProblems::SubstituteSubmitter { problem, .. } => problem.severity(),
             EntityInfoProblems::Person { problem, .. } => problem.severity(),
@@ -612,7 +590,7 @@ mod tests {
     async fn no_candidate_list_added() -> Result<(), AppError> {
         let store = PgStore::new_for_test();
 
-        let (problems, _) = AllProblems::find_list_problems(&[], &store)?;
+        let problems = AllProblems::find_list_problems(&[], &store);
 
         assert_eq!(problems.general.len(), 1);
 

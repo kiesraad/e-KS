@@ -4,7 +4,7 @@ use axum::response::{IntoResponse, Redirect, Response};
 use std::collections::HashMap;
 
 use crate::{
-    AppError, Context, Form, HtmlTemplate, MAX_CANDIDATES, Overlay, PgStore,
+    AppError, Context, Form, HtmlTemplate, Overlay, PgStore,
     candidates::AddPersonForm,
     filters,
     form::FormData,
@@ -52,7 +52,7 @@ impl AddExistingPersonTemplate {
         };
         let candidate_ids = added_candidates.keys().cloned().collect::<Vec<_>>();
         let persons = full_list.list.persons_not_on_list(store, &candidate_ids)?;
-        let allow_add = full_list.candidates.len() < MAX_CANDIDATES;
+        let allow_add = full_list.candidates.len() < store.candidate_limit();
         let show_add_all = persons.len() != candidate_ids.len() && allow_add;
         let close_action = if !added_candidates.is_empty() {
             full_list
@@ -100,7 +100,7 @@ async fn handle_add_candidate_form(
                 .collect::<Vec<_>>();
             let mut all_persons = full_list.list.candidates.clone();
             all_persons.extend(person_ids);
-            all_persons.truncate(MAX_CANDIDATES);
+            all_persons.truncate(store.candidate_limit());
 
             full_list.list.update_order(store, &all_persons).await?;
         }
@@ -204,10 +204,10 @@ pub async fn add_person_to_candidate_list(
 mod tests {
     use super::*;
     use crate::{
-        Context, Form, PgStore,
+        Context, Form, MAX_CANDIDATES, PgStore,
         structs::{candidate_lists::CandidateListId, persons::PersonId},
         test_utils::{
-            response_body_string, sample_candidate_list, sample_person,
+            paper_corrections_store, response_body_string, sample_candidate_list, sample_person,
             sample_person_with_last_name,
         },
     };
@@ -461,6 +461,44 @@ mod tests {
         assert_eq!(
             store.get_candidate_list(list_id)?.candidates.len(),
             MAX_CANDIDATES
+        );
+
+        Ok(())
+    }
+
+    /// While correcting paper documents the hard maximum does not apply: a
+    /// bulk add keeps every person and the 81st toggle is accepted.
+    #[tokio::test]
+    async fn add_person_to_candidate_list_ignores_max_while_correcting() -> Result<(), AppError> {
+        let store = paper_corrections_store().await?;
+        let list_id = CandidateListId::new();
+        sample_candidate_list(list_id).create(&store).await?;
+
+        for index in 0..(MAX_CANDIDATES + 5) {
+            sample_person_with_last_name(PersonId::new(), &format!("Bakker{index}"))
+                .create(&store)
+                .await?;
+        }
+
+        let form = AddPersonForm {
+            action: AddPersonAction::AddAll.to_string(),
+            added_position: String::new(),
+        };
+        let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
+
+        let response = add_person_to_candidate_list(
+            AddCandidatePath { list_id },
+            full_list,
+            store.clone(),
+            Context::new_test_from_store(&store),
+            Form(form),
+        )
+        .await?;
+
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(
+            store.get_candidate_list(list_id)?.candidates.len(),
+            MAX_CANDIDATES + 5
         );
 
         Ok(())

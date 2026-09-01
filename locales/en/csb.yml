@@ -40,6 +40,7 @@ form:
   create_empty_explanation: "Or add an empty political group to manually copy the paper data:"
   hash: Enter the beginning of the hash code (at least 8 characters)
   import: Import
+  import_anyway: Import anyway
   import_political_group: Import political group
 general:
   add_text: Add omissions for the general information
@@ -68,10 +69,11 @@ group:
   unfinished: Finish examination
 import:
   error:
-    already_imported: This political group has already been imported.
     ambiguous_hash: The entered hash code matches more than one data set; enter more characters.
     invalid_hash: "Enter a valid hash code (at least 4 pairs of hexadecimal characters, e.g. AB12 C3D4)."
     not_found: No data was found for the entered hash code.
+  warning:
+    already_imported: "The political group “{}” has already been imported. Choose “Import anyway” to import it again."
 index:
   closes_on: Closes on
   feature:

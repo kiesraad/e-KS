@@ -198,21 +198,7 @@ mod tests {
 
     /// Build a paper-corrections store carrying one CSB correction.
     async fn paper_corrections_store() -> Result<PgStore, AppError> {
-        use crate::{CsbEvent, CsbStore, StreamId};
-
-        let csb_store = CsbStore::new_for_test();
-        csb_store
-            .update(CsbEvent::Import {
-                hash: [1; 32],
-                source_stream_id: StreamId::new(),
-                snapshot: Box::new(crate::PgStoreData {
-                    political_group: crate::test_utils::sample_political_group(),
-                    ..Default::default()
-                }),
-            })
-            .await?;
-
-        let store = PgStore::paper_corrections(csb_store);
+        let store = crate::test_utils::paper_corrections_store().await?;
         sample_person(PersonId::new()).create(&store).await?;
         Ok(store)
     }

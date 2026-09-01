@@ -1,6 +1,6 @@
 import type { Locator, Page } from "@playwright/test";
 
-export class csbCorrectionsPage {
+export class CsbCorrectionsPage {
   readonly textfieldCorrection: Locator;
   readonly buttonSaveCorrection: Locator;
 

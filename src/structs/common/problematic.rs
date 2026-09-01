@@ -263,10 +263,6 @@ impl PotentialProblems {
 
 #[derive(Clone, PartialEq, Debug, Serialize)]
 pub enum InfoProblems {
-    FewCandidatesWithFirstName { count: usize, total: usize },
-    FewCandidatesWithoutFirstName { count: usize, total: usize },
-    FewCandidatesWithGender { count: usize, total: usize },
-    FewCandidatesWithoutGender { count: usize, total: usize },
     NoPreviousElectionResults,
     NoSubstituteSubmitter,
     NoListDesignation,
@@ -274,89 +270,6 @@ pub enum InfoProblems {
     NoInitials,
     NoLastName,
     IncompleteAddress { problems: Vec<EmptyAddressProblems> },
-}
-
-/// How many of the `total` candidates on a list have (or lack) some attribute.
-///
-/// The messages are worded differently for a single candidate, which is why
-/// each one picks between a singular and a plural translation key.
-struct FewCandidates {
-    count: usize,
-    total: usize,
-}
-
-impl FewCandidates {
-    fn new(count: usize, total: usize) -> Self {
-        Self { count, total }
-    }
-
-    fn with_first_name(&self, locale: &Locale) -> String {
-        if self.count == 1 {
-            trans!(
-                "problems.few_candidates_with_first_name_one",
-                *locale,
-                self.total
-            )
-        } else {
-            trans!(
-                "problems.few_candidates_with_first_name",
-                *locale,
-                self.count,
-                self.total
-            )
-        }
-    }
-
-    fn without_first_name(&self, locale: &Locale) -> String {
-        if self.count == 1 {
-            trans!(
-                "problems.few_candidates_without_first_name_one",
-                *locale,
-                self.total
-            )
-        } else {
-            trans!(
-                "problems.few_candidates_without_first_name",
-                *locale,
-                self.count,
-                self.total
-            )
-        }
-    }
-
-    fn with_gender(&self, locale: &Locale) -> String {
-        if self.count == 1 {
-            trans!(
-                "problems.few_candidates_with_gender_one",
-                *locale,
-                self.total
-            )
-        } else {
-            trans!(
-                "problems.few_candidates_with_gender",
-                *locale,
-                self.count,
-                self.total
-            )
-        }
-    }
-
-    fn without_gender(&self, locale: &Locale) -> String {
-        if self.count == 1 {
-            trans!(
-                "problems.few_candidates_without_gender_one",
-                *locale,
-                self.total
-            )
-        } else {
-            trans!(
-                "problems.few_candidates_without_gender",
-                *locale,
-                self.count,
-                self.total
-            )
-        }
-    }
 }
 
 impl InfoProblems {
@@ -377,18 +290,6 @@ impl InfoProblems {
             InfoProblems::NoListDesignation => trans!("problems.no_designation_type", *locale),
             InfoProblems::NoPreviousElectionResults => {
                 trans!("problems.no_previous_election_results", *locale)
-            }
-            InfoProblems::FewCandidatesWithFirstName { count, total } => {
-                FewCandidates::new(*count, *total).with_first_name(locale)
-            }
-            InfoProblems::FewCandidatesWithoutFirstName { count, total } => {
-                FewCandidates::new(*count, *total).without_first_name(locale)
-            }
-            InfoProblems::FewCandidatesWithGender { count, total } => {
-                FewCandidates::new(*count, *total).with_gender(locale)
-            }
-            InfoProblems::FewCandidatesWithoutGender { count, total } => {
-                FewCandidates::new(*count, *total).without_gender(locale)
             }
             InfoProblems::IncompleteAddress { .. } => {
                 trans!("problems.incomplete_address", *locale)
@@ -523,39 +424,6 @@ mod tests {
         let summary = multiple_problems.problem_summary(&Locale::Nl).unwrap();
         for problem in problems {
             assert!(summary.contains(&problem.translate(&Locale::Nl)));
-        }
-    }
-
-    #[test]
-    fn deviation_shows_numbers() {
-        let info_problems = vec![
-            InfoProblems::FewCandidatesWithFirstName {
-                count: 2,
-                total: 37,
-            },
-            InfoProblems::FewCandidatesWithGender {
-                count: 2,
-                total: 37,
-            },
-            InfoProblems::FewCandidatesWithoutFirstName {
-                count: 2,
-                total: 37,
-            },
-            InfoProblems::FewCandidatesWithoutGender {
-                count: 2,
-                total: 37,
-            },
-        ];
-
-        for problem in info_problems {
-            let summary = Problems {
-                info_problems: vec![problem],
-                potential_problems: Vec::new(),
-            }
-            .problem_summary(&Locale::Nl)
-            .unwrap();
-            assert!(summary.contains("2"));
-            assert!(summary.contains("37"));
         }
     }
 }

@@ -115,6 +115,7 @@ export default function localitySuggestions() {
     suggestion.classList.add("hidden");
     localityWarning?.classList.add("hidden");
     field?.classList.remove("warning", "error");
+    input.dispatchEvent(new Event("change", { bubbles: true }));
     runUpdate(true);
   });
 

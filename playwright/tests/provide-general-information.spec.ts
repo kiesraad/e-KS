@@ -1,3 +1,17 @@
+// Use cases:
+// De gebruiker selecteert dat ze meedoen met een op zichzelfstaande geregistreerde naam
+// De politieke groepering kiest ervoor de lijst samen in te leveren
+// De politieke groepering doet mee met een blanco lijst
+// De politieke groepering hoeft geen gemachtigde te selecteren
+// De gebruiker vult in dat er bij de vorige verkiezing 16 of meer zetels zijn behaald en mag hierdoor maximaal 80 kandidaten op de lijst plaatsen art. R 4 (voor Eerste Kamerverkiezing)
+// De politieke groepering vult in dat ze minder dan 16 zetels hebben behaald en mogen daardoor maximaal 50 kandidaten op de lijst plaatsen
+// De gebruiker vult de gegevens van de politieke groepering in: aanduiding en volledige statuaire naam. art. R (voor Eerste Kamerverkiezing)
+// De gebruiker vult de gegevens van de gemachtigde in.
+// De gebruiker vult de gegevens van de lijstinleveraar in en de vervangers voor herstel verzuim, dit kunnen oo bestaande kandidaten zijn. de stap is hier logisch als je kijkt naar welke gebruiker het doet, maar moet per lijst te kiezen zijn art. R 7 (voor Eerste Kamerverkiezing)
+// De politieke groepering geeft aan dat ze meedoen met een samengevoegde aanduiding
+// De politieke groepering vult één samengevoegde aanduiding in
+// De politieke groepering vult voor elke partij een gemachtigde in
+
 import { expect } from "@playwright/test";
 import { test } from "./fixtures.ts";
 import type { ListSubmitter } from "./models/listSubmitter.ts";

@@ -45,9 +45,8 @@ pub async fn index(
 
         (problems.len() + general_infos.len(), severity_class)
     };
-    // no infos, these are also not shown on the candidate list overview page
-    let (mut list_problems, _) =
-        AllProblems::find_list_problems(&CandidateListSummary::list(&store), &store)?;
+    let mut list_problems =
+        AllProblems::find_list_problems(&CandidateListSummary::list(&store), &store);
 
     // Don't show NoCandidateList problem on the home page, only on the finalise page
     list_problems

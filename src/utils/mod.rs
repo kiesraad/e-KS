@@ -1,7 +1,5 @@
 //! Utilities and small helpers shared across the application.
 mod abbreviate_str;
-#[cfg(feature = "dev-features")]
-mod bsn;
 mod format_hash;
 mod option_string_ext;
 mod overlay;
@@ -23,8 +21,6 @@ pub mod transparent_string;
 pub mod livereload;
 
 pub use abbreviate_str::abbreviate_str;
-#[cfg(feature = "dev-features")]
-pub use bsn::random_bsn;
 pub use format_hash::{format_hash, parse_hash_prefix};
 pub use option_string_ext::{OptionAsStrExt, OptionStringExt};
 pub use overlay::Overlay;

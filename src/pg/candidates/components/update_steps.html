@@ -14,7 +14,7 @@
       <a href="{{ overlay.forward(candidate.update_path() ) }}"
          class="{{ candidate.person.personal_info_class(election) }}">{{ "person.personal_details"|trans }}</a>
     </li>
-    {% if candidate.person.lives_in_nl() || conditional_next_step|default(false) %}
+    {% if !candidate.person.needs_representative() || conditional_next_step|default(false) %}
       <li class="show-nl">
         <a href="{{ overlay.forward(candidate.update_address_path() ) }}"
            class="{% if candidate.person.address.get_problems(crate::structs::common::Severity::Info).is_all_good() %}ok{% else if should_warn|default(true) %}warning{% endif %}">
@@ -22,7 +22,7 @@
         </a>
       </li>
     {% endif %}
-    {% if !candidate.person.lives_in_nl() || conditional_next_step|default(false) %}
+    {% if candidate.person.needs_representative() || conditional_next_step|default(false) %}
       <li class="hide-nl">
         <a href="{{ overlay.forward(candidate.update_representative_path() ) }}"
            class="{% if candidate.person.is_representative_complete() %}ok{% else if should_warn|default(true) %}warning{% endif %}">
