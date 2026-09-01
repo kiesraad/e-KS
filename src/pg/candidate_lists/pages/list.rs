@@ -1,4 +1,4 @@
-use crate::structs::candidate_lists::{CandidateList, CandidateListSummary, FullCandidateList};
+use crate::structs::candidate_lists::{CandidateList, CandidateListSummary};
 use askama::Template;
 use axum::response::IntoResponse;
 
@@ -29,7 +29,7 @@ pub async fn list_candidate_lists(
 ) -> Result<impl IntoResponse, AppError> {
     let mut candidate_lists = Vec::new();
     for summary in CandidateListSummary::list(&store) {
-        let problems = summary.get_problems(FullCandidateList::get(&store, summary.list.id)?);
+        let problems = summary.get_problems(());
         candidate_lists.push(CandidateListWithProblems {
             data: summary,
             problems,
