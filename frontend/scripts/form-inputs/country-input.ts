@@ -1,6 +1,25 @@
 // Enhance country code inputs with flag icons and keyboard navigation.
 const COUNTRY_INPUT_SELECTOR = ".country-input";
 
+// Places of residence in the Caribbean Netherlands: country code NL, but an
+// authorised person is needed instead of a Dutch correspondence address.
+// Mirrors CARIBBEAN_NL_PLACES in src/structs/common/place_of_residence.rs.
+const CARIBBEAN_NL_PLACES = new Set([
+  "kralendijk",
+  "rincon",
+  "bonaire",
+  "saba",
+  "sint eustatius",
+]);
+
+// Only the person/candidate personal-data form has this input; on other forms
+// with a country input (e.g. list submitters) the selector matches nothing.
+const PLACE_OF_RESIDENCE_SELECTOR = 'input[name="place_of_residence"]';
+
+function getPlaceOfResidenceInput(): HTMLInputElement | null {
+  return document.querySelector(PLACE_OF_RESIDENCE_SELECTOR);
+}
+
 type CountryInputElements = {
   textInput: HTMLInputElement;
   flagIcon: HTMLSpanElement;
@@ -63,10 +82,16 @@ function hideList(list: HTMLElement) {
 }
 
 /**
- * Toggles the hint visibility based on the selected country.
+ * Toggles the hint visibility based on the selected country and, when present,
+ * the place of residence. A place in the Caribbean Netherlands counts as
+ * outside NL: an authorised person is needed instead of a Dutch
+ * correspondence address.
  */
 function updateVisibility(textInput: HTMLInputElement) {
-  const is_nl = textInput.value.toUpperCase() === "NL";
+  const place = getPlaceOfResidenceInput()?.value.trim().toLowerCase();
+  const is_nl =
+    textInput.value.toUpperCase() === "NL" &&
+    !(place && CARIBBEAN_NL_PLACES.has(place));
 
   // toggle elements with class hide-nl
   document.querySelectorAll(".hide-nl").forEach((el) => {
@@ -150,6 +175,13 @@ function initCountryInput(elements: CountryInputElements) {
   // render initial icon
   setFlagIcon(textInput, items, flagIcon);
   updateVisibility(textInput);
+
+  // the place of residence also determines the visibility (Caribbean
+  // Netherlands places require an authorised person while the country is NL)
+  const placeInput = getPlaceOfResidenceInput();
+  ["input", "change"].forEach((eventName) => {
+    placeInput?.addEventListener(eventName, () => updateVisibility(textInput));
+  });
 
   // show the suggestion list when focus on country code input
   textInput.addEventListener("focus", () => {

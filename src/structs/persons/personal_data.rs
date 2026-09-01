@@ -67,6 +67,17 @@ impl PersonalData {
         self.country.as_ref().is_none_or(CountryCode::is_nl)
     }
 
+    /// Whether this person needs an authorised person (gemachtigde) instead of
+    /// a Dutch correspondence address: living abroad, or in the Caribbean
+    /// Netherlands (which has country code NL, but no Dutch postal addresses).
+    pub fn needs_representative(&self) -> bool {
+        !self.lives_in_nl()
+            || self
+                .place_of_residence
+                .as_ref()
+                .is_some_and(PlaceOfResidence::is_caribbean_nl)
+    }
+
     pub fn locality(&self) -> Option<String> {
         match (&self.place_of_residence, &self.country) {
             (Some(place), Some(country)) if !country.is_nl() => {
@@ -99,6 +110,23 @@ mod tests {
         let problems = complete_personal_data().get_problems(ElectionConfig::EK27);
         assert!(problems.potential_problems.is_empty());
         assert!(problems.info_problems.is_empty());
+    }
+
+    #[test]
+    fn needs_representative_when_living_abroad_or_in_caribbean_nl() {
+        let mut data = complete_personal_data();
+        assert!(!data.needs_representative());
+
+        data.country = Some("BE".parse().unwrap());
+        assert!(data.needs_representative());
+
+        data.country = Some("NL".parse().unwrap());
+        data.place_of_residence = Some(PlaceOfResidence::Known("Kralendijk".to_string()));
+        assert!(data.needs_representative());
+
+        // manually typed places are matched case-insensitively
+        data.place_of_residence = Some(PlaceOfResidence::Unknown("bonaire".to_string()));
+        assert!(data.needs_representative());
     }
 
     #[test]
