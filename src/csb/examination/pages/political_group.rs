@@ -14,6 +14,7 @@ use crate::{
         structs::{CsbCandidateList, RestorationStatus},
     },
     filters,
+    structs::csb::Omission,
 };
 
 #[derive(Template)]
@@ -23,8 +24,8 @@ struct CsbPoliticalGroupTemplate {
     all_brp_error_count: usize,
     candidate_lists: Vec<CsbCandidateList>,
     political_group_status: RestorationStatus,
-    declarations_of_support_status: RestorationStatus,
-    declarations_of_support_card_path: String,
+    declarations_of_support_omissions: Vec<Omission>,
+    has_paper_corrections: bool,
 }
 
 #[derive(Template)]
@@ -63,16 +64,6 @@ pub async fn overview(
         .map(|cl| cl.brp_error_count)
         .sum::<usize>();
     let political_group_status = RestorationStatus::for_political_group(&store);
-    let declarations_of_support_status = RestorationStatus::for_declarations_of_support(&store);
-    let declarations_of_support_card_path = if declarations_of_support_status.has_omissions() {
-        political_group
-            .manage_declarations_of_support_omissions_path()
-            .to_string()
-    } else {
-        political_group
-            .add_declarations_of_support_omission_path()
-            .to_string()
-    };
 
     Ok(HtmlTemplate(
         CsbPoliticalGroupTemplate {
@@ -80,8 +71,8 @@ pub async fn overview(
             all_brp_error_count,
             candidate_lists,
             political_group_status,
-            declarations_of_support_status,
-            declarations_of_support_card_path,
+            declarations_of_support_omissions: store.get_all_declarations_of_support_omissions(),
+            has_paper_corrections: store.has_paper_corrections(),
         },
         context,
     )

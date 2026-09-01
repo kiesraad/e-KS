@@ -118,10 +118,6 @@
     p.warning > strong {
       color: var(--color-warning-darker);
     }
-
-    .omission-badges {
-      margin: 0;
-    }
   }
 
   /* display a card within a card with different color */

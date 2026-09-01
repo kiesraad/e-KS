@@ -2,12 +2,13 @@ import { expect, type Locator, type Page } from "@playwright/test";
 
 export class CsbPoliticalGroupPage {
   readonly switchFinalize: Locator;
-  readonly buttonRectifications: Locator;
+  readonly linkRectifications: Locator;
   readonly buttonBack: Locator;
   readonly linkAllErrors: Locator;
   readonly buttonPaperCorrections: Locator;
   readonly linkGeneralInformation: Locator;
   readonly linkSupportDeclarations: Locator;
+  readonly linkSupportDeclarationsOverview: Locator;
   readonly linkCandidateList: Locator;
   readonly linkDelete: Locator;
   readonly buttonDeleteConfirm: Locator;
@@ -16,23 +17,26 @@ export class CsbPoliticalGroupPage {
     this.switchFinalize = this.page.getByLabel(
       "Onderzoek afronden of heropenen",
     );
-    this.buttonRectifications = this.page.getByRole("button", {
-      name: "Alle herstelacties",
+    this.linkRectifications = this.page.getByRole("link", {
+      name: "Verzuimen en correcties",
     });
     this.buttonBack = this.page.getByRole("link", {
       name: "Terug",
     });
     this.linkAllErrors = this.page.getByRole("link", {
-      name: "Alle BRP fouten controleren",
+      name: "Naar alle fouten",
     });
     this.buttonPaperCorrections = this.page.getByRole("button", {
-      name: "Correcties overnemen",
+      name: "Ga naar gegevens",
     });
     this.linkGeneralInformation = this.page.getByRole("link", {
       name: "Basisgegevens controleren",
     });
     this.linkSupportDeclarations = this.page.getByRole("link", {
-      name: "Verzuimen beheren",
+      name: "Verzuim toevoegen",
+    });
+    this.linkSupportDeclarationsOverview = this.page.getByRole("link", {
+      name: "Overzicht",
     });
     this.linkCandidateList = this.page.getByRole("link", {
       name: "Kandidatenlijst controleren",

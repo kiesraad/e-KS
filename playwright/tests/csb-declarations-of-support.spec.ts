@@ -38,7 +38,7 @@ test.describe("add omissions for declarations of support", async () => {
       }
       await omissionsPage.buttonAddAndClose.click();
       await expect(page.locator("form.overlay")).toBeHidden();
-      await politicalGroupPage.linkSupportDeclarations.click();
+      await politicalGroupPage.linkSupportDeclarationsOverview.click();
       await page.waitForURL(/\/omission\//);
       await expect(page.getByText(text)).toBeVisible();
       if (resolvable) {
@@ -93,7 +93,7 @@ test.describe("add omissions for declarations of support", async () => {
       }
       await omissionsPage.buttonAddAndClose.click();
       await expect(page.locator("form.overlay")).toBeHidden();
-      await politicalGroupPage.linkSupportDeclarations.click();
+      await politicalGroupPage.linkSupportDeclarationsOverview.click();
       await page.waitForURL(/\/omission\//);
       await expect(page.getByText(text)).toBeVisible();
       if (resolvable) {
@@ -150,7 +150,7 @@ test.describe("add omissions for declarations of support", async () => {
       }
       await omissionsPage.buttonAddAndClose.click();
       await expect(page.locator("form.overlay")).toBeHidden();
-      await politicalGroupPage.linkSupportDeclarations.click();
+      await politicalGroupPage.linkSupportDeclarationsOverview.click();
       await page.waitForURL(/\/omission\//);
       await expect(page.getByText(text)).toBeVisible();
       if (resolvable) {

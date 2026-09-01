@@ -26,7 +26,7 @@ export class CsbOmissionsPartyPage {
       name: "Titel Verzuim",
     });
     this.textfieldDescription = this.page.getByRole("textbox", {
-      name: "I1 verzuim toevoegen",
+      name: "I 1 verzuim toevoegen",
     });
     this.textfieldLetter = this.page.getByRole("textbox", {
       name: "Verzuimbriefnotitie toevoegen",

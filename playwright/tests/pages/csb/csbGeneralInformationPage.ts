@@ -12,12 +12,13 @@ export class CsbGeneralInformationPage {
   constructor(readonly page: Page) {
     this.headerGeneralInformation = this.page.getByRole("heading", {
       name: "Basisgegevens",
+      exact: true,
     });
     this.linkAddOmission = this.page.getByRole("link", {
       name: "Verzuim toevoegen",
     });
     this.linkManageOmissions = this.page.getByRole("link", {
-      name: "Verzuimen beheren",
+      name: "Overzicht",
     });
     this.linkRegisteredDesignation = this.page.getByRole("cell", {
       name: "Geregistreerde aanduiding",

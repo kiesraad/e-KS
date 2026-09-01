@@ -22,7 +22,7 @@ test.describe("check candidate and add corrections and omissions", async () => {
       .getByRole("cell", { name: "Peereboom, P. (Patricia) (v)" })
       .click();
     await expect(
-      page.getByRole("heading", { name: "Peereboom, P. (Patricia)" }),
+      page.getByRole("heading", { level: 1, name: "Peereboom, P. (Patricia)" }),
     ).toBeVisible();
     await candidatePage.linkInitials.click();
     await correctionsPage.addCorrection("Z.");
@@ -57,7 +57,7 @@ test.describe("check candidate and add corrections and omissions", async () => {
       .getByRole("cell", { name: "Peereboom, P. (Patricia) (v)" })
       .click();
     await expect(
-      page.getByRole("heading", { name: "Peereboom, P. (Patricia)" }),
+      page.getByRole("heading", { level: 1, name: "Peereboom, P. (Patricia)" }),
     ).toBeVisible();
 
     // Get the electoral district from the candidate list page
@@ -87,7 +87,7 @@ test.describe("check candidate and add corrections and omissions", async () => {
       await page.waitForURL(/\/omission\//);
       await expect(
         page.getByRole("heading", {
-          name: "Verzuimen - Peereboom, P. (Patricia)",
+          name: "Verzuimen: Peereboom, P. (Patricia)",
         }),
       ).toBeVisible();
       await omissionsPage.expectOnlySelectedDistrictChecked(
@@ -143,7 +143,7 @@ test.describe("check candidate and add corrections and omissions", async () => {
       .getByRole("cell", { name: "Peereboom, P. (Patricia) (v)" })
       .click();
     await expect(
-      page.getByRole("heading", { name: "Peereboom, P. (Patricia)" }),
+      page.getByRole("heading", { level: 1, name: "Peereboom, P. (Patricia)" }),
     ).toBeVisible();
 
     // Get the electoral district from the candidate list page
@@ -172,7 +172,7 @@ test.describe("check candidate and add corrections and omissions", async () => {
       await page.waitForURL(/\/omission\//);
       await expect(
         page.getByRole("heading", {
-          name: "Verzuimen - Peereboom, P. (Patricia)",
+          name: "Verzuimen: Peereboom, P. (Patricia)",
         }),
       ).toBeVisible();
       await omissionsPage.expectOnlySelectedDistrictChecked(

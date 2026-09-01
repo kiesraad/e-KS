@@ -25,6 +25,7 @@
 @import "overlay.css" layer(components);
 @import "person-block.css" layer(components);
 @import "position-preview.css" layer(components);
+@import "restorations.css" layer(components);
 @import "steps.css" layer(components);
 @import "sticky-nav.css" layer(components);
 @import "table.css" layer(components);
