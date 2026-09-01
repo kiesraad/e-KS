@@ -83,7 +83,7 @@ pub async fn appellation_correction_submit(
         )),
         Ok(appellation) => {
             store
-                .update(crate::CsbEvent::UpdateCorrection(Correction::Appellation(
+                .update(crate::CsbAction::UpdateCorrection(Correction::Appellation(
                     appellation,
                 )))
                 .await?;
@@ -141,7 +141,7 @@ pub async fn person_correction_submit(
         )),
         Ok(person_correction) => {
             store
-                .update(crate::CsbEvent::UpdateCorrection(Correction::Person(
+                .update(crate::CsbAction::UpdateCorrection(Correction::Person(
                     path.person_id,
                     person_correction,
                 )))

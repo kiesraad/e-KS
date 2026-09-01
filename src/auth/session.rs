@@ -5,7 +5,7 @@ use rand::{RngExt, distr::Alphanumeric};
 use secrecy::{ExposeSecret, SecretString};
 
 use crate::{
-    AppError, ElectionConfig, Locale, Scope, StreamId, TokenValue,
+    AppError, CsbUser, ElectionConfig, Locale, Scope, SessionUser, StreamId, TokenValue,
     form::{csrf_token_matches, generate_csrf_token},
     utils::sha256_hex,
 };
@@ -60,8 +60,10 @@ impl std::fmt::Debug for SessionToken {
 /// Server-side session data.
 ///
 /// Persisted either in memory or the database depending on `STORAGE_URL`.
-/// Carries no BSN/`id_code`: the user's stream id is pre-derived at login
-/// and the election is tracked on the session directly.
+/// Carries no BSN/`id_code`: the user's stream id is pre-derived at login.
+/// The role-specific state lives in one [`SessionUser`] value, so a session
+/// always belongs to exactly one complete identity; sessions only exist after
+/// a successful login.
 #[derive(Clone)]
 pub struct Session {
     /// SHA-256 (hex) of the token: the storage key and only token material at rest.
@@ -79,22 +81,10 @@ pub struct Session {
     /// Truncated SHA-256 of the creating `User-Agent`; when set, the middleware
     /// rejects requests whose UA differs. `None` leaves the session unpinned.
     pub user_agent_hash: Option<String>,
-    /// Stream belonging to the user (set on login).
-    pub stream_id: Option<StreamId>,
-    /// CSB stream a committee session is correcting paper documents for.
-    /// While set, app routes serve that stream's paper-corrected data.
-    pub paper_correction_stream_id: Option<StreamId>,
-    /// Authorization scope of the session, set on login. Governs which streams
-    /// the session may reach (see [`crate::Scope`]).
-    pub scope: Scope,
-    /// Election the user is currently working on (set after login).
-    pub current_election: Option<ElectionConfig>,
+    /// The identity behind the session, set at login (see [`SessionUser`]).
+    pub user: SessionUser,
     /// Active locale for the session.
     pub locale: Locale,
-    /// SAML `NameID` from the authenticating Assertion, needed for the
-    /// `LogoutRequest` (eID §7.7.1). Empty until authentication sets it;
-    /// dev-login uses a placeholder.
-    pub saml_name_id: String,
 }
 
 impl std::fmt::Debug for Session {
@@ -103,9 +93,7 @@ impl std::fmt::Debug for Session {
             .field("token", &"***")
             .field("created_at", &self.created_at)
             .field("last_activity", &self.last_activity)
-            .field("stream_id", &self.stream_id)
-            .field("scope", &self.scope)
-            .field("current_election", &self.current_election)
+            .field("user", &self.user)
             .field("locale", &self.locale)
             .finish()
     }
@@ -120,23 +108,10 @@ impl PartialEq for Session {
 impl Eq for Session {}
 
 impl Session {
-    /// Creates a new session with a cryptographically strong random token.
-    pub fn new() -> Self {
-        Self::new_with_locale(Locale::default())
-    }
-
-    #[cfg(test)]
-    pub fn new_test() -> Self {
-        Self::new_with_locale(Locale::default())
-    }
-
-    #[cfg(test)]
-    pub fn new_test_with_locale(locale: Locale) -> Self {
-        Self::new_with_locale(locale)
-    }
-
-    /// Creates a new session using the provided locale.
-    pub fn new_with_locale(locale: Locale) -> Self {
+    /// Creates a new session for `user` with a cryptographically strong random
+    /// token. Sessions only come into existence through a login flow, so the
+    /// identity is required up front.
+    fn new(user: SessionUser, locale: Locale) -> Self {
         let raw_token = generate_session_token();
         let now = Utc::now();
         Self {
@@ -146,34 +121,76 @@ impl Session {
             created_at: now,
             last_activity: now,
             user_agent_hash: None,
-            stream_id: None,
-            paper_correction_stream_id: None,
-            scope: Scope::default(),
-            current_election: None,
+            user,
             locale,
-            saml_name_id: String::new(),
         }
     }
 
-    /// Assigns the stream for this session.
-    pub fn set_stream_id(&mut self, stream_id: StreamId) {
-        self.stream_id = Some(stream_id);
+    /// Creates a session for a political group that logged in.
+    pub fn for_political_group(
+        stream_id: StreamId,
+        saml_name_id: String,
+        election: Option<ElectionConfig>,
+        locale: Locale,
+    ) -> Self {
+        Self::new(
+            SessionUser::PoliticalGroup {
+                stream_id,
+                saml_name_id,
+                election,
+            },
+            locale,
+        )
     }
 
-    /// Assigns the authorization scope for this session.
-    pub fn set_scope(&mut self, scope: Scope) {
-        self.scope = scope;
+    /// Creates a session for a committee member that logged in.
+    pub fn for_committee(user: CsbUser, election: ElectionConfig, locale: Locale) -> Self {
+        Self::new(
+            SessionUser::CentralElectoralCommittee {
+                user,
+                election,
+                paper_correction_stream_id: None,
+            },
+            locale,
+        )
     }
 
-    /// Assigns the current election for this session.
-    pub fn set_current_election(&mut self, election: ElectionConfig) {
-        self.current_election = Some(election);
+    /// Session-side view of the stream classifier, for logging and checks.
+    pub fn scope(&self) -> Scope {
+        self.user.scope()
     }
 
-    /// The current election, or an internal error when the election-selection
-    /// middleware has not set one (CSB routes may rely on it being present).
+    /// The current election, or an internal error when none has been picked
+    /// yet (CSB routes may rely on it being present).
     pub fn require_current_election(&self) -> Result<ElectionConfig, AppError> {
-        self.current_election.ok_or(AppError::InternalServerError)
+        self.user.election().ok_or(AppError::InternalServerError)
+    }
+
+    /// The committee identity of this session, or `Unauthorised` when the
+    /// session was not established through a CSB login.
+    pub fn require_csb_user(&self) -> Result<CsbUser, AppError> {
+        match &self.user {
+            SessionUser::CentralElectoralCommittee { user, .. } => Ok(user.clone()),
+            SessionUser::PoliticalGroup { .. } => Err(AppError::Unauthorised),
+        }
+    }
+
+    /// Enters (`Some`) or leaves (`None`) paper-corrections mode, or
+    /// `Unauthorised` for a session that is not a committee session.
+    pub fn set_paper_correction_stream_id(
+        &mut self,
+        stream_id: Option<StreamId>,
+    ) -> Result<(), AppError> {
+        match &mut self.user {
+            SessionUser::CentralElectoralCommittee {
+                paper_correction_stream_id,
+                ..
+            } => {
+                *paper_correction_stream_id = stream_id;
+                Ok(())
+            }
+            SessionUser::PoliticalGroup { .. } => Err(AppError::Unauthorised),
+        }
     }
 
     /// Pins the session to the hash of the client's `User-Agent`.
@@ -189,14 +206,6 @@ impl Session {
     /// Raw token if still in memory (only between creation and cookie-minting).
     pub(crate) fn reveal_token(&self) -> Option<&SessionToken> {
         self.raw_token.as_ref()
-    }
-
-    /// Test helper: raw token of a fresh session (panics on a reloaded one).
-    #[cfg(test)]
-    pub fn token_string(&self) -> String {
-        self.reveal_token()
-            .expect("fresh session retains its raw token")
-            .to_exposed_string()
     }
 
     /// True once past the idle timeout or the absolute lifetime cap.
@@ -223,9 +232,67 @@ impl Session {
     }
 }
 
-impl Default for Session {
-    fn default() -> Self {
-        Self::new()
+#[cfg(test)]
+impl Session {
+    /// Test session: a political group with a fresh random stream and no
+    /// election picked yet.
+    pub fn new_test() -> Self {
+        Self::new_test_with_locale(Locale::default())
+    }
+
+    pub fn new_test_with_locale(locale: Locale) -> Self {
+        Self::for_political_group(StreamId::new(), String::new(), None, locale)
+    }
+
+    /// Test session: a political group bound to the given stream.
+    pub fn new_test_for_stream(stream_id: StreamId) -> Self {
+        Self::for_political_group(stream_id, String::new(), None, Locale::default())
+    }
+
+    /// Test session: a committee member on the EK27 election.
+    pub fn new_test_committee() -> Self {
+        Self::for_committee(CsbUser::new_test(), ElectionConfig::EK27, Locale::default())
+    }
+
+    /// Test helper: set the election on either identity variant.
+    pub fn set_test_election(&mut self, election: ElectionConfig) {
+        match &mut self.user {
+            SessionUser::PoliticalGroup {
+                election: current, ..
+            } => *current = Some(election),
+            SessionUser::CentralElectoralCommittee {
+                election: current, ..
+            } => *current = election,
+        }
+    }
+
+    /// Test helper: the political group's stream, panicking for committee
+    /// sessions (tests that need it construct political-group sessions).
+    pub fn test_stream_id(&self) -> StreamId {
+        match &self.user {
+            SessionUser::PoliticalGroup { stream_id, .. } => *stream_id,
+            SessionUser::CentralElectoralCommittee { .. } => {
+                panic!("committee sessions have no stream of their own")
+            }
+        }
+    }
+
+    /// Test helper: the paper-corrections stream of a committee session.
+    pub fn test_paper_correction_stream_id(&self) -> Option<StreamId> {
+        match &self.user {
+            SessionUser::CentralElectoralCommittee {
+                paper_correction_stream_id,
+                ..
+            } => *paper_correction_stream_id,
+            SessionUser::PoliticalGroup { .. } => None,
+        }
+    }
+
+    /// Test helper: raw token of a fresh session (panics on a reloaded one).
+    pub fn token_string(&self) -> String {
+        self.reveal_token()
+            .expect("fresh session retains its raw token")
+            .to_exposed_string()
     }
 }
 
@@ -319,5 +386,38 @@ mod tests {
         session.created_at = Utc::now() - session_absolute_timeout() - Duration::seconds(1);
 
         assert!(session.is_expired());
+    }
+
+    /// Only committee sessions can enter paper-corrections mode.
+    #[test]
+    fn paper_corrections_mode_is_committee_only() {
+        let mut committee = Session::new_test_committee();
+        let stream_id = StreamId::new();
+        committee
+            .set_paper_correction_stream_id(Some(stream_id))
+            .expect("committee session");
+        assert!(matches!(
+            committee.user,
+            SessionUser::CentralElectoralCommittee {
+                paper_correction_stream_id: Some(id),
+                ..
+            } if id == stream_id
+        ));
+
+        let mut political_group = Session::new_test();
+        assert!(matches!(
+            political_group.set_paper_correction_stream_id(Some(stream_id)),
+            Err(AppError::Unauthorised)
+        ));
+    }
+
+    /// A committee identity is only handed out for committee sessions.
+    #[test]
+    fn require_csb_user_rejects_political_group_sessions() {
+        assert!(Session::new_test_committee().require_csb_user().is_ok());
+        assert!(matches!(
+            Session::new_test().require_csb_user(),
+            Err(AppError::Unauthorised)
+        ));
     }
 }

@@ -6,7 +6,7 @@ use axum::extract::FromRef;
 use secrecy::ExposeSecret;
 
 use crate::{
-    AppError, AppRequestState, Config, CsbMainStore, CsbMainStoreData, CsbStore, CsbStoreData,
+    AppError, AppRequestState, Config, CsbMainStore, CsbMainStoreData, CsbStoreData, CsbStream,
     DbHealth, ElectionConfig, IdDeriver, PendingRequestStore, PgStoreData, SessionStore, StreamId,
     crypto::MasterKey,
     projection::CSB_MAIN_STREAM_ID,
@@ -52,6 +52,10 @@ impl AppRequestState for AppState {
         &self.id_deriver
     }
 
+    fn pending_requests(&self) -> &PendingRequestStore {
+        &self.pending_requests
+    }
+
     fn csb_store_registry(&self) -> &StoreRegistry<CsbStoreData> {
         &self.csb_store_registry
     }
@@ -68,7 +72,7 @@ impl AppRequestState for AppState {
         &self,
         stream_id: StreamId,
         election: ElectionConfig,
-    ) -> Result<CsbStore, AppError> {
+    ) -> Result<CsbStream, AppError> {
         AppState::csb_store_for_stream(self, stream_id, election).await
     }
 
@@ -171,7 +175,7 @@ impl AppState {
         &self,
         stream_id: StreamId,
         election: ElectionConfig,
-    ) -> Result<CsbStore, AppError> {
+    ) -> Result<CsbStream, AppError> {
         self.csb_store_registry
             .get_or_create(stream_id, election)
             .await

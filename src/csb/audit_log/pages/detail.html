@@ -16,6 +16,10 @@
       <dd>
         {{ detail.stream_label }}
       </dd>
+      <dt>{{ "audit_log.fields.user"|trans }}</dt>
+      <dd>
+        {{ detail.user }}
+      </dd>
       {% if !detail.details.is_empty() %}
         <dt>{{ "audit_log.fields.details"|trans }}</dt>
         <dd>

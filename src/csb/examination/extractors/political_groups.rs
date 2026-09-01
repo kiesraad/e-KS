@@ -1,7 +1,7 @@
 use axum::{extract::FromRequestParts, http::request::Parts};
 
 use crate::{
-    AppError, AppRequestState, CsbStore, StreamId,
+    AppError, AppRequestState, CsbStream, StreamId,
     structs::{common::FullName, political_groups::PoliticalGroup},
 };
 
@@ -16,7 +16,7 @@ pub struct CsbPoliticalGroup {
 }
 
 impl CsbPoliticalGroup {
-    pub fn new_from_csb_store(store: &CsbStore) -> Self {
+    pub fn new_from_csb_store(store: &CsbStream) -> Self {
         Self {
             political_group: store.get_political_group(crate::projection::WithCorrections::All),
             stream_id: store.stream_id,
@@ -59,7 +59,8 @@ mod tests {
     use axum::{body::Body, http::Request};
 
     use crate::{
-        AppState, CsbEvent, ElectionConfig, PgStoreData, structs::list_designation::ListDesignation,
+        AppState, CsbAction, CsbUser, ElectionConfig, PgStoreData,
+        structs::list_designation::ListDesignation,
     };
 
     /// Persist a CSB stream carrying a single import event in the (in-memory)
@@ -71,11 +72,14 @@ mod tests {
             .await
             .unwrap();
         store
-            .update(CsbEvent::Import {
-                hash: [0u8; 32],
-                source_stream_id: StreamId::new(),
-                snapshot: Box::new(PgStoreData::default()),
-            })
+            .update(
+                CsbAction::Import {
+                    hash: [0u8; 32],
+                    source_stream_id: StreamId::new(),
+                    snapshot: Box::new(PgStoreData::default()),
+                }
+                .by(CsbUser::new_test()),
+            )
             .await
             .unwrap();
         stream_id

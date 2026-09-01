@@ -1,5 +1,5 @@
 use crate::{
-    AppError, CsbStore,
+    AppError, CsbStream,
     structs::{candidate_lists::CandidateListId, persons::PersonId},
 };
 
@@ -9,7 +9,7 @@ pub struct RestorationStatus {
 }
 
 impl RestorationStatus {
-    pub fn for_political_group(store: &CsbStore) -> Self {
+    pub fn for_political_group(store: &CsbStream) -> Self {
         RestorationStatus {
             has_omissions: !store.get_political_group_omissions().is_empty(),
             has_corrections: store.get_political_group_csb_corrections_count() > 0,
@@ -17,7 +17,7 @@ impl RestorationStatus {
     }
 
     pub fn for_candidate_list(
-        store: &CsbStore,
+        store: &CsbStream,
         list_id: CandidateListId,
     ) -> Result<Self, AppError> {
         Ok(RestorationStatus {
@@ -26,7 +26,7 @@ impl RestorationStatus {
         })
     }
 
-    pub fn for_candidate(store: &CsbStore, person_id: PersonId, list_id: CandidateListId) -> Self {
+    pub fn for_candidate(store: &CsbStream, person_id: PersonId, list_id: CandidateListId) -> Self {
         RestorationStatus {
             has_omissions: store.has_candidate_omissions(person_id, list_id),
             has_corrections: store.has_candidate_csb_corrections(person_id),
@@ -51,7 +51,7 @@ mod tests {
     use std::str::FromStr;
 
     use crate::{
-        CsbEvent,
+        CsbAction, CsbStore,
         structs::{
             common::{Appellation, Initials},
             csb::{Correction, OmissionCategory, PersonCorrection, sample_omission},
@@ -76,12 +76,12 @@ mod tests {
         let store = CsbStore::new_for_test();
 
         store
-            .update(CsbEvent::CreateOmission(sample_omission(
+            .update(CsbAction::CreateOmission(sample_omission(
                 OmissionCategory::PoliticalGroup,
             )))
             .await?;
         store
-            .update(CsbEvent::UpdateCorrection(Correction::Appellation(
+            .update(CsbAction::UpdateCorrection(Correction::Appellation(
                 Appellation::from_str("Correction Party").unwrap(),
             )))
             .await?;
@@ -106,7 +106,7 @@ mod tests {
 
         // add omission belonging to another list
         store
-            .update(CsbEvent::CreateOmission(sample_omission(
+            .update(CsbAction::CreateOmission(sample_omission(
                 OmissionCategory::CandidateList(vec![list_id2]),
             )))
             .await?;
@@ -128,7 +128,7 @@ mod tests {
         store.add_candidate_list(sample_candidate_list(list_id));
 
         store
-            .update(CsbEvent::CreateOmission(sample_omission(
+            .update(CsbAction::CreateOmission(sample_omission(
                 OmissionCategory::CandidateList(vec![list_id]),
             )))
             .await?;
@@ -157,7 +157,7 @@ mod tests {
         store.add_person(sample_person(person_id));
 
         store
-            .update(CsbEvent::CreateOmission(sample_omission(
+            .update(CsbAction::CreateOmission(sample_omission(
                 OmissionCategory::Candidate {
                     person: person_id,
                     lists: vec![list_id],
@@ -166,7 +166,7 @@ mod tests {
             .await?;
 
         store
-            .update(CsbEvent::UpdateCorrection(Correction::Person(
+            .update(CsbAction::UpdateCorrection(Correction::Person(
                 person_id,
                 PersonCorrection::Initials(Initials::from_str("A.B.").unwrap()),
             )))
@@ -201,7 +201,7 @@ mod tests {
 
         // add omission for only 1 of the lists
         store
-            .update(CsbEvent::CreateOmission(sample_omission(
+            .update(CsbAction::CreateOmission(sample_omission(
                 OmissionCategory::Candidate {
                     person: person_id,
                     lists: vec![list_id1],
@@ -234,7 +234,7 @@ mod tests {
         store.add_candidate_list(list);
 
         store
-            .update(CsbEvent::CreateOmission(sample_omission(
+            .update(CsbAction::CreateOmission(sample_omission(
                 OmissionCategory::Candidate {
                     person: person_id,
                     lists: vec![list_id],
@@ -243,7 +243,7 @@ mod tests {
             .await?;
 
         store
-            .update(CsbEvent::UpdateCorrection(Correction::Person(
+            .update(CsbAction::UpdateCorrection(Correction::Person(
                 person_id,
                 PersonCorrection::Initials(Initials::from_str("A.B.").unwrap()),
             )))

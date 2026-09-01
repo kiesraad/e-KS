@@ -8,7 +8,7 @@ use tokio::{
     signal::unix::{SignalKind, signal as unix_signal},
 };
 
-use eks_development::{run, stop_running_containers, wait_for_postgres};
+use eks_development::{dotenv_variables, run, stop_running_containers, wait_for_postgres};
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -24,6 +24,18 @@ async fn main() -> Result<()> {
         println!("🔗 Using the wild linker for faster Rust builds");
     }
 
+    let dotenv = dotenv_variables()?;
+    if !dotenv.is_empty() {
+        let names: Vec<&str> = dotenv.iter().map(|(name, _)| name.as_str()).collect();
+        println!("📄 From .env/.env.local: {}", names.join(", "));
+    }
+
+    let child_env: Vec<(String, String)> = wild_env
+        .into_iter()
+        .map(|(name, value)| (name.to_string(), value.to_string()))
+        .chain(dotenv)
+        .collect();
+
     let mut children = Vec::new();
     let mut waited_for_postgres = false;
 
@@ -35,7 +47,7 @@ async fn main() -> Result<()> {
 
         println!("🚀 Starting {}", config.name);
         children.push(ManagedChild {
-            child: config.spawn(&wild_env)?,
+            child: config.spawn(&child_env)?,
             config,
         });
     }
@@ -67,10 +79,10 @@ struct DevelopmentConfig {
 }
 
 impl ChildConfig {
-    fn spawn(&self, wild_env: &[(&str, &str)]) -> io::Result<Child> {
+    fn spawn(&self, env: &[(String, String)]) -> io::Result<Child> {
         Command::new(&self.command)
             .args(&self.args)
-            .envs(wild_env.iter().copied())
+            .envs(env.iter().map(|(name, value)| (name, value)))
             .stdin(Stdio::null())
             .spawn()
     }

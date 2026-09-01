@@ -5,7 +5,7 @@ use std::{env, path::PathBuf};
 
 use secrecy::SecretString;
 
-use crate::AppError;
+use crate::{AppError, ElectionConfig, GithubUserId};
 
 #[cfg(feature = "dev-features")]
 mod dev_defaults {
@@ -20,11 +20,14 @@ mod dev_defaults {
     pub(super) const DEFAULT_MASTER_ENCRYPTION_KEY: &str =
         "eks-dev-master-encryption-key-not-for-production";
 
+    pub(super) const DEFAULT_ELECTION: &str = "EK27";
+
     pub(super) fn lookup(name: &'static str) -> Result<String, std::env::VarError> {
         std::collections::HashMap::from([
             ("STORAGE_URL", STORAGE_URL),
             ("ID_DERIVATION_KEY", ID_DERIVATION_KEY),
             ("MASTER_ENCRYPTION_KEY", DEFAULT_MASTER_ENCRYPTION_KEY),
+            ("DEFAULT_ELECTION", DEFAULT_ELECTION),
         ])
         .get(name)
         .map(|value| (*value).to_string())
@@ -53,6 +56,21 @@ pub struct AcmeConfig {
     pub root_ca_path: Option<PathBuf>,
 }
 
+/// GitHub OAuth configuration for the CSB (central electoral committee) login.
+///
+/// Fully separate from the political-group login (SAML, auth-service):
+/// committee members authenticate against GitHub and must appear on the
+/// account-id allowlist.
+#[derive(Debug, Clone)]
+pub struct GithubOauthConfig {
+    /// Client id of the GitHub OAuth app.
+    pub client_id: String,
+    /// Client secret of the GitHub OAuth app.
+    pub client_secret: SecretString,
+    /// Numeric GitHub account ids allowed to log in as committee member.
+    pub allowed_user_ids: Vec<GithubUserId>,
+}
+
 /// Runtime configuration loaded from environment variables.
 #[derive(Debug, Clone)]
 pub struct Config {
@@ -77,6 +95,14 @@ pub struct Config {
     /// container. Set via `DISABLE_AUTH_SERVICE` (`1`, `true`, or `yes`,
     /// case-insensitive); anything else leaves the auth-service enabled.
     pub disable_auth_service: bool,
+    /// GitHub OAuth login for CSB users; the `/csb/login` routes answer 404
+    /// when unset.
+    pub github_oauth: Option<GithubOauthConfig>,
+    /// Election a login lands on when the flow has no election selection of
+    /// its own (CSB logins, dev logins). Set via `DEFAULT_ELECTION` as the
+    /// election code, with the region appended after a colon where the type
+    /// needs one (e.g. `EK27`, `PS27:GR`).
+    pub default_election: ElectionConfig,
 }
 
 fn get_env_with<F>(name: &'static str, lookup: &mut F) -> Result<String, AppError>
@@ -183,6 +209,68 @@ where
     }
 }
 
+/// Parses `DEFAULT_ELECTION`: the election code, with the region appended
+/// after a colon where the election type needs one (e.g. `EK27`, `PS27:GR`).
+fn parse_default_election(raw: &str) -> Result<ElectionConfig, AppError> {
+    let (code, region) = match raw.split_once(':') {
+        Some((code, region)) => (code, Some(region)),
+        None => (raw, None),
+    };
+    ElectionConfig::from_code_and_region(code.trim(), region.map(str::trim)).ok_or_else(|| {
+        AppError::ConfigLoadError(format!(
+            "DEFAULT_ELECTION {raw:?} is not a known election (expected e.g. EK27 or PS27:GR)"
+        ))
+    })
+}
+
+/// Parses the comma-separated `GITHUB_ALLOWED_USER_IDS` allowlist. Strict: a
+/// single malformed entry rejects the whole configuration rather than silently
+/// shrinking the allowlist.
+fn parse_github_allowlist(raw: &str) -> Result<Vec<GithubUserId>, AppError> {
+    let ids = raw
+        .split(',')
+        .map(str::trim)
+        .filter(|entry| !entry.is_empty())
+        .map(str::parse)
+        .collect::<Result<Vec<GithubUserId>, _>>()
+        .map_err(|err| AppError::ConfigLoadError(format!("GITHUB_ALLOWED_USER_IDS: {err}")))?;
+    if ids.is_empty() {
+        return Err(AppError::ConfigLoadError(
+            "GITHUB_ALLOWED_USER_IDS must contain at least one GitHub user id".to_string(),
+        ));
+    }
+    Ok(ids)
+}
+
+/// GitHub OAuth config from `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, and
+/// `GITHUB_ALLOWED_USER_IDS` (comma-separated numeric account ids); all three
+/// or none must be set.
+fn github_oauth_from_env<F>(lookup: &mut F) -> Result<Option<GithubOauthConfig>, AppError>
+where
+    F: FnMut(&'static str) -> Result<String, env::VarError>,
+{
+    let mut non_empty = |name| lookup(name).ok().filter(|s: &String| !s.is_empty());
+    let client_id = non_empty("GITHUB_CLIENT_ID");
+    let client_secret = non_empty("GITHUB_CLIENT_SECRET");
+    let allowed_user_ids = non_empty("GITHUB_ALLOWED_USER_IDS");
+
+    match (client_id, client_secret, allowed_user_ids) {
+        (Some(client_id), Some(client_secret), Some(allowed_user_ids)) => {
+            Ok(Some(GithubOauthConfig {
+                client_id,
+                client_secret: SecretString::from(client_secret),
+                allowed_user_ids: parse_github_allowlist(&allowed_user_ids)?,
+            }))
+        }
+        (None, None, None) => Ok(None),
+        _ => Err(AppError::ConfigLoadError(
+            "GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET and GITHUB_ALLOWED_USER_IDS \
+             must all be set, or all unset"
+                .to_string(),
+        )),
+    }
+}
+
 impl Config {
     pub fn from_env() -> Result<Self, AppError> {
         Self::from_env_with(env::var)
@@ -198,6 +286,9 @@ impl Config {
 
         let tls = tls_from_env(&mut lookup)?;
         let acme = acme_from_env(&mut lookup, tls.is_some())?;
+        let github_oauth = github_oauth_from_env(&mut lookup)?;
+        let default_election =
+            parse_default_election(&get_env_with("DEFAULT_ELECTION", &mut lookup)?)?;
 
         let server_name = lookup("SERVER_NAME").ok().filter(|s| !s.is_empty());
 
@@ -222,6 +313,8 @@ impl Config {
             server_name,
             eks_key,
             disable_auth_service,
+            github_oauth,
+            default_election,
         })
     }
 
@@ -236,6 +329,8 @@ impl Config {
             server_name: None,
             eks_key: None,
             disable_auth_service: false,
+            github_oauth: None,
+            default_election: ElectionConfig::EK27,
         }
     }
 }
@@ -535,5 +630,87 @@ mod tests {
 
         let err = Config::from_env_with(lookup).expect_err("err");
         assert!(matches!(err, AppError::ConfigLoadError(_)));
+    }
+
+    #[test]
+    fn parse_default_election_accepts_code_and_optional_region() {
+        assert_eq!(
+            parse_default_election("EK27").expect("EK27"),
+            ElectionConfig::EK27
+        );
+        assert_eq!(
+            parse_default_election("PS27:GR").expect("PS27:GR"),
+            ElectionConfig::PS27(crate::Province::GR)
+        );
+    }
+
+    #[test]
+    fn parse_default_election_rejects_unknown_values() {
+        for raw in ["", "EK99", "PS27", "PS27:XX"] {
+            assert!(
+                matches!(
+                    parse_default_election(raw),
+                    Err(AppError::ConfigLoadError(_))
+                ),
+                "{raw:?} must be rejected"
+            );
+        }
+    }
+
+    #[test]
+    fn from_env_returns_no_github_oauth_when_unset() {
+        let map = HashMap::new();
+        let lookup = lookup_from(&map);
+
+        let config = Config::from_env_with(lookup).expect("config");
+
+        assert!(config.github_oauth.is_none());
+    }
+
+    #[test]
+    fn from_env_returns_github_oauth_when_all_set() {
+        let map = HashMap::from([
+            ("GITHUB_CLIENT_ID", "Iv1.abc123"),
+            ("GITHUB_CLIENT_SECRET", "s3cret"),
+            ("GITHUB_ALLOWED_USER_IDS", "583231, 42,7"),
+        ]);
+        let lookup = lookup_from(&map);
+
+        let config = Config::from_env_with(lookup).expect("config");
+        let github = config.github_oauth.expect("github oauth present");
+
+        assert_eq!(github.client_id, "Iv1.abc123");
+        assert_eq!(github.client_secret.expose_secret(), "s3cret");
+        assert_eq!(
+            github.allowed_user_ids,
+            ["583231", "42", "7"].map(|id| id.parse().expect("valid id"))
+        );
+    }
+
+    #[test]
+    fn from_env_errors_when_github_oauth_partially_set() {
+        let map = HashMap::from([("GITHUB_CLIENT_ID", "Iv1.abc123")]);
+        let lookup = lookup_from(&map);
+
+        let err = Config::from_env_with(lookup).expect_err("err");
+        assert!(matches!(err, AppError::ConfigLoadError(_)));
+    }
+
+    #[test]
+    fn from_env_errors_when_github_allowlist_is_malformed() {
+        for allowlist in ["", "octocat", "42,0", " , "] {
+            let map = HashMap::from([
+                ("GITHUB_CLIENT_ID", "Iv1.abc123"),
+                ("GITHUB_CLIENT_SECRET", "s3cret"),
+                ("GITHUB_ALLOWED_USER_IDS", allowlist),
+            ]);
+            let lookup = lookup_from(&map);
+
+            let err = Config::from_env_with(lookup).expect_err("err");
+            assert!(
+                matches!(err, AppError::ConfigLoadError(_)),
+                "allowlist {allowlist:?} must be rejected"
+            );
+        }
     }
 }

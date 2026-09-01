@@ -10,51 +10,58 @@ use axum_extra::extract::CookieJar;
 use tracing::{error, info, warn};
 
 use crate::{
-    AppError, AppState, Locale, PgEvent, PgStore, Session, StreamId,
+    AppError, AppState, CsbMainAction, Locale, PgEvent, PgStore, Session, SessionUser, StreamId,
     auth::session_extractor::{
-        SESSION_COOKIE_NAME, build_removal_cookie, build_session_cookie, user_agent_hash,
+        SESSION_COOKIE_NAME, build_removal_cookie, establish_session, user_agent_hash,
     },
     common::{PgIndexPath, SelectElectionPath, auth_failure_response},
 };
 
 impl AppState {
-    /// If the stream already has data for some election, prime its store and
-    /// set it as the session's current election. Returns `true` when an
-    /// election was attached.
-    async fn attach_existing_election(
+    /// If the stream already has data for some election, prime its store,
+    /// record the login, and return the election to attach to the session.
+    async fn existing_election_login(
         &self,
-        session: &mut Session,
         stream_id: StreamId,
-    ) -> Result<bool, AppError> {
+    ) -> Result<Option<crate::ElectionConfig>, AppError> {
         let Some(election) = self
             .existing_elections_for_stream(stream_id)
             .await
             .ok()
             .and_then(|list| list.into_iter().next())
         else {
-            return Ok(false);
+            return Ok(None);
         };
         let store = self.store_for_stream(stream_id, election, false).await?;
         PgStore::own(store).update(PgEvent::Login).await?;
-        session.set_current_election(election);
-        Ok(true)
+        Ok(Some(election))
     }
 
-    /// Record `event` on the session's stream, if it has one. Without an election
-    /// there is no partition to write to, and the log is the only record.
-    async fn record_on_session_stream(&self, session: &Session, event: PgEvent) {
-        let (Some(stream_id), Some(election)) = (session.stream_id, session.current_election)
-        else {
-            return;
-        };
-
-        let recorded = match self.store_for_stream(stream_id, election, false).await {
-            Ok(store) => PgStore::own(store).update(event).await,
-            Err(err) => Err(err),
+    /// Record the logout in the audit log of the session's stream: the shared
+    /// CSB main stream for committee sessions, the PG stream otherwise. A
+    /// political-group session without an election has no partition to write
+    /// to, and the log is the only record.
+    async fn record_logout(&self, session: &Session) {
+        let recorded = match &session.user {
+            SessionUser::CentralElectoralCommittee { user, election, .. } => {
+                match self.csb_main_store(*election).await {
+                    Ok(store) => store.update(CsbMainAction::Logout.by(user.clone())).await,
+                    Err(err) => Err(err),
+                }
+            }
+            SessionUser::PoliticalGroup {
+                stream_id,
+                election: Some(election),
+                ..
+            } => match self.store_for_stream(*stream_id, *election, false).await {
+                Ok(store) => PgStore::own(store).update(PgEvent::Logout).await,
+                Err(err) => Err(err),
+            },
+            SessionUser::PoliticalGroup { election: None, .. } => return,
         };
 
         if let Err(err) = recorded {
-            error!("failed to record session event on stream: {err}");
+            error!("failed to record logout: {err}");
         }
     }
 
@@ -77,38 +84,32 @@ impl AuthState for AppState {
         jar: CookieJar,
         headers: &HeaderMap,
     ) -> Response {
-        // Drop any session the browser already holds, so a pre-login session
-        // can't linger server-side (session-fixation defense).
-        if let Some(old_token) = jar.get(SESSION_COOKIE_NAME).map(|c| c.value().to_string()) {
-            self.sessions.remove(&old_token).await;
-        }
-
         let id_code = subject_id.value;
         let stream_id = self.id_deriver.derive_stream_id(&id_code);
 
-        let mut session = Session::new_with_locale(Locale::from_headers(headers));
-        session.set_stream_id(stream_id);
-        session.set_user_agent_hash(user_agent_hash(headers));
-        session.saml_name_id = name_id;
-
-        let redirect_to = match self.attach_existing_election(&mut session, stream_id).await {
-            Ok(true) => PgIndexPath.to_string(),
-            Ok(false) => SelectElectionPath.to_string(),
+        let (election, redirect_to) = match self.existing_election_login(stream_id).await {
+            Ok(Some(election)) => (Some(election), PgIndexPath.to_string()),
+            Ok(None) => (None, SelectElectionPath.to_string()),
             Err(err) => return err.into_response(),
         };
 
-        self.sessions.cleanup_expired().await;
-        self.sessions.insert(session.clone()).await;
+        let mut session = Session::for_political_group(
+            stream_id,
+            name_id,
+            election,
+            Locale::from_headers(headers),
+        );
+        session.set_user_agent_hash(user_agent_hash(headers));
 
         info!(
             event = "auth.login",
             stream_id = %stream_id,
-            scope = session.scope.as_str(),
+            scope = session.scope().as_str(),
             "user authenticated"
         );
 
         (
-            jar.add(build_session_cookie(&session)),
+            establish_session(&self.sessions, jar, session).await,
             Redirect::to(&redirect_to),
         )
             .into_response()
@@ -120,15 +121,19 @@ impl AuthState for AppState {
         let name_id = match jar.get(SESSION_COOKIE_NAME).map(|c| c.value().to_string()) {
             Some(token) => match self.sessions.remove(&token).await {
                 Some(session) => {
-                    self.record_on_session_stream(&session, PgEvent::Logout)
-                        .await;
+                    self.record_logout(&session).await;
                     info!(
                         event = "auth.logout",
-                        stream_id = ?session.stream_id,
-                        scope = session.scope.as_str(),
+                        user = ?session.user,
                         "user signed out"
                     );
-                    Some(session.saml_name_id)
+                    // Only political-group sessions took part in SAML; a
+                    // committee logout hands back no NameID (empty keeps the
+                    // `Some` == session-was-active contract).
+                    Some(match session.user {
+                        SessionUser::PoliticalGroup { saml_name_id, .. } => saml_name_id,
+                        SessionUser::CentralElectoralCommittee { .. } => String::new(),
+                    })
                 }
                 None => None,
             },

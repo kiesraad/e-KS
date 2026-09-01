@@ -60,7 +60,7 @@ pub const EVENT_TYPES_BY_CATEGORY: &[EventTypeCategory] = &[
     },
     EventTypeCategory {
         key: "system",
-        event_types: &["developer_login"],
+        event_types: &["login"],
     },
 ];
 
@@ -107,7 +107,7 @@ struct CsbAuditLogTemplate {
     return_url: String,
 }
 
-fn filter_events<'a, E: Event + 'a>(
+fn filter_events<'a, E: Event + crate::HasCsbUser + 'a>(
     iter: impl DoubleEndedIterator<Item = &'a StoreEvent<E>> + 'a,
     stream_id: StreamId,
     label: String,
@@ -126,7 +126,7 @@ fn filter_events<'a, E: Event + 'a>(
 /// Collects the filtered audit log entries of the selected stream: the import
 /// stream the `stream` filter points at, or the committee main stream.
 fn collect_entries(
-    import_stores: &[crate::projection::CsbStore],
+    import_stores: &[crate::projection::CsbStream],
     main_store: &CsbMainStore,
     filter: &CsbAuditLogFilter,
     locale: Locale,
@@ -233,10 +233,7 @@ mod tests {
     use std::str::FromStr;
 
     use super::*;
-    use crate::{
-        projection::{CSB_MAIN_STREAM_ID, WithCorrections},
-        structs::common::Appellation,
-    };
+    use crate::{projection::WithCorrections, structs::common::Appellation};
     use axum::{
         extract::{Query, State},
         http::StatusCode,
@@ -244,8 +241,8 @@ mod tests {
     };
 
     use crate::{
-        AppError, AppState, CsbContext, CsbEvent, CsbMainEvent, CsbMainStore, ElectionConfig,
-        StreamId,
+        AppError, AppState, CsbAction, CsbContext, CsbMainAction, CsbMainStore, CsbUser,
+        ElectionConfig, StreamId,
         csb::audit_log::pages::CsbAuditLogPath,
         pagination::Pagination,
         structs::csb::{Omission, OmissionCategory},
@@ -295,9 +292,7 @@ mod tests {
     async fn renders_main_stream_events() -> Result<(), AppError> {
         let main_store = CsbMainStore::new_for_test();
         main_store
-            .update(CsbMainEvent::DeveloperLogin {
-                stream_id: CSB_MAIN_STREAM_ID,
-            })
+            .update(CsbMainAction::Login.by(CsbUser::Developer))
             .await?;
 
         let response = call(main_store, AppState::new_for_tests().await, no_filter()).await?;
@@ -305,7 +300,7 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
         assert!(body.contains("<table"));
-        assert!(body.contains("<td>Developer login</td>"));
+        assert!(body.contains("<td>Signed in</td>"));
         assert!(body.contains("<td>Main CSB stream</td>"));
 
         Ok(())
@@ -318,7 +313,9 @@ mod tests {
         let csb_store = state
             .csb_store_for_stream(import_stream_id, ElectionConfig::EK27)
             .await?;
-        csb_store.update(CsbEvent::SetFinished(true)).await?;
+        csb_store
+            .update(CsbAction::SetFinished(true).by(CsbUser::new_test()))
+            .await?;
 
         let response = call(
             CsbMainStore::new_for_test(),
@@ -346,7 +343,9 @@ mod tests {
         let mut pg = csb_store.get_political_group(WithCorrections::All);
         pg.appellation = Appellation::from_str("Test Partij").ok();
         csb_store.set_political_group(pg);
-        csb_store.update(CsbEvent::Delete).await?;
+        csb_store
+            .update(CsbAction::Delete.by(CsbUser::new_test()))
+            .await?;
 
         let response = call(
             CsbMainStore::new_for_test(),
@@ -376,14 +375,19 @@ mod tests {
         let csb_store = state
             .csb_store_for_stream(import_stream_id, ElectionConfig::EK27)
             .await?;
-        csb_store.update(CsbEvent::SetFinished(true)).await?;
         csb_store
-            .update(CsbEvent::CreateOmission(Omission::new(
-                OmissionCategory::PoliticalGroup,
-                "test".parse().unwrap(),
-                "test".parse().unwrap(),
-                Some("test".parse().unwrap()),
-            )))
+            .update(CsbAction::SetFinished(true).by(CsbUser::new_test()))
+            .await?;
+        csb_store
+            .update(
+                CsbAction::CreateOmission(Omission::new(
+                    OmissionCategory::PoliticalGroup,
+                    "test".parse().unwrap(),
+                    "test".parse().unwrap(),
+                    Some("test".parse().unwrap()),
+                ))
+                .by(CsbUser::new_test()),
+            )
             .await?;
 
         let response = call(
@@ -416,9 +420,7 @@ mod tests {
         let main_store = CsbMainStore::new_for_test();
         for _ in 0..PER_PAGE + 5 {
             main_store
-                .update(CsbMainEvent::DeveloperLogin {
-                    stream_id: CSB_MAIN_STREAM_ID,
-                })
+                .update(CsbMainAction::Login.by(CsbUser::Developer))
                 .await?;
         }
 
@@ -426,7 +428,7 @@ mod tests {
 
         let body = response_body_string(response).await;
         assert!(body.contains("Pagination"));
-        let row_count = body.matches("<td>Developer login</td>").count();
+        let row_count = body.matches("<td>Signed in</td>").count();
         assert_eq!(row_count, PER_PAGE);
 
         Ok(())
@@ -436,21 +438,21 @@ mod tests {
     async fn filters_by_main_stream() -> Result<(), AppError> {
         let main_store = CsbMainStore::new_for_test();
         main_store
-            .update(CsbMainEvent::DeveloperLogin {
-                stream_id: CSB_MAIN_STREAM_ID,
-            })
+            .update(CsbMainAction::Login.by(CsbUser::Developer))
             .await?;
 
         let state = AppState::new_for_tests().await;
         let csb_store = state
             .csb_store_for_stream(StreamId::new(), ElectionConfig::EK27)
             .await?;
-        csb_store.update(CsbEvent::SetFinished(true)).await?;
+        csb_store
+            .update(CsbAction::SetFinished(true).by(CsbUser::new_test()))
+            .await?;
 
         let response = call(main_store, state, no_filter()).await?;
 
         let body = response_body_string(response).await;
-        assert!(body.contains("<td>Developer login</td>"));
+        assert!(body.contains("<td>Signed in</td>"));
         assert!(!body.contains("<td>Set finished state</td>"));
 
         Ok(())
@@ -460,9 +462,7 @@ mod tests {
     async fn filters_by_import_stream() -> Result<(), AppError> {
         let main_store = CsbMainStore::new_for_test();
         main_store
-            .update(CsbMainEvent::DeveloperLogin {
-                stream_id: CSB_MAIN_STREAM_ID,
-            })
+            .update(CsbMainAction::Login.by(CsbUser::Developer))
             .await?;
 
         let state = AppState::new_for_tests().await;
@@ -470,7 +470,9 @@ mod tests {
         let csb_store = state
             .csb_store_for_stream(import_stream_id, ElectionConfig::EK27)
             .await?;
-        csb_store.update(CsbEvent::SetFinished(true)).await?;
+        csb_store
+            .update(CsbAction::SetFinished(true).by(CsbUser::new_test()))
+            .await?;
 
         let response = call(
             main_store,
@@ -483,7 +485,7 @@ mod tests {
         .await?;
 
         let body = response_body_string(response).await;
-        assert!(!body.contains("<td>Developer login</td>"));
+        assert!(!body.contains("<td>Signed in</td>"));
         assert!(body.contains("<td>Set finished state</td>"));
 
         Ok(())
@@ -493,9 +495,7 @@ mod tests {
     async fn filters_by_event_type() -> Result<(), AppError> {
         let main_store = CsbMainStore::new_for_test();
         main_store
-            .update(CsbMainEvent::DeveloperLogin {
-                stream_id: CSB_MAIN_STREAM_ID,
-            })
+            .update(CsbMainAction::Login.by(CsbUser::Developer))
             .await?;
 
         let state = AppState::new_for_tests().await;
@@ -503,7 +503,9 @@ mod tests {
         let csb_store = state
             .csb_store_for_stream(import_stream_id, ElectionConfig::EK27)
             .await?;
-        csb_store.update(CsbEvent::SetFinished(true)).await?;
+        csb_store
+            .update(CsbAction::SetFinished(true).by(CsbUser::new_test()))
+            .await?;
 
         let response = call(
             main_store,
@@ -518,7 +520,7 @@ mod tests {
 
         let body = response_body_string(response).await;
         assert!(body.contains("<td>Set finished state</td>"));
-        assert!(!body.contains("<td>Developer login</td>"));
+        assert!(!body.contains("<td>Signed in</td>"));
 
         Ok(())
     }
@@ -527,16 +529,16 @@ mod tests {
     async fn searches_by_description() -> Result<(), AppError> {
         let main_store = CsbMainStore::new_for_test();
         main_store
-            .update(CsbMainEvent::DeveloperLogin {
-                stream_id: CSB_MAIN_STREAM_ID,
-            })
+            .update(CsbMainAction::Login.by(CsbUser::Developer))
             .await?;
 
         let state = AppState::new_for_tests().await;
         let csb_store = state
             .csb_store_for_stream(StreamId::new(), ElectionConfig::EK27)
             .await?;
-        csb_store.update(CsbEvent::SetFinished(true)).await?;
+        csb_store
+            .update(CsbAction::SetFinished(true).by(CsbUser::new_test()))
+            .await?;
 
         let response = call(
             main_store,
@@ -549,7 +551,7 @@ mod tests {
         .await?;
 
         let body = response_body_string(response).await;
-        assert!(body.contains("<td>Developer login</td>"));
+        assert!(body.contains("<td>Signed in</td>"));
         assert!(!body.contains("<td>Set finished state</td>"));
 
         Ok(())
@@ -559,9 +561,7 @@ mod tests {
     async fn reset_button_only_shown_when_filter_active() -> Result<(), AppError> {
         let main_store = CsbMainStore::new_for_test();
         main_store
-            .update(CsbMainEvent::DeveloperLogin {
-                stream_id: CSB_MAIN_STREAM_ID,
-            })
+            .update(CsbMainAction::Login.by(CsbUser::Developer))
             .await?;
 
         let state = AppState::new_for_tests().await;
@@ -589,16 +589,14 @@ mod tests {
     async fn detail_links_preserve_filter_as_redirect() -> Result<(), AppError> {
         let main_store = CsbMainStore::new_for_test();
         main_store
-            .update(CsbMainEvent::DeveloperLogin {
-                stream_id: CSB_MAIN_STREAM_ID,
-            })
+            .update(CsbMainAction::Login.by(CsbUser::Developer))
             .await?;
 
         let response = call(
             main_store,
             AppState::new_for_tests().await,
             Query(CsbAuditLogFilter {
-                event_type: Some("developer_login".to_string()),
+                event_type: Some("login".to_string()),
                 ..Default::default()
             }),
         )
@@ -608,7 +606,7 @@ mod tests {
         // The detail link carries a redirect_to pointing back at the current,
         // filtered list view so closing the overlay restores it.
         assert!(body.contains("redirect_to="));
-        let encoded = urlencoding::encode("/csb/audit-log?per_page=20&event_type=developer_login");
+        let encoded = urlencoding::encode("/csb/audit-log?per_page=20&event_type=login");
         assert!(
             body.contains(encoded.as_ref()),
             "expected detail link to encode the filtered return URL"

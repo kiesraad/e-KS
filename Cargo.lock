@@ -964,9 +964,10 @@ dependencies = [
 
 [[package]]
 name = "eks-development"
-version = "0.5.7"
+version = "0.5.8"
 dependencies = [
  "anyhow",
+ "dotenvy",
  "eks",
  "eks-locales",
  "saphyr",
@@ -2509,6 +2510,7 @@ dependencies = [
  "rustls-platform-verifier",
  "serde",
  "serde_json",
+ "serde_urlencoded",
  "sync_wrapper",
  "tokio",
  "tokio-rustls",

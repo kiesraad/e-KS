@@ -54,7 +54,7 @@ mod tests {
     };
 
     use crate::{
-        AppState, CsbEvent, ElectionConfig, PgStoreData, StreamId,
+        AppState, CsbAction, ElectionConfig, PgStoreData, StreamId,
         structs::{
             candidate_lists::CandidateList,
             csb::{OmissionCategory, sample_omission},
@@ -100,7 +100,8 @@ mod tests {
         let state = AppState::new_for_tests().await;
         let store = state
             .csb_store_for_stream(StreamId::new(), ElectionConfig::EK27)
-            .await?;
+            .await?
+            .acting_as_test_user();
 
         let person = sample_person(PersonId::new());
         let mut snapshot = PgStoreData {
@@ -119,7 +120,7 @@ mod tests {
         };
         snapshot.candidate_lists.insert(list.id, list);
         store
-            .update(CsbEvent::Import {
+            .update(CsbAction::Import {
                 hash: [0u8; 32],
                 source_stream_id: StreamId::new(),
                 snapshot: Box::new(snapshot),

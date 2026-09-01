@@ -1,7 +1,7 @@
 use rand::{RngExt, rng};
 
 use crate::{
-    AnyLocale, CsbStore,
+    AnyLocale, CsbStream,
     csb::examination::structs::RestorationStatus,
     projection::WithCorrections,
     structs::{candidate_lists::CandidateList, persons::Person},
@@ -27,7 +27,7 @@ impl CsbCandidate {
     /// position. Candidates removed by the corrections keep their imported
     /// position in the ordering.
     pub fn rows_for_list(
-        store: &CsbStore,
+        store: &CsbStream,
         list: &CandidateList,
         locale: AnyLocale,
     ) -> Vec<CsbCandidate> {
@@ -41,7 +41,7 @@ impl CsbCandidate {
 /// Rows for the imported candidates, keyed by their corrected position (or
 /// their imported position when the corrections removed them).
 fn imported_rows(
-    store: &CsbStore,
+    store: &CsbStream,
     list: &CandidateList,
     locale: AnyLocale,
 ) -> Vec<(usize, CsbCandidate)> {
@@ -89,7 +89,7 @@ fn imported_rows(
 /// Rows for candidates the paper corrections added to the list, keyed by
 /// their corrected position.
 fn corrected_only_rows(
-    store: &CsbStore,
+    store: &CsbStream,
     list: &CandidateList,
     locale: AnyLocale,
 ) -> Vec<(usize, CsbCandidate)> {
@@ -150,6 +150,7 @@ fn residence_string(person: &Person) -> String {
 mod tests {
     use super::*;
     use crate::{
+        CsbStore,
         structs::{candidate_lists::CandidateListId, persons::PersonId},
         test_utils::{sample_candidate_list, sample_person_with_last_name},
     };

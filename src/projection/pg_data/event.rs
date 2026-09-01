@@ -104,7 +104,7 @@ pub enum PgEvent {
 
     /// Marks the CSB import that seeds a paper-corrections projection. Not
     /// persisted on an app stream: it is synthesised from
-    /// [`CsbEvent::Import`](crate::CsbEvent::Import) when building the
+    /// [`CsbAction::Import`](crate::CsbAction::Import) when building the
     /// paper-corrected projection, so the import shows up as event #1 in that
     /// audit log. `hash` is the imported package's source hash.
     Import {

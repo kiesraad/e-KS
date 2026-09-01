@@ -74,9 +74,7 @@ pub fn create(state: AppState) -> Router<AppState> {
     #[cfg(not(feature = "dev-features"))]
     let router = app_router;
 
-    let router = router
-        .merge(auth_service::router())
-        .merge(common::public_router());
+    let router = router.merge(public_router());
 
     let router = router
         .layer(middleware::from_fn_with_state(
@@ -119,6 +117,15 @@ pub fn create(state: AppState) -> Router<AppState> {
 /// registration in `auth_service::router`, so route and bypass cannot drift.
 fn csrf_layer() -> CsrfLayer {
     CsrfLayer::new().with_insecure_bypass(|_, uri| uri.path() == SamlLogoutPath::PATH)
+}
+
+/// Routes mounted outside the session middleware (no session required): the
+/// SAML auth-service endpoints, the PG login and logged-out pages, and the
+/// CSB GitHub login.
+fn public_router() -> Router<AppState> {
+    auth_service::router()
+        .merge(common::public_router())
+        .merge(csb::login::public_router())
 }
 
 /// The application's feature routes (everything that sits behind the session
@@ -164,6 +171,10 @@ const PERMISSIONS_POLICY: &str = concat!(
 /// Fetch directives `default-src 'none'` already covers are spelled out anyway,
 /// so a change to a browser's fallback chain cannot widen the policy. Trusted
 /// Types is enforced because the bundle assigns to no injection sink.
+///
+/// `form-action 'self'` holds for every page with no exception: the one flow
+/// that leaves the origin, the CSB GitHub login, starts from a link rather
+/// than a form, so it is an ordinary navigation this directive never governs.
 const CONTENT_SECURITY_POLICY: &str = concat!(
     "default-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'; ",
     "script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src 'self'; ",
@@ -281,8 +292,7 @@ mod tests {
 
         let mut request = Request::builder().uri("/").body(Body::empty()).unwrap();
         let mut session = crate::Session::new_test();
-        session.set_stream_id(crate::StreamId::new());
-        session.set_current_election(crate::ElectionConfig::EK27);
+        session.set_test_election(crate::ElectionConfig::EK27);
         let token = session.token_string();
         state.sessions.insert(session).await;
         let store = crate::PgStore::new_for_test();
@@ -675,8 +685,7 @@ mod tests {
             .body(Body::empty())
             .unwrap();
         let mut session = crate::Session::new_test();
-        session.set_stream_id(crate::StreamId::new());
-        session.set_current_election(crate::ElectionConfig::EK27);
+        session.set_test_election(crate::ElectionConfig::EK27);
         let token = session.token_string();
         state.sessions.insert(session).await;
         let store = crate::PgStore::new_for_test();

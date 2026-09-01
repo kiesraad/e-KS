@@ -8,6 +8,7 @@ pub mod audit_log;
 pub mod examination;
 pub mod import;
 pub mod index;
+pub mod login;
 pub mod monitoring;
 
 mod context;

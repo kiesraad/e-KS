@@ -5,7 +5,7 @@ use axum::{
 };
 
 use crate::{
-    AppError, Context, CsbContext, CsbEvent, CsbStore, HtmlTemplate, Overlay, QueryParamState,
+    AppError, Context, CsbAction, CsbContext, CsbStore, HtmlTemplate, Overlay, QueryParamState,
     csb::examination::{
         CsbExaminationOverviewPath, extractors::CsbPoliticalGroup,
         paths::CsbPoliticalGroupDeletePath,
@@ -44,7 +44,7 @@ pub async fn delete_submit(
     _: CsbPoliticalGroupDeletePath,
     store: CsbStore,
 ) -> Result<Response, AppError> {
-    store.update(CsbEvent::Delete).await?;
+    store.update(CsbAction::Delete).await?;
     Ok(Redirect::to(&CsbExaminationOverviewPath.to_string()).into_response())
 }
 

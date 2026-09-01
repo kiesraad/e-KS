@@ -1,5 +1,5 @@
 use super::PaperCorrected;
-use crate::{CsbStore, projection::WithCorrections, structs::list_submitters::ListSubmitter};
+use crate::{CsbStream, projection::WithCorrections, structs::list_submitters::ListSubmitter};
 
 /// A (substitute) list submitter with its rows diffed against the corrections.
 pub struct PaperCorrectedSubmitter {
@@ -51,7 +51,7 @@ impl PaperCorrectedSubmitter {
 
 /// The list submitter diffed against the corrections, or `None` when the
 /// corrections have none (never present, or deleted by the corrections).
-pub fn paper_corrected_list_submitter(store: &CsbStore) -> Option<PaperCorrectedSubmitter> {
+pub fn paper_corrected_list_submitter(store: &CsbStream) -> Option<PaperCorrectedSubmitter> {
     let imported = store.get_list_submitter(WithCorrections::None);
     let corrected = store.get_list_submitter(WithCorrections::Paper);
 
@@ -68,7 +68,7 @@ pub fn paper_corrected_list_submitter(store: &CsbStore) -> Option<PaperCorrected
 /// The substitute submitters paired with their corrected counterparts by id;
 /// substitutes added by the corrections are appended, substitutes deleted by
 /// the corrections are hidden.
-pub fn paper_corrected_substitute_submitters(store: &CsbStore) -> Vec<PaperCorrectedSubmitter> {
+pub fn paper_corrected_substitute_submitters(store: &CsbStream) -> Vec<PaperCorrectedSubmitter> {
     let imported = store.get_substitute_submitters(WithCorrections::None);
     let corrected = store.get_substitute_submitters(WithCorrections::Paper);
 

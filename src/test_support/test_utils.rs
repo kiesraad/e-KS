@@ -226,7 +226,7 @@ pub fn sample_political_group() -> PoliticalGroup {
 pub async fn paper_corrections_store() -> Result<PgStore, AppError> {
     let csb_store = crate::CsbStore::new_for_test();
     csb_store
-        .update(crate::CsbEvent::Import {
+        .update(crate::CsbAction::Import {
             hash: [1; 32],
             source_stream_id: crate::StreamId::new(),
             snapshot: Box::new(crate::PgStoreData {
@@ -236,7 +236,7 @@ pub async fn paper_corrections_store() -> Result<PgStore, AppError> {
         })
         .await?;
 
-    Ok(PgStore::paper_corrections(csb_store))
+    Ok(csb_store.paper_corrections())
 }
 
 pub fn sample_name_authorisation(id: NameAuthorisationId) -> NameAuthorisation {

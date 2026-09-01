@@ -226,24 +226,34 @@ members import the packages submitted by political groups and examine them
 different: a political group only ever sees its own stream, while a committee
 member works across all imported streams.
 
-#### Scopes
+#### Scopes and session identities
 
-Sessions and streams both carry a `Scope` (`src/core/scope.rs`) of one of the following variants:
+Streams carry a `Scope` (`src/core/scope.rs`) of one of the following variants:
 
-- **`PoliticalGroup`** (the default): a political-group session only reaches
-  the single stream derived from its own identifier.
-- **`CentralElectoralCommittee`**: a committee member's session, and the
-  shared CSB main stream. A committee session can reach every imported stream.
+- **`PoliticalGroup`**: a political group's own stream.
+- **`CentralElectoralCommittee`**: the shared CSB main stream.
 - **`ImportedByCsb`**: a candidate-list package imported by the CSB; one
   stream per import action.
 
 Every persisted stream records its scope, and each store registry only sees
 streams matching its projection's scope, so the separation between the two
-sections is enforced in the storage layer, not just in routing. On top of
-that, all CSB routes sit behind `csb_store_middleware`, which rejects any
-session that is not committee-scoped. (The development login can create
-either kind of session; the TVS login flow currently creates political-group
-sessions only.)
+sections is enforced in the storage layer, not just in routing.
+
+Sessions carry a `SessionUser` (`src/auth/session_user.rs`) instead: one
+variant per role, holding exactly the state that role needs, so an incomplete
+or mixed-role session cannot be represented. A **`PoliticalGroup`** session
+holds its own stream id, its SAML NameID, and the election it picked (if
+any); it only ever reaches that one stream. A **`CentralElectoralCommittee`**
+session holds the acting `CsbUser` (recorded on every CSB event for the audit
+log), its election (fixed at login from `DEFAULT_ELECTION`), and, while in
+paper-corrections mode, the imported stream being corrected. All CSB routes
+sit behind `csb_store_middleware`, which rejects any session that is not a
+committee session. Every login flow establishes a session through one shared
+helper (`establish_session`), and a role can never be changed by mutating an
+existing session: the storage layer refuses cross-role updates, so an
+escalation always means a new session through that same helper. (The
+development login can create either kind of session; the TVS login flow
+currently creates political-group sessions only.)
 
 #### CSB stores
 
@@ -269,7 +279,7 @@ The CSB section has two projections of its own on the shared store machinery
   suffices) and the import locates the matching event
   (`find_event_by_hash_prefix`, backed by the `events_hash_idx` index),
   replays the source stream up to it (`PgStoreData::snapshot_until`), and
-  persists the snapshot as a `CsbEvent::Import` on a **fresh** `ImportedByCsb`
+  persists the snapshot as a `CsbAction::Import` on a **fresh** `ImportedByCsb`
   stream. The political group's own stream is never written to, and importing
   the same source stream twice is rejected (might change with #999).
 - **`examination`**: the examination of the imported lists. An overview
@@ -292,7 +302,7 @@ An **omission** (*verzuim*) is a defect found during examination.
 `OmissionCategory` ties each omission to what it concerns: the political
 group itself, a candidate list (with the affected electoral districts), or a
 candidate (with the affected lists). Recoverable omissions feed the I 4
-notice. A **correction** (*ambtshalve correctie*) (`CsbEvent::UpdateCorrection`) records a fix to
+notice. A **correction** (*ambtshalve correctie*) (`CsbAction::UpdateCorrection`) records a fix to
 the imported political group appellation and person data (initials, last name,
 date of birth, place of residence); corrections on persons are kept in a separate
 map in the projection (`csb_corrected_persons`), so the imported snapshot itself stays untouched.
@@ -302,13 +312,14 @@ map in the projection (`csb_corrected_persons`), so the imported snapshot itself
 The paper documents handed in on nomination day are authoritative; where the
 imported digital data deviates from them, a committee member edits the data
 to match the paper. "Start paper corrections" puts the committee session in
-paper-corrections mode by setting its `paper_correction_stream_id` (and
+paper-corrections mode by setting the `paper_correction_stream_id` on its
+committee identity (and
 rotating the CSRF token, so forms rendered before the switch cannot submit
 against the newly selected stream). While the mode is active, the regular app
 routes serve the familiar political-group interface over the imported
 stream's `paper_corrected_data`, through the same handlers the PG side uses:
 `store_middleware` hands them a `PgStore` in paper-corrections mode, whose
-writes wrap each `PgEvent` in `CsbEvent::PaperCorrectedUpdate` and append it
+writes wrap each `PgEvent` in `CsbAction::PaperCorrectedUpdate` and append it
 to the CSB stream. The source political group's stream is never touched, and
 the finalise/document-generation routes are blocked: the documents were
 already handed in on paper.
@@ -324,8 +335,11 @@ order on an incoming request is:
    key is unset this layer is a no-op. Intended for gating the app behind a
    known upstream.
 2. **Tracing and security headers.** HTTP tracing is opened, and the security
-2. **Tracing and security headers.** HTTP tracing is opened, and the security
-response headers (CSP, `X-Frame-Options`, etc.) are scheduled for development.
+   response headers (CSP, `X-Frame-Options`, etc.) are scheduled. They are
+   written by a layer rather than by handlers, so no handler can weaken them,
+   and the CSP is one policy for the whole app: closed by default
+   (`default-src 'none'`, no inline or eval, Trusted Types enforced) with
+   `form-action 'self'` and no per-route exception.
 3. **`session_middleware`.** Reads the `EKS_SESSION_ID` cookie and looks the
    session up in the `SessionStore`. A missing or invalid session redirects to
    `/login`. Otherwise the session's `last_activity` is refreshed and the
@@ -335,8 +349,8 @@ response headers (CSP, `X-Frame-Options`, etc.) are scheduled for development.
    the matching registry, call `store.load()` so the projection catches up
    with any events this process has not seen, and place the store handle in
    the request extensions.
-   - `store_middleware` takes the `(stream_id, current_election)` from the
-     session and resolves the matching `PgStore`. A session that has not yet
+   - `store_middleware` takes the `(stream_id, election)` from the session's
+     identity and resolves the matching `PgStore`. A session that has not yet
      picked an election is redirected to `/select-election`. A committee
      session in paper-corrections mode instead gets a `PgStore` over the
      imported stream's corrected data (see the CSB section); any other
@@ -487,6 +501,8 @@ Runtime configuration is read from environment variables once at startup into a
 | `ACME_ROOT_CA_PATH` | Optional extra trust root for the ACME directory's own TLS (pebble testing only). |
 | `SERVER_NAME` | Short server identifier shown in the page footer. |
 | `EKS_KEY` | Optional shared secret for the `x-eks-key` request gate. |
+| `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` / `GITHUB_ALLOWED_USER_IDS` | Enable the CSB GitHub OAuth login (`/csb/login`): the GitHub OAuth app's credentials and the comma-separated numeric GitHub account ids allowed to log in; all three or none. The client secret is a secret like the master keys. |
+| `DEFAULT_ELECTION` | Election a login lands on when the flow has no election selection of its own (CSB logins, dev logins): the election code, with the region appended after a colon where the type needs one (e.g. `EK27`, `PS27:GR`). Dev builds default to `EK27`. |
 | `BIND_ADDRESS` | Address the server binds to (also accepted as a CLI argument). |
 
 The binary itself only reads `env::var`, but the deployment can supply these
@@ -498,6 +514,19 @@ never end up in shell history or process listings.
 In `dev-features` builds a missing variable falls back to a built-in development
 default; in a production build a missing required variable is a startup error
 (`AppError::MissingEnvVar`).
+
+For local development, `bin/dev` reads `.env` and then `.env.local` (which
+wins) from the repository root and hands the variables to the processes it
+starts; a variable already set in the surrounding shell is left alone. Both
+files are optional. `.env.local` is gitignored, so it is where the credentials
+that must not be committed belong, in particular the GitHub OAuth ones that
+have no development default:
+
+```sh
+GITHUB_CLIENT_ID=Ov23li...
+GITHUB_CLIENT_SECRET=...
+GITHUB_ALLOWED_USER_IDS=1234567
+```
 
 ### Cargo features
 
@@ -640,7 +669,7 @@ parameterized over a projection type `D`:
   stream, and `update(event)` appends `PgEvent`s there. For a committee
   session in paper-corrections mode the projection is a request-local
   snapshot of the imported stream's `paper_corrected_data`, and every
-  `PgEvent` is wrapped in `CsbEvent::PaperCorrectedUpdate` and appended to
+  `PgEvent` is wrapped in `CsbAction::PaperCorrectedUpdate` and appended to
   the CSB stream instead. Handlers are agnostic to which target they write
   to.
 

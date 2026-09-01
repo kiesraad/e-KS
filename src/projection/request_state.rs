@@ -1,8 +1,8 @@
 //! Contract the request extractors and handlers expect from the router state.
 
 use crate::{
-    AppError, Config, ElectionConfig, IdDeriver, SessionStore, StreamId,
-    projection::{CsbMainStore, CsbMainStoreData, CsbStore, CsbStoreData, PgStoreData},
+    AppError, Config, ElectionConfig, IdDeriver, PendingRequestStore, SessionStore, StreamId,
+    projection::{CsbMainStore, CsbMainStoreData, CsbStoreData, CsbStream, PgStoreData},
     store::{Store, StoreRegistry},
 };
 
@@ -19,6 +19,9 @@ pub trait AppRequestState: Clone + Send + Sync + 'static {
     /// Derives the per-user stream id from an authenticated identity.
     fn id_deriver(&self) -> &IdDeriver;
 
+    /// One-shot request ids with a TTL (SAML `InResponseTo`, OAuth `state`).
+    fn pending_requests(&self) -> &PendingRequestStore;
+
     /// Registry for the per-import CSB stores.
     fn csb_store_registry(&self) -> &StoreRegistry<CsbStoreData>;
 
@@ -33,7 +36,7 @@ pub trait AppRequestState: Clone + Send + Sync + 'static {
         &self,
         stream_id: StreamId,
         election: ElectionConfig,
-    ) -> impl Future<Output = Result<CsbStore, AppError>> + Send;
+    ) -> impl Future<Output = Result<CsbStream, AppError>> + Send;
 
     /// Fetch (or create) the single global CSB main store for an election.
     fn csb_main_store(

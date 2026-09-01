@@ -48,7 +48,7 @@ mod tests {
     use reqwest::StatusCode;
 
     use crate::{
-        CsbEvent, ElectoralDistrict,
+        CsbAction, ElectoralDistrict,
         structs::{
             candidate_lists::{CandidateList, CandidateListId},
             common::{PlaceOfResidence, UtcDateTime},
@@ -210,7 +210,7 @@ mod tests {
             .insert(person_id, sample_person(person_id));
 
         store
-            .update(CsbEvent::UpdateCorrection(Correction::Person(
+            .update(CsbAction::UpdateCorrection(Correction::Person(
                 person_id,
                 PersonCorrection::PlaceOfResidence(PlaceOfResidence::Known(
                     "Amsterdam".to_string(),

@@ -24,16 +24,13 @@ CREATE TABLE IF NOT EXISTS events (
 -- Supports looking up an event (and its stream) by its chain hash.
 CREATE INDEX IF NOT EXISTS events_hash_idx ON events(hash);
 
--- User sessions. `token` holds the token's SHA-256 hash, not the token itself.
+-- User sessions. `token` holds the token's SHA-256 hash, not the token itself;
+-- `identity` holds the serialized `SessionUser` (who the session belongs to).
 CREATE TABLE IF NOT EXISTS sessions (
   token TEXT PRIMARY KEY,
-  stream_id UUID,
-  paper_correction_stream_id UUID,
-  current_election JSONB,
+  identity JSONB NOT NULL,
   locale TEXT NOT NULL,
   last_activity TIMESTAMPTZ NOT NULL,
-  saml_name_id TEXT NOT NULL DEFAULT '',
-  scope TEXT NOT NULL DEFAULT 'political_group',
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   user_agent_hash TEXT,
   csrf_token TEXT NOT NULL
