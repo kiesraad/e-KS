@@ -701,25 +701,56 @@ mod tests {
         assert_eq!(cfg.preselected_ad, PreselectedAd::Select);
     }
 
+    // A CERTS_DIR holding a real bundle, for the tvs-mock override tests.
+    #[cfg(feature = "tvs-mock")]
+    fn bundle_dir(name: &str) -> PathBuf {
+        let dir = std::env::temp_dir().join(format!("eks-test-{name}-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        for base in ["dv-tls", "dv-signing-1", "dv-encryption-1"] {
+            std::fs::write(dir.join(format!("{base}.pem")), b"cert").unwrap();
+            std::fs::write(dir.join(format!("{base}-key.pem")), b"key").unwrap();
+        }
+        dir
+    }
+
     // An explicit CERTS_DIR / PRESELECTED_AD still override the tvs-mock
     // defaults (exercises the env-var branches rather than the embedded ones).
     #[cfg(feature = "tvs-mock")]
     #[test]
     fn tvs_mock_honors_explicit_certs_dir_and_preselected_ad() {
+        let dir = bundle_dir("explicit-certs");
+        let certs_dir = dir.to_string_lossy().into_owned();
+        let cfg = AuthConfig::from_env_with(move |name: &str| match name {
+            "TVS_ENV" => Ok("test".to_string()),
+            "CERTS_DIR" => Ok(certs_dir.clone()),
+            "PRESELECTED_AD" => Ok("DigiD".to_string()),
+            "BASE_URL" => Ok("http://localhost:3000".to_string()),
+            _ => Err(env::VarError::NotPresent),
+        })
+        .unwrap();
+
+        assert_eq!(cfg.certs_dir, dir);
+        assert_eq!(cfg.tls.client_cert, dir.join("dv-tls.pem"));
+        assert_eq!(cfg.preselected_ad, PreselectedAd::DigiD);
+    }
+
+    // A CERTS_DIR left over from an older layout points at a directory with no
+    // bundle in it; a mock build carries its own keys, so it falls back to the
+    // embedded bundle rather than failing to start.
+    #[cfg(feature = "tvs-mock")]
+    #[test]
+    fn tvs_mock_falls_back_when_certs_dir_holds_no_bundle() {
+        let stale = "src/fixtures/tvs";
         let cfg = AuthConfig::from_env_with(lookup_from(&[
             ("TVS_ENV", "test"),
-            ("CERTS_DIR", "/tmp/explicit-certs"),
-            ("PRESELECTED_AD", "DigiD"),
+            ("CERTS_DIR", stale),
             ("BASE_URL", "http://localhost:3000"),
         ]))
         .unwrap();
 
-        assert_eq!(cfg.certs_dir, PathBuf::from("/tmp/explicit-certs"));
-        assert_eq!(
-            cfg.tls.client_cert,
-            PathBuf::from("/tmp/explicit-certs/dv-tls.pem")
-        );
-        assert_eq!(cfg.preselected_ad, PreselectedAd::DigiD);
+        assert_ne!(cfg.certs_dir, PathBuf::from(stale));
+        assert!(cfg.certs_dir.join("dv-signing-1.pem").exists());
+        assert!(cfg.tls.client_cert.exists());
     }
 
     // A real environment must reject a non-https BASE_URL (cookie downgrade).

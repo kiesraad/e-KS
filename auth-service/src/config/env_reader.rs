@@ -48,17 +48,18 @@ where
         Ok(environment)
     }
 
-    /// `CERTS_DIR` holds the DV cert/key bundle. With `tvs-mock` the embedded
-    /// bundle is extracted as a fallback (works on a deployed host); otherwise
-    /// the variable is required.
+    /// `CERTS_DIR` holds the DV cert/key bundle. Required outside `tvs-mock`;
+    /// with the feature the embedded bundle is extracted as a fallback (works
+    /// on a deployed host), both when the variable is unset and when it points
+    /// somewhere that holds no bundle.
     pub(super) fn certs_dir(&mut self) -> Result<PathBuf, AuthError> {
-        match (self.lookup)("CERTS_DIR") {
-            Ok(value) => Ok(PathBuf::from(value)),
-            #[cfg(feature = "tvs-mock")]
-            Err(_) => crate::tvs_mock::certs_dir(),
-            #[cfg(not(feature = "tvs-mock"))]
-            Err(_) => Err(missing("CERTS_DIR")),
-        }
+        let configured = (self.lookup)("CERTS_DIR").ok().map(PathBuf::from);
+
+        #[cfg(feature = "tvs-mock")]
+        return crate::tvs_mock::certs_dir(configured);
+
+        #[cfg(not(feature = "tvs-mock"))]
+        return configured.ok_or_else(|| missing("CERTS_DIR"));
     }
 
     /// `PRESELECTED_AD` chooses which AD to pre-select in the AuthnRequest

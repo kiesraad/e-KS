@@ -239,8 +239,10 @@ back-channel trust anchor, cert/key paths) derives from them:
 
 The `tvs-mock` cargo feature targets the online shared TVS mock: it defaults
 `TVS_ENV`/`BASE_URL` and embeds the committed test DV bundle from
-[`fixtures/`](fixtures/). **Mock builds only; never enable it for a real
-deployment** (it bakes in test private keys).
+[`fixtures/`](fixtures/). The embedded bundle is extracted and used whenever
+`CERTS_DIR` is unset or points somewhere that holds no bundle, so a mock build
+starts on a host with no certificates on disk. **Mock builds only; never enable
+it for a real deployment** (it bakes in test private keys).
 
 ## Cryptography
 

@@ -2,18 +2,26 @@
 //! service. It defaults `TVS_ENV` to `test` (so the RD endpoint resolves to the
 //! TVS mock) and `BASE_URL` to `http://localhost:3000`, and embeds the committed
 //! DV cert/key bundle into the binary, so the auth flow works on a host that has
-//! no `CERTS_DIR` on disk (e.g. the branch test website). It does not run a TVS
+//! no usable `CERTS_DIR` on disk (e.g. the branch test website, whose deployment
+//! may still point `CERTS_DIR` at an old bundle location). It does not run a TVS
 //! back-channel itself.
 //!
 //! This embeds the committed test private keys into the binary: it is strictly
 //! for mock deployments and must never be enabled for a real environment.
-use std::{path::PathBuf, sync::OnceLock};
+use std::{
+    path::{Path, PathBuf},
+    sync::OnceLock,
+};
 
-use crate::error::AuthError;
+use crate::{
+    error::AuthError,
+    keys::{ENCRYPTION_BASES, SIGNING_BASES, key_pair_paths, tls_paths},
+};
 
 /// Default for a required env var when the variable is unset; an explicit
 /// value still overrides this. `CERTS_DIR` is not
-/// here because the bundle is embedded rather than read from a path (see
+/// here because the bundle is embedded rather than read from a path, and
+/// because a `CERTS_DIR` without a bundle also falls back to it (see
 /// [`certs_dir`]).
 pub(crate) fn default_for(name: &str) -> Option<String> {
     match name {
@@ -51,11 +59,47 @@ const FIXTURES: &[(&str, &[u8])] = embedded_fixtures![
     "dv-encryption-2-key.pem",
 ];
 
+/// The DV bundle directory for a mock build: `configured` (an explicit
+/// `CERTS_DIR`) when it actually holds a bundle, otherwise the embedded
+/// fixtures. A `CERTS_DIR` pointing at a directory without the bundle is a
+/// stale deployment setting, not a reason to refuse to start: a mock build
+/// carries the keys it needs, so fall back to them.
+pub(crate) fn certs_dir(configured: Option<PathBuf>) -> Result<PathBuf, AuthError> {
+    if let Some(dir) = configured {
+        if holds_bundle(&dir) {
+            return Ok(dir);
+        }
+        tracing::warn!(
+            certs_dir = %dir.display(),
+            "tvs-mock: CERTS_DIR does not hold a DV cert/key bundle; using the embedded test keys"
+        );
+    }
+    embedded_certs_dir()
+}
+
+/// Whether `dir` holds the mandatory part of a DV bundle: the mTLS client pair
+/// and the first signing/encryption pair (the later pairs are rollover-only, so
+/// [`crate::keys::discover_key_paths`] treats them as optional).
+fn holds_bundle(dir: &Path) -> bool {
+    let tls = tls_paths(dir);
+    let mut required = vec![tls.client_cert, tls.client_key];
+    required.extend(
+        [SIGNING_BASES, ENCRYPTION_BASES]
+            .iter()
+            .filter_map(|bases| bases.first())
+            .flat_map(|base| {
+                let paths = key_pair_paths(dir, base);
+                [paths.cert, paths.key]
+            }),
+    );
+    required.iter().all(|path| path.is_file())
+}
+
 /// Materialize the embedded DV bundle into a per-process temp directory the
 /// first time it is needed and hand back its path, so the existing
 /// path-based key loaders read it exactly like a real `CERTS_DIR`. The
 /// extraction happens once per process (subsequent calls reuse the result).
-pub(crate) fn certs_dir() -> Result<PathBuf, AuthError> {
+fn embedded_certs_dir() -> Result<PathBuf, AuthError> {
     static DIR: OnceLock<Result<PathBuf, String>> = OnceLock::new();
     DIR.get_or_init(materialize)
         .clone()
