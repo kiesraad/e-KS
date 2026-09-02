@@ -401,9 +401,9 @@ mod tests {
     fn non_dutch_candidate_without_representative() {
         let mut candidate = sample_candidate(1);
         candidate.person.personal_data.country = Some(CountryCode::from_str("BE").unwrap());
-        let err = DetailedCandidate::try_from(&candidate, ModelLocale::Nl).unwrap_err();
+        let detailed_candidate = DetailedCandidate::try_from(&candidate, ModelLocale::Nl).unwrap();
 
-        assert!(matches!(err, AppError::IncompleteData(_)));
+        assert!(detailed_candidate.needs_representative);
     }
 
     #[test]
