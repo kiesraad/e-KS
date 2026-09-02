@@ -134,6 +134,11 @@ mod tests {
         let mut input = h9_example_1();
         input.common.election_type = ElectionType::Kcni;
         assert_pdf(&render(input), "h9 KCNI");
+
+        // Needs a representative, but it is None.
+        let mut input = h9_example_1();
+        input.detailed_candidate.needs_representative = true;
+        assert_pdf(&render(input), "h9 missing representative");
     }
 
     /// Render I 4 with every list section empty so the "geen ..." fallbacks run,
