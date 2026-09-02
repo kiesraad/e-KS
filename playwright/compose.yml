@@ -14,7 +14,8 @@ services:
     networks: [pw_network]
     
   application:
-    image: debian:trixie-slim
+    build:
+      dockerfile: docker/application.Dockerfile
     working_dir: /app
     volumes:
       - ../target/release/eks:/app/eks:ro
