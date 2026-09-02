@@ -78,12 +78,10 @@ fn flip_first_byte_in(xml: &str, tag: &str) -> String {
         .find(&open)
         .unwrap_or_else(|| panic!("no {tag} found in signed metadata"));
     let start = pos + open.len();
-    let mut out = xml.to_string();
-    let c = out.as_bytes()[start];
-    let replacement = if c == b'A' { b'B' } else { b'A' };
-    // SAFETY: both bytes are ASCII, so the string stays valid UTF-8.
-    unsafe { out.as_bytes_mut()[start] = replacement };
-    out
+    let mut bytes = xml.as_bytes().to_vec();
+    bytes[start] = if bytes[start] == b'A' { b'B' } else { b'A' };
+    // Only an ASCII byte was swapped for another, so this still decodes.
+    String::from_utf8(bytes).expect("flipping one ASCII byte keeps the string UTF-8")
 }
 
 /// Build and sign metadata with two signing keys (rollover scenario).

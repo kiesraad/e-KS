@@ -5,6 +5,20 @@ edition.workspace = true
 license.workspace = true
 publish.workspace = true
 
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.rustdoc]
+private_intra_doc_links = "allow"
+
+[lints.clippy]
+unwrap_used = "warn"
+too_many_lines = "warn"
+empty_line_after_outer_attr = "warn"
+redundant_closure_for_method_calls = "warn"
+redundant_else = "warn"
+wildcard_imports = "warn"
+
 [features]
 # Talk to the online TVS mock service: default `TVS_ENV` to `test` and `BASE_URL`
 # to `http://localhost:3000`, and embed the committed DV cert/key bundle

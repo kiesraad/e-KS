@@ -87,7 +87,7 @@ fn signed_artifact_response_soap(signing_key: &KeyPair) -> String {
     let artifact_response = format!(
         r#"<samlp:ArtifactResponse xmlns:samlp="{NS_SAMLP}" xmlns:saml="{NS_SAML}" ID="_art1" Version="2.0" IssueInstant="{now}"><saml:Issuer>{RD_ENTITY_ID}</saml:Issuer>{sig}<samlp:Status><samlp:StatusCode Value="{STATUS_SUCCESS}"/></samlp:Status>{response}</samlp:ArtifactResponse>"#
     );
-    let signed = sign(&artifact_response, &signing_key.key_pem).unwrap();
+    let signed = sign(&artifact_response, &signing_key.key_pem).expect("signing must succeed");
     soap_wrap(&signed)
 }
 

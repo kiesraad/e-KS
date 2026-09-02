@@ -207,7 +207,7 @@ impl<'a> Document<'a> {
     pub fn first_element_child(&self, id: NodeId) -> Option<NodeId> {
         self.node(id)?
             .children()
-            .find(|c| c.is_element())
+            .find(roxmltree::Node::is_element)
             .map(|c| c.id())
     }
 }
@@ -252,7 +252,7 @@ pub fn all_elements(doc: &Document) -> Vec<NodeId> {
     doc.inner
         .root()
         .descendants()
-        .filter(|n| n.is_element())
+        .filter(roxmltree::Node::is_element)
         .map(|n| n.id())
         .collect()
 }

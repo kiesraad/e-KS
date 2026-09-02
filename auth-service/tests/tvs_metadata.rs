@@ -5,9 +5,9 @@
 
 use auth_service::saml::{
     constants::{NS_DSIG, NS_MD},
-    idp_metadata::extract_idp_keys,
+    idp_metadata::{IdpKeys, extract_idp_keys},
     verification::{ExpectedRoot, verify_xml_signature},
-    xml_parser::{descendants_by_tag, find_descendant, inner_text},
+    xml_parser::{Document, NodeId, descendants_by_tag, find_descendant, inner_text, parse},
 };
 
 /// The root of any SAML metadata document; the `@ID` is the RD's own and is not
@@ -33,11 +33,18 @@ async fn fetch_metadata(url: &str) -> String {
 }
 
 fn validate_metadata(xml: &str, url: &str) {
-    let doc = auth_service::saml::xml_parser::parse(xml)
-        .unwrap_or_else(|e| panic!("{url}: XML parse error: {e}"));
+    let doc = parse(xml).unwrap_or_else(|e| panic!("{url}: XML parse error: {e}"));
     let root = doc.document_element();
 
-    // Root must be EntityDescriptor with an entityID
+    validate_structure(&doc, root, url);
+    let keys = validate_key_descriptors(&doc, root, url);
+    validate_signature(xml, &doc, root, url, &keys);
+}
+
+/// The document shape eID §8.4 requires of RD metadata: an `EntityDescriptor`
+/// root with an `entityID`, an `IDPSSODescriptor`, and the SSO and artifact
+/// resolution endpoints inside that role descriptor.
+fn validate_structure(doc: &Document, root: NodeId, url: &str) {
     assert_eq!(
         doc.local_name(root),
         Some("EntityDescriptor"),
@@ -48,58 +55,58 @@ fn validate_metadata(xml: &str, url: &str) {
         "{url}: missing entityID attribute"
     );
 
-    // Must contain an IDPSSODescriptor
-    let idp = find_descendant(&doc, root, NS_MD, "IDPSSODescriptor")
+    let idp = find_descendant(doc, root, NS_MD, "IDPSSODescriptor")
         .unwrap_or_else(|| panic!("{url}: missing IDPSSODescriptor"));
-
-    // Must expose SingleSignOnService endpoint
     assert!(
-        find_descendant(&doc, idp, NS_MD, "SingleSignOnService").is_some(),
+        find_descendant(doc, idp, NS_MD, "SingleSignOnService").is_some(),
         "{url}: missing SingleSignOnService"
     );
-
-    // Must expose ArtifactResolutionService endpoint
     assert!(
-        find_descendant(&doc, idp, NS_MD, "ArtifactResolutionService").is_some(),
+        find_descendant(doc, idp, NS_MD, "ArtifactResolutionService").is_some(),
         "{url}: missing ArtifactResolutionService"
     );
+}
 
-    // Extract keys separated by intended use
-    let keys = extract_idp_keys(&doc, root);
+/// The published key material: the expected counts per use, and an explicit
+/// `use` attribute on every `KeyDescriptor` (a bare one, usable for both, would
+/// be a TVS misconfiguration).
+fn validate_key_descriptors(doc: &Document, root: NodeId, url: &str) -> IdpKeys {
+    let keys = extract_idp_keys(doc, root);
 
-    // Must have 1 or 2 signing certificates
     assert!(
         keys.signing.len() == 1 || keys.signing.len() == 2,
         "{url}: expected 1 or 2 signing keys, got {}",
         keys.signing.len()
     );
-
-    // IdP metadata may have 0-2 encryption keys (typically 0: only SPs
-    // publish encryption keys so the IdP can encrypt assertions for them)
+    // IdP metadata may have 0-2 encryption keys (typically 0: only SPs publish
+    // encryption keys so the IdP can encrypt assertions for them).
     assert!(
         keys.encryption.len() <= 2,
         "{url}: expected at most 2 encryption keys, got {}",
         keys.encryption.len()
     );
 
-    // Every KeyDescriptor must have an explicit use attribute; a bare
-    // KeyDescriptor (use for both) would be a misconfiguration in TVS
-    for kd in descendants_by_tag(&doc, root, NS_MD, "KeyDescriptor") {
+    for kd in descendants_by_tag(doc, root, NS_MD, "KeyDescriptor") {
         let use_attr = doc.get_attribute(kd, "use");
         assert!(
             use_attr == Some("signing") || use_attr == Some("encryption"),
             "{url}: KeyDescriptor has unexpected use attribute: {use_attr:?}"
         );
     }
+    keys
+}
 
-    // Metadata must be signed
-    let sig = find_descendant(&doc, root, NS_DSIG, "Signature")
+/// The metadata signature: present, referencing one of the published signing
+/// certs by `KeyName`, verifying against the signing keys, and **not** verifying
+/// against an encryption-only key.
+fn validate_signature(xml: &str, doc: &Document, root: NodeId, url: &str, keys: &IdpKeys) {
+    let sig = find_descendant(doc, root, NS_DSIG, "Signature")
         .unwrap_or_else(|| panic!("{url}: metadata is not signed"));
 
-    // TVS metadata signatures use KeyName: verify our derived key_name
-    // matches the KeyName in the Signature's KeyInfo
-    if let Some(key_name_node) = find_descendant(&doc, sig, NS_DSIG, "KeyName") {
-        let sig_key_name = inner_text(&doc, key_name_node).unwrap_or_default();
+    // TVS metadata signatures use KeyName: the thumbprint we derive from a
+    // published cert must match the KeyName in the Signature's KeyInfo.
+    if let Some(key_name_node) = find_descendant(doc, sig, NS_DSIG, "KeyName") {
+        let sig_key_name = inner_text(doc, key_name_node).unwrap_or_default();
         let sig_key_name = sig_key_name.trim();
         assert!(
             keys.signing
@@ -109,7 +116,6 @@ fn validate_metadata(xml: &str, url: &str) {
         );
     }
 
-    // Verify the XML signature using ONLY the signing keys
     let result = verify_xml_signature(xml, &keys.signing, &entity_descriptor_root());
     assert!(
         result.is_valid(),
@@ -117,7 +123,7 @@ fn validate_metadata(xml: &str, url: &str) {
         result.errors
     );
 
-    // If there are encryption-only keys, they must NOT verify the signature
+    // An encryption-only key must never verify the signature (eID §9.2).
     let signing_thumbprints: Vec<&str> = keys.signing.iter().map(|k| k.key_name.as_str()).collect();
     let encryption_only: Vec<_> = keys
         .encryption
@@ -125,7 +131,6 @@ fn validate_metadata(xml: &str, url: &str) {
         .filter(|k| !signing_thumbprints.contains(&k.key_name.as_str()))
         .cloned()
         .collect();
-
     if !encryption_only.is_empty() {
         let result = verify_xml_signature(xml, &encryption_only, &entity_descriptor_root());
         assert!(

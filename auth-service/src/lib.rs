@@ -52,8 +52,8 @@
 // A failed SAML flow must reach the user as the embedding application's error
 // page, never as a dead worker: the handlers turn every error into an
 // `AuthFailure`, so nothing on a request path may panic. These make that a
-// compile error rather than a review habit. Tests are exempt (see
-// `clippy.toml`), where a panic *is* the failure report.
+// compile error rather than a review habit, and stricter than the workspace's
+// `unwrap_used = "warn"`.
 #![deny(
     clippy::unwrap_used,
     clippy::expect_used,
