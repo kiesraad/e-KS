@@ -206,20 +206,16 @@ pub struct DetailedCandidate {
     pub initials_no_gender: String,
     pub bsn: Option<String>,
     pub representative: Option<Person>,
+    pub needs_representative: bool,
     pub postal_address: Option<PostalAddress>,
 }
 
 impl DetailedCandidate {
     pub fn try_from(candidate: &AppCandidate, locale: ModelLocale) -> Result<Self, AppError> {
-        let (representative, postal_address) = if candidate.person.needs_representative() {
+        let needs_representative = candidate.person.needs_representative();
+        let (representative, postal_address) = if needs_representative {
             (
-                Some(Person::from(
-                    candidate
-                        .person
-                        .representative
-                        .as_ref()
-                        .ok_or(AppError::IncompleteData("missing representative"))?,
-                )),
+                candidate.person.representative.as_ref().map(Person::from),
                 None,
             )
         } else {
@@ -242,6 +238,7 @@ impl DetailedCandidate {
             initials_no_gender: candidate.person.name.initials_with_first_name(),
             bsn,
             representative,
+            needs_representative,
             postal_address,
         })
     }
@@ -404,9 +401,9 @@ mod tests {
     fn non_dutch_candidate_without_representative() {
         let mut candidate = sample_candidate(1);
         candidate.person.personal_data.country = Some(CountryCode::from_str("BE").unwrap());
-        let err = DetailedCandidate::try_from(&candidate, ModelLocale::Nl).unwrap_err();
+        let detailed_candidate = DetailedCandidate::try_from(&candidate, ModelLocale::Nl).unwrap();
 
-        assert!(matches!(err, AppError::IncompleteData(_)));
+        assert!(detailed_candidate.needs_representative);
     }
 
     #[test]
