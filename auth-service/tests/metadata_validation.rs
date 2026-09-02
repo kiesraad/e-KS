@@ -6,7 +6,7 @@
 //! Run with: cargo test --test metadata_validation
 
 use auth_service::{
-    keys::KeyPair,
+    keys::{CertificateBase64, KeyName, KeyPair, PrivateKeyPem},
     saml::{
         constants::{NS_DSIG, NS_MD},
         crypto::sign,
@@ -15,7 +15,6 @@ use auth_service::{
         xml_parser::{find_descendant, inner_text},
     },
 };
-use secrecy::ExposeSecret;
 
 mod common;
 use common::{inline_signature, load_key};
@@ -53,7 +52,7 @@ fn sign_inline(xml: &str, id: &str, signing_key: &KeyPair, anchor: &str) -> Stri
     let sig = inline_signature(id, &signing_key.cert_base64);
     let pos = xml.find(anchor).expect("signature anchor present");
     let templated = format!("{}{}{}", &xml[..pos], sig, &xml[pos..]);
-    sign(&templated, signing_key.key_pem.expose_secret()).expect("signing must succeed")
+    sign(&templated, &signing_key.key_pem).expect("signing must succeed")
 }
 
 /// Build and sign an IdP metadata document using the given key.
@@ -62,7 +61,11 @@ fn signed_metadata(signing_key: &KeyPair) -> String {
     let xml = build_idp_metadata(
         "urn:test:idp",
         id,
-        &[("signing", &signing_key.key_name, &signing_key.cert_base64)],
+        &[(
+            "signing",
+            signing_key.key_name.as_str(),
+            signing_key.cert_base64.as_str(),
+        )],
     );
     sign_inline(&xml, id, signing_key, "<md:IDPSSODescriptor")
 }
@@ -90,8 +93,8 @@ fn signed_metadata_with_rollover(key1: &KeyPair, key2: &KeyPair, signing_key: &K
         "urn:test:idp",
         id,
         &[
-            ("signing", &key1.key_name, &key1.cert_base64),
-            ("signing", &key2.key_name, &key2.cert_base64),
+            ("signing", key1.key_name.as_str(), key1.cert_base64.as_str()),
+            ("signing", key2.key_name.as_str(), key2.cert_base64.as_str()),
         ],
     );
     sign_inline(&xml, id, signing_key, "<md:IDPSSODescriptor")
@@ -235,8 +238,8 @@ fn rejects_mismatched_cert_base64() {
     // Our signature template embeds X509Certificate, not KeyName.
     // Providing a trusted key with a different cert_base64 must fail.
     let mut wrong = rd_key.clone();
-    wrong.cert_base64 = "AAAA".to_string();
-    wrong.key_name = "0000000000000000000000000000000000000000".to_string();
+    wrong.cert_base64 = CertificateBase64::parse("AAAA").unwrap();
+    wrong.key_name = KeyName::parse("0000000000000000000000000000000000000000").unwrap();
 
     let result = verify_xml_signature(&xml, &[wrong], &entity_descriptor_root());
     assert!(!result.is_valid(), "mismatched cert must fail");
@@ -460,7 +463,9 @@ fn signature_x509cert_matches_metadata_key() {
 
     let keys = extract_idp_keys(&doc, root);
     assert!(
-        keys.signing.iter().any(|k| k.cert_base64 == sig_cert),
+        keys.signing
+            .iter()
+            .any(|k| k.cert_base64.as_str() == sig_cert),
         "Signature X509Certificate must match a signing KeyDescriptor"
     );
 }
@@ -499,7 +504,7 @@ fn rejects_tampered_key_descriptor_cert() {
 
     // Tamper with the X509Certificate in the KeyDescriptor (not the Signature).
     // This changes the trusted cert that would be used for verification.
-    let tampered = xml.replacen(&key.cert_base64[..20], "AAAAAAAAAAAAAAAAAAAAAA", 1);
+    let tampered = xml.replacen(&key.cert_base64.as_str()[..20], "AAAAAAAAAAAAAAAAAAAAAA", 1);
 
     // Re-extract keys from the tampered metadata; the cert is now different.
     let doc = auth_service::saml::xml_parser::parse(&tampered).unwrap();
@@ -528,12 +533,13 @@ fn rejects_tampered_key_descriptor_cert() {
 fn verifies_via_x509_certificate_matching() {
     let key = load_key("rd-signing-1");
     // Our signature template embeds X509Certificate, not KeyName.
-    // A trusted key with matching cert_base64 but empty key_name should still verify
-    // via the X509Certificate matching path.
+    // A trusted key with matching cert_base64 but a thumbprint that identifies
+    // nothing should still verify via the X509Certificate matching path.
     let trust = KeyPair {
         cert_pem: key.cert_pem.clone(),
-        key_pem: String::new().into(),
-        key_name: String::new(), // won't match by KeyName, falls through to cert matching
+        key_pem: PrivateKeyPem::absent(),
+        // Won't match by KeyName, so matching falls through to the certificate.
+        key_name: KeyName::parse("0000000000000000000000000000000000000000").unwrap(),
         cert_base64: key.cert_base64.clone(),
     };
 

@@ -384,7 +384,7 @@ mod tests {
 
     #[tokio::test]
     async fn autosubmit_response_keeps_its_own_csp() {
-        use auth_service::bindings::http_post::autosubmit_post_response;
+        use auth_service::{EndpointUrl, bindings::http_post::autosubmit_post_response};
 
         const IDP_URL: &str = "https://tvs-mock.example/kvs/rd/request_authentication";
 
@@ -392,7 +392,12 @@ mod tests {
         let router: Router<AppState> = apply_security_headers(Router::new().route(
             "/autosubmit-test",
             axum::routing::get(async || {
-                autosubmit_post_response(IDP_URL, "<samlp:AuthnRequest/>", "SAMLRequest").unwrap()
+                autosubmit_post_response(
+                    &EndpointUrl::from_metadata(IDP_URL, "SSO").unwrap(),
+                    "<samlp:AuthnRequest/>",
+                    "SAMLRequest",
+                )
+                .unwrap()
             }),
         ));
         let app: Router = router.with_state(state);

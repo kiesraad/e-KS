@@ -14,7 +14,8 @@ pub mod metadata;
 pub(crate) mod test_support {
     use crate::{
         saml::subject::SubjectId,
-        state::{AuthFailure, AuthServiceState, AuthState},
+        state::{AuthFailure, AuthServiceState, AuthState, LoggedOutSession},
+        types::{MessageId, NameId},
     };
     use axum::{
         extract::FromRef,
@@ -29,15 +30,15 @@ pub(crate) mod test_support {
     #[derive(Clone)]
     pub(crate) struct MockAuthState {
         pub auth: AuthServiceState,
-        /// The NameID `logout_session` reports, or `None` when none was recorded.
-        pub session: Option<String>,
+        /// What `logout_session` reports it tore down.
+        pub session: LoggedOutSession,
     }
 
     impl MockAuthState {
         pub(crate) fn new(auth: AuthServiceState) -> Self {
             Self {
                 auth,
-                session: None,
+                session: LoggedOutSession::None,
             }
         }
 
@@ -56,7 +57,7 @@ pub(crate) mod test_support {
         async fn on_authenticated(
             &self,
             _subject_id: SubjectId,
-            _name_id: String,
+            _name_id: NameId,
             _jar: CookieJar,
             _headers: &HeaderMap,
         ) -> Response {
@@ -76,13 +77,13 @@ pub(crate) mod test_support {
             }
         }
 
-        async fn logout_session(&self, jar: CookieJar) -> (CookieJar, Option<String>) {
+        async fn logout_session(&self, jar: CookieJar) -> (CookieJar, LoggedOutSession) {
             (jar, self.session.clone())
         }
 
-        async fn register_pending_request(&self, _id: String) {}
+        async fn register_pending_request(&self, _id: MessageId) {}
 
-        async fn consume_if_pending(&self, _id: String) -> bool {
+        async fn consume_if_pending(&self, _id: MessageId) -> bool {
             false
         }
     }

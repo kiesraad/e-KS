@@ -14,7 +14,6 @@ use common::{
 
 use auth_service::{keys::KeyPair, saml::crypto::sign};
 use chrono::Duration;
-use secrecy::ExposeSecret;
 
 const GENUINE: &str = "GENUINE-USER";
 const ATTACKER: &str = "ATTACKER-CHOSEN-VICTIM";
@@ -35,7 +34,7 @@ fn artifact_response(art_attrs: &str, extra_body: &str, name_id: &str) -> String
 
 fn signed_artifact_response(rd_key: &KeyPair, art_attrs: &str, extra_body: &str) -> String {
     let xml = artifact_response(art_attrs, extra_body, GENUINE);
-    sign(&xml, rd_key.key_pem.expose_secret()).expect("RD signing")
+    sign(&xml, &rd_key.key_pem).expect("RD signing")
 }
 
 /// Assert the chain either rejected `soap_xml` or read the genuine NameID from
@@ -181,7 +180,7 @@ fn identity_text_inside_a_child_element_is_not_read_as_the_identity() {
     let nested_issuer = format!(
         r#"<samlp:ArtifactResponse xmlns:samlp="{SAMLP}" xmlns:saml="{SAML}" ID="_art1" Version="2.0" IssueInstant="{now}"><saml:Issuer><wrap>{RD}</wrap></saml:Issuer>{sig}<samlp:Status><samlp:StatusCode Value="{SUCCESS}"/></samlp:Status>{body}</samlp:ArtifactResponse>"#
     );
-    let signed = sign(&nested_issuer, rd_key.key_pem.expose_secret()).expect("RD signing");
+    let signed = sign(&nested_issuer, &rd_key.key_pem).expect("RD signing");
 
     let result = run_chain(&soap(&signed), &rd_key);
     assert!(
@@ -313,7 +312,7 @@ fn namespaces_declared_on_the_envelope_still_verify() {
     let envelope = format!(
         r#"<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:samlp="{SAMLP}" xmlns:saml="{SAML}"><soapenv:Body><samlp:ArtifactResponse ID="_art1" Version="2.0" IssueInstant="{now}"><saml:Issuer>{RD}</saml:Issuer>{sig}<samlp:Status><samlp:StatusCode Value="{SUCCESS}"/></samlp:Status>{body}</samlp:ArtifactResponse></soapenv:Body></soapenv:Envelope>"#
     );
-    let signed = sign(&envelope, rd_key.key_pem.expose_secret()).expect("RD signing");
+    let signed = sign(&envelope, &rd_key.key_pem).expect("RD signing");
 
     let result = run_chain(&signed, &rd_key);
     assert_eq!(
@@ -335,7 +334,7 @@ fn namespace_reconstruction_does_not_rescue_a_tampered_document() {
     let envelope = format!(
         r#"<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:samlp="{SAMLP}" xmlns:saml="{SAML}"><soapenv:Body><samlp:ArtifactResponse ID="_art1" Version="2.0" IssueInstant="{now}"><saml:Issuer>{RD}</saml:Issuer>{sig}<samlp:Status><samlp:StatusCode Value="{SUCCESS}"/></samlp:Status>{body}</samlp:ArtifactResponse></soapenv:Body></soapenv:Envelope>"#
     );
-    let signed = sign(&envelope, rd_key.key_pem.expose_secret()).expect("RD signing");
+    let signed = sign(&envelope, &rd_key.key_pem).expect("RD signing");
     let tampered = signed.replacen(GENUINE, ATTACKER, 1);
     assert_ne!(tampered, signed, "tampering must apply");
 

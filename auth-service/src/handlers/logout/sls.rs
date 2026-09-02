@@ -42,9 +42,9 @@ where
     debug!("[SLS] Handler entered, form fields: {}", params.len());
     process_logout_response(&state, &auth_state, &params).await;
 
-    let target = auth_state.auth_config().post_logout_redirect();
+    let target = &auth_state.auth_config().post_logout_redirect;
     debug!("[SLS] Redirecting browser to {target}");
-    Redirect::to(target).into_response()
+    Redirect::to(target.as_str()).into_response()
 }
 
 /// Verify and correlate an incoming LogoutResponse (eID §7.7.2), logging the
@@ -118,11 +118,7 @@ fn verified_logout_fields(
     // eID §7.7.2: bind the (signature-verified) response to the RD and our SLS
     // endpoint and lift out the correlation fields.
     let cfg = auth_state.auth_config();
-    match validate_logout_response(
-        saml_response,
-        rd.entity_id.as_str(),
-        cfg.dv.slo_url.as_str(),
-    ) {
+    match validate_logout_response(saml_response, &rd.entity_id, &cfg.dv.slo_url) {
         Ok(fields) => Some(fields),
         Err(reason) => {
             warn!("[SLS] {reason}; ignoring");

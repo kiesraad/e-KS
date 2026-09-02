@@ -1,8 +1,13 @@
 //! Shared validation context and XML/SOAP helpers for the SAML validators.
 
-use crate::saml::{
-    constants::{CLOCK_SKEW_SECONDS, MESSAGE_FRESHNESS_SECONDS, NS_SAML, NS_SAMLP, STATUS_SUCCESS},
-    xml_parser::{Document, NodeId, direct_text, find_child, find_descendant, inner_text},
+use crate::{
+    saml::{
+        constants::{
+            CLOCK_SKEW_SECONDS, MESSAGE_FRESHNESS_SECONDS, NS_SAML, NS_SAMLP, STATUS_SUCCESS,
+        },
+        xml_parser::{Document, NodeId, direct_text, find_child, find_descendant, inner_text},
+    },
+    types::EntityId,
 };
 use chrono::{DateTime, Duration, Utc};
 
@@ -48,14 +53,14 @@ impl<'a, 'input> Validator<'a, 'input> {
     /// eID §7.6.1/§7.6.2/§7.6.3.5 rule 1: the `<saml:Issuer>` of `node` MUST be the
     /// pinned RD EntityID, so an RD-signed envelope naming a different entity is
     /// rejected. `None` skips the check (tests).
-    pub fn check_issuer(&mut self, node: NodeId, expected_issuer: Option<&str>, label: &str) {
+    pub fn check_issuer(&mut self, node: NodeId, expected_issuer: Option<&EntityId>, label: &str) {
         let Some(expected) = expected_issuer else {
             return;
         };
         // `direct_text`: an Issuer with element children is not an identity.
         let issuer = find_child(self.doc, node, NS_SAML, "Issuer");
         match issuer.map(|n| direct_text(self.doc, n)) {
-            Some(Some(ref i)) if i.trim() == expected => {}
+            Some(Some(ref i)) if expected == i.trim() => {}
             Some(Some(i)) => self.error(format!(
                 "{label} Issuer mismatch: expected {expected}, got {}",
                 i.trim()
@@ -98,21 +103,50 @@ impl<'a, 'input> Validator<'a, 'input> {
     /// them unbounded in time. The future bound matters for the same reason:
     /// without it a far-future instant would never expire.
     pub fn check_freshness(&mut self, val: Option<&str>, label: &str) {
-        let max_age = Duration::seconds(MESSAGE_FRESHNESS_SECONDS);
         let Some(s) = val else {
             self.error(format!("{label} is missing (required, cardinality 1)"));
             return;
         };
-        match s.parse::<DateTime<Utc>>() {
-            Ok(t) if t + max_age + self.skew < self.now => {
-                self.error(format!("{label} is stale: issued at {s}"));
-            }
-            Ok(t) if t - self.skew > self.now => {
-                self.error(format!("{label} is in the future: issued at {s}"));
-            }
-            Ok(_) => {} // neither too old or in the future, freshness OK
-            Err(_) => self.error(format!("{label} has an invalid timestamp: {s}")),
+        let Ok(t) = s.parse::<DateTime<Utc>>() else {
+            self.error(format!("{label} has an invalid timestamp: {s}"));
+            return;
+        };
+        let max_age = Duration::seconds(MESSAGE_FRESHNESS_SECONDS);
+        let Some(stale_after) = self.shifted(t, max_age + self.skew, label, s) else {
+            return;
+        };
+        let Some(not_before) = self.shifted(t, -self.skew, label, s) else {
+            return;
+        };
+        if stale_after < self.now {
+            self.error(format!("{label} is stale: issued at {s}"));
+        } else if not_before > self.now {
+            self.error(format!("{label} is in the future: issued at {s}"));
         }
+    }
+
+    /// `t` shifted by `delta`, or `None` (with an error recorded) when the shift
+    /// is not representable.
+    ///
+    /// chrono's `+`/`-` on a `DateTime` **panic** on overflow, and every instant
+    /// the validators shift is a wire value: a timestamp near the edge of the
+    /// representable range (chrono parses years up to +262142) would take the
+    /// process down. An instant that cannot absorb a 30-second skew allowance is
+    /// nonsense anyway, so it is rejected rather than reasoned about.
+    fn shifted(
+        &mut self,
+        t: DateTime<Utc>,
+        delta: Duration,
+        label: &str,
+        raw: &str,
+    ) -> Option<DateTime<Utc>> {
+        let shifted = t.checked_add_signed(delta);
+        if shifted.is_none() {
+            self.error(format!(
+                "{label} timestamp is outside the usable range: {raw}"
+            ));
+        }
+        shifted
     }
 
     /// eID §7.6.3 (cardinality 1): `Conditions/@NotBefore` is mandatory (stricter
@@ -120,7 +154,8 @@ impl<'a, 'input> Validator<'a, 'input> {
     /// not-yet-valid value.
     pub fn check_not_before(&mut self, val: Option<&str>, label: &str) {
         if let Some((t, s)) = self.parse_required_instant(val, "NotBefore", label)
-            && t - self.skew > self.now
+            && let Some(not_before) = self.shifted(t, -self.skew, label, s)
+            && not_before > self.now
         {
             self.error(format!("{label} not yet valid: NotBefore {s}"));
         }
@@ -131,7 +166,8 @@ impl<'a, 'input> Validator<'a, 'input> {
     /// freshness check (an assertion with no/garbage expiry must not be accepted).
     pub fn check_not_on_or_after(&mut self, val: Option<&str>, label: &str) {
         if let Some((t, s)) = self.parse_required_instant(val, "NotOnOrAfter", label)
-            && t + self.skew < self.now
+            && let Some(expires_at) = self.shifted(t, self.skew, label, s)
+            && expires_at < self.now
         {
             self.error(format!("{label} expired: {s}"));
         }
@@ -384,5 +420,33 @@ mod tests {
         let errors =
             time_check_errors(|v| v.check_not_on_or_after(Some("not-a-timestamp"), "Test"));
         assert!(errors.iter().any(|e| e.contains("invalid NotOnOrAfter")));
+    }
+
+    /// The largest instant chrono can parse. Shifting it by the skew allowance
+    /// overflows, and chrono's `+` panics on overflow, so every timestamp check
+    /// must reject it instead of arithmetic-ing on it.
+    const MAX_PARSEABLE_INSTANT: &str = "+262142-12-31T23:59:59Z";
+    /// The smallest instant chrono can parse: the same hazard, subtracting skew.
+    const MIN_PARSEABLE_INSTANT: &str = "-262143-01-01T00:00:00Z";
+
+    #[test]
+    fn timestamps_at_the_edge_of_the_range_are_rejected_not_panicked_on() {
+        // A hostile `@IssueInstant` / `@NotBefore` / `@NotOnOrAfter` at the edge
+        // of chrono's range must be refused, never take the process down.
+        for raw in [MAX_PARSEABLE_INSTANT, MIN_PARSEABLE_INSTANT] {
+            assert!(
+                raw.parse::<DateTime<Utc>>().is_ok(),
+                "{raw} must actually parse, or this test proves nothing"
+            );
+
+            let errors = time_check_errors(|v| v.check_freshness(Some(raw), "Test"));
+            assert!(!errors.is_empty(), "freshness accepted {raw}");
+
+            let errors = time_check_errors(|v| v.check_not_before(Some(raw), "Test"));
+            assert!(!errors.is_empty(), "NotBefore accepted {raw}");
+
+            let errors = time_check_errors(|v| v.check_not_on_or_after(Some(raw), "Test"));
+            assert!(!errors.is_empty(), "NotOnOrAfter accepted {raw}");
+        }
     }
 }

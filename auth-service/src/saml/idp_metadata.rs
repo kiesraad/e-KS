@@ -6,7 +6,7 @@
 //! inside the metadata document; config only carries the bootstrap URL.
 use crate::{
     error::{AuthError, Result},
-    keys::{KeyPair, cert_base64, pem_from_cert_base64},
+    keys::{CertificateBase64, CertificatePem, KeyPair, PrivateKeyPem},
     saml::{
         constants::{BINDING_HTTP_POST, BINDING_SOAP, CLOCK_SKEW_SECONDS, NS_DSIG, NS_MD},
         verification::{ExpectedRoot, verify_xml_signature},
@@ -14,9 +14,9 @@ use crate::{
             Document, NodeId, descendants_by_tag, direct_text, find_child, find_descendant,
         },
     },
+    types::{EndpointUrl, EntityId},
 };
 use rustls_pki_types::{CertificateDer, UnixTime};
-use secrecy::SecretString;
 use std::{
     path::{Path, PathBuf},
     time::Duration,
@@ -24,20 +24,40 @@ use std::{
 use tracing::{debug, info, warn};
 
 /// All IdP data extracted from a verified metadata document.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct IdpMetadata {
-    pub entity_id: String,
+    pub entity_id: EntityId,
     /// SSO endpoint with HTTP-POST binding (eID §3.1.1).
-    pub sso_url: String,
+    pub sso_url: EndpointUrl,
     /// Artifact Resolution endpoint with SOAP binding (eID §7.5).
-    pub ars_url: String,
+    pub ars_url: EndpointUrl,
     /// Single Logout endpoint with HTTP-POST binding (eID §7.7.1).
-    pub slo_url: String,
+    pub slo_url: EndpointUrl,
     pub signing_keys: Vec<KeyPair>,
     /// Parsed `cacheDuration` (eID §8.5), the RD's hint for how long the
     /// descriptor may be cached. The background refresh task uses it, capped at
     /// 24h, to schedule the next fetch. `None` when absent or unparseable.
     pub cache_duration: Option<Duration>,
+}
+
+#[cfg(test)]
+impl IdpMetadata {
+    /// A descriptor for tests: the RD identity and its three endpoints, no keys.
+    /// Callers override individual fields with `..IdpMetadata::for_tests()`.
+    pub(crate) fn for_tests() -> Self {
+        let endpoint = |path: &str| {
+            EndpointUrl::from_metadata(&format!("https://rd.example.com/{path}"), path)
+                .expect("test RD endpoint")
+        };
+        Self {
+            entity_id: EntityId::from_static("urn:test:rd"),
+            sso_url: endpoint("sso"),
+            ars_url: endpoint("ars"),
+            slo_url: endpoint("slo"),
+            signing_keys: Vec::new(),
+            cache_duration: None,
+        }
+    }
 }
 
 /// Keys extracted from metadata `KeyDescriptor` elements, separated by intended use.
@@ -90,10 +110,16 @@ pub fn extract_idp_keys(doc: &Document, root: NodeId) -> IdpKeys {
 fn descriptor_key_pair(doc: &Document, kd: NodeId) -> Option<KeyPair> {
     let cert_node = find_descendant(doc, kd, NS_DSIG, "X509Certificate")?;
     // `direct_text`: a trusted signing cert is the element's own text.
-    let cert_pem = pem_from_cert_base64(&direct_text(doc, cert_node)?);
+    let cert_base64 = match CertificateBase64::parse(&direct_text(doc, cert_node)?) {
+        Ok(cert) => cert,
+        Err(e) => {
+            warn!("[metadata] Skipping malformed KeyDescriptor certificate: {e}");
+            return None;
+        }
+    };
     Some(KeyPair::from_pem(
-        cert_pem,
-        SecretString::from(String::new()),
+        cert_base64.to_pem(),
+        PrivateKeyPem::absent(),
     ))
 }
 
@@ -115,39 +141,18 @@ fn endpoint_location(doc: &Document, root: NodeId, tag: &str, binding: &str) -> 
         })
 }
 
-/// Reject a metadata endpoint `Location` that is not a clean absolute https URL.
-///
-/// eID §9.4 requires TLS on all channels, so a non-`https` endpoint is refused.
-/// Rejecting quote/angle/control/whitespace characters additionally keeps the
-/// value safe to interpolate downstream: into an HTML attribute
-/// (`create_post_form`), a Content-Security-Policy header (`autosubmit_csp`) and
-/// an HTTP request target (`send_soap_request`): it cannot break out of an
-/// attribute, inject a CSP directive, or smuggle a request. A well-formed URL
-/// never contains these characters unescaped.
-fn validate_endpoint_url(url: &str, what: &str) -> Result<()> {
-    // Quote/angle/backtick/semicolon/backslash characters could break out of an
-    // HTML attribute, inject a CSP directive, or smuggle a request target.
-    const ILLEGAL_CHARS: &str = "\"'<>`;\\";
-
-    let Some(host) = url.strip_prefix("https://") else {
-        return Err(AuthError::Config(format!(
-            "metadata {what} endpoint is not an https URL: {url}"
-        )));
-    };
-    if host.is_empty() {
-        return Err(AuthError::Config(format!(
-            "metadata {what} endpoint has no host: {url}"
-        )));
-    }
-    if let Some(bad) = url
-        .chars()
-        .find(|&c| c.is_whitespace() || c.is_control() || ILLEGAL_CHARS.contains(c))
-    {
-        return Err(AuthError::Config(format!(
-            "metadata {what} endpoint contains an illegal character {bad:?}: {url}"
-        )));
-    }
-    Ok(())
+/// The `Location` of the `tag` endpoint with `binding`, as a validated
+/// [`EndpointUrl`] (eID §9.4 requires https; see
+/// [`EndpointUrl::from_metadata`]).
+fn required_endpoint(
+    doc: &Document,
+    root: NodeId,
+    tag: &str,
+    binding: &str,
+) -> Result<EndpointUrl> {
+    let location = endpoint_location(doc, root, tag, binding)
+        .ok_or_else(|| AuthError::Config(format!("metadata: no {binding} {tag}")))?;
+    EndpointUrl::from_metadata(&location, tag)
 }
 
 /// Parse an XML Schema duration (e.g. `PT24H`, `P1D`, `PT1H30M`) into a
@@ -192,10 +197,10 @@ fn parse_xs_duration(s: &str) -> Option<Duration> {
 /// (eID §9.1/§9.2): the expected RD identity plus the embedded root/intermediate
 /// CAs the signing cert must chain to. Every field is a compile-time constant, so
 /// this is cheap to build and copy.
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub struct RdTrust {
     /// Expected RD `entityID`; loaded metadata must match it exactly.
-    pub expected_entity_id: &'static str,
+    pub expected_entity_id: EntityId,
     /// Expected RD OIN, required in the signing cert's `Subject.serialNumber`.
     pub expected_oin: &'static str,
     /// Trust-anchor root CA(s), PEM-encoded
@@ -219,18 +224,10 @@ impl RdTrust {
     }
 }
 
-/// Decode a PEM certificate to DER, reusing the crate's PEM-body extraction.
-fn pem_to_der(pem: &str) -> Result<Vec<u8>> {
-    use base64::{Engine, engine::general_purpose::STANDARD};
-    STANDARD
-        .decode(cert_base64(pem))
-        .map_err(|e| AuthError::Crypto(format!("invalid certificate PEM: {e}")))
-}
-
 fn pem_bytes_to_der(pem: &[u8]) -> Result<Vec<u8>> {
     let pem = std::str::from_utf8(pem)
         .map_err(|e| AuthError::Crypto(format!("non-UTF-8 certificate PEM: {e}")))?;
-    pem_to_der(pem)
+    Ok(CertificatePem::parse(pem)?.to_der())
 }
 
 /// The `Subject.serialNumber` (OID 2.5.4.5) of a DER certificate, if present.
@@ -255,8 +252,8 @@ fn subject_oin(leaf_der: &[u8]) -> Option<String> {
 /// MUST carry the expected RD OIN in its subject AND chain to one of the pinned
 /// roots via the supplied intermediates. The signing keys themselves are
 /// intentionally NOT pinned (they rotate); trust derives from the chain + OIN.
-fn cert_is_trusted(cert_pem: &str, trust: &RdTrust) -> Result<()> {
-    let leaf_der = pem_to_der(cert_pem)?;
+fn cert_is_trusted(cert_pem: &CertificatePem, trust: &RdTrust) -> Result<()> {
+    let leaf_der = cert_pem.to_der();
     check_rd_oin(&leaf_der, trust)?;
     check_chains_to_pinned_root(&leaf_der, trust)
 }
@@ -376,12 +373,12 @@ pub fn parse_idp_metadata(xml: &str, trust: &RdTrust) -> Result<IdpMetadata> {
 
 /// eID §9.2 / §10.2: pin the RD identity. The expected EntityID is a configured
 /// constant, not a value taken from this (only self-signature-checked) document.
-fn pinned_entity_id(doc: &Document, root: NodeId, trust: &RdTrust) -> Result<String> {
+fn pinned_entity_id(doc: &Document, root: NodeId, trust: &RdTrust) -> Result<EntityId> {
     let entity_id = doc
         .get_attribute(root, "entityID")
-        .ok_or_else(|| AuthError::Xml("metadata: missing entityID".into()))?
-        .to_owned();
+        .ok_or_else(|| AuthError::Xml("metadata: missing entityID".into()))?;
     debug!("[metadata] entityID={entity_id}");
+    let entity_id = EntityId::parse(entity_id)?;
     if entity_id != trust.expected_entity_id {
         return Err(AuthError::Crypto(format!(
             "metadata entityID {entity_id} does not match the pinned RD EntityID {}",
@@ -429,20 +426,23 @@ fn verified_signing_keys(
 fn check_metadata_expiry(doc: &Document, root: NodeId) -> Result<()> {
     let valid_until = doc.get_attribute(root, "validUntil");
     if let Some(s) = valid_until {
-        match s.parse::<chrono::DateTime<chrono::Utc>>() {
-            Ok(valid_until) => {
-                if chrono::Utc::now() > valid_until + chrono::Duration::seconds(CLOCK_SKEW_SECONDS)
-                {
-                    return Err(AuthError::Config(format!(
-                        "metadata has expired: validUntil {s} is in the past"
-                    )));
-                }
-            }
-            Err(_) => {
-                return Err(AuthError::Config(format!(
-                    "metadata has an invalid validUntil timestamp: {s}"
-                )));
-            }
+        // This runs before the metadata signature is verified, so `s` is
+        // attacker-influenced whenever the HTTPS fetch (or the on-disk cache) is
+        // subverted. `checked_add_signed`, not `+`: chrono panics when a
+        // timestamp near the edge of the representable range is shifted.
+        let expires_at = s
+            .parse::<chrono::DateTime<chrono::Utc>>()
+            .ok()
+            .and_then(|t| t.checked_add_signed(chrono::Duration::seconds(CLOCK_SKEW_SECONDS)))
+            .ok_or_else(|| {
+                AuthError::Config(format!(
+                    "metadata has an unusable validUntil timestamp: {s}"
+                ))
+            })?;
+        if chrono::Utc::now() > expires_at {
+            return Err(AuthError::Config(format!(
+                "metadata has expired: validUntil {s} is in the past"
+            )));
         }
     }
     // eID §8.4 (RD IdP metadata table): "Either validUntil or cacheDuration MUST
@@ -486,17 +486,15 @@ fn pinned_signing_keys(keys: IdpKeys, trust: &RdTrust) -> Result<Vec<KeyPair>> {
 /// Resolve the three required endpoints (eID §3.1.1/§7.5/§7.7.1) and validate
 /// each as a clean absolute https URL (eID §9.4). The validation also keeps the
 /// values safe to interpolate downstream (HTML attribute, CSP, HTTP target).
-fn resolve_endpoints(doc: &Document, root: NodeId) -> Result<(String, String, String)> {
-    let sso_url = endpoint_location(doc, root, "SingleSignOnService", BINDING_HTTP_POST)
-        .ok_or_else(|| AuthError::Config("metadata: no HTTP-POST SingleSignOnService".into()))?;
-    let ars_url = endpoint_location(doc, root, "ArtifactResolutionService", BINDING_SOAP)
-        .ok_or_else(|| AuthError::Config("metadata: no SOAP ArtifactResolutionService".into()))?;
-    let slo_url = endpoint_location(doc, root, "SingleLogoutService", BINDING_HTTP_POST)
-        .ok_or_else(|| AuthError::Config("metadata: no HTTP-POST SingleLogoutService".into()))?;
-    validate_endpoint_url(&sso_url, "SingleSignOnService")?;
-    validate_endpoint_url(&ars_url, "ArtifactResolutionService")?;
-    validate_endpoint_url(&slo_url, "SingleLogoutService")?;
-    Ok((sso_url, ars_url, slo_url))
+fn resolve_endpoints(
+    doc: &Document,
+    root: NodeId,
+) -> Result<(EndpointUrl, EndpointUrl, EndpointUrl)> {
+    Ok((
+        required_endpoint(doc, root, "SingleSignOnService", BINDING_HTTP_POST)?,
+        required_endpoint(doc, root, "ArtifactResolutionService", BINDING_SOAP)?,
+        required_endpoint(doc, root, "SingleLogoutService", BINDING_HTTP_POST)?,
+    ))
 }
 
 /// On-disk cache file name for the RD (Routeringsdienst) metadata.
@@ -588,7 +586,7 @@ mod tests {
 
     fn test_trust(entity_id: &'static str) -> RdTrust {
         RdTrust {
-            expected_entity_id: entity_id,
+            expected_entity_id: EntityId::from_static(entity_id),
             expected_oin: FIXTURE_OIN,
             roots: TEST_ROOTS,
             intermediates: NO_INTERMEDIATES,
@@ -613,9 +611,9 @@ mod tests {
     /// As [`signed_rd_metadata`], with extra attributes (e.g. `validUntil` /
     /// `cacheDuration`) on the `<EntityDescriptor>` root.
     fn signed_rd_metadata_attrs(entity_id: &str, root_attrs: &str) -> String {
-        let cert_pem = fixture("rd-signing-1.pem");
-        let key_pem = fixture("rd-signing-1-key.pem");
-        let cert_b64 = cert_base64(&cert_pem);
+        let cert_pem = CertificatePem::parse(fixture("rd-signing-1.pem")).unwrap();
+        let key_pem = PrivateKeyPem::new(fixture("rd-signing-1-key.pem"));
+        let cert_b64 = cert_pem.to_base64();
         let id = "_rdmeta1";
         let xml = format!(
             r##"<md:EntityDescriptor xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata" xmlns:dsig="http://www.w3.org/2000/09/xmldsig#" ID="{id}" entityID="{entity_id}"{root_attrs}><dsig:Signature><dsig:SignedInfo><dsig:CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/><dsig:SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"/><dsig:Reference URI="#{id}"><dsig:Transforms><dsig:Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/><dsig:Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/></dsig:Transforms><dsig:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"/><dsig:DigestValue></dsig:DigestValue></dsig:Reference></dsig:SignedInfo><dsig:SignatureValue></dsig:SignatureValue><dsig:KeyInfo><dsig:X509Data><dsig:X509Certificate>{cert_b64}</dsig:X509Certificate></dsig:X509Data></dsig:KeyInfo></dsig:Signature><md:IDPSSODescriptor protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol"><md:KeyDescriptor use="signing"><dsig:KeyInfo><dsig:X509Data><dsig:X509Certificate>{cert_b64}</dsig:X509Certificate></dsig:X509Data></dsig:KeyInfo></md:KeyDescriptor><md:ArtifactResolutionService Binding="urn:oasis:names:tc:SAML:2.0:bindings:SOAP" Location="https://rd.test/ars" index="0"/><md:SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="https://rd.test/sso"/><md:SingleLogoutService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="https://rd.test/slo"/></md:IDPSSODescriptor></md:EntityDescriptor>"##
@@ -629,7 +627,13 @@ mod tests {
     fn cert_is_trusted_accepts_fixture_rd_signing() {
         // rd-signing-1 carries the RD OIN and chains to the fixture CA.
         let cert = fixture("rd-signing-1.pem");
-        assert!(cert_is_trusted(&cert, &test_trust("urn:any")).is_ok());
+        assert!(
+            cert_is_trusted(
+                &CertificatePem::parse(&cert).unwrap(),
+                &test_trust("urn:any")
+            )
+            .is_ok()
+        );
     }
 
     #[test]
@@ -639,7 +643,7 @@ mod tests {
             expected_oin: "99999999999999999999",
             ..test_trust("urn:any")
         };
-        assert!(cert_is_trusted(&cert, &trust).is_err());
+        assert!(cert_is_trusted(&CertificatePem::parse(&cert).unwrap(), &trust).is_err());
     }
 
     #[test]
@@ -650,7 +654,7 @@ mod tests {
             roots: &[],
             ..test_trust("urn:any")
         };
-        assert!(cert_is_trusted(&cert, &trust).is_err());
+        assert!(cert_is_trusted(&CertificatePem::parse(&cert).unwrap(), &trust).is_err());
     }
 
     #[test]
@@ -658,10 +662,10 @@ mod tests {
         let entity_id = "urn:nl-eid-gdi:1.0:RD:00000004000000149000:entities:9002";
         let signed = signed_rd_metadata_attrs(entity_id, r#" cacheDuration="PT24H""#);
         let md = parse_idp_metadata(&signed, &test_trust(entity_id)).expect("must parse");
-        assert_eq!(md.entity_id, entity_id);
-        assert_eq!(md.sso_url, "https://rd.test/sso");
-        assert_eq!(md.ars_url, "https://rd.test/ars");
-        assert_eq!(md.slo_url, "https://rd.test/slo");
+        assert_eq!(md.entity_id.as_str(), entity_id);
+        assert_eq!(md.sso_url.as_str(), "https://rd.test/sso");
+        assert_eq!(md.ars_url.as_str(), "https://rd.test/ars");
+        assert_eq!(md.slo_url.as_str(), "https://rd.test/slo");
         assert_eq!(md.signing_keys.len(), 1);
         // eID §8.5: cacheDuration is parsed for the refresh-cadence hint.
         assert_eq!(md.cache_duration, Some(Duration::from_secs(24 * 3600)));
@@ -681,6 +685,22 @@ mod tests {
         let entity_id = "urn:nl-eid-gdi:1.0:RD:00000004000000149000:entities:9002";
         let signed = signed_rd_metadata_attrs(entity_id, r#" validUntil="2999-01-01T00:00:00Z""#);
         assert!(parse_idp_metadata(&signed, &test_trust(entity_id)).is_ok());
+    }
+
+    #[test]
+    fn metadata_valid_until_at_the_edge_of_the_range_is_rejected_not_panicked_on() {
+        // `check_metadata_expiry` runs before the signature is verified, so a
+        // subverted HTTPS fetch (or a poisoned disk cache) controls `validUntil`.
+        // chrono panics when a timestamp at the edge of its range is shifted by
+        // the skew allowance, so it must be refused up front.
+        let entity_id = "urn:nl-eid-gdi:1.0:RD:00000004000000149000:entities:9002";
+        let signed =
+            signed_rd_metadata_attrs(entity_id, r#" validUntil="+262142-12-31T23:59:59Z""#);
+        let err = parse_idp_metadata(&signed, &test_trust(entity_id)).unwrap_err();
+        assert!(
+            matches!(&err, AuthError::Config(m) if m.contains("unusable validUntil")),
+            "{err:?}"
+        );
     }
 
     #[test]
@@ -789,22 +809,6 @@ mod tests {
     }
 
     #[test]
-    fn validate_endpoint_url_accepts_clean_https() {
-        assert!(validate_endpoint_url("https://rd2.toegang.overheid.nl/kvs/rd/sso", "x").is_ok());
-        assert!(validate_endpoint_url("https://tvs-mock-ars.eks-test.nl:8443/r", "x").is_ok());
-    }
-
-    #[test]
-    fn validate_endpoint_url_rejects_non_https_and_injection() {
-        assert!(validate_endpoint_url("http://rd/sso", "x").is_err()); // not https
-        assert!(validate_endpoint_url("https://", "x").is_err()); // no host
-        // Injection characters that would break out of an attribute / CSP / target.
-        assert!(validate_endpoint_url(r#"https://x/"><script>"#, "x").is_err());
-        assert!(validate_endpoint_url("https://x; script-src 'unsafe-inline'", "x").is_err());
-        assert!(validate_endpoint_url("https://x/a b", "x").is_err());
-    }
-
-    #[test]
     fn parse_idp_metadata_rejects_entity_id_mismatch() {
         let signed = signed_rd_metadata("urn:nl-eid-gdi:1.0:RD:00000004000000149000:entities:9002");
         let err = parse_idp_metadata(
@@ -838,8 +842,8 @@ mod tests {
         let keys = extract_idp_keys(&doc, doc.document_element());
         assert_eq!(keys.signing.len(), 1);
         assert_eq!(keys.encryption.len(), 0);
-        assert!(!keys.signing[0].key_name.is_empty());
-        assert!(!keys.signing[0].cert_base64.is_empty());
+        assert!(!keys.signing[0].key_name.as_str().is_empty());
+        assert!(!keys.signing[0].cert_base64.as_str().is_empty());
     }
 
     #[test]

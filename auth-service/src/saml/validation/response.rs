@@ -1,9 +1,12 @@
 //! Inner Response validation (eID §7.6.2).
 
 use super::helpers::{Validator, child_element};
-use crate::saml::{
-    constants::{NS_SAML, STATUS_SUCCESS},
-    xml_parser::{Document, NodeId, children_by_tag, find_descendant},
+use crate::{
+    saml::{
+        constants::{NS_SAML, STATUS_SUCCESS},
+        xml_parser::{Document, NodeId, children_by_tag, find_descendant},
+    },
+    types::{EndpointUrl, EntityId},
 };
 use tracing::debug;
 
@@ -20,9 +23,9 @@ use tracing::debug;
 pub struct ValidateResponseOpts<'a> {
     /// The recipient ACS this DV was addressed at, which the Response
     /// `@Destination` MUST name.
-    pub expected_destination: Option<&'a str>,
+    pub expected_destination: Option<&'a EndpointUrl>,
     /// The pinned RD EntityID, which the Response `Issuer` MUST carry.
-    pub expected_issuer: Option<&'a str>,
+    pub expected_issuer: Option<&'a EntityId>,
 }
 
 /// Validate the Response element `response` within the already-parsed document
@@ -81,7 +84,7 @@ impl Validator<'_, '_> {
     // delivered to. Mirrors the assertion-level Recipient binding (§7.6.3.5 r2).
     //
     // `expected: None` skips the check entirely; see `ValidateResponseOpts`.
-    fn check_destination(&mut self, response: NodeId, expected: Option<&str>) {
+    fn check_destination(&mut self, response: NodeId, expected: Option<&EndpointUrl>) {
         let Some(expected) = expected else {
             return;
         };
@@ -90,7 +93,7 @@ impl Validator<'_, '_> {
             .get_attribute(response, "Destination")
             .unwrap_or("");
         debug!("[validate] Response Destination='{destination}' (expected='{expected}')");
-        if destination != expected {
+        if destination != expected.as_str() {
             self.error(format!(
                 "Response Destination mismatch: expected {expected}, got {destination}"
             ));
@@ -152,9 +155,11 @@ mod tests {
         let doc = parse(xml).expect("test XML parses");
         let root = doc.document_element();
         let mut errors = Vec::new();
+        let dest = dest.map(|d| EndpointUrl::from_metadata(d, "ACS").expect("test ACS URL"));
+        let issuer = issuer.map(|i| EntityId::parse(i).expect("test issuer"));
         let opts = ValidateResponseOpts {
-            expected_destination: dest,
-            expected_issuer: issuer,
+            expected_destination: dest.as_ref(),
+            expected_issuer: issuer.as_ref(),
         };
         let assertion = validate_response_at(&doc, root, &opts, &mut errors);
         let assertion_xml = assertion.and_then(|n| doc.node_source(n).map(str::to_string));

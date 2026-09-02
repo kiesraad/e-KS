@@ -12,7 +12,8 @@ use crate::{
     bindings::http_post::autosubmit_post_response,
     error::Result,
     saml::messages::create_logout_request,
-    state::{AuthServiceState, AuthState},
+    state::{AuthServiceState, AuthState, LoggedOutSession},
+    types::{EndpointUrl, MessageId, NameId, RedirectTarget},
 };
 use axum::{
     extract::FromRef,
@@ -29,7 +30,11 @@ use tracing::{debug, error, info, warn};
 /// a session was active, builds a signed LogoutRequest (§7.7.1) for the
 /// browser to POST to the RD's SLO endpoint. Otherwise redirects to
 /// `post_logout_redirect`.
-pub async fn handle_logout<S>(state: &S, jar: CookieJar, post_logout_redirect: &str) -> Response
+pub async fn handle_logout<S>(
+    state: &S,
+    jar: CookieJar,
+    post_logout_redirect: &RedirectTarget,
+) -> Response
 where
     S: AuthState,
     AuthServiceState: FromRef<S>,
@@ -39,27 +44,24 @@ where
     // The local session is always torn down and the cookie always cleared; the
     // NameID is only present if one was recorded at login (needed to build the
     // LogoutRequest, eID §7.7.1).
-    let (cleared_jar, name_id) = state.logout_session(jar).await;
-    let Some(name_id) = name_id else {
+    let (cleared_jar, ended) = state.logout_session(jar).await;
+    let LoggedOutSession::WithSamlSubject(name_id) = ended else {
         debug!(
-            "[logout] No SAML NameID recorded; completed local logout, redirecting to post-logout page"
+            "[logout] No SAML session to end ({ended:?}); completed local logout, redirecting to post-logout page"
         );
-        return (cleared_jar, Redirect::to(post_logout_redirect)).into_response();
+        return (cleared_jar, Redirect::to(post_logout_redirect.as_str())).into_response();
     };
 
     // SECURITY: never log `name_id` itself; it is a SAML TransientID linkable
-    // to a specific authentication session.
-    debug!(
-        "[logout] Active session terminated; name_id_present=true, name_id_len={}",
-        name_id.len()
-    );
+    // to a specific authentication session (`NameId`'s `Debug` redacts it).
+    debug!("[logout] Active SAML session terminated; {name_id:?}");
 
     // The local session is already gone; if the RD descriptor is not loaded we
     // cannot build a LogoutRequest (no SLO endpoint), but the user is logged out
     // locally, so complete the logout by redirecting home rather than erroring.
     let Some(rd) = auth_state.rd_metadata() else {
         warn!("[logout] RD metadata not loaded; completed local logout, skipping SAML SLO");
-        return (cleared_jar, Redirect::to(post_logout_redirect)).into_response();
+        return (cleared_jar, Redirect::to(post_logout_redirect.as_str())).into_response();
     };
 
     match build_slo_form(&name_id, &auth_state, &rd.slo_url) {
@@ -76,7 +78,7 @@ where
             // The local session is already gone, so the user *is* logged out;
             // complete the logout by redirecting home rather than erroring.
             error!("[logout] Failed to start SAML SLO: {e}; skipping");
-            (cleared_jar, Redirect::to(post_logout_redirect)).into_response()
+            (cleared_jar, Redirect::to(post_logout_redirect.as_str())).into_response()
         }
     }
 }
@@ -85,10 +87,10 @@ where
 /// POSTs it to the RD's SLO endpoint. Returns the request ID so the caller can
 /// register it for the `InResponseTo` consume-once check (eID §7.7.2).
 fn build_slo_form(
-    name_id: &str,
+    name_id: &NameId,
     auth_state: &AuthServiceState,
-    slo_url: &str,
-) -> Result<(String, Response)> {
+    slo_url: &EndpointUrl,
+) -> Result<(MessageId, Response)> {
     let cfg = auth_state.auth_config();
     debug!(
         "[logout] Building LogoutRequest: entity_id={}, slo_url={}",
@@ -98,12 +100,9 @@ fn build_slo_form(
         name_id,
         &cfg.dv.entity_id,
         slo_url,
-        auth_state.dv_keys().primary_signing(),
+        auth_state.dv_keys().primary_signing()?,
     )?;
-    info!(
-        "[logout] LogoutRequest created: {}",
-        &msg.id[..20.min(msg.id.len())]
-    );
+    info!("[logout] LogoutRequest created: {}", msg.id.log_prefix());
     debug!("[logout] LogoutRequest XML built; returning autosubmit form");
     let form = autosubmit_post_response(slo_url, &msg.xml, "SAMLRequest")?;
     Ok((msg.id, form))
@@ -122,7 +121,7 @@ mod tests {
     #[tokio::test]
     async fn logout_without_active_session_redirects_home() {
         let mock = MockAuthState::empty();
-        let resp = handle_logout(&mock, CookieJar::new(), "/").await;
+        let resp = handle_logout(&mock, CookieJar::new(), &RedirectTarget::root()).await;
         assert!(resp.status().is_redirection());
     }
 
@@ -131,8 +130,10 @@ mod tests {
         // A session exists (logout_session returns a NameID) but no RD descriptor
         // is loaded, so no SAML SLO is built: the browser is redirected home.
         let mut mock = MockAuthState::empty();
-        mock.session = Some("_transient-name-id".to_string());
-        let resp = handle_logout(&mock, CookieJar::new(), "/").await;
+        mock.session = LoggedOutSession::WithSamlSubject(
+            NameId::parse("_transient-name-id").expect("test NameID"),
+        );
+        let resp = handle_logout(&mock, CookieJar::new(), &RedirectTarget::root()).await;
         assert!(resp.status().is_redirection());
     }
 

@@ -5,6 +5,7 @@ use crate::{
     keys::KeySet,
     saml::messages::{AuthnRequestSpec, CreatedMessage, create_authn_request},
     state::{AuthFailure, AuthServiceState, AuthState},
+    types::{EndpointUrl, MessageId},
 };
 use axum::{
     extract::{FromRef, State},
@@ -64,16 +65,13 @@ where
 /// register it as pending for replay protection (eID §9.7).
 fn build_login_response(
     auth_state: &AuthServiceState,
-    sso_url: &str,
+    sso_url: &EndpointUrl,
     jar: CookieJar,
     headers: &HeaderMap,
-) -> Result<(String, Response)> {
+) -> Result<(MessageId, Response)> {
     let config = auth_state.auth_config();
     let msg = signed_authn_request(config, auth_state.dv_keys(), sso_url)?;
-    info!(
-        "[login] AuthnRequest created: {}",
-        &msg.id[..20.min(msg.id.len())]
-    );
+    info!("[login] AuthnRequest created: {}", msg.id.log_prefix());
 
     // Bind this SSO flow to the current browser (login-CSRF / forced-login
     // defense): the matching ACS callback must present this cookie, whose
@@ -95,7 +93,7 @@ fn build_login_response(
 fn signed_authn_request(
     config: &AuthConfig,
     keys: &KeySet,
-    sso_url: &str,
+    sso_url: &EndpointUrl,
 ) -> Result<CreatedMessage> {
     let preselected_ad_entity_id = config.preselected_ad_entity_id();
 
@@ -104,8 +102,7 @@ fn signed_authn_request(
     // resolves the ACS from the registered metadata via the index, so we only
     // send the URL for Test, letting one shared mock serve many ephemeral test
     // environments without per-environment registration.
-    let request_acs_url =
-        (config.environment == Environment::Test).then_some(config.dv.acs_url.as_str());
+    let request_acs_url = (config.environment == Environment::Test).then_some(&config.dv.acs_url);
 
     debug!(
         "[login] entity_id={}, service_uuid={}, sso_url={}, preselected_ad={:?} ({:?}), request_acs_url={:?}, signing_keys={}",
@@ -122,8 +119,8 @@ fn signed_authn_request(
         entity_id: &config.dv.entity_id,
         service_uuid: &config.dv.service_uuid,
         sso_url,
-        signing_key: keys.primary_signing(),
-        preselected_ad_entity_id,
+        signing_key: keys.primary_signing()?,
+        preselected_ad_entity_id: preselected_ad_entity_id.as_ref(),
         acs_url: request_acs_url,
     })
 }
@@ -132,7 +129,10 @@ fn signed_authn_request(
 mod tests {
     use super::*;
     use crate::{
-        config::AuthConfig, handlers::test_support::MockAuthState, saml::idp_metadata::IdpMetadata,
+        config::AuthConfig,
+        handlers::test_support::MockAuthState,
+        saml::idp_metadata::IdpMetadata,
+        types::{EntityId, ServiceUuid},
     };
     use axum::{
         body::to_bytes,
@@ -146,20 +146,13 @@ mod tests {
     fn state_with_rd() -> AuthServiceState {
         let mut cfg = AuthConfig::default().with_certs_dir(fixtures_dir());
         cfg.environment = Environment::Test;
-        cfg.dv.entity_id = "urn:test:dv".to_string();
-        cfg.dv.service_uuid = "f847dc11-ac24-47b2-84a8-a057440ce56d".to_string();
-        cfg.dv.acs_url = "https://dv.example.com/saml/sp/acs".to_string();
+        cfg.dv.entity_id = EntityId::from_static("urn:test:dv");
+        cfg.dv.service_uuid = ServiceUuid::from_static("f847dc11-ac24-47b2-84a8-a057440ce56d");
+        cfg.dv.acs_url = EndpointUrl::from_base_url("https://dv.example.com/saml/sp/acs", "ACS")
+            .expect("test ACS URL");
         let keys =
             crate::keys::load_key_set(&cfg.dv.signing, &cfg.dv.encryption).expect("load fixtures");
-        let rd = IdpMetadata {
-            entity_id: "urn:test:rd".to_string(),
-            sso_url: "https://rd.example.com/sso".to_string(),
-            ars_url: String::new(),
-            slo_url: String::new(),
-            signing_keys: Vec::new(),
-            cache_duration: None,
-        };
-        AuthServiceState::new(cfg, keys, Some(rd))
+        AuthServiceState::new(cfg, keys, Some(IdpMetadata::for_tests()))
     }
 
     #[tokio::test]

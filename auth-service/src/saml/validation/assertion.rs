@@ -1,18 +1,22 @@
 //! Assertion validation and claim extraction (eID §7.6.3, processing rules §7.6.3.5).
 
 use super::helpers::Validator;
-use crate::saml::{
-    constants::{
-        EID_ACTING_SUBJECT_ID, EID_ID_TYPES, EID_LEGAL_SUBJECT_ID, EID_SERVICE_UUID,
-        NAMEID_PERSISTENT, NAMEID_TRANSIENT, NS_SAML, SUBJECT_CONFIRMATION_BEARER,
+use crate::{
+    keys::DecryptionKey,
+    saml::{
+        constants::{
+            EID_ACTING_SUBJECT_ID, EID_ID_TYPES, EID_LEGAL_SUBJECT_ID, EID_SERVICE_UUID,
+            NAMEID_PERSISTENT, NAMEID_TRANSIENT, NS_SAML, SUBJECT_CONFIRMATION_BEARER,
+        },
+        decryption::{DecryptedNameId, decrypt_encrypted_id},
+        loa::LevelOfAssurance,
+        subject::SubjectId,
+        xml_parser::{
+            Document, NodeId, children_by_tag, descendants_by_tag_pruned, direct_text, find_child,
+            find_descendant, find_descendant_pruned,
+        },
     },
-    decryption::{DecryptedNameId, DecryptionKey, decrypt_encrypted_id},
-    loa::LevelOfAssurance,
-    subject::SubjectId,
-    xml_parser::{
-        Document, NodeId, children_by_tag, descendants_by_tag_pruned, direct_text, find_child,
-        find_descendant, find_descendant_pruned,
-    },
+    types::{EndpointUrl, EntityId, MessageId, NameId, ServiceUuid},
 };
 use secrecy::ExposeSecret;
 use tracing::debug;
@@ -22,7 +26,7 @@ pub struct Claims {
     /// The Subject TransientID NameID. eID §7.6.3 mandates it (cardinality 1),
     /// so a successfully validated assertion always carries one; the caller
     /// persists it to build the later `LogoutRequest` (§7.7.1 / §7.6.3.5).
-    pub name_id: String,
+    pub name_id: NameId,
     pub authn_context_class_ref: Option<String>,
     pub authenticating_authority: Option<String>,
     pub acting_subject_id: Option<SubjectId>,
@@ -32,19 +36,21 @@ pub struct Claims {
     /// check (eID §7.6.3.5 rule 4 / §9.7): the caller verifies it against the
     /// outstanding AuthnRequest IDs and atomically consumes the match. `None` if
     /// the assertion carried no `InResponseTo`.
-    pub in_response_to: Option<String>,
+    pub in_response_to: Option<MessageId>,
 }
 
 /// Inputs to [`validate_assertion_at`].
 pub struct ValidateAssertionOpts<'a> {
-    pub dv_entity_id: &'a str,
-    pub expected_recipient: &'a str,
+    pub dv_entity_id: &'a EntityId,
+    /// The DV ACS the assertion's `Recipient` MUST name (eID §7.6.3.5 rule 2).
+    /// `None` skips the check (tests).
+    pub expected_recipient: Option<&'a EndpointUrl>,
     /// Expected Assertion `Issuer`: the RD (TVS) EntityID. The Assertion is not
     /// signed independently; its authenticity comes from the RD-signed
     /// ArtifactResponse envelope, and signatures inside an Assertion/Advice are
     /// evidence-only (eID §9.1). Binding the Issuer to the RD EntityID matches the
     /// TVS reference impl (`minvws/nl-rdo-max`). `None` skips the check (tests).
-    pub expected_issuer: Option<&'a str>,
+    pub expected_issuer: Option<&'a EntityId>,
     /// DV private keys tried for EncryptedID decryption.
     pub private_keys: &'a [DecryptionKey<'a>],
     /// Minimum required LoA. `None` skips the check (used by tests that
@@ -53,7 +59,7 @@ pub struct ValidateAssertionOpts<'a> {
     pub minimum_loa: Option<LevelOfAssurance>,
     /// Expected DV `ServiceUUID` (eID §7.6.3.4): the assertion's ServiceUUID
     /// attribute MUST equal this. `None` skips the check (tests).
-    pub expected_service_uuid: Option<&'a str>,
+    pub expected_service_uuid: Option<&'a ServiceUuid>,
 }
 
 /// Validate the Assertion element `root` within the already-parsed document `doc`
@@ -161,11 +167,14 @@ impl Validator<'_, '_> {
 
         let (acting_subject_id, legal_subject_id) = self.extract_encrypted_subject_ids(root, opts);
 
-        // Extract InResponseTo from SubjectConfirmationData for replay protection (eID §9.7).
+        // Extract InResponseTo from SubjectConfirmationData for replay protection
+        // (eID §9.7). A value that is not a well-formed message ID names no
+        // AuthnRequest this DV could have issued, so it is dropped here and the
+        // caller's rule-4 check then fails closed on the absent value.
         let in_response_to = self
             .find_claim(root, "SubjectConfirmationData")
             .and_then(|scd| self.doc.get_attribute(scd, "InResponseTo"))
-            .map(String::from);
+            .and_then(|id| MessageId::parse(id).ok());
 
         let service_uuid = self.check_service_uuid(root, opts.expected_service_uuid);
         debug!(
@@ -193,21 +202,27 @@ impl Validator<'_, '_> {
     /// eID §7.6.3: the Subject NameID (a TransientID) is read from the outer
     /// assertion's `<Subject>`, not from a SubjectConfirmation or the Advice
     /// subtree.
-    fn checked_subject_name_id(&mut self, root: NodeId) -> Option<String> {
+    fn checked_subject_name_id(&mut self, root: NodeId) -> Option<NameId> {
         let name_id_node = self
             .find_claim(root, "Subject")
             .and_then(|s| find_child(self.doc, s, NS_SAML, "NameID"));
         // `direct_text`: the identifier is the NameID's own text.
-        let name_id = name_id_node.and_then(|n| direct_text(self.doc, n));
-        if name_id_node.is_some() && name_id.is_none() {
+        let text = name_id_node.and_then(|n| direct_text(self.doc, n));
+        if name_id_node.is_some() && text.is_none() {
             self.error("Subject NameID contains child elements".to_string());
         }
         self.check_subject_name_id_format(name_id_node);
-        debug!(
-            "[validate] NameID present={}, length={}",
-            name_id.is_some(),
-            name_id.as_deref().map(str::len).unwrap_or(0)
-        );
+        // The NameID is echoed back to the RD in the later LogoutRequest, so an
+        // empty or otherwise unusable one is rejected here rather than carried.
+        let name_id = match text.as_deref().map(NameId::parse) {
+            Some(Ok(name_id)) => Some(name_id),
+            Some(Err(e)) => {
+                self.error(format!("Subject NameID is not usable: {e}"));
+                None
+            }
+            None => None,
+        };
+        debug!("[validate] NameID present={}", name_id.is_some());
         name_id
     }
 
@@ -233,7 +248,11 @@ impl Validator<'_, '_> {
     // present) and require it to equal the DV's registered one, so an assertion
     // minted for another service is rejected. `expected` of `None` skips the
     // check (tests).
-    fn check_service_uuid(&mut self, root: NodeId, expected: Option<&str>) -> Option<String> {
+    fn check_service_uuid(
+        &mut self,
+        root: NodeId,
+        expected: Option<&ServiceUuid>,
+    ) -> Option<String> {
         let service_uuid = self
             .find_attributes(root)
             .iter()
@@ -244,7 +263,7 @@ impl Validator<'_, '_> {
 
         if let Some(expected) = expected {
             match service_uuid.as_deref().map(str::trim) {
-                Some(u) if u == expected => {}
+                Some(u) if u == expected.as_str() => {}
                 Some(u) => self.error(format!(
                     "ServiceUUID mismatch: expected {expected}, got {u}"
                 )),
@@ -311,7 +330,11 @@ impl Validator<'_, '_> {
 
     // eID §7.6.3.3 / §7.6.3.5 rules 2-3: the SubjectConfirmationData expiry and
     // Recipient bindings.
-    fn check_subject_confirmation_data(&mut self, scd: NodeId, expected_recipient: &str) {
+    fn check_subject_confirmation_data(
+        &mut self,
+        scd: NodeId,
+        expected_recipient: Option<&EndpointUrl>,
+    ) {
         // §7.6.3.5 rule 3: Verify NotOnOrAfter has not passed.
         // §7.6.3.3: Initially set to +2 minutes; @NotBefore MUST NOT be used.
         debug!(
@@ -334,9 +357,12 @@ impl Validator<'_, '_> {
         }
 
         // §7.6.3.5 rule 2: Verify Recipient matches ACS URL.
+        let Some(expected_recipient) = expected_recipient else {
+            return;
+        };
         let recipient = self.doc.get_attribute(scd, "Recipient").unwrap_or("");
         debug!("[validate] Rule 2: Recipient='{recipient}' (expected='{expected_recipient}')");
-        if !expected_recipient.is_empty() && recipient != expected_recipient {
+        if recipient != expected_recipient.as_str() {
             self.error(format!(
                 "Recipient mismatch: expected {expected_recipient}, got {recipient}"
             ));
@@ -369,7 +395,7 @@ impl Validator<'_, '_> {
     // §7.6.3.5 rule 5: Verify DV EntityID is in AudienceRestriction.
     // eID §7.6.3.1: Assertion may only be processed if AudienceRestriction
     // contains the DV EntityID.
-    fn check_audience_restriction(&mut self, root: NodeId, dv_entity_id: &str) {
+    fn check_audience_restriction(&mut self, root: NodeId, dv_entity_id: &EntityId) {
         // `direct_text`: an entry with element children is not an audience, so it
         // is skipped and cannot match.
         let audiences: Vec<String> = self
@@ -382,7 +408,7 @@ impl Validator<'_, '_> {
             audiences.len(),
             dv_entity_id
         );
-        if !audiences.iter().any(|a| a == dv_entity_id) {
+        if !audiences.iter().any(|a| a == dv_entity_id.as_str()) {
             self.error(format!(
                 "DV entityId {} not in AudienceRestriction: [{}]",
                 dv_entity_id,
@@ -469,9 +495,12 @@ impl Validator<'_, '_> {
             };
 
             // eID §7.6.3.4: bind decryption to the EncryptedKey addressed to us.
-            let Some(d) =
-                decrypt_encrypted_id(self.doc, enc_id, opts.private_keys, Some(opts.dv_entity_id))
-            else {
+            let Some(d) = decrypt_encrypted_id(
+                self.doc,
+                enc_id,
+                opts.private_keys,
+                Some(opts.dv_entity_id.as_str()),
+            ) else {
                 debug!(
                     "[validate] EncryptedID present on attribute '{name}' but decryption returned None"
                 );
@@ -642,7 +671,8 @@ mod tests {
         let mut errors = Vec::new();
         let mut v = Validator::new(&doc, &mut errors);
         assert!(v.find_attributes(root).is_empty());
-        assert_eq!(v.check_service_uuid(root, Some("planted")), None);
+        let planted = ServiceUuid::from_static("planted");
+        assert_eq!(v.check_service_uuid(root, Some(&planted)), None);
         assert!(
             errors.iter().any(|e| e.contains("missing the required")),
             "{errors:?}"
@@ -678,12 +708,12 @@ mod tests {
             &doc,
             root,
             &ValidateAssertionOpts {
-                dv_entity_id: "urn:dv",
-                expected_recipient: "",
+                dv_entity_id: &EntityId::from_static("urn:dv"),
+                expected_recipient: None,
                 expected_issuer: None,
                 private_keys: &[],
                 minimum_loa: None,
-                expected_service_uuid: Some("expected-service"),
+                expected_service_uuid: Some(&ServiceUuid::from_static("expected-service")),
             },
             &mut errors,
         );

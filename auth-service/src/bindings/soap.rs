@@ -8,6 +8,7 @@ use crate::{
         constants::NS_SOAP,
         xml_parser::{Document, NodeId, find_descendant},
     },
+    types::EndpointUrl,
 };
 use std::{
     fs,
@@ -128,11 +129,15 @@ pub(crate) async fn read_body_capped(
 }
 
 /// Send a SOAP request with mTLS and return the response body.
-pub async fn send_soap_request(url: &str, soap_xml: &str, tls: &TlsConfig) -> Result<String> {
+pub async fn send_soap_request(
+    url: &EndpointUrl,
+    soap_xml: &str,
+    tls: &TlsConfig,
+) -> Result<String> {
     debug!("[soap] POST {url} (request_body_len={})", soap_xml.len());
     let client = mtls_client(tls)?;
     let response = client
-        .post(url)
+        .post(url.as_str())
         .header("Content-Type", "text/xml; charset=utf-8")
         .header("SOAPAction", "\"\"")
         .body(soap_xml.to_string())

@@ -1,25 +1,24 @@
 //! DV SAML metadata builder.
 
-use secrecy::ExposeSecret;
-
 use crate::{
     error::{AuthError, Result},
     keys::KeyPair,
     saml::{
         crypto::sign,
-        xml_builder::{DvMetadataArgs, build_dv_metadata, generate_id},
+        xml_builder::{DvMetadataArgs, PublishedKey, build_dv_metadata},
     },
+    types::{EndpointUrl, EntityId, MessageId, ServiceUuid},
 };
 
 /// Inputs for [`build_signed_dv_metadata`]: the SP identity and endpoints plus
 /// the key material to publish. The document is signed with the first signing
 /// key (whose certificate is also carried in the Signature `KeyInfo`).
 pub struct SignedDvMetadataArgs<'a> {
-    pub entity_id: &'a str,
-    pub acs_url: &'a str,
-    pub slo_url: &'a str,
+    pub entity_id: &'a EntityId,
+    pub acs_url: &'a EndpointUrl,
+    pub slo_url: &'a EndpointUrl,
     pub service_name: &'a str,
-    pub service_uuid: &'a str,
+    pub service_uuid: &'a ServiceUuid,
     pub signing_keys: &'a [KeyPair],
     /// The DV's mTLS client certificate, published alongside the SAML signing
     /// cert(s) as a `use="signing"` KeyDescriptor (eID §8.3); `None` to omit it.
@@ -33,7 +32,7 @@ pub fn build_signed_dv_metadata(args: SignedDvMetadataArgs) -> Result<String> {
         .first()
         .ok_or_else(|| AuthError::Config("no DV signing key to sign metadata".to_string()))?;
 
-    let metadata_id = generate_id();
+    let metadata_id = MessageId::generate();
     let sk = published_signing_keys(args.signing_keys, args.tls_signing_cert);
     let ek = key_refs(args.encryption_keys.iter());
 
@@ -49,7 +48,7 @@ pub fn build_signed_dv_metadata(args: SignedDvMetadataArgs) -> Result<String> {
         encryption_keys: &ek,
     })?;
 
-    sign(&xml, signing_key.key_pem.expose_secret())
+    sign(&xml, &signing_key.key_pem)
 }
 
 /// The `use="signing"` keys to publish: every SAML signing key plus the mTLS
@@ -59,16 +58,19 @@ pub fn build_signed_dv_metadata(args: SignedDvMetadataArgs) -> Result<String> {
 fn published_signing_keys<'a>(
     signing_keys: &'a [KeyPair],
     tls_signing_cert: Option<&'a KeyPair>,
-) -> Vec<(&'a str, &'a str)> {
+) -> Vec<PublishedKey<'a>> {
     let tls_extra =
         tls_signing_cert.filter(|tls| signing_keys.iter().all(|k| k.key_name != tls.key_name));
     key_refs(signing_keys.iter().chain(tls_extra))
 }
 
-/// `(key_name, cert_base64)` template references for a list of keys.
-fn key_refs<'a>(keys: impl Iterator<Item = &'a KeyPair>) -> Vec<(&'a str, &'a str)> {
-    keys.map(|k| (k.key_name.as_str(), k.cert_base64.as_str()))
-        .collect()
+/// The `<md:KeyDescriptor>` view of a list of keys.
+fn key_refs<'a>(keys: impl Iterator<Item = &'a KeyPair>) -> Vec<PublishedKey<'a>> {
+    keys.map(|k| PublishedKey {
+        key_name: &k.key_name,
+        cert_base64: &k.cert_base64,
+    })
+    .collect()
 }
 
 #[cfg(test)]
@@ -76,21 +78,23 @@ mod tests {
     use super::*;
     use std::path::PathBuf;
 
+    fn dv_url(url: &str) -> EndpointUrl {
+        EndpointUrl::from_base_url(url, "DV endpoint").expect("test DV endpoint")
+    }
+
     /// Load a fixture key pair from the committed TVS test bundle.
     fn load_pair(name: &str) -> KeyPair {
         let dir = PathBuf::from(concat!(env!("CARGO_MANIFEST_DIR"), "/fixtures"));
-        let cert_pem = std::fs::read_to_string(dir.join(format!("{name}.pem"))).unwrap();
-        let key_pem = std::fs::read_to_string(dir.join(format!("{name}-key.pem"))).unwrap();
-        KeyPair::from_pem(cert_pem, key_pem.into())
+        crate::keys::load_key_pair(&crate::keys::key_pair_paths(&dir, name)).unwrap()
     }
 
     fn build(signing: &[KeyPair], tls: Option<&KeyPair>, encryption: &[KeyPair]) -> String {
         build_signed_dv_metadata(SignedDvMetadataArgs {
-            entity_id: "urn:test:dv",
-            acs_url: "https://dv.test/saml/sp/acs",
-            slo_url: "https://dv.test/saml/sp/logout",
+            entity_id: &EntityId::from_static("urn:test:dv"),
+            acs_url: &dv_url("https://dv.test/saml/sp/acs"),
+            slo_url: &dv_url("https://dv.test/saml/sp/logout"),
             service_name: "Test DV",
-            service_uuid: "f847dc11-ac24-47b2-84a8-a057440ce56d",
+            service_uuid: &ServiceUuid::from_static("f847dc11-ac24-47b2-84a8-a057440ce56d"),
             signing_keys: signing,
             tls_signing_cert: tls,
             encryption_keys: encryption,
@@ -117,10 +121,10 @@ mod tests {
         );
         assert_eq!(xml.matches(r#"use="encryption""#).count(), 1);
         assert!(
-            xml.contains(&tls.key_name),
+            xml.contains(tls.key_name.as_str()),
             "TLS cert KeyName must appear in the metadata"
         );
-        assert!(xml.contains(&signing.key_name));
+        assert!(xml.contains(signing.key_name.as_str()));
     }
 
     #[test]

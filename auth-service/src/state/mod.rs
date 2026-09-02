@@ -8,6 +8,7 @@ use crate::{
         idp_metadata::{IdpMetadata, RdTrust},
         subject::SubjectId,
     },
+    types::{MessageId, NameId},
 };
 use axum::{http::HeaderMap, response::Response};
 use axum_extra::extract::CookieJar;
@@ -202,7 +203,7 @@ pub trait AuthState: Clone + Send + Sync + 'static {
     fn on_authenticated(
         &self,
         subject_id: SubjectId,
-        name_id: String,
+        name_id: NameId,
         jar: CookieJar,
         headers: &HeaderMap,
     ) -> impl std::future::Future<Output = Response> + Send;
@@ -225,18 +226,22 @@ pub trait AuthState: Clone + Send + Sync + 'static {
     ) -> impl std::future::Future<Output = Response> + Send;
 
     /// Terminate the local session for SP-initiated logout. Always returns the
-    /// jar with the session cookie cleared, plus the SAML `NameID` if one was
-    /// recorded (needed for the `LogoutRequest`, eID §7.7.1).
+    /// jar with the session cookie cleared, plus what was torn down (see
+    /// [`LoggedOutSession`]), which decides whether a `LogoutRequest` is sent to
+    /// the RD (eID §7.7.1).
     fn logout_session(
         &self,
         jar: CookieJar,
-    ) -> impl std::future::Future<Output = (CookieJar, Option<String>)> + Send;
+    ) -> impl std::future::Future<Output = (CookieJar, LoggedOutSession)> + Send;
 
     /// Persist an outgoing AuthnRequest ID for the later `InResponseTo` replay
     /// check (eID §7.6.3.5 rule 4 / §9.7). Implementations should sweep entries
     /// older than the retention window (eID §7.5: artifacts are valid for at
     /// most 15 minutes) so abandoned flows cannot accumulate.
-    fn register_pending_request(&self, id: String) -> impl std::future::Future<Output = ()> + Send;
+    fn register_pending_request(
+        &self,
+        id: MessageId,
+    ) -> impl std::future::Future<Output = ()> + Send;
 
     /// Atomically validate and consume an incoming Assertion's `InResponseTo`
     /// against the outstanding AuthnRequest IDs (eID §7.6.3.5 rule 4 / §9.7).
@@ -250,7 +255,25 @@ pub trait AuthState: Clone + Send + Sync + 'static {
     /// for an unknown, expired, or already-consumed ID; implementations should
     /// likewise fail closed (return `false`) on a storage error, so the caller
     /// rejects the Assertion rather than admitting an unverified one.
-    fn consume_if_pending(&self, id: String) -> impl std::future::Future<Output = bool> + Send;
+    fn consume_if_pending(&self, id: MessageId) -> impl std::future::Future<Output = bool> + Send;
+}
+
+/// What [`AuthState::logout_session`] tore down.
+///
+/// Three states rather than an `Option<String>` with an empty-string sentinel:
+/// "no session", "a session that never took part in SAML", and "a SAML session"
+/// call for three different outcomes, and collapsing the last two would build a
+/// `LogoutRequest` carrying an empty `NameID`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum LoggedOutSession {
+    /// No session was active; nothing was torn down.
+    None,
+    /// A session ended, but it was not established through SAML (e.g. a central
+    /// electoral committee login), so there is no RD session to end.
+    WithoutSamlSubject,
+    /// A SAML session ended. The `NameID` identifies it to the RD, so an SLO
+    /// round-trip follows (eID §7.7.1).
+    WithSamlSubject(NameId),
 }
 
 /// Why a SAML authentication attempt ended without an authenticated session.
@@ -343,12 +366,12 @@ mod tests {
         // Build a state directly from the committed fixtures (no env/network).
         let dir = fixtures_dir();
         let mut cfg = AuthConfig::default().with_certs_dir(dir);
-        cfg.dv.entity_id = "urn:test:dv".to_string();
+        cfg.dv.entity_id = crate::types::EntityId::from_static("urn:test:dv");
         let keys =
             crate::keys::load_key_set(&cfg.dv.signing, &cfg.dv.encryption).expect("load fixtures");
         let state = AuthServiceState::new(cfg, keys, None);
 
-        assert_eq!(state.auth_config().dv.entity_id, "urn:test:dv");
+        assert_eq!(state.auth_config().dv.entity_id.as_str(), "urn:test:dv");
         assert_eq!(state.dv_keys().signing.len(), 2);
         assert_eq!(state.dv_keys().encryption.len(), 2);
         // `with_certs_dir` points the TLS client cert at the committed fixture,

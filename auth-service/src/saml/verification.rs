@@ -5,7 +5,7 @@
 //! KeyName/X509Certificate only selects which trusted cert to use. So: find the
 //! KeyInfo, match it against `trusted_keys`, then verify with that cert.
 use crate::{
-    keys::KeyPair,
+    keys::{CertificateBase64, KeyPair},
     saml::{
         constants::NS_DSIG,
         crypto::{self, SignatureVerification},
@@ -161,11 +161,11 @@ impl<'a, 'input> SignatureChecks<'a, 'input> {
                 return;
             }
         };
-        if let Some(key_index) = self.find_matching_key(sig_node, trusted_keys)
+        if let Some(key) = self.find_matching_key(sig_node, trusted_keys)
             && self.check_signature_algorithms(sig_node)
             && self.signature_covers_root(root, sig_node)
         {
-            self.verify_with_cert(xml, &trusted_keys[key_index]);
+            self.verify_with_cert(xml, key);
         }
     }
 
@@ -245,18 +245,15 @@ impl<'a, 'input> SignatureChecks<'a, 'input> {
             sig_nodes.len(),
             self.doc.local_name(root).unwrap_or_default()
         );
-        if sig_nodes.is_empty() {
-            return Err("No ds:Signature element found".to_string());
-        }
-        if sig_nodes.len() > 1 {
-            return Err(format!(
-                "Expected exactly one enveloping ds:Signature, found {}",
-                sig_nodes.len()
-            ));
-        }
+        let [sig] = sig_nodes[..] else {
+            return Err(match sig_nodes.len() {
+                0 => "No ds:Signature element found".to_string(),
+                n => format!("Expected exactly one enveloping ds:Signature, found {n}"),
+            });
+        };
 
         let all_sigs = descendants_by_tag(self.doc, root, NS_DSIG, "Signature");
-        if all_sigs.first() != sig_nodes.first() {
+        if all_sigs.first() != Some(&sig) {
             return Err(
                 "A nested ds:Signature precedes the enveloping signature: the backend would \
                  verify a different signature than the enveloping one (possible XML signature \
@@ -264,7 +261,7 @@ impl<'a, 'input> SignatureChecks<'a, 'input> {
                     .to_string(),
             );
         }
-        Ok(sig_nodes[0])
+        Ok(sig)
     }
 
     // eID §9.1: verify the Signature's declared SignatureMethod, every Reference
@@ -509,8 +506,12 @@ impl<'a, 'input> SignatureChecks<'a, 'input> {
 
     // eID §9.2: the KeyInfo only *selects* which trusted cert verifies; a
     // KeyName or certificate that matches nothing from verified metadata is
-    // rejected. Returns the index of the matched key within `trusted`.
-    fn find_matching_key(&mut self, sig: NodeId, trusted: &[KeyPair]) -> Option<usize> {
+    // rejected. Returns the matched key.
+    fn find_matching_key<'k>(
+        &mut self,
+        sig: NodeId,
+        trusted: &'k [KeyPair],
+    ) -> Option<&'k KeyPair> {
         let found = if let Some(key_name_node) = find_descendant(self.doc, sig, NS_DSIG, "KeyName")
         {
             // `direct_text`: the key selector is the element's own text only.
@@ -537,18 +538,18 @@ impl<'a, 'input> SignatureChecks<'a, 'input> {
             );
             None
         };
-        if let Some(i) = found {
+        if let Some(key) = found {
             debug!(
                 "[verify] Signature matched trusted key key_name={}",
-                trusted[i].key_name
+                key.key_name
             );
         }
         found
     }
 
-    fn key_by_name(&mut self, key_name: &str, trusted: &[KeyPair]) -> Option<usize> {
+    fn key_by_name<'k>(&mut self, key_name: &str, trusted: &'k [KeyPair]) -> Option<&'k KeyPair> {
         let key_name = key_name.trim();
-        if let Some(found) = trusted.iter().position(|kp| kp.matches_key_name(key_name)) {
+        if let Some(found) = trusted.iter().find(|kp| kp.matches_key_name(key_name)) {
             return Some(found);
         }
         let trusted_names: Vec<&str> = trusted.iter().map(|kp| kp.key_name.as_str()).collect();
@@ -558,9 +559,14 @@ impl<'a, 'input> SignatureChecks<'a, 'input> {
         None
     }
 
-    fn key_by_cert(&mut self, cert_text: &str, trusted: &[KeyPair]) -> Option<usize> {
-        let sig_cert = cert_text.replace(|c: char| c.is_whitespace(), "");
-        if let Some(found) = trusted.iter().position(|kp| kp.cert_base64 == sig_cert) {
+    fn key_by_cert<'k>(&mut self, cert_text: &str, trusted: &'k [KeyPair]) -> Option<&'k KeyPair> {
+        // A `<ds:X509Certificate>` that is not a certificate at all matches
+        // nothing: fail closed rather than treat the raw text as a candidate.
+        let Ok(sig_cert) = CertificateBase64::parse(cert_text) else {
+            self.error("X509Certificate in signature is not a base64 certificate".to_string());
+            return None;
+        };
+        if let Some(found) = trusted.iter().find(|kp| kp.cert_base64 == sig_cert) {
             return Some(found);
         }
         self.error("X509Certificate in signature does not match any trusted key".to_string());
@@ -574,11 +580,17 @@ mod tests {
     use crate::saml::constants::{NS_SAML, NS_SAMLP};
 
     fn key_pair(cert_pem: &str) -> KeyPair {
-        KeyPair::from_pem(cert_pem.to_string(), String::new().into())
+        KeyPair::from_pem(
+            crate::keys::CertificatePem::parse(cert_pem).expect("test PEM parses"),
+            crate::keys::PrivateKeyPem::absent(),
+        )
     }
 
     // A self-contained test certificate (never used for real signing).
-    const TEST_PEM: &str = "-----BEGIN CERTIFICATE-----\nMIIBkTCB+wIJALRiMLAh0WNHMA0GCSqGSIb3DQEBCwUAMBExDzANBgNVBAMMBnRlc3RDQTAeFw0yNTAxMDEwMDAwMDBaFw0yNjAxMDEwMDAwMDBaMBExDzANBgNVBAMMBnRlc3RDQTBcMA0GCSqGSIb3DQEBAQUAA0sAMEgCQQC7o96P+5MhMjCnSGfnMhKxGdzQ7vNvPJGK7eCRvig6V7l6x2mBOFp2Z9gE4yrGS0ISjqRIG1WQ5rOb3Uz9AgMBAAEwDQYJKoZIhvcNAQELBQADQQBb+u1uAt6HlG7MFQHtWJ0RI0U8C/XIfDqFa7OmGjPGqEjNdvTY3Zll8TfhUPGCNjBHPkTO1LjI/mO07m7bZO4\n-----END CERTIFICATE-----";
+    const TEST_PEM: &str = include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/fixtures/rd-signing-1.pem"
+    ));
 
     #[test]
     fn only_the_root_signature_is_considered() {
@@ -604,7 +616,7 @@ mod tests {
     #[test]
     fn find_matching_key_matches_sha256_key_name() {
         let kp = key_pair(TEST_PEM);
-        let sha256 = crate::keys::derive_key_names(TEST_PEM)[1].clone();
+        let sha256 = kp.cert_pem.key_names()[1].clone();
         let xml = format!(
             r#"<Signature xmlns="http://www.w3.org/2000/09/xmldsig#"><KeyInfo><KeyName>{sha256}</KeyName></KeyInfo></Signature>"#
         );
@@ -945,7 +957,7 @@ mod tests {
     #[test]
     fn key_name_with_child_elements_is_rejected() {
         let kp = key_pair(TEST_PEM);
-        let sha256 = crate::keys::derive_key_names(TEST_PEM)[1].clone();
+        let sha256 = kp.cert_pem.key_names()[1].clone();
         let xml = format!(
             r#"<Signature xmlns="{NS_DSIG}"><KeyInfo><KeyName><x>{sha256}</x></KeyName></KeyInfo></Signature>"#
         );

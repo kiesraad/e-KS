@@ -1,7 +1,5 @@
 //! SAML message builders: AuthnRequest, ArtifactResolve, LogoutRequest.
 
-use secrecy::ExposeSecret;
-
 use crate::{
     error::Result,
     keys::KeyPair,
@@ -10,31 +8,34 @@ use crate::{
         loa::MINIMUM_LOA,
         xml_builder::{
             ArtifactResolveArgs, AuthnRequestArgs, LogoutRequestArgs, build_artifact_resolve,
-            build_authn_request, build_logout_request, generate_id, now_utc,
+            build_authn_request, build_logout_request, now_utc,
         },
     },
+    types::{Artifact, EndpointUrl, EntityId, MessageId, NameId, ServiceUuid},
 };
 
+/// A signed outgoing SAML message and the `@ID` it carries, which the caller
+/// registers as pending so the matching response can be correlated (eID §9.7).
 pub struct CreatedMessage {
-    pub id: String,
+    pub id: MessageId,
     pub xml: String,
 }
 
 /// Inputs to [`create_authn_request`]: the DV identity, the RD SSO endpoint the
 /// request is destined for, and the signing key.
 pub struct AuthnRequestSpec<'a> {
-    pub entity_id: &'a str,
-    pub service_uuid: &'a str,
-    pub sso_url: &'a str,
+    pub entity_id: &'a EntityId,
+    pub service_uuid: &'a ServiceUuid,
+    pub sso_url: &'a EndpointUrl,
     pub signing_key: &'a KeyPair,
     /// AD to pre-select via `Scoping/IDPList` (eID §7.3); `None` sends no Scoping.
-    pub preselected_ad_entity_id: Option<&'a str>,
+    pub preselected_ad_entity_id: Option<&'a EntityId>,
     /// Explicit ACS URL, Test-environment only (see `AuthnRequestArgs::acs_url`).
-    pub acs_url: Option<&'a str>,
+    pub acs_url: Option<&'a EndpointUrl>,
 }
 
 pub fn create_authn_request(spec: &AuthnRequestSpec<'_>) -> Result<CreatedMessage> {
-    let id = generate_id();
+    let id = MessageId::generate();
     let issue_instant = now_utc();
 
     let xml = build_authn_request(AuthnRequestArgs {
@@ -52,18 +53,18 @@ pub fn create_authn_request(spec: &AuthnRequestSpec<'_>) -> Result<CreatedMessag
         signing_cert_base64: &spec.signing_key.cert_base64,
     })?;
 
-    let signed = sign(&xml, spec.signing_key.key_pem.expose_secret())?;
+    let signed = sign(&xml, &spec.signing_key.key_pem)?;
 
     Ok(CreatedMessage { id, xml: signed })
 }
 
 pub fn create_artifact_resolve(
-    artifact: &str,
-    entity_id: &str,
-    ars_url: &str,
+    artifact: &Artifact,
+    entity_id: &EntityId,
+    ars_url: &EndpointUrl,
     signing_key: &KeyPair,
 ) -> Result<CreatedMessage> {
-    let id = generate_id();
+    let id = MessageId::generate();
     let issue_instant = now_utc();
 
     let xml = build_artifact_resolve(ArtifactResolveArgs {
@@ -75,18 +76,18 @@ pub fn create_artifact_resolve(
         signing_cert_base64: &signing_key.cert_base64,
     })?;
 
-    let signed = sign(&xml, signing_key.key_pem.expose_secret())?;
+    let signed = sign(&xml, &signing_key.key_pem)?;
 
     Ok(CreatedMessage { id, xml: signed })
 }
 
 pub fn create_logout_request(
-    name_id: &str,
-    entity_id: &str,
-    slo_url: &str,
+    name_id: &NameId,
+    entity_id: &EntityId,
+    slo_url: &EndpointUrl,
     signing_key: &KeyPair,
 ) -> Result<CreatedMessage> {
-    let id = generate_id();
+    let id = MessageId::generate();
     let issue_instant = now_utc();
 
     let xml = build_logout_request(LogoutRequestArgs {
@@ -98,7 +99,7 @@ pub fn create_logout_request(
         signing_cert_base64: &signing_key.cert_base64,
     })?;
 
-    let signed = sign(&xml, signing_key.key_pem.expose_secret())?;
+    let signed = sign(&xml, &signing_key.key_pem)?;
 
     Ok(CreatedMessage { id, xml: signed })
 }

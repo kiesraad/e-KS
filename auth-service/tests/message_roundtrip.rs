@@ -4,13 +4,30 @@
 //! round-trip: render, sign, parse, and verify must all cohere. Assertions are
 //! structural (not byte-exact).
 
-use auth_service::saml::{
-    constants::NS_SAMLP,
-    messages::{
-        AuthnRequestSpec, create_artifact_resolve, create_authn_request, create_logout_request,
+use auth_service::{
+    saml::{
+        constants::NS_SAMLP,
+        messages::{
+            AuthnRequestSpec, create_artifact_resolve, create_authn_request, create_logout_request,
+        },
+        verification::{ExpectedRoot, verify_xml_signature},
     },
-    verification::{ExpectedRoot, verify_xml_signature},
+    types::{Artifact, EndpointUrl, EntityId, NameId, ServiceUuid},
 };
+
+/// The DV identity every message in this file is built for.
+fn dv() -> EntityId {
+    EntityId::from_static("urn:test:dv")
+}
+
+fn service_uuid() -> ServiceUuid {
+    ServiceUuid::from_static("f847dc11-ac24-47b2-84a8-a057440ce56d")
+}
+
+fn rd_endpoint(path: &str) -> EndpointUrl {
+    EndpointUrl::from_metadata(&format!("https://rd.example.com/{path}"), path)
+        .expect("test endpoint")
+}
 
 mod common;
 use common::load_key;
@@ -28,7 +45,7 @@ fn verify_message(
         &ExpectedRoot {
             namespace: NS_SAMLP,
             local_name,
-            id: Some(&msg.id),
+            id: Some(msg.id.as_str()),
         },
     )
 }
@@ -37,9 +54,9 @@ fn verify_message(
 fn authn_request_builds_signs_and_verifies() {
     let key = load_key("dv-signing-1");
     let msg = create_authn_request(&AuthnRequestSpec {
-        entity_id: "urn:test:dv",
-        service_uuid: "f847dc11-ac24-47b2-84a8-a057440ce56d",
-        sso_url: "https://rd.example.com/sso",
+        entity_id: &dv(),
+        service_uuid: &service_uuid(),
+        sso_url: &rd_endpoint("sso"),
         signing_key: &key,
         preselected_ad_entity_id: None,
         acs_url: None,
@@ -69,13 +86,13 @@ fn authn_request_builds_signs_and_verifies() {
 #[test]
 fn authn_request_with_preselect_emits_scoping_and_verifies() {
     let key = load_key("dv-signing-1");
-    let ad = "urn:nl-eid-gdi:1.0:AD:00000004166909913000:entities:9002";
+    let ad = EntityId::from_static("urn:nl-eid-gdi:1.0:AD:00000004166909913000:entities:9002");
     let msg = create_authn_request(&AuthnRequestSpec {
-        entity_id: "urn:test:dv",
-        service_uuid: "uuid-1",
-        sso_url: "https://rd.example.com/sso",
+        entity_id: &dv(),
+        service_uuid: &service_uuid(),
+        sso_url: &rd_endpoint("sso"),
         signing_key: &key,
-        preselected_ad_entity_id: Some(ad),
+        preselected_ad_entity_id: Some(&ad),
         acs_url: None,
     })
     .expect("AuthnRequest built");
@@ -94,9 +111,9 @@ fn authn_request_with_preselect_emits_scoping_and_verifies() {
 fn artifact_resolve_builds_signs_and_verifies() {
     let key = load_key("dv-signing-1");
     let msg = create_artifact_resolve(
-        "AAQAAGotsbEd41l9KWDK",
-        "urn:test:dv",
-        "https://rd.example.com/ars",
+        &Artifact::parse("AAQAAGotsbEd41l9KWDK").unwrap(),
+        &dv(),
+        &rd_endpoint("ars"),
         &key,
     )
     .expect("ArtifactResolve built");
@@ -119,9 +136,9 @@ fn artifact_resolve_builds_signs_and_verifies() {
 fn logout_request_builds_signs_and_verifies() {
     let key = load_key("dv-signing-1");
     let msg = create_logout_request(
-        "transient-id-abc",
-        "urn:test:dv",
-        "https://rd.example.com/slo",
+        &NameId::parse("transient-id-abc").unwrap(),
+        &dv(),
+        &rd_endpoint("slo"),
         &key,
     )
     .expect("LogoutRequest built");
@@ -146,9 +163,9 @@ fn message_signed_by_one_key_rejected_by_another() {
     let signer = load_key("dv-signing-1");
     let other = load_key("rd-signing-1");
     let msg = create_authn_request(&AuthnRequestSpec {
-        entity_id: "urn:test:dv",
-        service_uuid: "uuid-1",
-        sso_url: "https://rd.example.com/sso",
+        entity_id: &dv(),
+        service_uuid: &service_uuid(),
+        sso_url: &rd_endpoint("sso"),
         signing_key: &signer,
         preselected_ad_entity_id: None,
         acs_url: None,
@@ -167,12 +184,15 @@ fn message_signed_by_one_key_rejected_by_another() {
 fn authn_request_with_acs_url_signs_and_verifies() {
     let key = load_key("dv-signing-1");
     let msg = create_authn_request(&AuthnRequestSpec {
-        entity_id: "urn:test:dv",
-        service_uuid: "uuid-1",
-        sso_url: "https://rd.example.com/sso",
+        entity_id: &dv(),
+        service_uuid: &service_uuid(),
+        sso_url: &rd_endpoint("sso"),
         signing_key: &key,
         preselected_ad_entity_id: None,
-        acs_url: Some("https://pr-7.preview.example.test/saml/sp/acs"),
+        acs_url: Some(
+            &EndpointUrl::from_base_url("https://pr-7.preview.example.test/saml/sp/acs", "ACS")
+                .unwrap(),
+        ),
     })
     .expect("AuthnRequest built");
 

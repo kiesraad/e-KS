@@ -18,7 +18,6 @@ use common::{
 
 use auth_service::saml::crypto::sign;
 use chrono::Duration;
-use secrecy::ExposeSecret;
 
 #[test]
 fn sibling_wrapping_xsw() {
@@ -33,7 +32,7 @@ fn sibling_wrapping_xsw() {
     let genuine = format!(
         r#"<samlp:ArtifactResponse xmlns:samlp="{SAMLP}" xmlns:saml="{SAML}" ID="_art1" Version="2.0" IssueInstant="{now}"><saml:Issuer>{RD}</saml:Issuer>{sig}<samlp:Status><samlp:StatusCode Value="{SUCCESS}"/></samlp:Status>{genuine_inner_body}</samlp:ArtifactResponse>"#
     );
-    let signed = sign(&genuine, rd_key.key_pem.expose_secret()).unwrap();
+    let signed = sign(&genuine, &rd_key.key_pem).unwrap();
 
     // 2. Pull the now-filled <Signature> element out of the signed document.
     let sig_start = signed.find("<dsig:Signature").unwrap();
@@ -85,7 +84,7 @@ fn baseline_genuine_artifact_response_is_accepted() {
     let genuine = format!(
         r#"<samlp:ArtifactResponse xmlns:samlp="{SAMLP}" xmlns:saml="{SAML}" ID="_art1" Version="2.0" IssueInstant="{now}"><saml:Issuer>{RD}</saml:Issuer>{sig}<samlp:Status><samlp:StatusCode Value="{SUCCESS}"/></samlp:Status>{genuine_inner_body}</samlp:ArtifactResponse>"#
     );
-    let signed = sign(&genuine, rd_key.key_pem.expose_secret()).unwrap();
+    let signed = sign(&genuine, &rd_key.key_pem).unwrap();
 
     let result = run_chain(&soap(&signed), &rd_key);
     assert_eq!(

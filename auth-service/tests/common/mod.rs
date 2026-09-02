@@ -7,7 +7,7 @@
 
 use auth_service::{
     bindings::soap::unwrap_soap,
-    keys::KeyPair,
+    keys::{CertificateBase64, KeyPair, key_pair_paths, load_key_pair},
     saml::{
         constants::{NS_SAML, NS_SAMLP, NS_SOAP, STATUS_SUCCESS, SUBJECT_CONFIRMATION_BEARER},
         loa::MINIMUM_LOA,
@@ -17,6 +17,7 @@ use auth_service::{
         },
         xml_parser::parse,
     },
+    types::{EndpointUrl, EntityId, MessageId},
 };
 use chrono::{Duration, Utc};
 use std::path::PathBuf;
@@ -29,6 +30,19 @@ use std::path::PathBuf;
 pub const RD: &str = "urn:test:rd";
 pub const DV: &str = "urn:test:dv";
 pub const ACS: &str = "https://dv.example.com/acs";
+
+/// The same three as domain types, for the validator options.
+pub fn rd_entity_id() -> EntityId {
+    EntityId::from_static(RD)
+}
+
+pub fn dv_entity_id() -> EntityId {
+    EntityId::from_static(DV)
+}
+
+pub fn acs_url() -> EndpointUrl {
+    EndpointUrl::from_metadata(ACS, "ACS").expect("test ACS URL")
+}
 pub const SUCCESS: &str = STATUS_SUCCESS;
 pub const BEARER: &str = SUBJECT_CONFIRMATION_BEARER;
 pub const SAML: &str = NS_SAML;
@@ -41,9 +55,7 @@ pub const SAMLP: &str = NS_SAMLP;
 /// Load a keypair (by fixture base name) from the committed TVS fixtures.
 pub fn load_key(name: &str) -> KeyPair {
     let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("fixtures");
-    let cert_pem = std::fs::read_to_string(dir.join(format!("{name}.pem"))).unwrap();
-    let key_pem = std::fs::read_to_string(dir.join(format!("{name}-key.pem"))).unwrap();
-    KeyPair::from_pem(cert_pem, key_pem.into())
+    load_key_pair(&key_pair_paths(&dir, name)).expect("fixture key pair loads")
 }
 
 /// A SAML timestamp (`%Y-%m-%dT%H:%M:%SZ`) at `offset` from now.
@@ -55,7 +67,7 @@ pub fn ts(offset: Duration) -> String {
 
 /// The inline `ds:Signature` template (empty digest/sig) the signer fills,
 /// matching what `xml_builder` embeds in real messages.
-pub fn inline_signature(ref_id: &str, cert_b64: &str) -> String {
+pub fn inline_signature(ref_id: &str, cert_b64: &CertificateBase64) -> String {
     format!(
         r##"<dsig:Signature xmlns:dsig="http://www.w3.org/2000/09/xmldsig#"><dsig:SignedInfo><dsig:CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/><dsig:SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"/><dsig:Reference URI="#{ref_id}"><dsig:Transforms><dsig:Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/><dsig:Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/></dsig:Transforms><dsig:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"/><dsig:DigestValue></dsig:DigestValue></dsig:Reference></dsig:SignedInfo><dsig:SignatureValue></dsig:SignatureValue><dsig:KeyInfo><dsig:X509Data><dsig:X509Certificate>{cert_b64}</dsig:X509Certificate></dsig:X509Data></dsig:KeyInfo></dsig:Signature>"##
     )
@@ -115,8 +127,8 @@ pub fn run_chain(soap: &str, rd_key: &KeyPair) -> ChainResult {
         art_node,
         &ValidateArtifactResponseOpts {
             trusted_keys: std::slice::from_ref(rd_key),
-            expected_in_response_to: "",
-            expected_issuer: Some(RD),
+            expected_in_response_to: None,
+            expected_issuer: Some(&rd_entity_id()),
         },
         &mut errors,
     );
@@ -131,8 +143,8 @@ pub fn run_chain(soap: &str, rd_key: &KeyPair) -> ChainResult {
         &doc,
         response_node,
         &ValidateResponseOpts {
-            expected_destination: Some(ACS),
-            expected_issuer: Some(RD),
+            expected_destination: Some(&acs_url()),
+            expected_issuer: Some(&rd_entity_id()),
         },
         &mut errors,
     );
@@ -147,9 +159,9 @@ pub fn run_chain(soap: &str, rd_key: &KeyPair) -> ChainResult {
         &doc,
         assertion_node,
         &ValidateAssertionOpts {
-            dv_entity_id: DV,
-            expected_recipient: ACS,
-            expected_issuer: Some(RD),
+            dv_entity_id: &dv_entity_id(),
+            expected_recipient: Some(&acs_url()),
+            expected_issuer: Some(&rd_entity_id()),
             private_keys: &[],
             minimum_loa: Some(MINIMUM_LOA),
             expected_service_uuid: None,
@@ -157,7 +169,7 @@ pub fn run_chain(soap: &str, rd_key: &KeyPair) -> ChainResult {
         &mut errors,
     );
     ChainResult {
-        accepted: claims.map(|c| c.name_id),
+        accepted: claims.map(|c| c.name_id.into_string()),
         errors,
     }
 }
@@ -220,7 +232,7 @@ pub struct ArtifactResponseResult {
 pub fn validate_artifact_response(
     soap_xml: &str,
     trusted_keys: &[KeyPair],
-    expected_in_response_to: &str,
+    expected_in_response_to: Option<&MessageId>,
 ) -> ArtifactResponseResult {
     let doc = match parse(soap_xml) {
         Ok(d) => d,

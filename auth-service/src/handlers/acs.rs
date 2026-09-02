@@ -12,8 +12,8 @@ use crate::{
     LoginErrorPath, SamlAcsPath,
     bindings::soap::{send_soap_request, unwrap_soap},
     config::AuthConfig,
+    keys::DecryptionKey,
     saml::{
-        decryption::DecryptionKey,
         idp_metadata::IdpMetadata,
         loa::MINIMUM_LOA,
         messages::{CreatedMessage, create_artifact_resolve},
@@ -25,6 +25,7 @@ use crate::{
         xml_parser::{Document, NodeId, parse},
     },
     state::{AuthFailure, AuthServiceState, AuthState},
+    types::{Artifact, MessageId},
 };
 use axum::{
     extract::{FromRef, Query, State},
@@ -225,17 +226,20 @@ fn harden_headers(headers: &mut HeaderMap) {
 ///
 /// The artifact is an opaque reference, so a short prefix is safe to log for
 /// correlation and is not itself sensitive PII.
-fn artifact_from_params(params: &HashMap<String, String>) -> Result<&String, AuthFailure> {
+fn artifact_from_params(params: &HashMap<String, String>) -> Result<Artifact, AuthFailure> {
     let Some(artifact) = params.get("SAMLart") else {
         warn!("[ACS] Missing SAMLart query parameter");
         return Err(AuthFailure::Error);
     };
+    // Parsed, not just read: the value is signed into an ArtifactResolve and
+    // sent to the RD, so an unbounded or non-base64 query parameter is refused
+    // here rather than forwarded.
+    let artifact = Artifact::parse(artifact).map_err(|e| {
+        warn!("[ACS] Malformed SAMLart query parameter: {e}");
+        AuthFailure::Error
+    })?;
 
-    info!(
-        "[ACS] Artifact received: {}... (len={})",
-        artifact.chars().take(20).collect::<String>(),
-        artifact.len()
-    );
+    info!("[ACS] Artifact received: {}...", artifact.log_prefix());
 
     Ok(artifact)
 }
@@ -277,7 +281,11 @@ async fn resolve_artifact_to_claims(
     );
 
     // 1. Create signed ArtifactResolve (eID §7.5)
-    let resolve = build_artifact_resolve(artifact, cfg, &rd, dv_keys.primary_signing())?;
+    let signing_key = dv_keys.primary_signing().map_err(|e| {
+        error!("[ACS] Cannot sign the ArtifactResolve: {e}");
+        AuthFailure::from(&e)
+    })?;
+    let resolve = build_artifact_resolve(&artifact, cfg, &rd, signing_key)?;
 
     // 2. Wrap in SOAP and send to ARS over mTLS (eID §9.4)
     let soap_response = send_artifact_resolve(&resolve.xml, &rd, cfg).await?;
@@ -308,7 +316,7 @@ struct ResponseChain<'a, 'input> {
 impl ResponseChain<'_, '_> {
     /// Validate the full chain and extract the [`Claims`]. `resolve_id` is the
     /// `@ID` of the ArtifactResolve this response must answer.
-    fn claims(&self, resolve_id: &str) -> Result<Claims, AuthFailure> {
+    fn claims(&self, resolve_id: &MessageId) -> Result<Claims, AuthFailure> {
         let root = self.doc.document_element();
         let Some(art_node) = unwrap_soap(self.doc, root) else {
             warn!(
@@ -353,7 +361,7 @@ impl ResponseChain<'_, '_> {
         claims: &Claims,
     ) -> Result<(), AuthFailure> {
         let response_in_response_to = self.doc.get_attribute(response_node, "InResponseTo");
-        if response_in_response_to != claims.in_response_to.as_deref() {
+        if response_in_response_to != claims.in_response_to.as_ref().map(MessageId::as_str) {
             warn!(
                 "[ACS] Response @InResponseTo does not match the assertion's InResponseTo: rejecting"
             );
@@ -364,7 +372,7 @@ impl ResponseChain<'_, '_> {
 }
 
 fn build_artifact_resolve(
-    artifact: &str,
+    artifact: &Artifact,
     cfg: &AuthConfig,
     rd: &IdpMetadata,
     signing_key: &crate::keys::KeyPair,
@@ -412,7 +420,11 @@ async fn send_artifact_resolve(
 }
 
 impl ResponseChain<'_, '_> {
-    fn response_node(&self, art_node: NodeId, expected_id: &str) -> Result<NodeId, AuthFailure> {
+    fn response_node(
+        &self,
+        art_node: NodeId,
+        expected_id: &MessageId,
+    ) -> Result<NodeId, AuthFailure> {
         debug!(
             "[ACS] Step 3: validating ArtifactResponse against {} RD signing key(s), \
              expected InResponseTo={}",
@@ -425,7 +437,7 @@ impl ResponseChain<'_, '_> {
             art_node,
             &ValidateArtifactResponseOpts {
                 trusted_keys: &self.rd.signing_keys,
-                expected_in_response_to: expected_id,
+                expected_in_response_to: Some(expected_id),
                 // eID §7.6.1: bind the ArtifactResponse Issuer to the RD EntityID.
                 expected_issuer: Some(&self.rd.entity_id),
             },
@@ -484,16 +496,7 @@ impl ResponseChain<'_, '_> {
         debug!("[ACS] Step 5: validating Assertion");
 
         let cfg = self.auth_state.auth_config();
-        let priv_keys: Vec<DecryptionKey<'_>> = self
-            .auth_state
-            .dv_keys()
-            .encryption
-            .iter()
-            .map(|k| DecryptionKey {
-                key_pem: &k.key_pem,
-                key_name: k.key_name.as_str(),
-            })
-            .collect();
+        let priv_keys = DecryptionKey::from_key_set(self.auth_state.dv_keys());
 
         let mut errors = Vec::new();
         let claims = validate_assertion_at(
@@ -501,7 +504,7 @@ impl ResponseChain<'_, '_> {
             assertion_node,
             &ValidateAssertionOpts {
                 dv_entity_id: &cfg.dv.entity_id,
-                expected_recipient: &cfg.dv.acs_url,
+                expected_recipient: Some(&cfg.dv.acs_url),
                 // eID §9.1: the Assertion is authenticated by the enveloping RD
                 // signature on the ArtifactResponse (verified in step 3); here we
                 // only bind the Assertion Issuer to the RD EntityID (`minvws/nl-rdo-max`).
@@ -536,14 +539,7 @@ mod tests {
     }
 
     fn rd_metadata() -> IdpMetadata {
-        IdpMetadata {
-            entity_id: "urn:test:rd".to_string(),
-            sso_url: "https://rd.example.com/sso".to_string(),
-            ars_url: "https://rd.example.com/artifact".to_string(),
-            slo_url: "https://rd.example.com/slo".to_string(),
-            signing_keys: Vec::new(),
-            cache_duration: None,
-        }
+        IdpMetadata::for_tests()
     }
 
     /// The `Location` a failed ACS callback redirected to, or `None` if the
@@ -601,7 +597,7 @@ mod tests {
         let mut params = HashMap::new();
         params.insert(
             "SAMLart".to_string(),
-            "AAQAA-some-opaque-artifact".to_string(),
+            "AAQAAsomeOpaqueArtifact==".to_string(),
         );
         let resp = handle_acs(
             SamlAcsPath,
@@ -674,7 +670,7 @@ mod tests {
     fn build_artifact_resolve_produces_a_signed_message() {
         let cfg = AuthConfig {
             dv: crate::config::DvConfig {
-                entity_id: "urn:test:dv".to_string(),
+                entity_id: crate::types::EntityId::from_static("urn:test:dv"),
                 ..Default::default()
             },
             ..AuthConfig::default()
@@ -682,12 +678,13 @@ mod tests {
         let rd = rd_metadata();
         let key = load_signing_key();
 
-        let msg = build_artifact_resolve("AAQAA-artifact", &cfg, &rd, &key)
+        let artifact = Artifact::parse("AAQAAartifact").expect("test artifact");
+        let msg = build_artifact_resolve(&artifact, &cfg, &rd, &key)
             .expect("ArtifactResolve must build and sign");
-        assert!(msg.id.starts_with('_'), "message id: {}", msg.id);
+        assert!(msg.id.as_str().starts_with('_'), "message id: {}", msg.id);
         assert!(msg.xml.contains("ArtifactResolve"), "{}", msg.xml);
         // The artifact and the destination ARS endpoint are carried in the XML.
-        assert!(msg.xml.contains("AAQAA-artifact"));
-        assert!(msg.xml.contains("https://rd.example.com/artifact"));
+        assert!(msg.xml.contains("AAQAAartifact"));
+        assert!(msg.xml.contains("https://rd.example.com/ars"));
     }
 }

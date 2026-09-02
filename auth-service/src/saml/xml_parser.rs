@@ -193,10 +193,13 @@ impl<'a> Document<'a> {
                 None => format!(r#" xmlns="{uri}""#),
             })
             .collect();
+        // `get`, not `[..]`: `insert_at` is derived from a `find` on this same
+        // string so it is always a character boundary, but this function's
+        // contract is to fail closed rather than panic on a surprise.
         Some(format!(
             "{}{declarations}{}",
-            &source[..insert_at],
-            &source[insert_at..]
+            source.get(..insert_at)?,
+            source.get(insert_at..)?
         ))
     }
 

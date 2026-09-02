@@ -102,7 +102,9 @@ fn validate_metadata(xml: &str, url: &str) {
         let sig_key_name = inner_text(&doc, key_name_node).unwrap_or_default();
         let sig_key_name = sig_key_name.trim();
         assert!(
-            keys.signing.iter().any(|k| k.key_name == sig_key_name),
+            keys.signing
+                .iter()
+                .any(|k| k.matches_key_name(sig_key_name)),
             "{url}: Signature KeyName '{sig_key_name}' not found in signing KeyDescriptors"
         );
     }

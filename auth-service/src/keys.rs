@@ -7,10 +7,233 @@ use secrecy::{ExposeSecret, SecretString};
 use sha1::{Digest, Sha1};
 use sha2::Sha256;
 use std::{
-    fs,
+    fmt, fs,
     path::{Path, PathBuf},
 };
 use tracing::{debug, warn};
+
+// ---------------------------------------------------------------------------
+// Key material
+// ---------------------------------------------------------------------------
+//
+// The four values a key pair is made of are all text, and three of them are
+// base64-ish blobs that look alike at a call site. They are separate types so
+// the compiler rejects a private key handed to something that wanted a
+// certificate, a PEM handed to something that wanted the bare base64 body, or a
+// thumbprint handed to something that wanted a certificate. Each carries its own
+// parsing, so an invalid value cannot exist.
+
+const PEM_CERT_BEGIN: &str = "-----BEGIN CERTIFICATE-----";
+const PEM_CERT_END: &str = "-----END CERTIFICATE-----";
+
+/// An RSA private key in PEM form.
+///
+/// Wraps [`SecretString`], so the key never reaches `Debug` or a log line and is
+/// zeroized on drop. `expose_pem` is the single exit point and is
+/// crate-private: the key text cannot be extracted by an embedding application,
+/// only handed to [`crate::saml::crypto`].
+#[derive(Clone)]
+pub struct PrivateKeyPem(SecretString);
+
+impl PrivateKeyPem {
+    /// Wrap the PEM text of a private key.
+    pub fn new(pem: impl Into<String>) -> Self {
+        Self(SecretString::from(pem.into()))
+    }
+
+    /// The absent private key of a public-only certificate: one advertised in
+    /// metadata that never produces a signature (see [`load_cert`]).
+    pub fn absent() -> Self {
+        Self::new(String::new())
+    }
+
+    /// Whether this key can actually sign or decrypt ([`Self::absent`] cannot).
+    pub fn is_present(&self) -> bool {
+        !self.0.expose_secret().is_empty()
+    }
+
+    /// The PEM text, for the crypto backend only.
+    pub(crate) fn expose_pem(&self) -> &str {
+        self.0.expose_secret()
+    }
+}
+
+impl fmt::Debug for PrivateKeyPem {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("PrivateKeyPem(<redacted>)")
+    }
+}
+
+/// A PEM-armoured X.509 certificate.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CertificatePem(String);
+
+impl CertificatePem {
+    /// Parse PEM text that actually carries a certificate: the BEGIN/END armour
+    /// around a non-empty base64 body.
+    ///
+    /// Checking here turns a truncated, empty, or wrong-format certificate file
+    /// into a config error at load time (with the path in the caller's message)
+    /// instead of an opaque crypto failure on the first signature.
+    pub fn parse(pem: impl Into<String>) -> Result<Self> {
+        let pem = pem.into();
+        if !pem.contains(PEM_CERT_BEGIN) || !pem.contains(PEM_CERT_END) {
+            return Err(AuthError::Config(format!(
+                "not a PEM certificate: expected a {PEM_CERT_BEGIN} block"
+            )));
+        }
+        CertificateBase64::parse(&strip_pem_armour(&pem))?;
+        Ok(Self(pem))
+    }
+
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+
+    /// The certificate body as base64 text, without armour or whitespace.
+    pub fn to_base64(&self) -> CertificateBase64 {
+        CertificateBase64(strip_pem_armour(&self.0))
+    }
+
+    /// The DER bytes of this certificate. [`Self::parse`] already decoded the
+    /// body once, so this cannot fail.
+    pub fn to_der(&self) -> Vec<u8> {
+        self.to_base64().to_der()
+    }
+
+    /// The `KeyName` identifier for this certificate: the lowercase-hex SHA-1
+    /// thumbprint of its DER encoding, the convention SAML metadata uses for
+    /// `<ds:KeyName>` (and what the TVS Routeringsdienst emits, both in its
+    /// `KeyDescriptor`s and in the signature over its metadata). Used purely as a
+    /// lookup key to match a signature's `KeyInfo` against a cert from verified
+    /// metadata; not a security primitive, so SHA-1 here is not a weakness.
+    ///
+    pub fn key_name(&self) -> KeyName {
+        KeyName::from_digest(&Sha1::digest(self.to_der()))
+    }
+
+    /// Every `<ds:KeyName>` form a peer might use to reference this certificate:
+    /// the SHA-1 thumbprint (TVS RD convention) and the SHA-256 thumbprint (DigiD
+    /// AD convention). Used by [`KeyPair::matches_key_name`] to look a
+    /// signature's `KeyInfo` up against a cert from verified metadata regardless
+    /// of which thumbprint algorithm the signer chose (eID SAML: "KeyName MAY be
+    /// any string").
+    pub fn key_names(&self) -> [KeyName; 2] {
+        let der = self.to_der();
+        [
+            KeyName::from_digest(&Sha1::digest(&der)),
+            KeyName::from_digest(&Sha256::digest(&der)),
+        ]
+    }
+}
+
+impl fmt::Display for CertificatePem {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(&self.0)
+    }
+}
+
+/// The DER bytes of a certificate as base64 text, with no PEM armour and no
+/// whitespace: what a `<ds:X509Certificate>` element carries.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CertificateBase64(String);
+
+impl CertificateBase64 {
+    /// Parse the text of a `<ds:X509Certificate>`, dropping the line breaks and
+    /// indentation XML is free to add. Rejects an empty or non-base64 body, so a
+    /// malformed metadata `KeyDescriptor` cannot become a certificate that later
+    /// code treats as real.
+    pub fn parse(text: &str) -> Result<Self> {
+        let body: String = text.chars().filter(|c| !c.is_whitespace()).collect();
+        if body.is_empty() {
+            return Err(AuthError::Xml("empty X509Certificate value".to_string()));
+        }
+        BASE64
+            .decode(body.as_bytes())
+            .map_err(|e| AuthError::Xml(format!("X509Certificate is not valid base64: {e}")))?;
+        Ok(Self(body))
+    }
+
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+
+    /// Wrap the body back into PEM, with the canonical 64-character lines.
+    /// Inverse of [`CertificatePem::to_base64`].
+    pub fn to_pem(&self) -> CertificatePem {
+        let wrapped = self
+            .0
+            .as_bytes()
+            .chunks(64)
+            .map(|c| std::str::from_utf8(c).unwrap_or_default())
+            .collect::<Vec<_>>()
+            .join("\n");
+        CertificatePem(format!("{PEM_CERT_BEGIN}\n{wrapped}\n{PEM_CERT_END}"))
+    }
+
+    /// The DER bytes. [`Self::parse`] already decoded them once, so this cannot
+    /// fail.
+    pub fn to_der(&self) -> Vec<u8> {
+        BASE64.decode(self.0.as_bytes()).unwrap_or_default()
+    }
+}
+
+impl fmt::Display for CertificateBase64 {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(&self.0)
+    }
+}
+
+/// A `<ds:KeyName>`: the lowercase-hex thumbprint of a DER certificate.
+///
+/// Used purely as a lookup key, to match a signature's `KeyInfo` against a
+/// certificate from verified metadata (see [`KeyPair::matches_key_name`]); trust
+/// never rests on it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct KeyName(String);
+
+impl KeyName {
+    /// Parse a thumbprint: trimmed, non-empty, hexadecimal, normalised to
+    /// lowercase so two spellings of the same thumbprint compare equal.
+    pub fn parse(s: &str) -> Result<Self> {
+        let s = s.trim();
+        if s.is_empty() || !s.chars().all(|c| c.is_ascii_hexdigit()) {
+            return Err(AuthError::Xml(format!(
+                "KeyName is not a hex thumbprint: {s:?}"
+            )));
+        }
+        Ok(Self(s.to_ascii_lowercase()))
+    }
+
+    fn from_digest(bytes: &[u8]) -> Self {
+        Self(bytes.iter().map(|b| format!("{b:02x}")).collect())
+    }
+
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+impl fmt::Display for KeyName {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(&self.0)
+    }
+}
+
+/// The base64 body of a PEM block: every line that is not armour, with all
+/// whitespace removed.
+fn strip_pem_armour(cert_pem: &str) -> String {
+    cert_pem
+        .lines()
+        .filter(|l| !l.starts_with("-----"))
+        .flat_map(str::chars)
+        .filter(|c| !c.is_whitespace())
+        .collect()
+}
+
+// ---------------------------------------------------------------------------
+// Key pairs
+// ---------------------------------------------------------------------------
 
 #[derive(Debug, Clone)]
 pub struct KeyPaths {
@@ -20,24 +243,24 @@ pub struct KeyPaths {
 
 #[derive(Debug, Clone)]
 pub struct KeyPair {
-    pub cert_pem: String,
-    /// The private key in PEM. Wrapped so it is never printed via `Debug` and is
-    /// zeroized on drop; call `.expose_secret()` to feed it to the signer.
-    pub key_pem: SecretString,
-    /// SHA-1 hex of the DER-encoded certificate (used to match KeyName in signatures).
-    pub key_name: String,
+    pub cert_pem: CertificatePem,
+    /// The private key, or [`PrivateKeyPem::absent`] for a public-only
+    /// certificate (one advertised in metadata that never signs anything).
+    pub key_pem: PrivateKeyPem,
+    /// SHA-1 thumbprint of the certificate (used to match KeyName in signatures).
+    pub key_name: KeyName,
     /// The certificate as base64 text, without PEM headers or whitespace.
-    pub cert_base64: String,
+    pub cert_base64: CertificateBase64,
 }
 
 impl KeyPair {
-    /// Build a [`KeyPair`] from a certificate PEM, deriving `key_name` and
-    /// `cert_base64` from it. Pass an empty `key_pem` for public-only
+    /// Build a [`KeyPair`] from a certificate, deriving `key_name` and
+    /// `cert_base64` from it. Pass [`PrivateKeyPem::absent`] for public-only
     /// certificates (metadata-advertised certs that never produce a signature).
-    pub fn from_pem(cert_pem: String, key_pem: SecretString) -> Self {
+    pub fn from_pem(cert_pem: CertificatePem, key_pem: PrivateKeyPem) -> Self {
         Self {
-            key_name: derive_key_name(&cert_pem),
-            cert_base64: cert_base64(&cert_pem),
+            key_name: cert_pem.key_name(),
+            cert_base64: cert_pem.to_base64(),
             cert_pem,
             key_pem,
         }
@@ -53,11 +276,36 @@ impl KeyPair {
     /// verified metadata (a lookup key, not a security primitive), so accept
     /// either thumbprint algorithm.
     pub fn matches_key_name(&self, candidate: &str) -> bool {
-        let candidate = candidate.trim();
-        self.key_name == candidate
-            || derive_key_names(&self.cert_pem)
-                .iter()
-                .any(|n| n == candidate)
+        let Ok(candidate) = KeyName::parse(candidate) else {
+            return false;
+        };
+        self.key_name == candidate || self.cert_pem.key_names().contains(&candidate)
+    }
+}
+
+/// A DV private key offered for `EncryptedID` decryption, with the `KeyName` it
+/// is advertised under in the DV metadata.
+///
+/// A named struct rather than a `(&str, &str)` pair: two adjacent strings are
+/// trivially swappable at a call site, and one of them is a private key.
+#[derive(Debug, Clone, Copy)]
+pub struct DecryptionKey<'a> {
+    pub key_pem: &'a PrivateKeyPem,
+    /// Diagnostics only: the crypto backend unwraps the `EncryptedKey` with the
+    /// private key itself, never by matching this name.
+    pub key_name: &'a KeyName,
+}
+
+impl<'a> DecryptionKey<'a> {
+    /// The decryption keys of a [`KeySet`], in configured order.
+    pub fn from_key_set(keys: &'a KeySet) -> Vec<Self> {
+        keys.encryption
+            .iter()
+            .map(|k| Self {
+                key_pem: &k.key_pem,
+                key_name: &k.key_name,
+            })
+            .collect()
     }
 }
 
@@ -68,98 +316,53 @@ pub struct KeySet {
 }
 
 impl KeySet {
-    /// The key used to sign outgoing messages. [`load_key_set`] rejects an
-    /// empty signing list, so this only panics on a hand-built `KeySet` (e.g.
-    /// [`Default::default`]) that never loaded keys.
-    pub fn primary_signing(&self) -> &KeyPair {
-        self.signing
-            .first()
-            .expect("KeySet validated non-empty at load")
+    /// The key used to sign outgoing messages.
+    ///
+    /// [`load_key_set`] rejects an empty signing list, so this only fails on a
+    /// hand-built `KeySet` (e.g. [`Default::default`], as used by
+    /// [`AuthServiceState::new_empty`](crate::AuthServiceState::new_empty) for
+    /// dev-login-only boots). An error rather than a panic so such a deployment
+    /// answers a SAML request with the "login unavailable" page instead of
+    /// taking the process down.
+    pub fn primary_signing(&self) -> Result<&KeyPair> {
+        self.signing.first().ok_or_else(|| {
+            AuthError::Config("no DV signing key is configured (check CERTS_DIR)".to_string())
+        })
     }
 }
 
-pub fn cert_base64(cert_pem: &str) -> String {
-    cert_pem
-        .lines()
-        .filter(|l| !l.starts_with("-----"))
-        .collect::<String>()
-        // Remove any whitespace remaining within lines.
-        .chars()
-        .filter(|c| !c.is_whitespace())
-        .collect()
-}
-
-/// Wrap a base64-encoded DER certificate (e.g. the contents of a metadata
-/// `<ds:X509Certificate>`) into PEM, with the canonical 64-character lines.
-/// Inverse of [`cert_base64`].
-pub fn pem_from_cert_base64(cert_b64: &str) -> String {
-    let body: String = cert_b64.chars().filter(|c| !c.is_whitespace()).collect();
-    let wrapped = body
-        .as_bytes()
-        .chunks(64)
-        .map(|c| std::str::from_utf8(c).unwrap_or_default())
-        .collect::<Vec<_>>()
-        .join("\n");
-    format!("-----BEGIN CERTIFICATE-----\n{wrapped}\n-----END CERTIFICATE-----")
-}
-
-/// Derive the `KeyName` identifier for a certificate.
-///
-/// Lowercase-hex SHA-1 thumbprint of the DER-encoded certificate: the
-/// convention SAML metadata uses for `<ds:KeyName>` (and what the TVS
-/// Routeringsdienst emits, both in its `KeyDescriptor`s and in the signature
-/// over its metadata). Used purely as a lookup key to match a signature's
-/// `KeyInfo` against a cert from verified metadata; not a security primitive,
-/// so SHA-1 here is not a weakness.
-pub fn derive_key_name(cert_pem: &str) -> String {
-    hex(&Sha1::digest(cert_der(cert_pem)))
-}
-
-/// All `<ds:KeyName>` forms a peer might use to reference this certificate: the
-/// lowercase-hex SHA-1 thumbprint (TVS RD convention) and the SHA-256 thumbprint
-/// (DigiD AD convention). Used by [`KeyPair::matches_key_name`] to look a
-/// signature's `KeyInfo` up against a cert from verified metadata regardless of
-/// which thumbprint algorithm the signer chose (eID SAML: "KeyName MAY be any
-/// string").
-pub fn derive_key_names(cert_pem: &str) -> Vec<String> {
-    let der = cert_der(cert_pem);
-    vec![hex(&Sha1::digest(&der)), hex(&Sha256::digest(&der))]
-}
-
-/// The DER bytes of a PEM certificate (empty on malformed base64).
-fn cert_der(cert_pem: &str) -> Vec<u8> {
-    BASE64
-        .decode(cert_base64(cert_pem).as_bytes())
-        .unwrap_or_default()
-}
-
-fn hex(bytes: &[u8]) -> String {
-    bytes.iter().map(|b| format!("{b:02x}")).collect()
-}
-
-fn load_key_pair(paths: &KeyPaths) -> Result<KeyPair> {
+/// Load one cert/key pair from disk. Both file paths are named in the error, so
+/// a missing or malformed bundle file is diagnosable from the log alone.
+pub fn load_key_pair(paths: &KeyPaths) -> Result<KeyPair> {
     // SECURITY: never log key_pem contents; only the public path it came from.
     debug!(
         "[keys] Loading key pair: cert={}, key={}",
         paths.cert.display(),
         paths.key.display()
     );
-    let cert_pem = fs::read_to_string(&paths.cert).map_err(|e| {
-        AuthError::Config(format!("Failed to read cert {}: {e}", paths.cert.display()))
-    })?;
+    let cert_pem = read_cert(&paths.cert)?;
     let key_pem = fs::read_to_string(&paths.key).map_err(|e| {
         AuthError::Config(format!("Failed to read key {}: {e}", paths.key.display()))
     })?;
 
-    let pair = KeyPair::from_pem(cert_pem, SecretString::from(key_pem));
+    let pair = KeyPair::from_pem(cert_pem, PrivateKeyPem::new(key_pem));
     debug!(
-        "[keys] Loaded key pair: key_name={} (cert={}, cert_len={}, key_len={})",
+        "[keys] Loaded key pair: key_name={} (cert={}, cert_len={}, private_key_present={})",
         pair.key_name,
         paths.cert.display(),
-        pair.cert_pem.len(),
-        pair.key_pem.expose_secret().len()
+        pair.cert_pem.as_str().len(),
+        pair.key_pem.is_present()
     );
     Ok(pair)
+}
+
+/// Read and parse a PEM certificate, naming the path in either failure.
+fn read_cert(cert_path: &Path) -> Result<CertificatePem> {
+    let text = fs::read_to_string(cert_path).map_err(|e| {
+        AuthError::Config(format!("Failed to read cert {}: {e}", cert_path.display()))
+    })?;
+    CertificatePem::parse(text)
+        .map_err(|e| AuthError::Config(format!("Invalid cert {}: {e}", cert_path.display())))
 }
 
 pub fn load_key_set(signing: &[KeyPaths], encryption: &[KeyPaths]) -> Result<KeySet> {
@@ -192,17 +395,13 @@ pub fn load_key_set(signing: &[KeyPaths], encryption: &[KeyPaths]) -> Result<Key
     })
 }
 
-/// Load a certificate (public key only) into a [`KeyPair`] with an empty
-/// `key_pem`. Used for certificates advertised in metadata but never used to
-/// produce a signature (e.g. the DV's mTLS client certificate).
+/// Load a certificate (public key only) into a [`KeyPair`] with no private key.
+/// Used for certificates advertised in metadata but never used to produce a
+/// signature (e.g. the DV's mTLS client certificate).
 pub fn load_cert(cert_path: &Path) -> Result<KeyPair> {
-    let cert_pem = fs::read_to_string(cert_path).map_err(|e| {
-        AuthError::Config(format!("Failed to read cert {}: {e}", cert_path.display()))
-    })?;
-
     Ok(KeyPair::from_pem(
-        cert_pem,
-        SecretString::from(String::new()),
+        read_cert(cert_path)?,
+        PrivateKeyPem::absent(),
     ))
 }
 
@@ -280,62 +479,101 @@ pub fn discover_key_paths(certs_dir: &Path, bases: &[&str]) -> Vec<KeyPaths> {
 mod tests {
     use super::*;
 
-    const FAKE_PEM: &str = "\
------BEGIN CERTIFICATE-----
-MIIBkTCB+wIJALRiMLAh0WNHMA0GCSqGSIb3DQEBCwUAMBExDzANBgNVBAMMBn\
-Rlc3RDQTAEFW0yNTAxMDEwMDAwMDBaFw0yNjAxMDEwMDAwMDBaMBExDzANBgNVBA\
-MMBnRlc3RDQTBcMA0GCSqGSIb3DQEBAQUAA0sAMEgCQQC7o96P+5MhMjCnSGfn\
-MhKxGdzQ7vNvPJGK7eCRvig6V7l6x2mBOFp2Z9gE4yrGS0ISjqRIG1WQ5rOb3U\
-z9AgMBAAEwDQYJKoZIhvcNAQELBQADQQBb+u1uAt6HlG7MFQHtWJ0RI0U8C/XI\
-fDqFa7OmGjPGqEjNdvTY3Zll8TfhUPGCNjBHPkTO1LjI/mO07m7bZO4\n\
------END CERTIFICATE-----";
+    const FIXTURE_PEM: &str = include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/fixtures/dv-signing-1.pem"
+    ));
 
-    #[test]
-    fn cert_base64_strips_pem_headers() {
-        let b64 = cert_base64(FAKE_PEM);
-        assert!(!b64.contains("BEGIN"));
-        assert!(!b64.contains("END"));
-        assert!(!b64.contains('\n'));
-        assert!(!b64.is_empty());
+    fn fake_cert() -> CertificatePem {
+        CertificatePem::parse(FIXTURE_PEM).expect("fixture PEM parses")
     }
 
     #[test]
-    fn cert_base64_empty_input_returns_empty() {
-        assert_eq!(cert_base64(""), "");
+    fn to_base64_strips_pem_headers() {
+        let b64 = fake_cert().to_base64();
+        assert!(!b64.as_str().contains("BEGIN"));
+        assert!(!b64.as_str().contains("END"));
+        assert!(!b64.as_str().contains('\n'));
+        assert!(!b64.as_str().is_empty());
     }
 
     #[test]
-    fn derive_key_name_is_hex_sha1() {
-        let name = derive_key_name(FAKE_PEM);
-        assert_eq!(name.len(), 40, "SHA-1 hex should be 40 chars");
-        assert!(name.chars().all(|c| c.is_ascii_hexdigit()));
+    fn certificate_pem_rejects_non_pem_input() {
+        // A truncated or wrong-format cert file is refused at load time rather
+        // than failing opaquely on the first signature.
+        for bad in ["", "not a certificate", "-----BEGIN CERTIFICATE-----"] {
+            assert!(
+                CertificatePem::parse(bad).is_err(),
+                "{bad:?} must be rejected"
+            );
+        }
     }
 
     #[test]
-    fn derive_key_name_is_deterministic() {
-        let a = derive_key_name(FAKE_PEM);
-        let b = derive_key_name(FAKE_PEM);
-        assert_eq!(a, b);
+    fn certificate_pem_rejects_empty_block() {
+        let empty = format!("{PEM_CERT_BEGIN}\n\n{PEM_CERT_END}");
+        assert!(CertificatePem::parse(empty).is_err());
     }
 
     #[test]
-    fn derive_key_names_yields_sha1_and_sha256() {
-        let names = derive_key_names(FAKE_PEM);
-        assert_eq!(names.len(), 2);
-        assert_eq!(names[0].len(), 40, "first is SHA-1 (40 hex chars)");
-        assert_eq!(names[1].len(), 64, "second is SHA-256 (64 hex chars)");
-        assert_eq!(names[0], derive_key_name(FAKE_PEM));
+    fn certificate_base64_rejects_empty_and_non_base64() {
+        assert!(CertificateBase64::parse("   \n  ").is_err());
+        assert!(CertificateBase64::parse("not base64!!").is_err());
+    }
+
+    #[test]
+    fn certificate_base64_ignores_xml_whitespace() {
+        // A `<ds:X509Certificate>` may wrap and indent its body.
+        let b64 = fake_cert().to_base64();
+        let indented = format!("\n    {}\n    ", b64.as_str());
+        assert_eq!(CertificateBase64::parse(&indented).unwrap(), b64);
+    }
+
+    #[test]
+    fn key_name_is_hex_sha1() {
+        let name = fake_cert().key_name();
+        assert_eq!(name.as_str().len(), 40, "SHA-1 hex should be 40 chars");
+        assert!(name.as_str().chars().all(|c| c.is_ascii_hexdigit()));
+    }
+
+    #[test]
+    fn key_name_is_deterministic() {
+        assert_eq!(fake_cert().key_name(), fake_cert().key_name());
+    }
+
+    #[test]
+    fn key_names_yields_sha1_and_sha256() {
+        let names = fake_cert().key_names();
+        assert_eq!(names[0].as_str().len(), 40, "first is SHA-1 (40 hex chars)");
+        assert_eq!(
+            names[1].as_str().len(),
+            64,
+            "second is SHA-256 (64 hex chars)"
+        );
+        assert_eq!(names[0], fake_cert().key_name());
+    }
+
+    #[test]
+    fn key_name_parse_normalises_case_and_whitespace() {
+        let upper = KeyName::parse("  DEADBEEF  ").unwrap();
+        assert_eq!(upper.as_str(), "deadbeef");
+    }
+
+    #[test]
+    fn key_name_parse_rejects_non_thumbprints() {
+        for bad in ["", "   ", "not-hex", "dead beef"] {
+            assert!(KeyName::parse(bad).is_err(), "{bad:?} must be rejected");
+        }
     }
 
     fn fake_key_pair() -> KeyPair {
-        KeyPair::from_pem(FAKE_PEM.to_string(), String::new().into())
+        KeyPair::from_pem(fake_cert(), PrivateKeyPem::absent())
     }
 
     #[test]
     fn matches_key_name_accepts_sha1_thumbprint() {
         let kp = fake_key_pair();
-        let sha1 = derive_key_names(FAKE_PEM)[0].clone();
-        assert!(kp.matches_key_name(&sha1));
+        assert!(kp.matches_key_name(fake_cert().key_names()[0].as_str()));
     }
 
     #[test]
@@ -343,10 +581,13 @@ fDqFa7OmGjPGqEjNdvTY3Zll8TfhUPGCNjBHPkTO1LjI/mO07m7bZO4\n\
         // The DigiD AD references its signing cert by SHA-256 thumbprint, not
         // the SHA-1 form stored in `key_name`; both must match.
         let kp = fake_key_pair();
-        let sha256 = derive_key_names(FAKE_PEM)[1].clone();
+        let sha256 = fake_cert().key_names()[1].clone();
         assert_ne!(sha256, kp.key_name);
-        assert!(kp.matches_key_name(&sha256));
-        assert!(kp.matches_key_name(&format!("  {sha256}  ")), "trims input");
+        assert!(kp.matches_key_name(sha256.as_str()));
+        assert!(
+            kp.matches_key_name(&format!("  {}  ", sha256.as_str().to_uppercase())),
+            "trims and case-folds input"
+        );
     }
 
     #[test]
@@ -355,20 +596,39 @@ fDqFa7OmGjPGqEjNdvTY3Zll8TfhUPGCNjBHPkTO1LjI/mO07m7bZO4\n\
         assert!(!kp.matches_key_name("deadbeef"));
     }
 
+    #[test]
+    fn matches_key_name_rejects_malformed_candidate() {
+        // A `<ds:KeyName>` that is not a thumbprint at all never matches, and
+        // never panics.
+        let kp = fake_key_pair();
+        assert!(!kp.matches_key_name(""));
+        assert!(!kp.matches_key_name("<script>"));
+    }
+
+    #[test]
+    fn private_key_debug_never_reveals_the_key() {
+        let key = PrivateKeyPem::new("-----BEGIN PRIVATE KEY-----secret-----END PRIVATE KEY-----");
+        let rendered = format!("{key:?}");
+        assert!(!rendered.contains("secret"), "{rendered}");
+        assert!(key.is_present());
+        assert!(!PrivateKeyPem::absent().is_present());
+    }
+
     fn fixtures_dir() -> PathBuf {
         PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("fixtures")
     }
 
     #[test]
-    fn pem_from_cert_base64_round_trips_cert_base64() {
+    fn to_pem_round_trips_to_base64() {
         // Wrapping the stripped base64 back into PEM and stripping it again is a
         // no-op, and the wrapped body uses the canonical 64-char lines.
-        let b64 = cert_base64(FAKE_PEM);
-        let pem = pem_from_cert_base64(&b64);
-        assert!(pem.starts_with("-----BEGIN CERTIFICATE-----\n"));
-        assert!(pem.ends_with("\n-----END CERTIFICATE-----"));
-        assert_eq!(cert_base64(&pem), b64);
+        let b64 = fake_cert().to_base64();
+        let pem = b64.to_pem();
+        assert!(pem.as_str().starts_with("-----BEGIN CERTIFICATE-----\n"));
+        assert!(pem.as_str().ends_with("\n-----END CERTIFICATE-----"));
+        assert_eq!(pem.to_base64(), b64);
         for line in pem
+            .as_str()
             .lines()
             .filter(|l| !l.starts_with("-----") && !l.is_empty())
         {
@@ -388,6 +648,17 @@ fDqFa7OmGjPGqEjNdvTY3Zll8TfhUPGCNjBHPkTO1LjI/mO07m7bZO4\n\
     }
 
     #[test]
+    fn primary_signing_errors_on_an_unloaded_key_set() {
+        // The dev-login-only boot (`AuthServiceState::new_empty`) has no keys:
+        // a SAML request against it must report an error, never panic.
+        let err = KeySet::default().primary_signing().unwrap_err();
+        assert!(
+            matches!(&err, AuthError::Config(m) if m.contains("no DV signing key")),
+            "{err:?}"
+        );
+    }
+
+    #[test]
     fn load_key_set_errors_when_cert_missing() {
         // A signing entry whose cert file does not exist fails with a Config error.
         let paths = KeyPaths {
@@ -399,6 +670,22 @@ fDqFa7OmGjPGqEjNdvTY3Zll8TfhUPGCNjBHPkTO1LjI/mO07m7bZO4\n\
             matches!(&err, AuthError::Config(m) if m.contains("Failed to read cert")),
             "{err:?}"
         );
+    }
+
+    #[test]
+    fn load_key_set_errors_when_cert_is_not_pem() {
+        // A file that exists but holds no certificate names the path in the error.
+        let dir = std::env::temp_dir().join("eks-keys-test-not-pem");
+        std::fs::create_dir_all(&dir).unwrap();
+        let paths = key_pair_paths(&dir, "dv-signing-1");
+        std::fs::write(&paths.cert, b"garbage").unwrap();
+        std::fs::write(&paths.key, b"key").unwrap();
+        let err = load_key_set(std::slice::from_ref(&paths), &[]).unwrap_err();
+        assert!(
+            matches!(&err, AuthError::Config(m) if m.contains("Invalid cert")),
+            "{err:?}"
+        );
+        std::fs::remove_dir_all(&dir).ok();
     }
 
     #[test]
@@ -426,18 +713,19 @@ fDqFa7OmGjPGqEjNdvTY3Zll8TfhUPGCNjBHPkTO1LjI/mO07m7bZO4\n\
         let set = load_key_set(std::slice::from_ref(&paths), &[]).unwrap();
         assert_eq!(set.signing.len(), 1);
         assert_eq!(set.encryption.len(), 0);
-        assert_eq!(set.signing[0].key_name.len(), 40);
-        assert!(!set.signing[0].cert_base64.is_empty());
-        assert!(!set.signing[0].key_pem.expose_secret().is_empty());
+        let primary = set.primary_signing().unwrap();
+        assert_eq!(primary.key_name.as_str().len(), 40);
+        assert!(!primary.cert_base64.as_str().is_empty());
+        assert!(primary.key_pem.is_present());
     }
 
     #[test]
     fn load_cert_reads_public_cert_without_private_key() {
         let cert = load_cert(&fixtures_dir().join("dv-tls.pem")).unwrap();
-        assert_eq!(cert.key_name.len(), 40);
-        assert!(!cert.cert_base64.is_empty());
+        assert_eq!(cert.key_name.as_str().len(), 40);
+        assert!(!cert.cert_base64.as_str().is_empty());
         // A public-only cert carries no private key.
-        assert!(cert.key_pem.expose_secret().is_empty());
+        assert!(!cert.key_pem.is_present());
     }
 
     #[test]

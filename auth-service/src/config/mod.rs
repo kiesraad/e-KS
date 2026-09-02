@@ -9,6 +9,7 @@ use crate::{
     keys::{
         ENCRYPTION_BASES, KeyPaths, SIGNING_BASES, discover_key_paths, key_pair_paths, tls_paths,
     },
+    types::{EndpointUrl, EntityId, RedirectTarget, ServiceUuid},
 };
 
 // OIN of the TVS RD (Routeringsdienst, operated by DICTU). The RD metadata
@@ -93,33 +94,33 @@ impl Environment {
     }
 
     /// The Kiesraad DV EntityID (SP issuer) for this environment.
-    pub fn dv_entity_id(self) -> &'static str {
-        match self {
+    pub fn dv_entity_id(self) -> EntityId {
+        EntityId::from_static(match self {
             // Test reuses the pre-production `9001` index (the standalone mock
             // does not enforce a distinct test EntityID).
             Self::Test | Self::Preproduction => DV_ENTITY_ID_PREPRODUCTION,
             Self::Production => DV_ENTITY_ID_PRODUCTION,
-        }
+        })
     }
 
     /// The expected TVS RD (Routeringsdienst) EntityID for this environment.
     /// Used to pin the RD identity: the loaded metadata's `entityID` must equal
     /// this, and it is the expected `Issuer` for the Response and Assertion.
-    pub fn rd_entity_id(self) -> &'static str {
-        match self {
+    pub fn rd_entity_id(self) -> EntityId {
+        EntityId::from_static(match self {
             Self::Test => RD_ENTITY_ID_TEST,
             Self::Preproduction => RD_ENTITY_ID_PREPRODUCTION,
             Self::Production => RD_ENTITY_ID_PRODUCTION,
-        }
+        })
     }
 
     /// The Kiesraad ServiceUUID registered with the TVS. Pre-production and
     /// production share the same value; only the local test mock differs.
-    pub fn dv_service_uuid(self) -> &'static str {
-        match self {
+    pub fn dv_service_uuid(self) -> ServiceUuid {
+        ServiceUuid::from_static(match self {
             Self::Test => DV_SERVICE_UUID_TEST,
             Self::Preproduction | Self::Production => DV_SERVICE_UUID,
-        }
+        })
     }
 }
 
@@ -174,8 +175,8 @@ impl PreselectedAd {
     /// The AD EntityID to emit in `Scoping/IDPList/IDPEntry@ProviderID`, or
     /// `None` for [`PreselectedAd::Select`] (no `Scoping` element). `Production`
     /// and pre-production resolve to different EntityIDs.
-    pub fn entity_id(self, is_production: bool) -> Option<&'static str> {
-        Some(match (self, is_production) {
+    pub fn entity_id(self, is_production: bool) -> Option<EntityId> {
+        Some(EntityId::from_static(match (self, is_production) {
             (PreselectedAd::Select, _) => return None,
             (PreselectedAd::DigiD, true) => DIGID_AD_PRODUCTION,
             (PreselectedAd::DigiD, false) => DIGID_AD_PREPRODUCTION,
@@ -183,7 +184,7 @@ impl PreselectedAd {
             (PreselectedAd::EHerkenning, false) => EHERKENNING_AD_PREPRODUCTION,
             (PreselectedAd::Eidas, true) => EIDAS_AD_PRODUCTION,
             (PreselectedAd::Eidas, false) => EIDAS_AD_PREPRODUCTION,
-        })
+        }))
     }
 }
 
@@ -203,15 +204,32 @@ impl std::str::FromStr for PreselectedAd {
     }
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct DvConfig {
-    pub entity_id: String,
-    pub service_uuid: String,
+    pub entity_id: EntityId,
+    pub service_uuid: ServiceUuid,
     pub service_name: String,
-    pub acs_url: String,
-    pub slo_url: String,
+    pub acs_url: EndpointUrl,
+    pub slo_url: EndpointUrl,
     pub signing: Vec<KeyPaths>,
     pub encryption: Vec<KeyPaths>,
+}
+
+impl Default for DvConfig {
+    /// The unconfigured DV of an [`AuthConfig::default`]: no identity, no
+    /// endpoints, no keys. Every SAML flow against it fails; see
+    /// [`AuthServiceState::new_empty`](crate::AuthServiceState::new_empty).
+    fn default() -> Self {
+        Self {
+            entity_id: EntityId::unset(),
+            service_uuid: ServiceUuid::unset(),
+            service_name: String::new(),
+            acs_url: EndpointUrl::unset(),
+            slo_url: EndpointUrl::unset(),
+            signing: Vec::new(),
+            encryption: Vec::new(),
+        }
+    }
 }
 
 /// Bootstrap configuration for the IdP (RD). Only the metadata URL is held
@@ -241,27 +259,17 @@ pub struct AuthConfig {
     pub preselected_ad: PreselectedAd,
     /// Where the browser is sent once logout completes (after the SLO round-trip
     /// with the RD) or when `/logout` is hit without an active session. The
-    /// embedding application sets this to its own logout-confirmation page; an
-    /// empty value falls back to `/` (see [`AuthConfig::post_logout_redirect`]).
-    pub post_logout_redirect: String,
+    /// embedding application sets this to its own logout-confirmation page;
+    /// defaults to the application root.
+    pub post_logout_redirect: RedirectTarget,
 }
 
 impl AuthConfig {
     /// The AD EntityID to emit in the AuthnRequest `Scoping`, resolved for this
     /// config's environment, or `None` for [`PreselectedAd::Select`].
-    pub fn preselected_ad_entity_id(&self) -> Option<&'static str> {
+    pub fn preselected_ad_entity_id(&self) -> Option<EntityId> {
         self.preselected_ad
             .entity_id(self.environment.is_production())
-    }
-
-    /// Where to send the browser after logout (or a session-less `/logout`).
-    /// Falls back to `/` when the embedding application has not set one.
-    pub fn post_logout_redirect(&self) -> &str {
-        if self.post_logout_redirect.is_empty() {
-            "/"
-        } else {
-            &self.post_logout_redirect
-        }
     }
 
     /// Override `certs_dir` and rebuild every cert/key path that derives from
@@ -317,29 +325,34 @@ impl AuthConfig {
         let certs_dir = env.certs_dir()?;
         let preselected_ad = env.preselected_ad()?;
         let base_url = env.base_url(environment)?;
-        Ok(Self::derive(
-            environment,
-            certs_dir,
-            preselected_ad,
-            &base_url,
-        ))
+        Self::derive(environment, certs_dir, preselected_ad, &base_url)
     }
 
     /// Everything else derives from `{environment, certs_dir, base_url}`.
+    ///
+    /// Fallible only through the derived endpoint URLs: a `BASE_URL` that is not
+    /// an absolute http(s) origin is a deployment error, and failing here keeps
+    /// the SP metadata and the ACS/SLO checks from ever seeing an unusable value.
     fn derive(
         environment: Environment,
         certs_dir: PathBuf,
         preselected_ad: PreselectedAd,
         base_url: &str,
-    ) -> Self {
+    ) -> Result<Self, AuthError> {
         let dv = DvConfig {
-            entity_id: environment.dv_entity_id().to_string(),
-            service_uuid: environment.dv_service_uuid().to_string(),
+            entity_id: environment.dv_entity_id(),
+            service_uuid: environment.dv_service_uuid(),
             service_name: DV_SERVICE_NAME.to_string(),
             // Derive the externally-advertised URLs from the same TypedPath the
             // router mounts, so the SP metadata and the live routes cannot drift.
-            acs_url: format!("{base_url}{}", crate::SamlAcsPath::PATH),
-            slo_url: format!("{base_url}{}", crate::SamlLogoutPath::PATH),
+            acs_url: EndpointUrl::from_base_url(
+                format!("{base_url}{}", crate::SamlAcsPath::PATH),
+                "ACS URL",
+            )?,
+            slo_url: EndpointUrl::from_base_url(
+                format!("{base_url}{}", crate::SamlLogoutPath::PATH),
+                "SLO URL",
+            )?,
             signing: discover_key_paths(&certs_dir, SIGNING_BASES),
             encryption: discover_key_paths(&certs_dir, ENCRYPTION_BASES),
         };
@@ -352,17 +365,17 @@ impl AuthConfig {
 
         let tls = tls_paths(&certs_dir);
 
-        AuthConfig {
+        Ok(AuthConfig {
             environment,
             certs_dir,
             tls,
             dv,
             rd,
             preselected_ad,
-            // Defaults to `/`; the embedding application overrides this with its
-            // own logout-confirmation page after building the config.
-            post_logout_redirect: String::new(),
-        }
+            // The embedding application overrides this with its own
+            // logout-confirmation page after building the config.
+            post_logout_redirect: RedirectTarget::root(),
+        })
     }
 }
 
@@ -381,27 +394,39 @@ mod tests {
         // Exact EntityIDs from the TVS onboarding; guard against typos.
         assert_eq!(
             PreselectedAd::DigiD.entity_id(true),
-            Some("urn:nl-eid-gdi:1.0:AD:00000004166909913000:entities:0001")
+            Some(EntityId::from_static(
+                "urn:nl-eid-gdi:1.0:AD:00000004166909913000:entities:0001"
+            ))
         );
         assert_eq!(
             PreselectedAd::DigiD.entity_id(false),
-            Some("urn:nl-eid-gdi:1.0:AD:00000004166909913000:entities:9002")
+            Some(EntityId::from_static(
+                "urn:nl-eid-gdi:1.0:AD:00000004166909913000:entities:9002"
+            ))
         );
         assert_eq!(
             PreselectedAd::EHerkenning.entity_id(true),
-            Some("urn:etoegang:HM:00000003520354760000:entities:0113")
+            Some(EntityId::from_static(
+                "urn:etoegang:HM:00000003520354760000:entities:0113"
+            ))
         );
         assert_eq!(
             PreselectedAd::EHerkenning.entity_id(false),
-            Some("urn:etoegang:HM:00000003520354760000:entities:9713")
+            Some(EntityId::from_static(
+                "urn:etoegang:HM:00000003520354760000:entities:9713"
+            ))
         );
         assert_eq!(
             PreselectedAd::Eidas.entity_id(true),
-            Some("urn:etoegang:EB:00000004000000149000:entities:0001")
+            Some(EntityId::from_static(
+                "urn:etoegang:EB:00000004000000149000:entities:0001"
+            ))
         );
         assert_eq!(
             PreselectedAd::Eidas.entity_id(false),
-            Some("urn:etoegang:EB:00000004000000149000:entities:9009")
+            Some(EntityId::from_static(
+                "urn:etoegang:EB:00000004000000149000:entities:9009"
+            ))
         );
     }
 
@@ -447,7 +472,7 @@ mod tests {
         // Production has a distinct `0xxx` index (the Test/Preproduction branch
         // reuses `9001`); guard the production branch of `dv_entity_id`.
         assert_eq!(
-            Environment::Production.dv_entity_id(),
+            Environment::Production.dv_entity_id().as_str(),
             "urn:nl-eid-gdi:1.0:DV:00000004185618890000:entities:0001"
         );
     }
@@ -457,15 +482,15 @@ mod tests {
         // The expected RD Issuer is a pinned constant per environment, not taken
         // from the (only self-signature-checked) metadata.
         assert_eq!(
-            Environment::Test.rd_entity_id(),
+            Environment::Test.rd_entity_id().as_str(),
             "urn:nl-eid-gdi:1.0:RD:00000004000000149000:entities:9002"
         );
         assert_eq!(
-            Environment::Preproduction.rd_entity_id(),
+            Environment::Preproduction.rd_entity_id().as_str(),
             "urn:nl-eid-gdi:1.0:RD:00000004000000149000:entities:9002"
         );
         assert_eq!(
-            Environment::Production.rd_entity_id(),
+            Environment::Production.rd_entity_id().as_str(),
             "urn:nl-eid-gdi:1.0:RD:00000004000000149000:entities:0001"
         );
     }
@@ -477,7 +502,10 @@ mod tests {
             preselected_ad: PreselectedAd::DigiD,
             ..AuthConfig::default()
         };
-        assert_eq!(cfg.preselected_ad_entity_id(), Some(DIGID_AD_PRODUCTION));
+        assert_eq!(
+            cfg.preselected_ad_entity_id(),
+            Some(EntityId::from_static(DIGID_AD_PRODUCTION))
+        );
 
         // Pre-production resolves to the 9xxx index; Select yields no Scoping.
         let cfg = AuthConfig {
@@ -485,24 +513,27 @@ mod tests {
             preselected_ad: PreselectedAd::DigiD,
             ..AuthConfig::default()
         };
-        assert_eq!(cfg.preselected_ad_entity_id(), Some(DIGID_AD_PREPRODUCTION));
+        assert_eq!(
+            cfg.preselected_ad_entity_id(),
+            Some(EntityId::from_static(DIGID_AD_PREPRODUCTION))
+        );
 
         let cfg = AuthConfig::default();
         assert_eq!(cfg.preselected_ad_entity_id(), None);
     }
 
     #[test]
-    fn post_logout_redirect_falls_back_to_root() {
-        // Empty (the embedding application has not set one) => "/".
+    fn post_logout_redirect_defaults_to_root() {
+        // Unset (the embedding application has not overridden it) => "/".
         let cfg = AuthConfig::default();
-        assert_eq!(cfg.post_logout_redirect(), "/");
+        assert_eq!(cfg.post_logout_redirect.as_str(), "/");
 
-        // Set => the configured value is returned verbatim.
+        // Set => the configured page.
         let cfg = AuthConfig {
-            post_logout_redirect: "/logged-out".to_string(),
+            post_logout_redirect: RedirectTarget::from_static("/logged-out"),
             ..AuthConfig::default()
         };
-        assert_eq!(cfg.post_logout_redirect(), "/logged-out");
+        assert_eq!(cfg.post_logout_redirect.as_str(), "/logged-out");
     }
 
     #[test]
@@ -530,20 +561,20 @@ mod tests {
     fn dv_identity_matches_tvs_onboarding() {
         // Test reuses the pre-production EntityID; production has its own index.
         assert_eq!(
-            Environment::Test.dv_entity_id(),
+            Environment::Test.dv_entity_id().as_str(),
             "urn:nl-eid-gdi:1.0:DV:00000004185618890000:entities:9001"
         );
         assert_eq!(
-            Environment::Preproduction.dv_entity_id(),
+            Environment::Preproduction.dv_entity_id().as_str(),
             "urn:nl-eid-gdi:1.0:DV:00000004185618890000:entities:9001"
         );
         assert_eq!(
-            Environment::Test.dv_service_uuid(),
+            Environment::Test.dv_service_uuid().as_str(),
             "f847dc11-ac24-47b2-84a8-a057440ce56d"
         );
         // Pre-production and production share the same registered ServiceUUID.
         assert_eq!(
-            Environment::Preproduction.dv_service_uuid(),
+            Environment::Preproduction.dv_service_uuid().as_str(),
             "4d475439-5847-4337-414c-50505a493141"
         );
         assert_eq!(
@@ -611,13 +642,16 @@ mod tests {
 
         assert_eq!(cfg.environment, Environment::Preproduction);
         assert_eq!(
-            cfg.dv.entity_id,
+            cfg.dv.entity_id.as_str(),
             "urn:nl-eid-gdi:1.0:DV:00000004185618890000:entities:9001"
         );
-        assert_eq!(cfg.dv.service_uuid, "4d475439-5847-4337-414c-50505a493141");
+        assert_eq!(
+            cfg.dv.service_uuid.as_str(),
+            "4d475439-5847-4337-414c-50505a493141"
+        );
         assert_eq!(cfg.dv.service_name, "Kiesraad");
         assert_eq!(
-            cfg.dv.acs_url,
+            cfg.dv.acs_url.as_str(),
             "https://preview.kandidaatstellen.nl/saml/sp/acs"
         );
         assert_eq!(
@@ -687,8 +721,11 @@ mod tests {
         // TVS_ENV defaults to `test`; every derived value follows from it.
         assert_eq!(cfg.environment, Environment::Test);
         // BASE_URL defaults to the local dev origin.
-        assert_eq!(cfg.dv.acs_url, "http://localhost:3000/saml/sp/acs");
-        assert_eq!(cfg.dv.slo_url, "http://localhost:3000/saml/sp/logout");
+        assert_eq!(cfg.dv.acs_url.as_str(), "http://localhost:3000/saml/sp/acs");
+        assert_eq!(
+            cfg.dv.slo_url.as_str(),
+            "http://localhost:3000/saml/sp/logout"
+        );
         assert_eq!(
             cfg.rd.metadata_url,
             format!("{TVS_TEST_BASE_URL}/kvs/rd/metadata")

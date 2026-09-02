@@ -49,6 +49,19 @@
 //!   `Issuer` to the RD EntityID, matching the TVS reference impl `minvws/nl-rdo-max`.
 //!   Signatures inside an Assertion/`Advice` are treated as evidence only (§9.1).
 
+// A failed SAML flow must reach the user as the embedding application's error
+// page, never as a dead worker: the handlers turn every error into an
+// `AuthFailure`, so nothing on a request path may panic. These make that a
+// compile error rather than a review habit. Tests are exempt (see
+// `clippy.toml`), where a panic *is* the failure report.
+#![deny(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::panic,
+    clippy::indexing_slicing,
+    clippy::string_slice
+)]
+
 pub mod bindings;
 pub mod config;
 pub mod csp;
@@ -60,6 +73,7 @@ pub mod saml;
 pub mod state;
 #[cfg(feature = "tvs-mock")]
 mod tvs_mock;
+pub mod types;
 
 use axum::{Router, extract::FromRef};
 use axum_extra::routing::{RouterExt, TypedPath};
@@ -75,7 +89,8 @@ pub use crate::{
     handlers::{login::handle_login, logout::handle_logout},
     pending::{PENDING_REQUEST_TTL, PendingRequests},
     saml::subject::SubjectId,
-    state::{AuthFailure, AuthServiceState, AuthState},
+    state::{AuthFailure, AuthServiceState, AuthState, LoggedOutSession},
+    types::{Artifact, EndpointUrl, EntityId, MessageId, NameId, RedirectTarget, ServiceUuid},
 };
 
 /// Metadata endpoint path (eID §8.3): serves the signed SP metadata.

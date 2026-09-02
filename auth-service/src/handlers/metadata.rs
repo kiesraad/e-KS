@@ -87,19 +87,26 @@ fn xml_response(xml: String) -> Response {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::AuthConfig;
+    use crate::{
+        config::AuthConfig,
+        types::{EndpointUrl, EntityId, ServiceUuid},
+    };
     use axum::body::to_bytes;
+
+    fn dv_url(url: &str) -> EndpointUrl {
+        EndpointUrl::from_base_url(url, "DV endpoint").expect("test DV endpoint")
+    }
 
     /// A state backed by the committed DV fixtures, enough to build real signed
     /// metadata without any env/network access.
     fn fixture_state() -> AuthServiceState {
         let dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("fixtures");
         let mut cfg = AuthConfig::default().with_certs_dir(dir);
-        cfg.dv.entity_id = "urn:test:dv".to_string();
-        cfg.dv.acs_url = "https://dv.example.com/saml/sp/acs".to_string();
-        cfg.dv.slo_url = "https://dv.example.com/saml/sp/logout".to_string();
+        cfg.dv.entity_id = EntityId::from_static("urn:test:dv");
+        cfg.dv.acs_url = dv_url("https://dv.example.com/saml/sp/acs");
+        cfg.dv.slo_url = dv_url("https://dv.example.com/saml/sp/logout");
         cfg.dv.service_name = "Kiesraad Test".to_string();
-        cfg.dv.service_uuid = "f847dc11-ac24-47b2-84a8-a057440ce56d".to_string();
+        cfg.dv.service_uuid = ServiceUuid::from_static("f847dc11-ac24-47b2-84a8-a057440ce56d");
         let keys =
             crate::keys::load_key_set(&cfg.dv.signing, &cfg.dv.encryption).expect("load fixtures");
         AuthServiceState::new(cfg, keys, None)

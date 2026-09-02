@@ -8,17 +8,20 @@ use crate::{
         verification::{ExpectedRoot, verify_xml_signature},
         xml_parser::{Document, NodeId, children_by_tag},
     },
+    types::{EntityId, MessageId},
 };
 use tracing::debug;
 
 /// Expectations for [`validate_artifact_response_at`]: the RD signing certs from
 /// verified metadata (eID §9.2), the `@ID` of the ArtifactResolve this response
-/// must answer (empty skips the check), and the pinned RD EntityID its Issuer
-/// must carry (`None` skips, tests).
+/// must answer, and the pinned RD EntityID its Issuer must carry.
+///
+/// `None` skips a check; only tests pass it, and the production caller
+/// ([`crate::handlers::acs`]) supplies every one.
 pub struct ValidateArtifactResponseOpts<'a> {
     pub trusted_keys: &'a [KeyPair],
-    pub expected_in_response_to: &'a str,
-    pub expected_issuer: Option<&'a str>,
+    pub expected_in_response_to: Option<&'a MessageId>,
+    pub expected_issuer: Option<&'a EntityId>,
 }
 
 /// Validate the ArtifactResponse element `art_node` within the already-parsed
@@ -136,12 +139,15 @@ impl Validator<'_, '_> {
         reconstructed
     }
 
-    fn check_in_response_to(&mut self, root: NodeId, expected: &str) {
+    fn check_in_response_to(&mut self, root: NodeId, expected: Option<&MessageId>) {
+        let Some(expected) = expected else {
+            return;
+        };
         let in_response_to = self.doc.get_attribute(root, "InResponseTo").unwrap_or("");
         debug!(
             "[validate] ArtifactResponse InResponseTo='{in_response_to}' (expected='{expected}')"
         );
-        if !expected.is_empty() && in_response_to != expected {
+        if in_response_to != expected.as_str() {
             self.error(format!(
                 "ArtifactResponse InResponseTo mismatch: expected {expected}, got {in_response_to}"
             ));

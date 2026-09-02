@@ -7,7 +7,11 @@
 
 use askama::Template;
 
-use crate::error::Result;
+use crate::{
+    error::Result,
+    keys::{CertificateBase64, KeyName},
+    types::{Artifact, EndpointUrl, EntityId, MessageId, NameId, ServiceUuid},
+};
 
 // ---------------------------------------------------------------------------
 // SAML message builders
@@ -17,18 +21,18 @@ use crate::error::Result;
 #[derive(Template)]
 #[template(path = "saml/authn_request.xml")]
 pub struct AuthnRequestArgs<'a> {
-    pub id: &'a str,
+    pub id: &'a MessageId,
     pub issue_instant: &'a str,
-    pub destination: &'a str,
-    pub issuer: &'a str,
+    pub destination: &'a EndpointUrl,
+    pub issuer: &'a EntityId,
     /// Optional explicit ACS URL. When set, emitted as
     /// `@AssertionConsumerServiceURL` + `@ProtocolBinding` (HTTP-Artifact)
     /// *instead of* the index. eID §7.3 forbids this against the real TVS, so it
     /// is only used in the `Test` environment against the standalone TVS mock,
     /// which resolves the SP callback from the request.
-    pub acs_url: Option<&'a str>,
-    pub intended_audience: &'a str,
-    pub service_uuid: &'a str,
+    pub acs_url: Option<&'a EndpointUrl>,
+    pub intended_audience: &'a EntityId,
+    pub service_uuid: &'a ServiceUuid,
     /// Optional minimum `AuthnContextClassRef` URI. When set, emitted as a
     /// `RequestedAuthnContext` with `Comparison="minimum"`, asking the RD to
     /// authenticate at this level or higher (eID §7.6.3.2 / TVS T6). See
@@ -36,9 +40,9 @@ pub struct AuthnRequestArgs<'a> {
     pub requested_loa_uri: Option<&'a str>,
     /// Optional pre-selected AD/BVD EntityID. When set, emitted as
     /// `Scoping/IDPList/IDPEntry@ProviderID` per eID §7.3.
-    pub preselected_ad_entity_id: Option<&'a str>,
-    /// Base64 DER of the signing certificate, embedded in the inline KeyInfo.
-    pub signing_cert_base64: &'a str,
+    pub preselected_ad_entity_id: Option<&'a EntityId>,
+    /// The signing certificate, embedded in the inline KeyInfo.
+    pub signing_cert_base64: &'a CertificateBase64,
 }
 
 /// Build a signed-shape AuthnRequest per eID §7.3 (signature filled by
@@ -59,12 +63,12 @@ pub fn build_authn_request(a: AuthnRequestArgs<'_>) -> Result<String> {
 #[derive(Template)]
 #[template(path = "saml/artifact_resolve.xml")]
 pub struct ArtifactResolveArgs<'a> {
-    pub id: &'a str,
+    pub id: &'a MessageId,
     pub issue_instant: &'a str,
-    pub destination: &'a str,
-    pub issuer: &'a str,
-    pub artifact: &'a str,
-    pub signing_cert_base64: &'a str,
+    pub destination: &'a EndpointUrl,
+    pub issuer: &'a EntityId,
+    pub artifact: &'a Artifact,
+    pub signing_cert_base64: &'a CertificateBase64,
 }
 
 /// Build a signed-shape ArtifactResolve per eID §7.5 (sent over the mTLS SOAP
@@ -77,12 +81,12 @@ pub fn build_artifact_resolve(a: ArtifactResolveArgs<'_>) -> Result<String> {
 #[derive(Template)]
 #[template(path = "saml/logout_request.xml")]
 pub struct LogoutRequestArgs<'a> {
-    pub id: &'a str,
+    pub id: &'a MessageId,
     pub issue_instant: &'a str,
-    pub destination: &'a str,
-    pub issuer: &'a str,
-    pub name_id: &'a str,
-    pub signing_cert_base64: &'a str,
+    pub destination: &'a EndpointUrl,
+    pub issuer: &'a EntityId,
+    pub name_id: &'a NameId,
+    pub signing_cert_base64: &'a CertificateBase64,
 }
 
 /// Build a signed-shape LogoutRequest per eID §7.7.1 (SP-initiated only).
@@ -94,38 +98,47 @@ pub fn build_logout_request(a: LogoutRequestArgs<'_>) -> Result<String> {
 // DV (SP) metadata
 // ---------------------------------------------------------------------------
 
+/// One certificate published as a `<md:KeyDescriptor>` in the DV metadata.
+///
+/// A named struct rather than a `(&str, &str)` pair: the thumbprint and the
+/// certificate body are both base64-ish text, so a swapped pair would produce
+/// metadata that is well-formed and wrong.
+#[derive(Clone, Copy)]
+pub struct PublishedKey<'a> {
+    pub key_name: &'a KeyName,
+    pub cert_base64: &'a CertificateBase64,
+}
+
 /// Inputs to [`build_dv_metadata`].
 pub struct DvMetadataArgs<'a> {
-    pub entity_id: &'a str,
-    pub acs_url: &'a str,
-    pub slo_url: &'a str,
+    pub entity_id: &'a EntityId,
+    pub acs_url: &'a EndpointUrl,
+    pub slo_url: &'a EndpointUrl,
     pub service_name: &'a str,
-    pub service_uuid: &'a str,
-    pub metadata_id: &'a str,
-    /// Base64 DER of the metadata signing certificate (inline signature).
-    pub signing_cert_base64: &'a str,
-    /// (key_name, cert_base64)
-    pub signing_keys: &'a [(&'a str, &'a str)],
-    /// (key_name, cert_base64)
-    pub encryption_keys: &'a [(&'a str, &'a str)],
+    pub service_uuid: &'a ServiceUuid,
+    pub metadata_id: &'a MessageId,
+    /// The metadata signing certificate (inline signature).
+    pub signing_cert_base64: &'a CertificateBase64,
+    pub signing_keys: &'a [PublishedKey<'a>],
+    pub encryption_keys: &'a [PublishedKey<'a>],
 }
 
 struct KeyDescriptorView<'a> {
     use_: &'a str,
-    key_name: &'a str,
-    cert_base64: &'a str,
+    key_name: &'a KeyName,
+    cert_base64: &'a CertificateBase64,
 }
 
 #[derive(Template)]
 #[template(path = "saml/dv_metadata.xml")]
 struct DvMetadataTemplate<'a> {
-    entity_id: &'a str,
-    acs_url: &'a str,
-    slo_url: &'a str,
+    entity_id: &'a EntityId,
+    acs_url: &'a EndpointUrl,
+    slo_url: &'a EndpointUrl,
     service_name: &'a str,
-    service_uuid: &'a str,
-    metadata_id: &'a str,
-    signing_cert_base64: &'a str,
+    service_uuid: &'a ServiceUuid,
+    metadata_id: &'a MessageId,
+    signing_cert_base64: &'a CertificateBase64,
     key_descriptors: Vec<KeyDescriptorView<'a>>,
 }
 
@@ -134,13 +147,12 @@ struct DvMetadataTemplate<'a> {
 /// (use="encryption"); the inline signature is filled by
 /// [`crypto::sign`](crate::saml::crypto::sign).
 pub fn build_dv_metadata<'a>(a: DvMetadataArgs<'a>) -> Result<String> {
-    let descriptors = |use_: &'a str, keys: &'a [(&'a str, &'a str)]| {
-        keys.iter()
-            .map(move |&(key_name, cert_base64)| KeyDescriptorView {
-                use_,
-                key_name,
-                cert_base64,
-            })
+    let descriptors = |use_: &'a str, keys: &'a [PublishedKey<'a>]| {
+        keys.iter().map(move |key| KeyDescriptorView {
+            use_,
+            key_name: key.key_name,
+            cert_base64: key.cert_base64,
+        })
     };
     let key_descriptors: Vec<KeyDescriptorView<'a>> = descriptors("signing", a.signing_keys)
         .chain(descriptors("encryption", a.encryption_keys))
@@ -177,11 +189,6 @@ pub fn wrap_in_soap_envelope(body_xml: &str) -> Result<String> {
 // ID and timestamp helpers
 // ---------------------------------------------------------------------------
 
-/// A random SAML message ID (underscore-prefixed, NCName-safe).
-pub fn generate_id() -> String {
-    format!("_{}", uuid::Uuid::new_v4().simple())
-}
-
 /// The current UTC time formatted as a SAML `IssueInstant` (`YYYY-MM-DDThh:mm:ssZ`).
 pub fn now_utc() -> String {
     chrono::Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string()
@@ -191,23 +198,45 @@ pub fn now_utc() -> String {
 mod tests {
     use super::*;
 
-    const TEST_CERT: &str = "Y2VydA==";
+    fn cert(b64: &str) -> CertificateBase64 {
+        CertificateBase64::parse(b64).expect("test certificate body")
+    }
+
+    fn test_cert() -> CertificateBase64 {
+        cert("Y2VydA==")
+    }
+
+    fn id(value: &str) -> MessageId {
+        MessageId::parse(value).expect("test message id")
+    }
+
+    fn dv() -> EntityId {
+        EntityId::from_static("urn:test:dv")
+    }
+
+    fn url(value: &str) -> EndpointUrl {
+        EndpointUrl::from_base_url(value, "endpoint").expect("test endpoint")
+    }
+
+    fn service_uuid() -> ServiceUuid {
+        ServiceUuid::from_static("f847dc11-ac24-47b2-84a8-a057440ce56d")
+    }
 
     #[test]
     fn build_authn_request_produces_valid_xml() {
         let xml = build_authn_request(AuthnRequestArgs {
-            id: "_test123",
+            id: &id("_test123"),
             issue_instant: "2025-01-01T00:00:00Z",
-            destination: "https://rd.example.com/sso",
-            issuer: "urn:test:dv",
+            destination: &url("https://rd.example.com/sso"),
+            issuer: &dv(),
             acs_url: None,
-            intended_audience: "urn:test:dv",
-            service_uuid: "f847dc11-ac24-47b2-84a8-a057440ce56d",
+            intended_audience: &dv(),
+            service_uuid: &service_uuid(),
             requested_loa_uri: Some(
                 "urn:oasis:names:tc:SAML:2.0:ac:classes:MobileTwoFactorContract",
             ),
             preselected_ad_entity_id: None,
-            signing_cert_base64: TEST_CERT,
+            signing_cert_base64: &test_cert(),
         })
         .unwrap();
 
@@ -235,16 +264,16 @@ mod tests {
     #[test]
     fn build_authn_request_emits_acs_url_when_set() {
         let xml = build_authn_request(AuthnRequestArgs {
-            id: "_test123",
+            id: &id("_test123"),
             issue_instant: "2025-01-01T00:00:00Z",
-            destination: "https://rd.example.com/sso",
-            issuer: "urn:test:dv",
-            acs_url: Some("https://pr-7.preview.example.test/saml/sp/acs"),
-            intended_audience: "urn:test:dv",
-            service_uuid: "f847dc11-ac24-47b2-84a8-a057440ce56d",
+            destination: &url("https://rd.example.com/sso"),
+            issuer: &dv(),
+            acs_url: Some(&url("https://pr-7.preview.example.test/saml/sp/acs")),
+            intended_audience: &dv(),
+            service_uuid: &service_uuid(),
             requested_loa_uri: None,
             preselected_ad_entity_id: None,
-            signing_cert_base64: TEST_CERT,
+            signing_cert_base64: &test_cert(),
         })
         .unwrap();
 
@@ -265,16 +294,16 @@ mod tests {
             .entity_id(false)
             .expect("DigiD resolves to an EntityID");
         let xml = build_authn_request(AuthnRequestArgs {
-            id: "_test123",
+            id: &id("_test123"),
             issue_instant: "2025-01-01T00:00:00Z",
-            destination: "https://rd.example.com/sso",
-            issuer: "urn:test:dv",
+            destination: &url("https://rd.example.com/sso"),
+            issuer: &dv(),
             acs_url: None,
-            intended_audience: "urn:test:dv",
-            service_uuid: "f847dc11-ac24-47b2-84a8-a057440ce56d",
+            intended_audience: &dv(),
+            service_uuid: &service_uuid(),
             requested_loa_uri: None,
-            preselected_ad_entity_id: Some(ad_entity_id),
-            signing_cert_base64: TEST_CERT,
+            preselected_ad_entity_id: Some(&ad_entity_id),
+            signing_cert_base64: &test_cert(),
         })
         .unwrap();
 
@@ -290,17 +319,17 @@ mod tests {
     #[test]
     fn build_artifact_resolve_contains_artifact() {
         let xml = build_artifact_resolve(ArtifactResolveArgs {
-            id: "_res1",
+            id: &id("_res1"),
             issue_instant: "2025-01-01T00:00:00Z",
-            destination: "https://rd.example.com/ars",
-            issuer: "urn:test:dv",
-            artifact: "AAQAAMh48/1o...",
-            signing_cert_base64: TEST_CERT,
+            destination: &url("https://rd.example.com/ars"),
+            issuer: &dv(),
+            artifact: &Artifact::parse("AAQAAMh48/1o==").expect("test artifact"),
+            signing_cert_base64: &test_cert(),
         })
         .unwrap();
 
         assert!(xml.contains("ArtifactResolve"));
-        assert!(xml.contains("<samlp:Artifact>AAQAAMh48/1o...</samlp:Artifact>"));
+        assert!(xml.contains("<samlp:Artifact>AAQAAMh48/1o==</samlp:Artifact>"));
         assert!(xml.contains("<saml:Issuer>urn:test:dv</saml:Issuer>"));
         assert!(xml.contains("URI=\"#_res1\""));
     }
@@ -308,12 +337,12 @@ mod tests {
     #[test]
     fn build_logout_request_contains_name_id() {
         let xml = build_logout_request(LogoutRequestArgs {
-            id: "_lr1",
+            id: &id("_lr1"),
             issue_instant: "2025-01-01T00:00:00Z",
-            destination: "https://rd.example.com/slo",
-            issuer: "urn:test:dv",
-            name_id: "transient-id-abc",
-            signing_cert_base64: TEST_CERT,
+            destination: &url("https://rd.example.com/slo"),
+            issuer: &dv(),
+            name_id: &NameId::parse("transient-id-abc").expect("test NameID"),
+            signing_cert_base64: &test_cert(),
         })
         .unwrap();
 
@@ -325,15 +354,21 @@ mod tests {
     #[test]
     fn build_dv_metadata_contains_required_elements() {
         let xml = build_dv_metadata(DvMetadataArgs {
-            entity_id: "urn:test:dv",
-            acs_url: "https://dv.example.com/acs",
-            slo_url: "https://dv.example.com/slo",
+            entity_id: &dv(),
+            acs_url: &url("https://dv.example.com/acs"),
+            slo_url: &url("https://dv.example.com/slo"),
             service_name: "Test Service",
-            service_uuid: "uuid-1234",
-            metadata_id: "_md1",
-            signing_cert_base64: TEST_CERT,
-            signing_keys: &[("keyname1", "Y2VydDE=")],
-            encryption_keys: &[("keyname2", "Y2VydDI=")],
+            service_uuid: &service_uuid(),
+            metadata_id: &id("_md1"),
+            signing_cert_base64: &test_cert(),
+            signing_keys: &[PublishedKey {
+                key_name: &KeyName::parse("a1b2").unwrap(),
+                cert_base64: &cert("Y2VydDE="),
+            }],
+            encryption_keys: &[PublishedKey {
+                key_name: &KeyName::parse("c3d4").unwrap(),
+                cert_base64: &cert("Y2VydDI="),
+            }],
         })
         .unwrap();
 
@@ -349,8 +384,8 @@ mod tests {
         // Both KeyDescriptors rendered.
         assert!(xml.contains("use=\"signing\""));
         assert!(xml.contains("use=\"encryption\""));
-        assert!(xml.contains("<dsig:KeyName>keyname1</dsig:KeyName>"));
-        assert!(xml.contains("<dsig:KeyName>keyname2</dsig:KeyName>"));
+        assert!(xml.contains("<dsig:KeyName>a1b2</dsig:KeyName>"));
+        assert!(xml.contains("<dsig:KeyName>c3d4</dsig:KeyName>"));
         // Inline signature references the metadata ID.
         assert!(xml.contains("URI=\"#_md1\""));
     }
@@ -362,20 +397,6 @@ mod tests {
         assert!(soap.contains("soap:Envelope"));
         assert!(soap.contains("soap:Body"));
         assert!(soap.contains("<msg>hi</msg>"));
-    }
-
-    #[test]
-    fn generate_id_starts_with_underscore() {
-        let id = generate_id();
-        assert!(id.starts_with('_'));
-        assert!(id.len() > 1);
-    }
-
-    #[test]
-    fn generate_id_is_unique() {
-        let a = generate_id();
-        let b = generate_id();
-        assert_ne!(a, b);
     }
 
     #[test]

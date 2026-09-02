@@ -21,9 +21,9 @@ use auth_service::{
         },
         xml_parser::parse,
     },
+    types::{EndpointUrl, EntityId, MessageId},
 };
 use chrono::Duration;
-use secrecy::ExposeSecret;
 
 mod common;
 use common::{
@@ -87,12 +87,25 @@ fn signed_artifact_response_soap(signing_key: &KeyPair) -> String {
     let artifact_response = format!(
         r#"<samlp:ArtifactResponse xmlns:samlp="{NS_SAMLP}" xmlns:saml="{NS_SAML}" ID="_art1" Version="2.0" IssueInstant="{now}"><saml:Issuer>{RD_ENTITY_ID}</saml:Issuer>{sig}<samlp:Status><samlp:StatusCode Value="{STATUS_SUCCESS}"/></samlp:Status>{response}</samlp:ArtifactResponse>"#
     );
-    let signed = sign(&artifact_response, signing_key.key_pem.expose_secret()).unwrap();
+    let signed = sign(&artifact_response, &signing_key.key_pem).unwrap();
     soap_wrap(&signed)
 }
 
 const DV_ENTITY_ID: &str = "urn:test:dv";
 const ACS_URL: &str = "https://dv.example.com/acs";
+
+/// The same two as the domain types the validator options take.
+fn dv_entity_id() -> EntityId {
+    EntityId::from_static(DV_ENTITY_ID)
+}
+
+fn rd_entity_id() -> EntityId {
+    EntityId::from_static(RD_ENTITY_ID)
+}
+
+fn acs_url() -> EndpointUrl {
+    EndpointUrl::from_metadata(ACS_URL, "ACS").expect("test ACS URL")
+}
 
 /// Build a minimal but well-formed Assertion XML.
 ///
@@ -202,8 +215,8 @@ fn validate(xml: &str) -> common::AssertionResult {
     validate_assertion(
         xml,
         ValidateAssertionOpts {
-            dv_entity_id: DV_ENTITY_ID,
-            expected_recipient: ACS_URL,
+            dv_entity_id: &dv_entity_id(),
+            expected_recipient: Some(&acs_url()),
             expected_issuer: None,
             private_keys: &[],
             minimum_loa: None,
@@ -217,8 +230,8 @@ fn validate_with_loa(xml: &str) -> common::AssertionResult {
     validate_assertion(
         xml,
         ValidateAssertionOpts {
-            dv_entity_id: DV_ENTITY_ID,
-            expected_recipient: ACS_URL,
+            dv_entity_id: &dv_entity_id(),
+            expected_recipient: Some(&acs_url()),
             expected_issuer: None,
             private_keys: &[],
             minimum_loa: Some(MINIMUM_LOA),
@@ -311,7 +324,7 @@ fn artifact_response_wrong_root_element() {
     let soap = soap_wrap(
         r#"<samlp:NotAnArtifactResponse xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ID="_1"/>"#,
     );
-    let r = validate_artifact_response(&soap, &[], "");
+    let r = validate_artifact_response(&soap, &[], None);
     assert!(!r.valid);
     assert!(
         r.errors
@@ -328,7 +341,7 @@ fn artifact_response_in_response_to_mismatch() {
     let soap = soap_wrap(&format!(
         r#"<samlp:ArtifactResponse xmlns:samlp="{NS_SAMLP}" ID="_1" InResponseTo="_wrong"><samlp:Status><samlp:StatusCode Value="{STATUS_SUCCESS}"/></samlp:Status></samlp:ArtifactResponse>"#
     ));
-    let r = validate_artifact_response(&soap, &[], "_expected");
+    let r = validate_artifact_response(&soap, &[], Some(&MessageId::parse("_expected").unwrap()));
     assert!(!r.valid);
     assert!(
         r.errors.iter().any(|e| e.contains("InResponseTo mismatch")),
@@ -343,7 +356,7 @@ fn artifact_response_missing_version_rejected() {
     let soap = soap_wrap(&format!(
         r#"<samlp:ArtifactResponse xmlns:samlp="{NS_SAMLP}" ID="_1"><samlp:Status><samlp:StatusCode Value="{STATUS_SUCCESS}"/></samlp:Status></samlp:ArtifactResponse>"#
     ));
-    let r = validate_artifact_response(&soap, &[], "");
+    let r = validate_artifact_response(&soap, &[], None);
     assert!(!r.valid);
     assert!(
         r.errors
@@ -360,7 +373,7 @@ fn artifact_response_error_status() {
     let soap = soap_wrap(&format!(
         r#"<samlp:ArtifactResponse xmlns:samlp="{NS_SAMLP}" ID="_1"><samlp:Status><samlp:StatusCode Value="urn:oasis:names:tc:SAML:2.0:status:Requester"/></samlp:Status></samlp:ArtifactResponse>"#
     ));
-    let r = validate_artifact_response(&soap, &[], "");
+    let r = validate_artifact_response(&soap, &[], None);
     assert!(!r.valid);
     assert!(
         r.errors
@@ -380,7 +393,7 @@ fn artifact_response_success_without_inner_response() {
     let soap = soap_wrap(&format!(
         r#"<samlp:ArtifactResponse xmlns:samlp="{NS_SAMLP}" ID="_1"><samlp:Status><samlp:StatusCode Value="{STATUS_SUCCESS}"/></samlp:Status></samlp:ArtifactResponse>"#
     ));
-    let r = validate_artifact_response(&soap, &[], "");
+    let r = validate_artifact_response(&soap, &[], None);
     assert!(!r.valid);
     assert!(r.response_xml.is_none(), "should not extract a Response");
 }
@@ -388,7 +401,7 @@ fn artifact_response_success_without_inner_response() {
 /// §7.6.1: Invalid SOAP envelope must be rejected.
 #[test]
 fn artifact_response_invalid_soap() {
-    let r = validate_artifact_response("<not-soap/>", &[], "");
+    let r = validate_artifact_response("<not-soap/>", &[], None);
     assert!(!r.valid);
     assert!(
         r.errors.iter().any(|e| e.contains("SOAP")),
@@ -401,7 +414,7 @@ fn artifact_response_invalid_soap() {
 #[test]
 fn artifact_response_malformed_xml() {
     let soap = soap_wrap("<<<not xml");
-    let r = validate_artifact_response(&soap, &[], "");
+    let r = validate_artifact_response(&soap, &[], None);
     assert!(!r.valid);
     assert!(
         r.errors.iter().any(|e| e.contains("XML parse error")),
@@ -422,9 +435,9 @@ fn assertion_issuer_matching_rd_accepted() {
     let r = validate_assertion(
         &xml,
         ValidateAssertionOpts {
-            dv_entity_id: DV_ENTITY_ID,
-            expected_recipient: ACS_URL,
-            expected_issuer: Some("urn:test:rd"),
+            dv_entity_id: &dv_entity_id(),
+            expected_recipient: Some(&acs_url()),
+            expected_issuer: Some(&EntityId::from_static("urn:test:rd")),
             private_keys: &[],
             minimum_loa: None,
             expected_service_uuid: None,
@@ -444,9 +457,9 @@ fn assertion_issuer_mismatch_rejected() {
     let r = validate_assertion(
         &xml,
         ValidateAssertionOpts {
-            dv_entity_id: DV_ENTITY_ID,
-            expected_recipient: ACS_URL,
-            expected_issuer: Some("urn:test:some-other-ad"),
+            dv_entity_id: &dv_entity_id(),
+            expected_recipient: Some(&acs_url()),
+            expected_issuer: Some(&EntityId::from_static("urn:test:some-other-ad")),
             private_keys: &[],
             minimum_loa: None,
             expected_service_uuid: None,
@@ -487,8 +500,8 @@ fn signed_artifact_response_full_chain_succeeds() {
         art_node,
         &ValidateArtifactResponseOpts {
             trusted_keys: std::slice::from_ref(&rd_key),
-            expected_in_response_to: "",
-            expected_issuer: Some(RD_ENTITY_ID),
+            expected_in_response_to: None,
+            expected_issuer: Some(&rd_entity_id()),
         },
         &mut errors,
     )
@@ -522,9 +535,9 @@ fn signed_artifact_response_full_chain_succeeds() {
         &doc,
         assertion_node,
         &ValidateAssertionOpts {
-            dv_entity_id: DV_ENTITY_ID,
-            expected_recipient: ACS_URL,
-            expected_issuer: Some(RD_ENTITY_ID),
+            dv_entity_id: &dv_entity_id(),
+            expected_recipient: Some(&acs_url()),
+            expected_issuer: Some(&rd_entity_id()),
             private_keys: &[],
             minimum_loa: Some(MINIMUM_LOA),
             expected_service_uuid: None,
@@ -559,8 +572,8 @@ fn signed_artifact_response_issuer_mismatch_rejected() {
         art_node,
         &ValidateArtifactResponseOpts {
             trusted_keys: std::slice::from_ref(&rd_key),
-            expected_in_response_to: "",
-            expected_issuer: Some("urn:test:not-the-rd"),
+            expected_in_response_to: None,
+            expected_issuer: Some(&EntityId::from_static("urn:test:not-the-rd")),
         },
         &mut errors,
     );
@@ -580,7 +593,7 @@ fn signed_artifact_response_untrusted_signer_rejected() {
     let other_key = load_key("dv-signing-1");
     let soap = signed_artifact_response_soap(&rd_key);
 
-    let art = validate_artifact_response(&soap, std::slice::from_ref(&other_key), "");
+    let art = validate_artifact_response(&soap, std::slice::from_ref(&other_key), None);
     assert!(
         !art.valid,
         "ArtifactResponse signed by RD must not verify against an unrelated key"
@@ -651,8 +664,8 @@ fn assertion_empty_expected_recipient_skips_check() {
     let r = validate_assertion(
         &xml,
         ValidateAssertionOpts {
-            dv_entity_id: DV_ENTITY_ID,
-            expected_recipient: "",
+            dv_entity_id: &dv_entity_id(),
+            expected_recipient: None,
             expected_issuer: None,
             private_keys: &[],
             minimum_loa: None,
@@ -950,7 +963,7 @@ fn assertion_extracts_name_id() {
         r.errors
     );
     let claims = r.claims.expect("claims present when no errors");
-    assert_eq!(claims.name_id, "user-123");
+    assert_eq!(claims.name_id.as_str(), "user-123");
 }
 
 /// §7.6.3: a Subject NameID whose Format is not the transient URI is rejected.
@@ -1289,7 +1302,7 @@ fn artifact_response_success_without_response_is_rejected() {
         r#"<samlp:ArtifactResponse xmlns:samlp="{NS_SAMLP}" xmlns:saml="{NS_SAML}" ID="_ar1" Version="2.0" IssueInstant="{now}"><saml:Issuer>{RD_ENTITY_ID}</saml:Issuer><samlp:Status><samlp:StatusCode Value="{STATUS_SUCCESS}"/></samlp:Status></samlp:ArtifactResponse>"#,
         now = ts(Duration::zero())
     ));
-    let art = validate_artifact_response(&soap, &[], "");
+    let art = validate_artifact_response(&soap, &[], None);
     assert!(
         art.errors
             .iter()
@@ -1313,7 +1326,7 @@ fn artifact_response_with_two_responses_is_rejected() {
         first = inner.replace("{n}", "1"),
         second = inner.replace("{n}", "2"),
     ));
-    let art = validate_artifact_response(&soap, &[], "");
+    let art = validate_artifact_response(&soap, &[], None);
     assert!(
         art.errors.iter().any(|e| e.contains("2 Response elements")),
         "expected the multiple-Response rejection, got: {:?}",
@@ -1332,7 +1345,7 @@ fn artifact_response_extracts_inner_response() {
         r#"<samlp:ArtifactResponse xmlns:samlp="{NS_SAMLP}" ID="_ar1"><samlp:Status><samlp:StatusCode Value="{STATUS_SUCCESS}"/></samlp:Status>{inner_response}</samlp:ArtifactResponse>"#
     ));
     // Signature will fail, but Response extraction should succeed
-    let r = validate_artifact_response(&soap, &[], "");
+    let r = validate_artifact_response(&soap, &[], None);
     assert!(
         r.response_xml.is_some(),
         "inner Response must be extracted, errors: {:?}",

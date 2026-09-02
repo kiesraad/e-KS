@@ -4,10 +4,15 @@
 //! wrapping (the SHA-1 MGF1 variant SHOULD NOT be used).
 //! eID §7.6.3.4.4: Identifiers (NameID) are in EncryptedID elements, XML-encrypted
 //! so only the intended recipient(s) can decrypt.
-use crate::saml::{
-    constants::{NS_SAML, NS_XENC},
-    crypto,
-    xml_parser::{Document, NodeId, descendants_by_tag, direct_text, find_child, find_descendant},
+use crate::{
+    keys::DecryptionKey,
+    saml::{
+        constants::{NS_SAML, NS_XENC},
+        crypto,
+        xml_parser::{
+            Document, NodeId, descendants_by_tag, direct_text, find_child, find_descendant,
+        },
+    },
 };
 use secrecy::{ExposeSecret, SecretString};
 use tracing::{debug, warn};
@@ -23,19 +28,6 @@ const ALLOWED_KEY_TRANSPORT: &[&str] = &[
     "http://www.w3.org/2001/04/xmlenc#rsa-oaep-mgf1p",
     "http://www.w3.org/2009/xmlenc11#rsa-oaep",
 ];
-
-/// A DV private key offered for EncryptedID decryption, with the `KeyName` it
-/// is advertised under in DV metadata.
-///
-/// A named struct rather than a `(&str, &str)` pair: the two fields are both
-/// strings and trivially swappable at a call site. `SecretString` keeps the key
-/// out of `Debug` output and logs.
-#[derive(Clone, Copy)]
-pub struct DecryptionKey<'a> {
-    pub key_pem: &'a SecretString,
-    /// SHA-1 hex of the DER certificate; matches the `KeyName` in `KeyInfo`.
-    pub key_name: &'a str,
-}
 
 /// A decrypted SAML NameID and its eID §7.6.3.4.4 attributes.
 #[derive(Debug, Clone)]
@@ -211,13 +203,7 @@ fn decrypt_ciphertext(enc_id_xml: &str, private_keys: &[DecryptionKey<'_>]) -> O
         enc_id_xml.len(),
         private_keys.len()
     );
-    // The crypto adapter takes plain pairs; expose the secrets only here, at the
-    // call into the backend.
-    let keys: Vec<(&str, &str)> = private_keys
-        .iter()
-        .map(|k| (k.key_pem.expose_secret(), k.key_name))
-        .collect();
-    match crypto::decrypt(enc_id_xml, &keys) {
+    match crypto::decrypt(enc_id_xml, private_keys) {
         Ok(xml) => {
             // SECURITY: do not log the decrypted XML content; it contains the
             // plaintext NameID (PII per eID §7.6.3.4). Log only its length.
@@ -272,7 +258,7 @@ fn name_id_fields(dec_doc: &Document, name_id_node: NodeId) -> DecryptedNameId {
 mod tests {
     use super::*;
     use crate::{
-        keys::derive_key_name,
+        keys::{CertificatePem, PrivateKeyPem},
         saml::{
             constants::{NAMEID_PERSISTENT, NS_SAML},
             xml_parser::parse,
@@ -322,21 +308,21 @@ mod tests {
     fn decrypts_real_encrypted_id_round_trip() {
         let cert_pem = fixture("dv-encryption-1.pem");
         let key_pem = fixture("dv-encryption-1-key.pem");
-        let key_name = derive_key_name(&cert_pem);
+        let key_name = CertificatePem::parse(&cert_pem).unwrap().key_name();
 
         // A self-contained, eID-conformant NameID (persistent, with NameQualifier).
         let name_id_xml = format!(
             r#"<saml:NameID xmlns:saml="{NS_SAML}" Format="{NAMEID_PERSISTENT}" NameQualifier="urn:nl-eid-gdi:1.0:id:legacy-BSN">900070341</saml:NameID>"#
         );
 
-        let encrypted_id_xml = encrypt_name_id(&cert_pem, &key_name, &name_id_xml);
+        let encrypted_id_xml = encrypt_name_id(&cert_pem, key_name.as_str(), &name_id_xml);
         // Sanity: encryption actually filled the ciphertext (no plaintext leak).
         assert!(!encrypted_id_xml.contains("900070341"));
 
         let doc = parse(&encrypted_id_xml).expect("parse EncryptedID");
         let enc_id = doc.document_element();
 
-        let key_pem = SecretString::from(key_pem);
+        let key_pem = PrivateKeyPem::new(key_pem);
         let private_keys = [DecryptionKey {
             key_pem: &key_pem,
             key_name: &key_name,
@@ -355,17 +341,17 @@ mod tests {
     #[test]
     fn wrong_key_does_not_decrypt() {
         let cert_pem = fixture("dv-encryption-1.pem");
-        let key_name = derive_key_name(&cert_pem);
+        let key_name = CertificatePem::parse(&cert_pem).unwrap().key_name();
         let name_id_xml = format!(
             r#"<saml:NameID xmlns:saml="{NS_SAML}" Format="{NAMEID_PERSISTENT}" NameQualifier="urn:nl-eid-gdi:1.0:id:legacy-BSN">900070341</saml:NameID>"#
         );
-        let encrypted_id_xml = encrypt_name_id(&cert_pem, &key_name, &name_id_xml);
+        let encrypted_id_xml = encrypt_name_id(&cert_pem, key_name.as_str(), &name_id_xml);
 
         let doc = parse(&encrypted_id_xml).expect("parse EncryptedID");
         let enc_id = doc.document_element();
 
         // Present a different key under the same KeyName: unwrap must fail.
-        let other_key = SecretString::from(fixture("dv-encryption-2-key.pem"));
+        let other_key = PrivateKeyPem::new(fixture("dv-encryption-2-key.pem"));
         let private_keys = [DecryptionKey {
             key_pem: &other_key,
             key_name: &key_name,
@@ -378,20 +364,22 @@ mod tests {
     #[test]
     fn decrypts_with_non_first_key_during_rollover() {
         let cert2 = fixture("dv-encryption-2.pem");
-        let kn1 = derive_key_name(&fixture("dv-encryption-1.pem"));
-        let kn2 = derive_key_name(&cert2);
+        let kn1 = CertificatePem::parse(fixture("dv-encryption-1.pem"))
+            .unwrap()
+            .key_name();
+        let kn2 = CertificatePem::parse(&cert2).unwrap().key_name();
         let key1 = fixture("dv-encryption-1-key.pem");
         let key2 = fixture("dv-encryption-2-key.pem");
 
         let name_id_xml = format!(
             r#"<saml:NameID xmlns:saml="{NS_SAML}" Format="{NAMEID_PERSISTENT}" NameQualifier="urn:nl-eid-gdi:1.0:id:legacy-BSN">900070341</saml:NameID>"#
         );
-        let encrypted_id_xml = encrypt_name_id(&cert2, &kn2, &name_id_xml);
+        let encrypted_id_xml = encrypt_name_id(&cert2, kn2.as_str(), &name_id_xml);
         let doc = parse(&encrypted_id_xml).expect("parse EncryptedID");
         let enc_id = doc.document_element();
 
         // key1 (wrong) is listed before key2 (correct); decryption must still work.
-        let (key1, key2) = (SecretString::from(key1), SecretString::from(key2));
+        let (key1, key2) = (PrivateKeyPem::new(key1), PrivateKeyPem::new(key2));
         let private_keys = [
             DecryptionKey {
                 key_pem: &key1,
@@ -503,13 +491,13 @@ mod tests {
         // else (here a same-local-name element in the wrong namespace) must not
         // become an identity.
         let cert = fixture("dv-encryption-1.pem");
-        let key_name = derive_key_name(&cert);
+        let key_name = CertificatePem::parse(&cert).unwrap().key_name();
         let key = fixture("dv-encryption-1-key.pem");
         let not_a_name_id =
             r#"<NameID xmlns="urn:attacker:ns" Format="x">900070341</NameID>"#.to_string();
-        let encrypted = encrypt_name_id(&cert, &key_name, &not_a_name_id);
+        let encrypted = encrypt_name_id(&cert, key_name.as_str(), &not_a_name_id);
         let doc = parse(&encrypted).expect("parse EncryptedID");
-        let key = SecretString::from(key);
+        let key = PrivateKeyPem::new(key);
         let private_keys = [DecryptionKey {
             key_pem: &key,
             key_name: &key_name,
