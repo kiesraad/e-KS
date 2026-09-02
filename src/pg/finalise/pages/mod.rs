@@ -3,8 +3,7 @@ use axum_extra::routing::RouterExt;
 
 use crate::AppRequestState;
 
-#[allow(unused_imports)]
-pub(crate) use super::paths::*;
+// pub(crate) use super::paths::{FinalisePath, DownloadDocumentsPath};
 
 pub mod documents;
 mod index;

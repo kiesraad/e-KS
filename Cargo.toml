@@ -99,7 +99,6 @@ eml-nl = "0.7.0"
 # dev-dependencies
 http-body-util = "0.1"
 tower = "0.5"
-tracing-test = "0.2.6"
 
 [package]
 name = "eks"
@@ -199,7 +198,6 @@ memory-serve = { workspace = true, optional = true }
 [dev-dependencies]
 eks-locales = { path = "tools/locales" }
 tower = { workspace = true }
-tracing-test = { workspace = true }
 tokio = { workspace = true, features = ["test-util"] }
 reqwest = { workspace = true, features = ["rustls"] }
 

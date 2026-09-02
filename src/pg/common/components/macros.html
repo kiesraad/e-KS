@@ -1,20 +1,6 @@
 {% macro csrf_field() %}
   <input type="hidden" name="csrf_token" value="{{ "csrf_token"|str_value }}">
 {% endmacro csrf_field %}
-{% macro delete_modal(delete_action, delete_title, delete_warning_text = "") %}
-  <dialog class="modal">
-    <form method="post" action="{{ delete_action }}" class="form">
-      {{ csrf_field() }}
-      <button class="close-modal" aria-label="{{ "action.close"|trans }}">
-        <span>{{ "action.close"|trans }}</span>
-      </button>
-      <h3>{{ delete_title }}</h3>
-      {% if delete_warning_text != "" %}<p class="mt-lg mb-lg">{{ delete_warning_text }}</p>{% endif %}
-      <button type="submit" class="button primary-destructive">{{ "action.delete"|trans }}</button>
-      <button type="submit" class="button secondary close">{{ "action.cancel"|trans }}</button>
-    </form>
-  </dialog>
-{% endmacro delete_modal %}
 {% macro download_button(label, href, downloadable, version) %}
   {% if downloadable %}
     <a href="{{ href }}" class="button secondary icon-download">{{ label }} (v{{ version }})</a>

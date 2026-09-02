@@ -5,15 +5,13 @@ use crate::{
     AppError, Context, HtmlTemplate, PgStore,
     core::ModelLocale,
     filters,
-    finalise::AllProblems,
+    finalise::{AllProblems, FinalisePath, paths::DownloadDocumentsPath},
     structs::{
         common::{HasSeverity, Severity},
         list_designation::ListDesignation,
         list_submitters::ListSubmitter,
     },
 };
-
-use super::FinalisePath;
 
 #[derive(Template)]
 #[template(path = "pg/finalise/pages/index.html")]
@@ -36,11 +34,11 @@ pub async fn index(
     Ok(HtmlTemplate(
         IndexTemplate {
             problems,
-            download_path_nl: super::DownloadDocumentsPath {
+            download_path_nl: DownloadDocumentsPath {
                 locale: ModelLocale::Nl,
             }
             .to_string(),
-            download_path_fry: super::DownloadDocumentsPath {
+            download_path_fry: DownloadDocumentsPath {
                 locale: ModelLocale::Fry,
             }
             .to_string(),
@@ -88,7 +86,7 @@ mod tests {
 
         assert!(
             body.contains(
-                &super::super::DownloadDocumentsPath {
+                &super::DownloadDocumentsPath {
                     locale: ModelLocale::Nl,
                 }
                 .to_string()
@@ -97,7 +95,7 @@ mod tests {
 
         assert!(
             body.matches(
-                &super::super::DownloadDocumentsPath {
+                &super::DownloadDocumentsPath {
                     locale: ModelLocale::Nl,
                 }
                 .to_string()
@@ -146,7 +144,7 @@ mod tests {
 
             assert!(
                 body.contains(
-                    &super::super::DownloadDocumentsPath {
+                    &super::DownloadDocumentsPath {
                         locale: ModelLocale::Nl,
                     }
                     .to_string()
@@ -155,7 +153,7 @@ mod tests {
 
             assert!(
                 body.contains(
-                    &super::super::DownloadDocumentsPath {
+                    &super::DownloadDocumentsPath {
                         locale: ModelLocale::Fry,
                     }
                     .to_string()
@@ -207,7 +205,7 @@ mod tests {
 
             assert!(
                 body.contains(
-                    &super::super::DownloadDocumentsPath {
+                    &super::DownloadDocumentsPath {
                         locale: ModelLocale::Nl,
                     }
                     .to_string()
@@ -216,7 +214,7 @@ mod tests {
 
             assert!(
                 !body.contains(
-                    &super::super::DownloadDocumentsPath {
+                    &super::DownloadDocumentsPath {
                         locale: ModelLocale::Fry,
                     }
                     .to_string()

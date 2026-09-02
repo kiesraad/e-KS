@@ -238,9 +238,8 @@ mod tests {
     use secrecy::SecretString;
 
     use crate::{
-        AppState, CsbAction, CsbMainAction, CsbMainEvent, CsbUser, ElectionConfig, Locale, PgEvent,
-        PgStore, Scope, Session, StreamId, router, store::StoreEvent,
-        test_utils::response_body_string,
+        AppState, CsbAction, CsbMainAction, CsbUser, ElectionConfig, Locale, PgEvent, PgStore,
+        Scope, Session, StreamId, router, store::StoreEvent, test_utils::response_body_string,
     };
 
     const TEST_ID_CODE: &str = "999999990";
@@ -406,7 +405,7 @@ mod tests {
         assert!(matches!(
             store.data.read().events.as_slice(),
             &[StoreEvent {
-                payload: CsbMainEvent {
+                payload: crate::projection::CsbMainEvent {
                     user: CsbUser::Developer,
                     action: CsbMainAction::Login,
                 },
@@ -562,7 +561,7 @@ mod tests {
         let event = events[0].clone();
         let StoreEvent {
             payload:
-                crate::CsbEvent {
+                crate::projection::CsbEvent {
                     action: CsbAction::Import { hash, snapshot, .. },
                     ..
                 },

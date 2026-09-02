@@ -369,7 +369,7 @@ mod tests {
         assert!(matches!(
             store.data.read().events.as_slice(),
             &[StoreEvent {
-                payload: crate::CsbMainEvent {
+                payload: crate::projection::CsbMainEvent {
                     user: CsbUser::Github { .. },
                     action: CsbMainAction::Login,
                 },
@@ -411,7 +411,7 @@ mod tests {
         assert!(
             store.data.read().events.iter().any(|event| matches!(
                 event.payload,
-                crate::CsbMainEvent {
+                crate::projection::CsbMainEvent {
                     user: CsbUser::Github { .. },
                     action: CsbMainAction::Logout,
                 }

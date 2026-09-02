@@ -1,7 +1,7 @@
 use axum::response::IntoResponse;
 
 use crate::{
-    AppError, Context, PgStore, finalise::pages::DownloadDocumentsPath,
+    AppError, Context, PgStore, finalise::paths::DownloadDocumentsPath,
     models::documents::DocumentData,
 };
 

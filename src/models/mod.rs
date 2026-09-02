@@ -18,18 +18,18 @@ pub(crate) mod documents;
 pub(crate) mod eml210;
 pub mod examples;
 mod fonts;
-pub mod h1;
-pub mod h3;
-pub mod h4;
-pub mod h9;
-pub mod i1;
-pub mod i4;
-pub mod inputs;
+pub(crate) mod h1;
+pub(crate) mod h3;
+pub(crate) mod h4;
+pub(crate) mod h9;
+pub(crate) mod i1;
+pub(crate) mod i4;
+pub(crate) mod inputs;
 mod layout;
 mod markdown;
 
 pub use examples::{Example, examples};
-pub use fonts::fonts;
+pub(crate) use fonts::fonts;
 
 use textris_pdf::build::Textris;
 
@@ -37,7 +37,7 @@ use crate::AppError;
 
 /// A document that renders to a PDF: it can build a [`Textris`] document and
 /// knows its download file name.
-pub trait Pdf: Sized {
+pub(crate) trait Pdf: Sized {
     /// Build the document from the input data.
     fn document(&self) -> Result<Textris, AppError>;
 
