@@ -145,7 +145,10 @@ mod tests {
 
     #[test]
     fn signed_dv_metadata_verifies() {
-        use crate::saml::verification::verify_xml_signature;
+        use crate::saml::{
+            constants::NS_MD,
+            verification::{ExpectedRoot, verify_xml_signature},
+        };
 
         let signing = load_pair("dv-signing-1");
         let encryption = load_pair("dv-encryption-1");
@@ -157,7 +160,12 @@ mod tests {
             std::slice::from_ref(&encryption),
         );
 
-        let result = verify_xml_signature(&xml, std::slice::from_ref(&signing), None);
+        let expected = ExpectedRoot {
+            namespace: NS_MD,
+            local_name: "EntityDescriptor",
+            id: None,
+        };
+        let result = verify_xml_signature(&xml, std::slice::from_ref(&signing), &expected);
         assert!(
             result.is_valid(),
             "signed DV metadata must verify with the signing key: {:?}",

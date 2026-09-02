@@ -24,6 +24,32 @@ use std::ops::Range;
 /// Index of a node within a [`Document`].
 pub type NodeId = roxmltree::NodeId;
 
+/// An element's expanded name: namespace URI (`None` for an element in no
+/// namespace) plus local, unprefixed name.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct QName<'a> {
+    pub namespace: Option<&'a str>,
+    pub local_name: &'a str,
+}
+
+impl std::fmt::Display for QName<'_> {
+    /// James Clark notation (`{namespace}local`), as used in the error messages.
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self.namespace {
+            Some(ns) => write!(f, "{{{ns}}}{}", self.local_name),
+            None => f.write_str(self.local_name),
+        }
+    }
+}
+
+/// A namespace declaration in scope on an element; `prefix` is `None` for the
+/// default namespace.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct NamespaceDecl<'a> {
+    pub prefix: Option<&'a str>,
+    pub uri: &'a str,
+}
+
 /// A parsed, namespace-resolved XML document borrowing its source.
 pub struct Document<'a> {
     inner: roxmltree::Document<'a>,
@@ -80,12 +106,13 @@ impl<'a> Document<'a> {
         n.is_element().then(|| n.tag_name().name())
     }
 
-    /// The `(namespace-URI, local-name)` of element `id`, or `None` for a
-    /// non-element. The namespace is `None` for an element in no namespace.
-    pub fn node_qname(&self, id: NodeId) -> Option<(Option<&str>, &str)> {
+    /// The expanded name of element `id`, or `None` for a non-element.
+    pub fn node_qname(&self, id: NodeId) -> Option<QName<'_>> {
         let n = self.node(id)?;
-        n.is_element()
-            .then(|| (n.tag_name().namespace(), n.tag_name().name()))
+        n.is_element().then(|| QName {
+            namespace: n.tag_name().namespace(),
+            local_name: n.tag_name().name(),
+        })
     }
 
     /// The value of attribute `name` (matched by local name) on element `id`.
@@ -103,21 +130,31 @@ impl<'a> Document<'a> {
         self.inner.input_text().get(range)
     }
 
-    /// The `(prefix, uri)` namespace declarations `id` inherits from its
-    /// ancestors; a `None` prefix is the default namespace. A pair counts as
-    /// inherited when in scope at both `id` and its parent, so a prefix `id`
-    /// redeclares itself (already in its start tag) is excluded.
-    fn inherited_namespaces(&self, id: NodeId) -> Vec<(Option<&str>, &str)> {
+    /// The namespace declarations `id` inherits from its ancestors. A
+    /// declaration counts as inherited when in scope at both `id` and its
+    /// parent, so a prefix `id` redeclares itself (already in its start tag) is
+    /// excluded.
+    fn inherited_namespaces(&self, id: NodeId) -> Vec<NamespaceDecl<'_>> {
         let Some(node) = self.node(id) else {
             return Vec::new();
         };
-        let parent_scope: Vec<(Option<&str>, &str)> = node
+        let parent_scope: Vec<NamespaceDecl<'_>> = node
             .parent()
-            .map(|p| p.namespaces().map(|ns| (ns.name(), ns.uri())).collect())
+            .map(|p| {
+                p.namespaces()
+                    .map(|ns| NamespaceDecl {
+                        prefix: ns.name(),
+                        uri: ns.uri(),
+                    })
+                    .collect()
+            })
             .unwrap_or_default();
         node.namespaces()
-            .map(|ns| (ns.name(), ns.uri()))
-            .filter(|pair| parent_scope.contains(pair))
+            .map(|ns| NamespaceDecl {
+                prefix: ns.name(),
+                uri: ns.uri(),
+            })
+            .filter(|decl| parent_scope.contains(decl))
             .collect()
     }
 
@@ -139,7 +176,7 @@ impl<'a> Document<'a> {
         }
         if inherited
             .iter()
-            .any(|(_, uri)| uri.contains(['"', '&', '<']))
+            .any(|decl| decl.uri.contains(['"', '&', '<']))
         {
             return None;
         }
@@ -151,7 +188,7 @@ impl<'a> Document<'a> {
 
         let declarations: String = inherited
             .iter()
-            .map(|(prefix, uri)| match prefix {
+            .map(|NamespaceDecl { prefix, uri }| match prefix {
                 Some(p) => format!(r#" xmlns:{p}="{uri}""#),
                 None => format!(r#" xmlns="{uri}""#),
             })
@@ -172,15 +209,19 @@ impl<'a> Document<'a> {
     }
 }
 
-/// All text under `id`, concatenated depth-first and unescaped.
-pub fn inner_text(doc: &Document, id: NodeId) -> String {
-    match doc.node(id) {
-        Some(n) => n
+/// All text under `id`, concatenated depth-first and unescaped, or `None` if
+/// `id` is not a node of this document.
+///
+/// `None` rather than an empty string, which an element with no text also
+/// yields: a caller must not read "element absent" as "element present but
+/// empty".
+pub fn inner_text(doc: &Document, id: NodeId) -> Option<String> {
+    Some(
+        doc.node(id)?
             .descendants()
             .filter_map(|d| d.is_text().then(|| d.text()).flatten())
             .collect(),
-        None => String::new(),
-    }
+    )
 }
 
 /// The direct text children of `id`, unescaped, or `None` if `id` has any element
@@ -318,7 +359,7 @@ mod tests {
     fn inner_text_concatenates_recursively() {
         let doc = parse(r#"<r xmlns="urn:x">hello <b>world</b></r>"#).unwrap();
         let root = doc.document_element();
-        assert_eq!(inner_text(&doc, root), "hello world");
+        assert_eq!(inner_text(&doc, root).as_deref(), Some("hello world"));
     }
 
     #[test]
@@ -331,7 +372,7 @@ mod tests {
         let doc = parse(&xml).unwrap();
         let root = doc.document_element();
         let issuer = find_descendant(&doc, root, NS_SAML, "Issuer").unwrap();
-        assert_eq!(inner_text(&doc, issuer), "RIGHT");
+        assert_eq!(inner_text(&doc, issuer).as_deref(), Some("RIGHT"));
         assert!(find_descendant(&doc, root, "urn:other", "Issuer").is_some());
         assert!(find_descendant(&doc, root, NS_SAMLP, "Issuer").is_none());
     }
@@ -348,7 +389,7 @@ mod tests {
         let root = doc.document_element();
         let sigs = children_by_tag(&doc, root, NS_DSIG, "Signature");
         assert_eq!(sigs.len(), 1);
-        assert_eq!(inner_text(&doc, sigs[0]), "outer");
+        assert_eq!(inner_text(&doc, sigs[0]).as_deref(), Some("outer"));
         // descendants_by_tag, by contrast, finds both.
         assert_eq!(
             descendants_by_tag(&doc, root, NS_DSIG, "Signature").len(),
@@ -385,7 +426,7 @@ mod tests {
     fn inner_text_unescapes_entities() {
         let doc = parse(r#"<r xmlns="urn:x">a &amp; b &lt;c&gt;</r>"#).unwrap();
         let root = doc.document_element();
-        assert_eq!(inner_text(&doc, root), "a & b <c>");
+        assert_eq!(inner_text(&doc, root).as_deref(), Some("a & b <c>"));
     }
 
     #[test]
@@ -406,7 +447,7 @@ mod tests {
         let doc = parse(r#"<r xmlns="urn:x"><x>urn:rd</x></r>"#).unwrap();
         let root = doc.document_element();
         assert_eq!(direct_text(&doc, root), None);
-        assert_eq!(inner_text(&doc, root), "urn:rd");
+        assert_eq!(inner_text(&doc, root).as_deref(), Some("urn:rd"));
 
         // Comments are not element children, so they do not suppress the text,
         // and their content is never part of it.
@@ -438,11 +479,14 @@ mod tests {
         let root = restored_doc.document_element();
         assert_eq!(
             restored_doc.node_qname(root),
-            Some((Some(NS_SAMLP), "ArtifactResponse"))
+            Some(QName {
+                namespace: Some(NS_SAMLP),
+                local_name: "ArtifactResponse",
+            })
         );
         assert_eq!(restored_doc.get_attribute(root, "ID"), Some("_a1"));
         let issuer = find_child(&restored_doc, root, NS_SAML, "Issuer").unwrap();
-        assert_eq!(inner_text(&restored_doc, issuer), "urn:rd");
+        assert_eq!(inner_text(&restored_doc, issuer).as_deref(), Some("urn:rd"));
     }
 
     #[test]
@@ -487,7 +531,7 @@ mod tests {
         let root = doc.document_element();
         let issuer =
             find_descendant_pruned(&doc, root, (NS_SAML, "Issuer"), (NS_SAML, "Advice")).unwrap();
-        assert_eq!(inner_text(&doc, issuer), "OUTER");
+        assert_eq!(inner_text(&doc, issuer).as_deref(), Some("OUTER"));
         // Only the outer Issuer is visible to the pruned descendant search.
         assert_eq!(
             descendants_by_tag_pruned(&doc, root, (NS_SAML, "Issuer"), (NS_SAML, "Advice")).len(),

@@ -5,14 +5,33 @@
 //! structural (not byte-exact).
 
 use auth_service::saml::{
+    constants::NS_SAMLP,
     messages::{
         AuthnRequestSpec, create_artifact_resolve, create_authn_request, create_logout_request,
     },
-    verification::verify_xml_signature,
+    verification::{ExpectedRoot, verify_xml_signature},
 };
 
 mod common;
 use common::load_key;
+
+/// Verify a message we just built, binding the root the caller consumes: its
+/// `samlp:<local_name>` and the `@ID` the builder reported.
+fn verify_message(
+    msg: &auth_service::saml::messages::CreatedMessage,
+    local_name: &str,
+    keys: &[auth_service::keys::KeyPair],
+) -> auth_service::saml::verification::VerifyResult {
+    verify_xml_signature(
+        &msg.xml,
+        keys,
+        &ExpectedRoot {
+            namespace: NS_SAMLP,
+            local_name,
+            id: Some(&msg.id),
+        },
+    )
+}
 
 #[test]
 fn authn_request_builds_signs_and_verifies() {
@@ -39,7 +58,7 @@ fn authn_request_builds_signs_and_verifies() {
     );
 
     // The enveloping signature must verify against the signing key.
-    let result = verify_xml_signature(&msg.xml, std::slice::from_ref(&key), None);
+    let result = verify_message(&msg, "AuthnRequest", std::slice::from_ref(&key));
     assert!(
         result.is_valid(),
         "AuthnRequest signature: {:?}",
@@ -63,7 +82,7 @@ fn authn_request_with_preselect_emits_scoping_and_verifies() {
 
     assert!(msg.xml.contains("<samlp:Scoping>"));
     assert!(msg.xml.contains(&format!("ProviderID=\"{ad}\"")));
-    let result = verify_xml_signature(&msg.xml, std::slice::from_ref(&key), None);
+    let result = verify_message(&msg, "AuthnRequest", std::slice::from_ref(&key));
     assert!(
         result.is_valid(),
         "AuthnRequest signature: {:?}",
@@ -88,7 +107,7 @@ fn artifact_resolve_builds_signs_and_verifies() {
             .contains("<samlp:Artifact>AAQAAGotsbEd41l9KWDK</samlp:Artifact>")
     );
     assert!(msg.xml.contains("<saml:Issuer>urn:test:dv</saml:Issuer>"));
-    let result = verify_xml_signature(&msg.xml, std::slice::from_ref(&key), None);
+    let result = verify_message(&msg, "ArtifactResolve", std::slice::from_ref(&key));
     assert!(
         result.is_valid(),
         "ArtifactResolve signature: {:?}",
@@ -112,7 +131,7 @@ fn logout_request_builds_signs_and_verifies() {
         msg.xml
             .contains("<saml:NameID>transient-id-abc</saml:NameID>")
     );
-    let result = verify_xml_signature(&msg.xml, std::slice::from_ref(&key), None);
+    let result = verify_message(&msg, "LogoutRequest", std::slice::from_ref(&key));
     assert!(
         result.is_valid(),
         "LogoutRequest signature: {:?}",
@@ -135,7 +154,7 @@ fn message_signed_by_one_key_rejected_by_another() {
         acs_url: None,
     })
     .expect("built");
-    let result = verify_xml_signature(&msg.xml, std::slice::from_ref(&other), None);
+    let result = verify_message(&msg, "AuthnRequest", std::slice::from_ref(&other));
     assert!(
         !result.is_valid(),
         "must not verify against an unrelated key"
@@ -163,7 +182,7 @@ fn authn_request_with_acs_url_signs_and_verifies() {
         )
     );
     assert!(!msg.xml.contains("AssertionConsumerServiceIndex"));
-    let result = verify_xml_signature(&msg.xml, std::slice::from_ref(&key), None);
+    let result = verify_message(&msg, "AuthnRequest", std::slice::from_ref(&key));
     assert!(
         result.is_valid(),
         "AuthnRequest signature: {:?}",

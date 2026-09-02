@@ -32,6 +32,15 @@ pub const EID_SERVICE_UUID: &str = "urn:nl-eid-gdi:1.0:ServiceUUID";
 pub const EID_ACTING_SUBJECT_ID: &str = "urn:nl-eid-gdi:1.0:ActingSubjectID";
 pub const EID_LEGAL_SUBJECT_ID: &str = "urn:nl-eid-gdi:1.0:LegalSubjectID";
 
+// eID §10.1: the three identifier types a decrypted EncryptedID NameID may
+// declare in its `@NameQualifier` (§7.6.3.4.4). Anything else is not an
+// identifier type this DV knows how to interpret.
+pub const EID_ID_TYPES: &[&str] = &[
+    "urn:nl-eid-gdi:1.0:id:legacy-BSN",
+    "urn:nl-eid-gdi:1.0:id:BSN",
+    "urn:nl-eid-gdi:1.0:id:Pseudonym",
+];
+
 // eID §9.5: NTP advised; allow a small skew on @NotOnOrAfter / @NotBefore checks.
 pub const CLOCK_SKEW_SECONDS: i64 = 30;
 

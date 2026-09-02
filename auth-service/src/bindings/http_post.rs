@@ -26,29 +26,25 @@ struct PostFormTemplate<'a> {
     autosubmit_js_path: &'a str,
 }
 
-/// Build a Content-Security-Policy for the auto-submit page that whitelists
-/// `action_url` (the IdP endpoint) as a valid form submission target.
+/// Build the Content-Security-Policy for the auto-submit page: the strict
+/// default ([`crate::csp`]) with `form-action` widened by exactly `action_url`
+/// (the IdP endpoint).
 ///
-/// The global CSP (`form-action 'self'`) would otherwise block the POST to
-/// the IdP. This per-response policy is set by login/logout handlers and
-/// takes precedence over the router-wide default (the outer layer only sets
-/// the header if it is not already present).
+/// The default `form-action 'self'` would otherwise block the POST to the IdP.
+/// This per-response policy is set by the login/logout handlers and takes
+/// precedence over the router-wide default (the outer layer only sets the
+/// header if it is not already present).
 ///
-/// Everything the global policy locks down is repeated here (the auto-submit
-/// script assigns to no injection sink, so Trusted Types stays enforced); only
-/// `form-action` is widened, by exactly `action_url`.
-///
-/// `script-src 'self'` is emitted *before* the `form-action` directive that
-/// carries `action_url`: per the CSP first-occurrence-wins rule, this guarantees
-/// our `script-src` cannot be displaced even if `action_url` somehow contained a
-/// second `script-src` directive (`action_url` is also validated upstream in
-/// [`crate::saml::idp_metadata`] to reject `;`, quotes and whitespace).
+/// SECURITY: the widened value is metadata-derived, so it must not be able to
+/// smuggle in a directive of its own. Two things prevent that: `action_url` is
+/// validated upstream in [`crate::saml::idp_metadata`] to reject `;`, quotes
+/// and whitespace, and `script-src` is emitted before `form-action` (see the
+/// ordering note on `csp::DEFAULT`), so a second `script-src` would lose to
+/// ours under CSP's first-occurrence-wins rule.
 pub fn autosubmit_csp(action_url: &str) -> String {
-    format!(
-        "default-src 'none'; base-uri 'none'; script-src 'self'; \
-         require-trusted-types-for 'script'; trusted-types 'none'; \
-         form-action 'self' {action_url}; frame-ancestors 'none';"
-    )
+    crate::csp::ContentSecurityPolicy::strict()
+        .widen("form-action", action_url)
+        .to_string()
 }
 
 /// Generate the HTML auto-submit form for HTTP-POST binding.

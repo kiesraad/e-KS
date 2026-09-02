@@ -10,8 +10,8 @@ use crate::{
         constants::NS_DSIG,
         crypto::{self, SignatureVerification},
         xml_parser::{
-            Document, NodeId, all_elements, children_by_tag, descendants_by_tag, direct_text,
-            find_descendant,
+            Document, NodeId, QName, all_elements, children_by_tag, descendants_by_tag,
+            direct_text, find_descendant,
         },
     },
 };
@@ -85,12 +85,13 @@ impl VerifyResult {
 
 /// Verify the enveloping XML-DSig signature of `xml` against `trusted_keys`.
 ///
-/// `expected_root` identifies the element the caller will consume; see
-/// [`ExpectedRoot`]. `None` skips that binding and is only appropriate in tests.
+/// `expected_root` identifies the element the caller will consume and is
+/// mandatory: binding it is the XSW defence, so there is no way to ask for a
+/// verification that skips it (see [`ExpectedRoot`]).
 pub fn verify_xml_signature(
     xml: &str,
     trusted_keys: &[KeyPair],
-    expected_root: Option<&ExpectedRoot<'_>>,
+    expected_root: &ExpectedRoot<'_>,
 ) -> VerifyResult {
     debug!(
         "[verify] Verifying XML signature (xml_len={}, trusted_key_count={})",
@@ -147,7 +148,7 @@ impl<'a, 'input> SignatureChecks<'a, 'input> {
         &mut self,
         xml: &str,
         trusted_keys: &[KeyPair],
-        expected_root: Option<&ExpectedRoot<'_>>,
+        expected_root: &ExpectedRoot<'_>,
     ) {
         let root = self.doc.document_element();
         if !self.check_expected_root(root, expected_root) {
@@ -171,26 +172,19 @@ impl<'a, 'input> SignatureChecks<'a, 'input> {
     /// SECURITY (XSW): require this parse's root to be the same element the caller
     /// extracted from its own tree. Runs first, so a mismatch never reaches the
     /// crypto backend. See [`ExpectedRoot`].
-    fn check_expected_root(&mut self, root: NodeId, expected: Option<&ExpectedRoot<'_>>) -> bool {
-        // `expected_root` is only allowed to be `None` in tests.
-        #[cfg(not(test))]
-        if expected.is_none() {
-            self.error("expected root is None".to_string());
-            return false;
-        }
-        let Some(expected) = expected else {
-            return true;
-        };
-        
-        let Some(node) = self.doc.node_qname(root) else {
+    fn check_expected_root(&mut self, root: NodeId, expected: &ExpectedRoot<'_>) -> bool {
+        let Some(actual) = self.doc.node_qname(root) else {
             self.error("Signed document has no root element".to_string());
             return false;
         };
-        if node != (Some(expected.namespace), expected.local_name) {
+        let wanted = QName {
+            namespace: Some(expected.namespace),
+            local_name: expected.local_name,
+        };
+        if actual != wanted {
             self.error(format!(
-                "Signed root element is {:?}, but the caller consumes {{{}}}{} \
-                 (possible XML signature wrapping)",
-                node, expected.namespace, expected.local_name
+                "Signed root element is {actual}, but the caller consumes {wanted} \
+                 (possible XML signature wrapping)"
             ));
             return false;
         }
@@ -591,8 +585,15 @@ mod tests {
         // A Signature nested in a child but none enveloping the root: the
         // nested one (e.g. an Assertion's, signed by a different party) must be
         // ignored here so it doesn't fail ArtifactResponse verification.
-        let xml = r#"<ArtifactResponse><Status/><Response><Signature><KeyInfo><KeyName>x</KeyName></KeyInfo></Signature></Response></ArtifactResponse>"#;
-        let result = verify_xml_signature(xml, &[key_pair(TEST_PEM)], None);
+        let xml = format!(
+            r##"<samlp:ArtifactResponse xmlns:samlp="{NS_SAMLP}" ID="_r"><samlp:Status/><samlp:Response><dsig:Signature xmlns:dsig="{NS_DSIG}"><dsig:KeyInfo><dsig:KeyName>x</dsig:KeyName></dsig:KeyInfo></dsig:Signature></samlp:Response></samlp:ArtifactResponse>"##
+        );
+        let expected = ExpectedRoot {
+            namespace: NS_SAMLP,
+            local_name: "ArtifactResponse",
+            id: Some("_r"),
+        };
+        let result = verify_xml_signature(&xml, &[key_pair(TEST_PEM)], &expected);
         assert!(!result.is_valid());
         assert_eq!(
             result.errors,
@@ -849,7 +850,12 @@ mod tests {
         let xml = format!(
             r##"<Root xmlns="urn:x" ID="_root"><Wrapper><Signature xmlns="{NS_DSIG}"><SignedInfo><Reference URI="#_inner"/></SignedInfo><KeyInfo><KeyName>x</KeyName></KeyInfo></Signature></Wrapper><Signature xmlns="{NS_DSIG}"><SignedInfo><Reference URI="#_root"/></SignedInfo><KeyInfo><KeyName>x</KeyName></KeyInfo></Signature></Root>"##
         );
-        let result = verify_xml_signature(&xml, &[key_pair(TEST_PEM)], None);
+        let expected = ExpectedRoot {
+            namespace: "urn:x",
+            local_name: "Root",
+            id: Some("_root"),
+        };
+        let result = verify_xml_signature(&xml, &[key_pair(TEST_PEM)], &expected);
         assert!(!result.is_valid());
         assert!(
             result.errors.iter().any(|e| e.contains("wrapping")),
@@ -873,7 +879,7 @@ mod tests {
             local_name: "ArtifactResponse",
             id: Some("_genuine"),
         };
-        let errors = verify_xml_signature(&xml, &[key_pair(TEST_PEM)], Some(&matching)).errors;
+        let errors = verify_xml_signature(&xml, &[key_pair(TEST_PEM)], &matching).errors;
         assert!(
             !errors
                 .iter()
@@ -900,7 +906,7 @@ mod tests {
             },
         ];
         for expected in &mismatches {
-            let result = verify_xml_signature(&xml, &[key_pair(TEST_PEM)], Some(expected));
+            let result = verify_xml_signature(&xml, &[key_pair(TEST_PEM)], expected);
             assert!(!result.is_valid());
             assert!(
                 result

@@ -7,11 +7,21 @@ use crate::saml::{
 };
 use tracing::debug;
 
-/// Expectations for [`validate_response_at`]: the recipient ACS the Response
-/// `@Destination` MUST name and the pinned RD EntityID its `Issuer` MUST carry
-/// (eID §7.6.2). `None` skips the respective check (tests).
+/// Expectations for [`validate_response_at`] (eID §7.6.2).
+///
+/// `None` means "do not run this check at all". It does NOT mean "expect the
+/// Response to carry no such value": an absent `@Destination` or `Issuer` is
+/// only detected when the corresponding field is `Some`.
+///
+/// The option exists so unit tests can exercise one check in isolation. The
+/// sole production caller ([`crate::handlers::acs`]) passes `Some` for both, and
+/// a `None` reaching production would silently drop a §7.6.2 binding rather than
+/// fail loudly.
 pub struct ValidateResponseOpts<'a> {
+    /// The recipient ACS this DV was addressed at, which the Response
+    /// `@Destination` MUST name.
     pub expected_destination: Option<&'a str>,
+    /// The pinned RD EntityID, which the Response `Issuer` MUST carry.
     pub expected_issuer: Option<&'a str>,
 }
 
@@ -69,6 +79,8 @@ pub fn validate_response_at(
 impl Validator<'_, '_> {
     // eID §7.6.2: @Destination MUST match the recipient ACS the artifact was
     // delivered to. Mirrors the assertion-level Recipient binding (§7.6.3.5 r2).
+    //
+    // `expected: None` skips the check entirely; see `ValidateResponseOpts`.
     fn check_destination(&mut self, response: NodeId, expected: Option<&str>) {
         let Some(expected) = expected else {
             return;
@@ -255,6 +267,27 @@ mod tests {
             errors
                 .iter()
                 .any(|e| e.contains("Assertion without a Success status")),
+            "{errors:?}"
+        );
+    }
+
+    #[test]
+    fn validate_response_accepts_error_status_without_assertion() {
+        // The fourth combination of (assertion present?, status success?): a
+        // well-formed eID §7.8 error/cancellation Response. It carries no
+        // Assertion and must NOT be reported as a protocol violation; it simply
+        // yields no assertion, and the caller maps the status to the user-facing
+        // failure.
+        let xml = format!(
+            r#"<samlp:Response xmlns:samlp="{NS_SAMLP}" Version="2.0" IssueInstant="{now}"><samlp:Status><samlp:StatusCode Value="urn:oasis:names:tc:SAML:2.0:status:Responder"><samlp:StatusCode Value="urn:oasis:names:tc:SAML:2.0:status:AuthnFailed"/></samlp:StatusCode><samlp:StatusMessage>Authentication cancelled</samlp:StatusMessage></samlp:Status></samlp:Response>"#,
+            now = ts(chrono::Duration::zero())
+        );
+        let (_valid, errors, assertion) = run(&xml, None, None);
+        assert!(assertion.is_none());
+        // The status is reported (that is how the caller learns it was a
+        // cancellation), but the missing Assertion is not itself an error.
+        assert!(
+            errors.iter().all(|e| e.starts_with("Response status:")),
             "{errors:?}"
         );
     }

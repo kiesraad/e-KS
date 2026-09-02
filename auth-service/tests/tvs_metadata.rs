@@ -6,9 +6,19 @@
 use auth_service::saml::{
     constants::{NS_DSIG, NS_MD},
     idp_metadata::extract_idp_keys,
-    verification::verify_xml_signature,
+    verification::{ExpectedRoot, verify_xml_signature},
     xml_parser::{descendants_by_tag, find_descendant, inner_text},
 };
+
+/// The root of any SAML metadata document; the `@ID` is the RD's own and is not
+/// asserted here.
+fn entity_descriptor_root() -> ExpectedRoot<'static> {
+    ExpectedRoot {
+        namespace: NS_MD,
+        local_name: "EntityDescriptor",
+        id: None,
+    }
+}
 
 const TVS_PP_METADATA_URL: &str = "https://pp2.toegang.overheid.nl/kvs/rd/metadata";
 const TVS_PROD_METADATA_URL: &str = "https://rd2.toegang.overheid.nl/kvs/rd/metadata";
@@ -89,7 +99,7 @@ fn validate_metadata(xml: &str, url: &str) {
     // TVS metadata signatures use KeyName: verify our derived key_name
     // matches the KeyName in the Signature's KeyInfo
     if let Some(key_name_node) = find_descendant(&doc, sig, NS_DSIG, "KeyName") {
-        let sig_key_name = inner_text(&doc, key_name_node);
+        let sig_key_name = inner_text(&doc, key_name_node).unwrap_or_default();
         let sig_key_name = sig_key_name.trim();
         assert!(
             keys.signing.iter().any(|k| k.key_name == sig_key_name),
@@ -98,7 +108,7 @@ fn validate_metadata(xml: &str, url: &str) {
     }
 
     // Verify the XML signature using ONLY the signing keys
-    let result = verify_xml_signature(xml, &keys.signing, None);
+    let result = verify_xml_signature(xml, &keys.signing, &entity_descriptor_root());
     assert!(
         result.is_valid(),
         "{url}: signature verification with signing keys failed: {:?}",
@@ -115,7 +125,7 @@ fn validate_metadata(xml: &str, url: &str) {
         .collect();
 
     if !encryption_only.is_empty() {
-        let result = verify_xml_signature(xml, &encryption_only, None);
+        let result = verify_xml_signature(xml, &encryption_only, &entity_descriptor_root());
         assert!(
             !result.is_valid(),
             "{url}: signature verification should fail with encryption-only keys"

@@ -24,6 +24,19 @@ const ALLOWED_KEY_TRANSPORT: &[&str] = &[
     "http://www.w3.org/2009/xmlenc11#rsa-oaep",
 ];
 
+/// A DV private key offered for EncryptedID decryption, with the `KeyName` it
+/// is advertised under in DV metadata.
+///
+/// A named struct rather than a `(&str, &str)` pair: the two fields are both
+/// strings and trivially swappable at a call site. `SecretString` keeps the key
+/// out of `Debug` output and logs.
+#[derive(Clone, Copy)]
+pub struct DecryptionKey<'a> {
+    pub key_pem: &'a SecretString,
+    /// SHA-1 hex of the DER certificate; matches the `KeyName` in `KeyInfo`.
+    pub key_name: &'a str,
+}
+
 /// A decrypted SAML NameID and its eID §7.6.3.4.4 attributes.
 #[derive(Debug, Clone)]
 pub struct DecryptedNameId {
@@ -129,13 +142,13 @@ fn check_key_transport(doc: &Document, enc_keys: &[NodeId]) -> Result<(), String
 
 /// Decrypt an EncryptedID element per eID §7.6.3.4.4.
 ///
-/// `private_keys`: slice of `(key_pem, key_name)` tuples. `dv_entity_id` is our
-/// own EntityID, used to select the `EncryptedKey` addressed to us
+/// `private_keys`: the DV decryption keys to try. `dv_entity_id` is our own
+/// EntityID, used to select the `EncryptedKey` addressed to us
 /// (eID §7.6.3.4 `@Recipient`); `None` skips that binding (tests).
 pub fn decrypt_encrypted_id(
     doc: &Document,
     enc_id: NodeId,
-    private_keys: &[(&str, &str)],
+    private_keys: &[DecryptionKey<'_>],
     dv_entity_id: Option<&str>,
 ) -> Option<DecryptedNameId> {
     // eID §9.3: reject weak/disallowed encryption algorithms before decrypting,
@@ -192,13 +205,19 @@ fn self_contained_source(doc: &Document, node: NodeId) -> Option<String> {
 /// configured key (e.g. a rotated cert) decrypts. The backend replaces
 /// `<EncryptedData>` with the decrypted plaintext in place, returning the
 /// EncryptedID element with the NameID inside.
-fn decrypt_ciphertext(enc_id_xml: &str, private_keys: &[(&str, &str)]) -> Option<String> {
+fn decrypt_ciphertext(enc_id_xml: &str, private_keys: &[DecryptionKey<'_>]) -> Option<String> {
     debug!(
         "[decrypt] Decrypting EncryptedID (xml_len={}, candidate_keys={})",
         enc_id_xml.len(),
         private_keys.len()
     );
-    match crypto::decrypt(enc_id_xml, private_keys) {
+    // The crypto adapter takes plain pairs; expose the secrets only here, at the
+    // call into the backend.
+    let keys: Vec<(&str, &str)> = private_keys
+        .iter()
+        .map(|k| (k.key_pem.expose_secret(), k.key_name))
+        .collect();
+    match crypto::decrypt(enc_id_xml, &keys) {
         Ok(xml) => {
             // SECURITY: do not log the decrypted XML content; it contains the
             // plaintext NameID (PII per eID §7.6.3.4). Log only its length.
@@ -317,7 +336,11 @@ mod tests {
         let doc = parse(&encrypted_id_xml).expect("parse EncryptedID");
         let enc_id = doc.document_element();
 
-        let private_keys = [(key_pem.as_str(), key_name.as_str())];
+        let key_pem = SecretString::from(key_pem);
+        let private_keys = [DecryptionKey {
+            key_pem: &key_pem,
+            key_name: &key_name,
+        }];
         let decrypted = decrypt_encrypted_id(&doc, enc_id, &private_keys, Some(DV_ENTITY_ID))
             .expect("decryption must recover the NameID");
 
@@ -342,8 +365,11 @@ mod tests {
         let enc_id = doc.document_element();
 
         // Present a different key under the same KeyName: unwrap must fail.
-        let other_key = fixture("dv-encryption-2-key.pem");
-        let private_keys = [(other_key.as_str(), key_name.as_str())];
+        let other_key = SecretString::from(fixture("dv-encryption-2-key.pem"));
+        let private_keys = [DecryptionKey {
+            key_pem: &other_key,
+            key_name: &key_name,
+        }];
         assert!(decrypt_encrypted_id(&doc, enc_id, &private_keys, Some(DV_ENTITY_ID)).is_none());
     }
 
@@ -365,7 +391,17 @@ mod tests {
         let enc_id = doc.document_element();
 
         // key1 (wrong) is listed before key2 (correct); decryption must still work.
-        let private_keys = [(key1.as_str(), kn1.as_str()), (key2.as_str(), kn2.as_str())];
+        let (key1, key2) = (SecretString::from(key1), SecretString::from(key2));
+        let private_keys = [
+            DecryptionKey {
+                key_pem: &key1,
+                key_name: &kn1,
+            },
+            DecryptionKey {
+                key_pem: &key2,
+                key_name: &kn2,
+            },
+        ];
         let decrypted = decrypt_encrypted_id(&doc, enc_id, &private_keys, Some(DV_ENTITY_ID))
             .expect("rollover: a blob wrapped to the second key must decrypt");
         assert_eq!(decrypted.value.expose_secret(), "900070341");
@@ -473,7 +509,11 @@ mod tests {
             r#"<NameID xmlns="urn:attacker:ns" Format="x">900070341</NameID>"#.to_string();
         let encrypted = encrypt_name_id(&cert, &key_name, &not_a_name_id);
         let doc = parse(&encrypted).expect("parse EncryptedID");
-        let private_keys = [(key.as_str(), key_name.as_str())];
+        let key = SecretString::from(key);
+        let private_keys = [DecryptionKey {
+            key_pem: &key,
+            key_name: &key_name,
+        }];
         assert!(
             decrypt_encrypted_id(
                 &doc,

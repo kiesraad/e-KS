@@ -106,7 +106,7 @@ fn verified_logout_fields(
         local_name: "LogoutResponse",
         id: None,
     };
-    let sig_result = verify_xml_signature(saml_response, &rd.signing_keys, Some(&expected_root));
+    let sig_result = verify_xml_signature(saml_response, &rd.signing_keys, &expected_root);
     if !sig_result.is_valid() {
         warn!(
             "[SLS] LogoutResponse signature invalid ({:?}); ignoring (local logout already done)",

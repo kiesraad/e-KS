@@ -11,7 +11,7 @@ use auth_service::{
         constants::{NS_DSIG, NS_MD},
         crypto::sign,
         idp_metadata::extract_idp_keys,
-        verification::verify_xml_signature,
+        verification::{ExpectedRoot, verify_xml_signature},
         xml_parser::{find_descendant, inner_text},
     },
 };
@@ -19,6 +19,17 @@ use secrecy::ExposeSecret;
 
 mod common;
 use common::{inline_signature, load_key};
+
+/// The root every document in this file is: a metadata `<md:EntityDescriptor>`.
+/// The `@ID` is left unasserted (these tests generate it), so `ExpectedRoot`
+/// binds the element name; `signature_covers_root` still binds every Reference.
+fn entity_descriptor_root() -> ExpectedRoot<'static> {
+    ExpectedRoot {
+        namespace: NS_MD,
+        local_name: "EntityDescriptor",
+        id: None,
+    }
+}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -95,7 +106,7 @@ fn valid_signed_metadata_verifies() {
     let key = load_key("rd-signing-1");
     let xml = signed_metadata(&key);
 
-    let result = verify_xml_signature(&xml, &[key], None);
+    let result = verify_xml_signature(&xml, &[key], &entity_descriptor_root());
     assert!(
         result.is_valid(),
         "valid metadata must verify: {:?}",
@@ -148,7 +159,7 @@ fn rejects_tampered_entity_id() {
     // Tamper with the entityID (changes the signed content)
     let tampered = xml.replace("urn:test:idp", "urn:test:EVIL");
 
-    let result = verify_xml_signature(&tampered, &[key], None);
+    let result = verify_xml_signature(&tampered, &[key], &entity_descriptor_root());
     assert!(
         !result.is_valid(),
         "tampered entityID must fail verification"
@@ -162,7 +173,7 @@ fn rejects_tampered_signature_value() {
 
     let tampered = flip_first_byte_in(&xml, "dsig:SignatureValue");
 
-    let result = verify_xml_signature(&tampered, &[key], None);
+    let result = verify_xml_signature(&tampered, &[key], &entity_descriptor_root());
     assert!(
         !result.is_valid(),
         "tampered SignatureValue must fail verification"
@@ -176,7 +187,7 @@ fn rejects_tampered_digest_value() {
 
     let tampered = flip_first_byte_in(&xml, "dsig:DigestValue");
 
-    let result = verify_xml_signature(&tampered, &[key], None);
+    let result = verify_xml_signature(&tampered, &[key], &entity_descriptor_root());
     assert!(
         !result.is_valid(),
         "tampered DigestValue must fail verification"
@@ -196,7 +207,7 @@ fn rejects_removed_signature() {
         + "</dsig:Signature>".len();
     let stripped = format!("{}{}", &xml[..start], &xml[end..]);
 
-    let result = verify_xml_signature(&stripped, &[key], None);
+    let result = verify_xml_signature(&stripped, &[key], &entity_descriptor_root());
     assert!(!result.is_valid(), "missing signature must fail");
     assert!(
         result.errors.iter().any(|e| e.contains("No ds:Signature")),
@@ -212,7 +223,7 @@ fn rejects_wrong_signing_key() {
     let xml = signed_metadata(&rd_key);
 
     // Verify with a different key (DV key instead of RD key)
-    let result = verify_xml_signature(&xml, &[dv_key], None);
+    let result = verify_xml_signature(&xml, &[dv_key], &entity_descriptor_root());
     assert!(!result.is_valid(), "wrong key must fail verification");
 }
 
@@ -227,7 +238,7 @@ fn rejects_mismatched_cert_base64() {
     wrong.cert_base64 = "AAAA".to_string();
     wrong.key_name = "0000000000000000000000000000000000000000".to_string();
 
-    let result = verify_xml_signature(&xml, &[wrong], None);
+    let result = verify_xml_signature(&xml, &[wrong], &entity_descriptor_root());
     assert!(!result.is_valid(), "mismatched cert must fail");
     assert!(
         result.errors.iter().any(|e| e.contains("does not match")),
@@ -242,7 +253,7 @@ fn rejects_empty_trusted_keys() {
     let xml = signed_metadata(&key);
 
     // No trusted keys at all
-    let result = verify_xml_signature(&xml, &[], None);
+    let result = verify_xml_signature(&xml, &[], &entity_descriptor_root());
     assert!(!result.is_valid(), "empty trust store must fail");
 }
 
@@ -380,7 +391,7 @@ fn rollover_metadata_verifies_with_either_advertised_key() {
         let doc = auth_service::saml::xml_parser::parse(&xml).unwrap();
         let root = doc.document_element();
         let keys = extract_idp_keys(&doc, root);
-        let result = verify_xml_signature(&xml, &keys.signing, None);
+        let result = verify_xml_signature(&xml, &keys.signing, &entity_descriptor_root());
         assert!(
             result.is_valid(),
             "rollover metadata signed by {} must verify: {:?}",
@@ -442,6 +453,7 @@ fn signature_x509cert_matches_metadata_key() {
     let x509_node = find_descendant(&doc, sig, NS_DSIG, "X509Certificate")
         .expect("Signature must have X509Certificate");
     let sig_cert: String = inner_text(&doc, x509_node)
+        .expect("X509Certificate is a node of the parsed document")
         .chars()
         .filter(|c: &char| !c.is_whitespace())
         .collect();
@@ -459,7 +471,7 @@ fn signature_x509cert_matches_metadata_key() {
 
 #[test]
 fn rejects_non_xml_input() {
-    let result = verify_xml_signature("this is not XML", &[], None);
+    let result = verify_xml_signature("this is not XML", &[], &entity_descriptor_root());
     assert!(!result.is_valid());
     assert!(result.errors.iter().any(|e| e.contains("parse error")));
 }
@@ -471,7 +483,7 @@ fn rejects_xml_without_signature() {
 </md:IDPSSODescriptor></md:EntityDescriptor>"#;
 
     let key = load_key("rd-signing-1");
-    let result = verify_xml_signature(xml, &[key], None);
+    let result = verify_xml_signature(xml, &[key], &entity_descriptor_root());
     assert!(!result.is_valid());
     assert!(
         result.errors.iter().any(|e| e.contains("No ds:Signature")),
@@ -501,7 +513,7 @@ fn rejects_tampered_key_descriptor_cert() {
     );
 
     // The tampered cert no longer matches the genuine signature.
-    let result = verify_xml_signature(&tampered, &tampered_keys.signing, None);
+    let result = verify_xml_signature(&tampered, &tampered_keys.signing, &entity_descriptor_root());
     assert!(
         !result.is_valid(),
         "tampered KeyDescriptor cert should fail verification"
@@ -526,7 +538,7 @@ fn verifies_via_x509_certificate_matching() {
     };
 
     let xml = signed_metadata(&key);
-    let result = verify_xml_signature(&xml, &[trust], None);
+    let result = verify_xml_signature(&xml, &[trust], &entity_descriptor_root());
     assert!(
         result.is_valid(),
         "X509Certificate matching should verify: {:?}",

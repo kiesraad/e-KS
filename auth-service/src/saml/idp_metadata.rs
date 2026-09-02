@@ -10,7 +10,9 @@ use crate::{
     saml::{
         constants::{BINDING_HTTP_POST, BINDING_SOAP, CLOCK_SKEW_SECONDS, NS_DSIG, NS_MD},
         verification::{ExpectedRoot, verify_xml_signature},
-        xml_parser::{Document, NodeId, descendants_by_tag, direct_text, find_descendant},
+        xml_parser::{
+            Document, NodeId, descendants_by_tag, direct_text, find_child, find_descendant,
+        },
     },
 };
 use rustls_pki_types::{CertificateDer, UnixTime};
@@ -93,6 +95,14 @@ fn descriptor_key_pair(doc: &Document, kd: NodeId) -> Option<KeyPair> {
         cert_pem,
         SecretString::from(String::new()),
     ))
+}
+
+/// The RD's `<md:IDPSSODescriptor>`: the one role descriptor every endpoint and
+/// `KeyDescriptor` below is read from.
+fn idp_sso_descriptor(doc: &Document, root: NodeId) -> Result<NodeId> {
+    find_child(doc, root, NS_MD, "IDPSSODescriptor").ok_or_else(|| {
+        AuthError::Config("metadata: EntityDescriptor has no IDPSSODescriptor".into())
+    })
 }
 
 fn endpoint_location(doc: &Document, root: NodeId, tag: &str, binding: &str) -> Option<String> {
@@ -341,9 +351,12 @@ pub fn parse_idp_metadata(xml: &str, trust: &RdTrust) -> Result<IdpMetadata> {
 
     let entity_id = pinned_entity_id(&doc, root, trust)?;
     check_metadata_expiry(&doc, root)?;
-    let signing_keys = verified_signing_keys(xml, &doc, root, trust)?;
+    // Endpoints and keys are read only from the IdP role descriptor, never
+    // document-wide (see `idp_sso_descriptor`).
+    let idp = idp_sso_descriptor(&doc, root)?;
+    let signing_keys = verified_signing_keys(xml, &doc, root, idp, trust)?;
 
-    let (sso_url, ars_url, slo_url) = resolve_endpoints(&doc, root)?;
+    let (sso_url, ars_url, slo_url) = resolve_endpoints(&doc, idp)?;
     debug!("[metadata] Endpoints resolved: sso={sso_url}, ars={ars_url}, slo={slo_url}");
 
     let cache_duration = doc
@@ -384,9 +397,12 @@ fn verified_signing_keys(
     xml: &str,
     doc: &Document,
     root: NodeId,
+    idp: NodeId,
     trust: &RdTrust,
 ) -> Result<Vec<KeyPair>> {
-    let signing_keys = pinned_signing_keys(extract_idp_keys(doc, root), trust)?;
+    // Keys from the IdP role descriptor (`idp`); the signature covers, and is
+    // bound to, the whole `EntityDescriptor` (`root`).
+    let signing_keys = pinned_signing_keys(extract_idp_keys(doc, idp), trust)?;
     debug!("[metadata] Trusted signing keys: {}", signing_keys.len());
 
     // `xml` is the document the endpoints and keys came from, so the re-parse
@@ -396,7 +412,7 @@ fn verified_signing_keys(
         local_name: "EntityDescriptor",
         id: doc.get_attribute(root, "ID"),
     };
-    let sig_result = verify_xml_signature(xml, &signing_keys, Some(&expected_root));
+    let sig_result = verify_xml_signature(xml, &signing_keys, &expected_root);
     if !sig_result.is_valid() {
         return Err(AuthError::Crypto(format!(
             "metadata signature verification failed: {}",
@@ -681,17 +697,77 @@ mod tests {
             "{err}"
         );
 
-        // Either one alone is enough.
+        // Either one alone is enough, and so is both together (the common case
+        // in real descriptors: a hard expiry plus a refresh hint).
         for attrs in [
             r#" cacheDuration="PT24H""#,
             r#" validUntil="2999-01-01T00:00:00Z""#,
+            r#" validUntil="2999-01-01T00:00:00Z" cacheDuration="PT24H""#,
         ] {
             let signed = signed_rd_metadata_attrs(entity_id, attrs);
             assert!(
                 parse_idp_metadata(&signed, &test_trust(entity_id)).is_ok(),
-                "{attrs} alone must be accepted"
+                "{attrs} must be accepted"
             );
         }
+
+        // With both present, both are honoured: the expiry gates acceptance and
+        // the cacheDuration still drives the refresh cadence.
+        let signed = signed_rd_metadata_attrs(
+            entity_id,
+            r#" validUntil="2999-01-01T00:00:00Z" cacheDuration="PT24H""#,
+        );
+        let md = parse_idp_metadata(&signed, &test_trust(entity_id)).expect("must parse");
+        assert_eq!(md.cache_duration, Some(Duration::from_secs(24 * 3600)));
+
+        // An expired validUntil is still fatal even when a cacheDuration is
+        // present, so a long refresh hint cannot keep a dead descriptor alive.
+        let signed = signed_rd_metadata_attrs(
+            entity_id,
+            r#" validUntil="2000-01-01T00:00:00Z" cacheDuration="PT24H""#,
+        );
+        assert!(parse_idp_metadata(&signed, &test_trust(entity_id)).is_err());
+    }
+
+    #[test]
+    fn endpoints_and_keys_are_read_only_from_the_idp_role_descriptor() {
+        // The RD is also an SP towards the AD/BVD, so an SPSSODescriptor may sit
+        // alongside. Its endpoints and keys must be invisible here: a
+        // document-wide search would take the SP-side SingleLogoutService as the
+        // one we send LogoutRequests to.
+        let xml = r#"<md:EntityDescriptor xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata" xmlns:dsig="http://www.w3.org/2000/09/xmldsig#" entityID="urn:e">
+            <md:SPSSODescriptor>
+                <md:KeyDescriptor use="signing"><dsig:KeyInfo><dsig:X509Data><dsig:X509Certificate>SPCERT</dsig:X509Certificate></dsig:X509Data></dsig:KeyInfo></md:KeyDescriptor>
+                <md:SingleLogoutService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="https://sp-side/slo"/>
+            </md:SPSSODescriptor>
+            <md:IDPSSODescriptor>
+                <md:SingleLogoutService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="https://idp-side/slo"/>
+            </md:IDPSSODescriptor>
+        </md:EntityDescriptor>"#;
+        let doc = crate::saml::xml_parser::parse(xml).unwrap();
+        let root = doc.document_element();
+        let idp = idp_sso_descriptor(&doc, root).expect("IDPSSODescriptor present");
+
+        assert_eq!(
+            endpoint_location(&doc, idp, "SingleLogoutService", BINDING_HTTP_POST).as_deref(),
+            Some("https://idp-side/slo")
+        );
+        // The SP role's signing key is not an IdP signing key.
+        assert!(extract_idp_keys(&doc, idp).signing.is_empty());
+        // For contrast: from the EntityDescriptor the SP role would win, which is
+        // exactly what the scoping prevents.
+        assert_eq!(
+            endpoint_location(&doc, root, "SingleLogoutService", BINDING_HTTP_POST).as_deref(),
+            Some("https://sp-side/slo")
+        );
+    }
+
+    #[test]
+    fn metadata_without_an_idp_role_descriptor_is_rejected() {
+        let xml = r#"<md:EntityDescriptor xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata" entityID="urn:e"><md:SPSSODescriptor/></md:EntityDescriptor>"#;
+        let doc = crate::saml::xml_parser::parse(xml).unwrap();
+        let err = idp_sso_descriptor(&doc, doc.document_element()).unwrap_err();
+        assert!(err.to_string().contains("no IDPSSODescriptor"), "{err}");
     }
 
     #[test]

@@ -3,15 +3,15 @@
 use super::helpers::Validator;
 use crate::saml::{
     constants::{
-        EID_ACTING_SUBJECT_ID, EID_LEGAL_SUBJECT_ID, EID_SERVICE_UUID, NAMEID_PERSISTENT,
-        NAMEID_TRANSIENT, NS_SAML, SUBJECT_CONFIRMATION_BEARER,
+        EID_ACTING_SUBJECT_ID, EID_ID_TYPES, EID_LEGAL_SUBJECT_ID, EID_SERVICE_UUID,
+        NAMEID_PERSISTENT, NAMEID_TRANSIENT, NS_SAML, SUBJECT_CONFIRMATION_BEARER,
     },
-    decryption::{DecryptedNameId, decrypt_encrypted_id},
+    decryption::{DecryptedNameId, DecryptionKey, decrypt_encrypted_id},
     loa::LevelOfAssurance,
     subject::SubjectId,
     xml_parser::{
-        Document, NodeId, descendants_by_tag_pruned, direct_text, find_child, find_descendant,
-        find_descendant_pruned,
+        Document, NodeId, children_by_tag, descendants_by_tag_pruned, direct_text, find_child,
+        find_descendant, find_descendant_pruned,
     },
 };
 use secrecy::ExposeSecret;
@@ -45,8 +45,8 @@ pub struct ValidateAssertionOpts<'a> {
     /// evidence-only (eID §9.1). Binding the Issuer to the RD EntityID matches the
     /// TVS reference impl (`minvws/nl-rdo-max`). `None` skips the check (tests).
     pub expected_issuer: Option<&'a str>,
-    /// Tuples of (key_pem, key_name) for EncryptedID decryption.
-    pub private_keys: &'a [(&'a str, &'a str)],
+    /// DV private keys tried for EncryptedID decryption.
+    pub private_keys: &'a [DecryptionKey<'a>],
     /// Minimum required LoA. `None` skips the check (used by tests that
     /// exercise non-LoA validation paths). Production callers pass
     /// `Some(MINIMUM_LOA)`.
@@ -112,9 +112,10 @@ pub fn validate_assertion_at(
     if !valid {
         return None;
     }
-    // A clean run implies the mandatory Subject NameID (eID §7.6.3) was found,
-    // so `extract_claims` returned Some.
-    Some(claims.expect("Subject NameID presence enforced by validation"))
+    // A clean run implies the mandatory Subject NameID (eID §7.6.3) was found, so
+    // this is `Some`; returning the `Option` as-is rather than unwrapping keeps
+    // the failure closed if that invariant ever stops holding.
+    claims
 }
 
 /// The assertion-level checks and claim extraction (eID §7.6.3), as methods on
@@ -130,6 +131,22 @@ impl Validator<'_, '_> {
     /// All descendants `(NS_SAML, local)` within an Assertion, skipping `<saml:Advice>`.
     fn find_claims(&self, assertion: NodeId, local: &str) -> Vec<NodeId> {
         descendants_by_tag_pruned(self.doc, assertion, (NS_SAML, local), (NS_SAML, "Advice"))
+    }
+
+    /// The `<saml:Attribute>` elements of the Assertion's `<AttributeStatement>`s
+    /// (eID §7.6.3.4), in document order.
+    ///
+    /// SECURITY: scoped to `<AttributeStatement>` (whose direct children the SAML
+    /// schema says these are), not to any `<Attribute>` anywhere under the
+    /// Assertion. Combined with the `<Advice>` pruning in [`Self::find_claims`],
+    /// an `<Attribute>` planted elsewhere in the outer Assertion (say inside a
+    /// `<Conditions>` or `<AuthnStatement>` extension point) is never read as a
+    /// claim.
+    fn find_attributes(&self, assertion: NodeId) -> Vec<NodeId> {
+        self.find_claims(assertion, "AttributeStatement")
+            .into_iter()
+            .flat_map(|stmt| children_by_tag(self.doc, stmt, NS_SAML, "Attribute"))
+            .collect()
     }
 
     /// Extract the [`Claims`], recording any extraction-level errors (NameID
@@ -218,7 +235,7 @@ impl Validator<'_, '_> {
     // check (tests).
     fn check_service_uuid(&mut self, root: NodeId, expected: Option<&str>) -> Option<String> {
         let service_uuid = self
-            .find_claims(root, "Attribute")
+            .find_attributes(root)
             .iter()
             .find(|&&a| self.doc.get_attribute(a, "Name") == Some(EID_SERVICE_UUID))
             .and_then(|&a| find_descendant(self.doc, a, NS_SAML, "AttributeValue"))
@@ -431,7 +448,7 @@ impl Validator<'_, '_> {
     ) -> (Option<SubjectId>, Option<SubjectId>) {
         let mut acting_subject_id: Option<SubjectId> = None;
         let mut legal_subject_id: Option<SubjectId> = None;
-        let attributes = self.find_claims(root, "Attribute");
+        let attributes = self.find_attributes(root);
         debug!(
             "[validate] AttributeStatement contains {} Attribute element(s)",
             attributes.len()
@@ -495,9 +512,18 @@ impl Validator<'_, '_> {
                 d.format
             ));
         }
-        if d.name_qualifier.trim().is_empty() {
+        // eID §7.6.3.4.4 requires the NameQualifier, and §10.1 enumerates the
+        // identifier types it may name. An unknown type is rejected rather than
+        // carried into the session as an identity of unknown meaning.
+        let name_qualifier = d.name_qualifier.trim();
+        if name_qualifier.is_empty() {
             self.error(format!(
                 "{attr_name} NameID is missing the required NameQualifier"
+            ));
+        } else if !EID_ID_TYPES.contains(&name_qualifier) {
+            self.error(format!(
+                "{attr_name} NameID NameQualifier '{name_qualifier}' is not an eID §10.1 \
+                 identifier type (expected one of {EID_ID_TYPES:?})"
             ));
         }
         if d.sp_name_qualifier.is_some() {
@@ -528,7 +554,7 @@ mod tests {
         let root = doc.document_element();
         // Issuer is a direct child of the outer Assertion.
         assert_eq!(
-            find_child(&doc, root, NS_SAML, "Issuer").map(|n| inner_text(&doc, n)),
+            find_child(&doc, root, NS_SAML, "Issuer").and_then(|n| inner_text(&doc, n)),
             Some("OUTER_RD".to_string())
         );
         // The AD's AuthnContextClassRef inside <Advice> is invisible to find_claim.
@@ -579,6 +605,48 @@ mod tests {
         let errors = decrypted_name_id_errors(&d);
         assert!(errors.iter().any(|e| e.contains("SPNameQualifier")));
         assert!(errors.iter().any(|e| e.contains("SPProvidedID")));
+    }
+
+    #[test]
+    fn decrypted_name_id_rejects_unknown_identifier_type() {
+        // eID §10.1 enumerates the identifier types; a NameQualifier outside
+        // that set names an identity of unknown meaning and must be rejected.
+        let errors = decrypted_name_id_errors(&name_id(
+            NAMEID_PERSISTENT,
+            "urn:nl-eid-gdi:1.0:id:SomethingElse",
+        ));
+        assert!(
+            errors.iter().any(|e| e.contains("not an eID §10.1")),
+            "{errors:?}"
+        );
+    }
+
+    #[test]
+    fn decrypted_name_id_accepts_every_documented_identifier_type() {
+        for nq in EID_ID_TYPES {
+            let errors = decrypted_name_id_errors(&name_id(NAMEID_PERSISTENT, nq));
+            assert!(errors.is_empty(), "{nq} rejected: {errors:?}");
+        }
+    }
+
+    #[test]
+    fn attributes_are_read_only_from_attribute_statement() {
+        // An <Attribute> outside an <AttributeStatement> is not a claim: the
+        // ServiceUUID here sits directly under the Assertion, so the binding must
+        // report it missing rather than accept the planted value.
+        let xml = format!(
+            r#"<saml:Assertion xmlns:saml="{NS_SAML}"><saml:Attribute Name="{EID_SERVICE_UUID}"><saml:AttributeValue>planted</saml:AttributeValue></saml:Attribute></saml:Assertion>"#
+        );
+        let doc = parse(&xml).unwrap();
+        let root = doc.document_element();
+        let mut errors = Vec::new();
+        let mut v = Validator::new(&doc, &mut errors);
+        assert!(v.find_attributes(root).is_empty());
+        assert_eq!(v.check_service_uuid(root, Some("planted")), None);
+        assert!(
+            errors.iter().any(|e| e.contains("missing the required")),
+            "{errors:?}"
+        );
     }
 
     #[test]

@@ -268,6 +268,22 @@ pub enum AuthFailure {
     /// Anything else: a DigiD/RD error status (TVS L10) or a protocol/security
     /// validation failure resolving the artifact. The application shows a
     /// generic "login could not be completed" page.
+    ///
+    /// This is the single category the eID error cases collapse into, all of
+    /// which require the same user-facing outcome:
+    ///  * §7.8.4 (attributes not supported): "show the user a message indicating
+    ///    something went wrong, without revealing security sensitive details";
+    ///  * §7.8.5 (incorrect message, recoverable, e.g. an `RequestUnsupported`
+    ///    status for an unsupported LoA);
+    ///  * §7.8.6 (incorrect message, non-recoverable, e.g. invalid signature,
+    ///    unknown issuer, or a response not matching the request): "show the user
+    ///    a message indicating a non-recoverable error".
+    ///
+    /// The technical detail is logged at the failure site and deliberately not
+    /// carried here, so the page cannot leak which check failed. The §7.8.5/§7.8.6
+    /// requirement to answer with a SAML error status does not apply to this DV:
+    /// it is the initiator of every flow and never receives a SAML *request* it
+    /// would have to respond to.
     Error,
     /// The auth-service cannot currently run the SAML flow at all: the RD
     /// metadata has not been loaded (it was unreachable at startup and no

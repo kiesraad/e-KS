@@ -51,6 +51,7 @@
 
 pub mod bindings;
 pub mod config;
+pub mod csp;
 pub mod error;
 pub mod handlers;
 pub mod keys;

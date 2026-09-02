@@ -77,8 +77,8 @@ impl<'a, 'input> Validator<'a, 'input> {
             self.error(format!(
                 "{label} status: {} ({}) - {}",
                 status_code.as_deref().unwrap_or("unknown"),
-                second.map(|s| format!("{s}")).unwrap_or_default(),
-                message.map(|m| format!("{m}")).unwrap_or_default()
+                second.map(|s| s.to_string()).unwrap_or_default(),
+                message.map(|m| m.to_string()).unwrap_or_default()
             ));
         }
         status_code
@@ -175,7 +175,7 @@ fn find_nested_status_code(doc: &Document, root: NodeId) -> Option<String> {
 
 /// Find a `samlp:`-namespaced descendant element's text (e.g. `StatusMessage`).
 fn find_samlp_text(doc: &Document, root: NodeId, local_name: &str) -> Option<String> {
-    find_descendant(doc, root, NS_SAMLP, local_name).map(|n| inner_text(doc, n))
+    find_descendant(doc, root, NS_SAMLP, local_name).and_then(|n| inner_text(doc, n))
 }
 
 /// Find a direct child element `(ns, local_name)` as a node in the parsed tree.
@@ -244,7 +244,7 @@ mod tests {
         let doc = parse(&xml).unwrap();
         let child = child_element(&doc, root_of(&doc), NS_SAMLP, "Response").unwrap();
         assert_eq!(doc.get_attribute(child, "ID"), Some("_genuine"));
-        assert_eq!(inner_text(&doc, child), "GOOD");
+        assert_eq!(inner_text(&doc, child).as_deref(), Some("GOOD"));
     }
 
     // -- find_status_code --

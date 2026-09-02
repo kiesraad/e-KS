@@ -85,7 +85,7 @@ impl Validator<'_, '_> {
             local_name: "ArtifactResponse",
             id: self.doc.get_attribute(art_node, "ID"),
         };
-        let sig_result = verify_xml_signature(&xml, trusted_keys, Some(&expected_root));
+        let sig_result = verify_xml_signature(&xml, trusted_keys, &expected_root);
         if !sig_result.is_valid() {
             self.errors.extend(
                 sig_result

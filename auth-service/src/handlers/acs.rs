@@ -13,6 +13,7 @@ use crate::{
     bindings::soap::{send_soap_request, unwrap_soap},
     config::AuthConfig,
     saml::{
+        decryption::DecryptionKey,
         idp_metadata::IdpMetadata,
         loa::MINIMUM_LOA,
         messages::{CreatedMessage, create_artifact_resolve},
@@ -31,7 +32,6 @@ use axum::{
     response::{IntoResponse, Redirect, Response},
 };
 use axum_extra::{extract::CookieJar, routing::TypedPath};
-use secrecy::ExposeSecret;
 use std::collections::HashMap;
 use tracing::{debug, error, info, warn};
 
@@ -335,12 +335,18 @@ impl ResponseChain<'_, '_> {
         Ok(claims)
     }
 
-    // eID §7.6.2: the Response @InResponseTo (cardinality 1) is the @ID of the
-    // AuthnRequest, so it MUST equal the value the assertion's
-    // SubjectConfirmationData carries (§7.6.3.5 rule 4). That assertion value is
-    // the one matched-and-consumed against the pending-request store in
-    // `handle_acs`; requiring the Response to name the same request rejects a
-    // response whose two InResponseTo values disagree (a spliced/mismatched pair).
+    // Cross-check only: both values come from the same Response, so this does
+    // NOT by itself satisfy eID §7.6.3.5 rule 4. Rule 4 (the assertion answers an
+    // AuthnRequest this DV actually issued) is enforced in
+    // `confirm_pending_request` below, which matches `claims.in_response_to`
+    // against the pending-request store and consumes it.
+    //
+    // What this adds on top: eID §7.6.2 gives the Response an @InResponseTo of
+    // cardinality 1, and it names the same AuthnRequest as the assertion's
+    // SubjectConfirmationData. Since only the assertion's value is checked
+    // against the store, requiring the two to agree rejects a Response whose
+    // envelope and assertion name different requests, i.e. an assertion spliced
+    // into a Response for another flow.
     fn check_matching_in_response_to(
         &self,
         response_node: NodeId,
@@ -478,12 +484,15 @@ impl ResponseChain<'_, '_> {
         debug!("[ACS] Step 5: validating Assertion");
 
         let cfg = self.auth_state.auth_config();
-        let priv_keys: Vec<(&str, &str)> = self
+        let priv_keys: Vec<DecryptionKey<'_>> = self
             .auth_state
             .dv_keys()
             .encryption
             .iter()
-            .map(|k| (k.key_pem.expose_secret(), k.key_name.as_str()))
+            .map(|k| DecryptionKey {
+                key_pem: &k.key_pem,
+                key_name: k.key_name.as_str(),
+            })
             .collect();
 
         let mut errors = Vec::new();

@@ -3,7 +3,7 @@
 use super::helpers::Validator;
 use crate::saml::{
     constants::{NS_SAMLP, STATUS_SUCCESS},
-    xml_parser::{self, find_descendant},
+    xml_parser::{self, QName, find_descendant},
 };
 
 /// §7.7.2 correlation fields of a structurally valid LogoutResponse: the
@@ -32,7 +32,11 @@ pub fn validate_logout_response(
 
     // Matched by (namespace, local name): a same-local-name element in another
     // namespace is not a samlp:LogoutResponse.
-    if doc.node_qname(root) != Some((Some(NS_SAMLP), "LogoutResponse")) {
+    let expected_root = QName {
+        namespace: Some(NS_SAMLP),
+        local_name: "LogoutResponse",
+    };
+    if doc.node_qname(root) != Some(expected_root) {
         return Err("response root is not samlp:LogoutResponse".to_string());
     }
     check_logout_response(&doc, root, rd_entity_id, sls_url)?;
