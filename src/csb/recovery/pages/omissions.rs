@@ -123,6 +123,51 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn declarations_of_support_omissions_name_their_districts() {
+        use crate::ElectoralDistrict;
+
+        let store = CsbStore::new_for_test();
+        let stream_id = store.stream_id;
+
+        Omission::new(
+            OmissionCategory::DeclarationsOfSupport(vec![
+                ElectoralDistrict::GR,
+                ElectoralDistrict::FR,
+            ]),
+            "Declarations of support missing".parse().unwrap(),
+            "Too few declarations of support were handed in."
+                .parse()
+                .unwrap(),
+            None,
+        )
+        .create(&store)
+        .await
+        .unwrap();
+        // A political group omission is not district-scoped, so it names none.
+        sample_omission(OmissionCategory::PoliticalGroup)
+            .create(&store)
+            .await
+            .unwrap();
+
+        let response = omissions(
+            CsbRecoveryOmissionsPath { stream_id },
+            CsbContext::new_test(),
+            store,
+        )
+        .await
+        .unwrap()
+        .into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        // Only the districts the omission was reported for are listed.
+        assert_eq!(body.matches("Electoral districts").count(), 1);
+        assert!(body.contains("1. Groningen"));
+        assert!(body.contains("2. Frysl"));
+        assert!(!body.contains("Utrecht"));
+    }
+
+    #[tokio::test]
     async fn renders_empty_state_without_omissions() {
         let store = CsbStore::new_for_test();
         let stream_id = store.stream_id;

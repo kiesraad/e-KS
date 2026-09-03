@@ -131,7 +131,7 @@
   align-items: center;
   background-color: var(--restoration-tag-bg);
   border: 1px solid var(--restoration-tag-color);
-  border-radius: var(--rounded-xl);
+  border-radius: var(--rounded-lg);
   color: var(--restoration-tag-color);
   display: inline-flex;
   font-size: var(--font-size-sm);
@@ -159,7 +159,8 @@
 }
 
 /* Non-recoverable ("onherstelbaar") omissions are highlighted as errors. */
-.restoration-tag-unrecoverable {
+.restoration-tag-unrecoverable,
+.restoration-tag-scrapped {
   --restoration-tag-color: var(--red-700);
   --restoration-tag-bg: var(--red-100);
 }
@@ -244,11 +245,11 @@
 /* The electoral districts of a candidate list, read as one line. */
 .card-districts {
   color: var(--gray-500);
+}
 
-  .card-districts-separator {
-    color: var(--gray-300);
-    padding-inline: var(--space-1);
-  }
+.districts-separator {
+  color: var(--gray-300);
+  padding-inline: var(--space-1);
 }
 
 .examination-panel .cards-candidate-lists {

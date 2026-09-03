@@ -304,6 +304,79 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn recovery_mode_hides_the_brp_errors() {
+        use crate::{structs::candidate_lists::CandidateListId, test_utils::sample_candidate_list};
+
+        let store = CsbStore::new_for_test();
+        store.set_political_group(sample_political_group());
+        store.add_candidate_list(sample_candidate_list(CandidateListId::new()));
+
+        let response = render(CsbContext::new_test(), store, CsbPhase::Recovery)
+            .await
+            .unwrap()
+            .into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        // The BRP check belongs to the examination, so neither the panel
+        // counting its errors nor the per-list error tag renders here.
+        assert!(!body.contains("BRP"));
+        assert!(!body.contains("restoration-tag-error"));
+    }
+
+    #[tokio::test]
+    async fn examination_mode_shows_the_brp_errors_panel() {
+        let store = CsbStore::new_for_test();
+        let stream_id = store.stream_id;
+        store.set_political_group(sample_political_group());
+
+        let response = overview(
+            CsbPoliticalGroupPath { stream_id },
+            CsbContext::new_test(),
+            store,
+        )
+        .await
+        .unwrap()
+        .into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        assert!(body.contains("BRP"));
+    }
+
+    #[tokio::test]
+    async fn recovery_mode_lists_the_districts_of_a_declarations_of_support_omission() {
+        use crate::ElectoralDistrict;
+
+        let store = CsbStore::new_for_test();
+        store.set_political_group(sample_political_group());
+        Omission::new(
+            OmissionCategory::DeclarationsOfSupport(vec![
+                ElectoralDistrict::GR,
+                ElectoralDistrict::FR,
+            ]),
+            "Declarations of support missing".parse().unwrap(),
+            "Too few declarations of support were handed in."
+                .parse()
+                .unwrap(),
+            None,
+        )
+        .create(&store)
+        .await
+        .unwrap();
+
+        let response = render(CsbContext::new_test(), store, CsbPhase::Recovery)
+            .await
+            .unwrap()
+            .into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        assert!(body.contains("Groningen"));
+        assert!(body.contains("Frysl"));
+    }
+
+    #[tokio::test]
     async fn toggle_examination_finish_twice() {
         let store = CsbStore::new_for_test();
         let stream_id = store.stream_id;

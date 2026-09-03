@@ -235,6 +235,30 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn recovery_mode_hides_the_brp_column() {
+        let store = CsbStore::new_for_test();
+        let list_id = CandidateListId::new();
+
+        let person = sample_person(PersonId::new());
+        let person_id = person.id;
+        let mut list = sample_candidate_list(list_id);
+        list.candidates = vec![person_id];
+        store.add_person(person);
+        store.add_candidate_list(list);
+
+        let response = render(list_id, CsbContext::new_test(), store, CsbPhase::Recovery)
+            .await
+            .unwrap()
+            .into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        // The candidates still render, but the BRP check is examination-only.
+        assert!(body.contains("Jansen"));
+        assert!(!body.contains("BRP"));
+    }
+
+    #[tokio::test]
     async fn returns_not_found_for_unknown_list() {
         let store = CsbStore::new_for_test();
         let stream_id = store.stream_id;

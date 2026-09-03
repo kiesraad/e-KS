@@ -208,6 +208,19 @@ impl Omission {
         if self.recoverable { "warning" } else { "error" }
     }
 
+    /// The electoral districts this omission is scoped to. Only the
+    /// "ondersteuningsverklaringen" (H 4) are reported per district; every
+    /// other category applies to the political group, a list or a candidate as
+    /// a whole, so it has no districts of its own.
+    pub fn electoral_districts(&self) -> &[ElectoralDistrict] {
+        match &self.category {
+            OmissionCategory::DeclarationsOfSupport(districts) => districts,
+            OmissionCategory::PoliticalGroup
+            | OmissionCategory::CandidateList(_)
+            | OmissionCategory::Candidate { .. } => &[],
+        }
+    }
+
     /// Whether the CSB can mark this omission as recovered or not recovered in
     /// the "Herstelde lijsten" phase. Irreparable omissions were never in the
     /// omission letter, so there is nothing to assess.

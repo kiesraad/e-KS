@@ -62,7 +62,9 @@
             <th scope="col">{{ "candidate_list.fields.position"|trans }}</th>
             <th scope="col">{{ "person.fields.name"|trans }}</th>
             <th scope="col">{{ "person.fields.place_of_residence"|trans }}</th>
-            <th scope="col">{{ "csb.list.brp_errors"|trans }}</th>
+            {% if political_group.mode.is_examination() %}
+              <th scope="col">{{ "csb.list.brp_errors"|trans }}</th>
+            {% endif %}
             <th scope="col"></th>
             <th scope="col"></th>
           </tr>
@@ -91,7 +93,7 @@
                   {% endif %}
                   {% if political_group.mode.is_recovery() && candidate.is_scrapped %}
                   </s>
-                  <span class="restoration-tag restoration-tag-error">{{ "csb.recovery.scrapped"|trans }}</span>
+                  <span class="restoration-tag restoration-tag-scrapped">{{ "csb.recovery.scrapped"|trans }}</span>
                 {% endif %}
               </td>
               <td>
@@ -106,19 +108,21 @@
                   {% endif %}
                 {% endif %}
               </td>
-              <td>
-                <ul class="tags-list">
-                  {% if candidate.brp_error_count == 0 %}
-                    <li class="tag link width-md">
-                      <a class="ok" href="#">{{ "csb.brp.correct"|trans }}</a>
-                    </li>
-                  {% else %}
-                    <li class="tag link">
-                      <a class="error" href="#">{{ "csb.brp.errors"|trans }}</a>
-                    </li>
-                  {% endif %}
-                </ul>
-              </td>
+              {% if political_group.mode.is_examination() %}
+                <td>
+                  <ul class="tags-list">
+                    {% if candidate.brp_error_count == 0 %}
+                      <li class="tag link width-md">
+                        <a class="ok" href="#">{{ "csb.brp.correct"|trans }}</a>
+                      </li>
+                    {% else %}
+                      <li class="tag link">
+                        <a class="error" href="#">{{ "csb.brp.errors"|trans }}</a>
+                      </li>
+                    {% endif %}
+                  </ul>
+                </td>
+              {% endif %}
               <td>{{ omission_badge(candidate.restoration_status) }}</td>
               <td class="actions">
                 <a href="{{ political_group.candidate_path(list_id, candidate.person.id) }}"

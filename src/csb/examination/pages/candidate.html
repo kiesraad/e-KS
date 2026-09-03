@@ -17,7 +17,7 @@
   {% endif %}
   {% if political_group.mode.is_recovery() && is_scrapped %}
     <s class="imported-value">{{ candidate.name.display() }}</s>
-    <span class="restoration-tag restoration-tag-error">{{ "csb.recovery.scrapped"|trans }}</span>
+    <span class="restoration-tag restoration-tag-scrapped">{{ "csb.recovery.scrapped"|trans }}</span>
   {% else %}
     {{ candidate.name.display() }}
   {% endif %}
