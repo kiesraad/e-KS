@@ -3,7 +3,7 @@
 //!
 //! - [`districts`] parses `MasterElectionTree.xml` into the [`districts::Districts`] model.
 //! - [`codegen`] renders that model into the three `*_generated.rs` files.
-//! - [`ident`] holds the small helpers both of the above rely on.
+//! - [`utils`] holds the small helpers both of the above rely on.
 mod codegen;
 mod districts;
 mod utils;

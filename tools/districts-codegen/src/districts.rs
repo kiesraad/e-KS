@@ -125,7 +125,7 @@ impl Districts {
 }
 
 impl From<MasterElectionTree> for Districts {
-    #[allow(clippy::too_many_lines, clippy::cognitive_complexity)]
+    #[allow(clippy::too_many_lines)]
     fn from(tree: MasterElectionTree) -> Self {
         let staat = &tree.root;
         let mut d = Districts::default();
