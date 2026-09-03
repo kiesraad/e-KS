@@ -11,11 +11,11 @@
 //! round-trip test and the `pdf_diff` development tool.
 //!
 //! [`mod@documents`] collects the store data for a candidate list and streams
-//! the rendered models plus the [`mod@eml210`] nomination export as a ZIP
+//! the rendered models plus the [`mod@eml::eml210`] nomination export as a ZIP
 //! download.
 
 pub(crate) mod documents;
-pub(crate) mod eml210;
+pub(crate) mod eml;
 pub mod examples;
 mod fonts;
 pub mod h1;

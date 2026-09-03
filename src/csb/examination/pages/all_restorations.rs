@@ -87,7 +87,7 @@ mod tests {
         let list_id = CandidateListId::new();
         store.add_candidate_list(CandidateList {
             id: list_id,
-            electoral_districts: vec![ElectoralDistrict::UT, ElectoralDistrict::GR],
+            electoral_districts: vec![ElectoralDistrict::Utrecht, ElectoralDistrict::Groningen],
             candidates: vec![person_id],
             created_at: UtcDateTime::now(),
         });
@@ -103,7 +103,7 @@ mod tests {
         .await?;
         create_omission(
             &store,
-            OmissionCategory::DeclarationsOfSupport(vec![ElectoralDistrict::UT]),
+            OmissionCategory::DeclarationsOfSupport(vec![ElectoralDistrict::Utrecht]),
             &dos_title,
         )
         .await?;
@@ -156,7 +156,7 @@ mod tests {
         let list_id = CandidateListId::new();
         store.set_paper_corrected_candidate_list(CandidateList {
             id: list_id,
-            electoral_districts: vec![ElectoralDistrict::GR],
+            electoral_districts: vec![ElectoralDistrict::Groningen],
             candidates: vec![person_id],
             created_at: UtcDateTime::now(),
         });

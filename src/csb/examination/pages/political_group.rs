@@ -224,7 +224,7 @@ mod tests {
         let list_id = CandidateListId::new();
         store.add_candidate_list(sample_candidate_list(list_id));
         let mut corrected = sample_candidate_list(list_id);
-        corrected.electoral_districts = vec![ElectoralDistrict::GR];
+        corrected.electoral_districts = vec![ElectoralDistrict::Groningen];
         store.set_paper_corrected_candidate_list(corrected);
 
         let response = overview(
@@ -352,8 +352,8 @@ mod tests {
         store.set_political_group(sample_political_group());
         Omission::new(
             OmissionCategory::DeclarationsOfSupport(vec![
-                ElectoralDistrict::GR,
-                ElectoralDistrict::FR,
+                ElectoralDistrict::Groningen,
+                ElectoralDistrict::Fryslan,
             ]),
             "Declarations of support missing".parse().unwrap(),
             "Too few declarations of support were handed in."

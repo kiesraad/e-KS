@@ -3,8 +3,7 @@
 use std::collections::BTreeMap;
 
 use crate::{
-    AnyLocale, AppError, CsbAction, CsbStore, CsbStoreData, CsbStream, ElectionConfig,
-    ElectoralDistrict,
+    AppError, CsbAction, CsbStore, CsbStoreData, CsbStream, ElectionConfig, ElectoralDistrict,
     models::{
         i1::{DistrictLists, SubmittedList},
         i4::OmissionGroup,
@@ -79,7 +78,7 @@ fn store_submitted_lists(store: &CsbStream) -> Vec<(ElectoralDistrict, Submitted
 /// title, e.g. `1 (Groningen)`. Elections with one district have no meaningful
 /// district number, so those print the title alone.
 fn district_label(district: ElectoralDistrict, election: &ElectionConfig) -> String {
-    let title = district.title(AnyLocale::Nl);
+    let title = district.title();
     if election.has_only_one_district() {
         title.to_string()
     } else {
@@ -162,7 +161,7 @@ fn format_districts(districts: &[ElectoralDistrict], election: &ElectionConfig) 
         sorted.sort_by_key(ElectoralDistrict::region_number);
         let parts: Vec<String> = sorted
             .iter()
-            .map(|d| format!("{} ({})", d.region_number(), d.title(AnyLocale::Nl)))
+            .map(|d| format!("{} ({})", d.region_number(), d.title()))
             .collect();
         format!("kieskring {}", parts.join(", "))
     }
@@ -334,7 +333,7 @@ mod tests {
     fn dos_one_district() {
         let store = CsbStore::new_for_test();
         assert_eq!(
-            OmissionCategory::DeclarationsOfSupport(vec![ElectoralDistrict::BO])
+            OmissionCategory::DeclarationsOfSupport(vec![ElectoralDistrict::Bonaire])
                 .electoral_district(&store, &EK)
                 .unwrap(),
             "kieskring 13 (Bonaire)"
@@ -347,8 +346,8 @@ mod tests {
         // The districts should be sorted by region number.
         assert_eq!(
             OmissionCategory::DeclarationsOfSupport(vec![
-                ElectoralDistrict::DR,
-                ElectoralDistrict::GR
+                ElectoralDistrict::Drenthe,
+                ElectoralDistrict::Groningen
             ])
             .electoral_district(&store, &EK)
             .unwrap(),
@@ -370,7 +369,7 @@ mod tests {
 
     #[test]
     fn candidate_with_list_specific_district() {
-        let (store, id) = store_with_list(vec![ElectoralDistrict::GR]);
+        let (store, id) = store_with_list(vec![ElectoralDistrict::Groningen]);
         let category = OmissionCategory::Candidate {
             person: crate::structs::persons::PersonId::new(),
             lists: vec![id],
@@ -385,7 +384,7 @@ mod tests {
     fn candidate_with_paper_added_list_uses_the_corrected_projection() {
         let store = CsbStore::new_for_test();
         let list = CandidateList {
-            electoral_districts: vec![ElectoralDistrict::GR],
+            electoral_districts: vec![ElectoralDistrict::Groningen],
             ..Default::default()
         };
         let id = list.id;
@@ -403,10 +402,10 @@ mod tests {
 
     #[test]
     fn candidate_with_corrected_list_uses_the_corrected_districts() {
-        let (store, id) = store_with_list(vec![ElectoralDistrict::UT]);
+        let (store, id) = store_with_list(vec![ElectoralDistrict::Utrecht]);
         store.set_paper_corrected_candidate_list(CandidateList {
             id,
-            electoral_districts: vec![ElectoralDistrict::GR],
+            electoral_districts: vec![ElectoralDistrict::Groningen],
             ..Default::default()
         });
         let category = OmissionCategory::Candidate {
@@ -438,7 +437,7 @@ mod tests {
         store.add_person(person.clone());
         store.add_person(other.clone());
         store.add_candidate_list(CandidateList {
-            electoral_districts: vec![ElectoralDistrict::GR, ElectoralDistrict::BO],
+            electoral_districts: vec![ElectoralDistrict::Groningen, ElectoralDistrict::Bonaire],
             candidates: vec![person.id, other.id],
             ..Default::default()
         });
@@ -447,8 +446,8 @@ mod tests {
 
         // The list covers two districts, so it contributes a row to each.
         assert_eq!(rows.len(), 2);
-        assert_eq!(rows[0].0, ElectoralDistrict::GR);
-        assert_eq!(rows[1].0, ElectoralDistrict::BO);
+        assert_eq!(rows[0].0, ElectoralDistrict::Groningen);
+        assert_eq!(rows[1].0, ElectoralDistrict::Bonaire);
         for (_, list) in &rows {
             assert_eq!(list.first_candidate_name, person.name.display());
             assert_eq!(list.candidate_count, 2);
@@ -457,7 +456,7 @@ mod tests {
 
     #[test]
     fn submitted_list_without_candidates_has_an_empty_first_candidate() {
-        let (store, _) = store_with_list(vec![ElectoralDistrict::BO]);
+        let (store, _) = store_with_list(vec![ElectoralDistrict::Bonaire]);
 
         let rows = store_submitted_lists(&store);
 
@@ -475,13 +474,13 @@ mod tests {
         store.add_person(late.clone());
         // Added newest first, so insertion order cannot pass this by accident.
         store.add_candidate_list(CandidateList {
-            electoral_districts: vec![ElectoralDistrict::GR],
+            electoral_districts: vec![ElectoralDistrict::Groningen],
             candidates: vec![late.id],
             created_at: utc("2027-04-02T09:00:00Z"),
             ..Default::default()
         });
         store.add_candidate_list(CandidateList {
-            electoral_districts: vec![ElectoralDistrict::GR],
+            electoral_districts: vec![ElectoralDistrict::Groningen],
             candidates: vec![early.id],
             created_at: utc("2027-04-01T09:00:00Z"),
             ..Default::default()
@@ -506,7 +505,7 @@ mod tests {
         let person = sample_person_with(PersonId::new(), None, "Jansen", None, "A.B.");
         store.add_person(person.clone());
         store.add_candidate_list(CandidateList {
-            electoral_districts: vec![ElectoralDistrict::GR],
+            electoral_districts: vec![ElectoralDistrict::Groningen],
             candidates: vec![person.id],
             ..Default::default()
         });
@@ -519,13 +518,19 @@ mod tests {
 
     #[test]
     fn district_label_prefixes_the_district_number() {
-        assert_eq!(district_label(ElectoralDistrict::BO, &EK), "13 (Bonaire)");
-        assert_eq!(district_label(ElectoralDistrict::GR, &EK), "1 (Groningen)");
+        assert_eq!(
+            district_label(ElectoralDistrict::Bonaire, &EK),
+            "13 (Bonaire)"
+        );
+        assert_eq!(
+            district_label(ElectoralDistrict::Groningen, &EK),
+            "1 (Groningen)"
+        );
     }
 
     #[test]
     fn district_label_omits_the_number_for_single_district_elections() {
-        let ps = ElectionConfig::PS27(Province::GR);
+        let ps = ElectionConfig::PS27(Province::Groningen);
         assert!(ps.has_only_one_district());
         assert_eq!(
             district_label(ElectoralDistrict::PsGroningen, &ps),
@@ -543,7 +548,7 @@ mod tests {
             vec![person.clone()],
             vec![CandidateList {
                 // Named in reverse district order on purpose.
-                electoral_districts: vec![ElectoralDistrict::BO, ElectoralDistrict::GR],
+                electoral_districts: vec![ElectoralDistrict::Bonaire, ElectoralDistrict::Groningen],
                 candidates: vec![person.id],
                 ..Default::default()
             }],
@@ -594,7 +599,7 @@ mod tests {
         create_omission(&store, OmissionCategory::PoliticalGroup, "Tweede verzuim").await;
         create_omission(
             &store,
-            OmissionCategory::DeclarationsOfSupport(vec![ElectoralDistrict::BO]),
+            OmissionCategory::DeclarationsOfSupport(vec![ElectoralDistrict::Bonaire]),
             "Derde verzuim",
         )
         .await;

@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<EML xmlns="urn:oasis:names:tc:evs:schema:eml" xmlns:kr="http://www.kiesraad.nl/extensions" xmlns:xal="urn:oasis:names:tc:ciq:xsdschema:xAL:2.0" xmlns:xnl="urn:oasis:names:tc:ciq:xsdschema:xNL:2.0" Id="110a" SchemaVersion="5">
+    <TransactionId>1</TransactionId>
+    <kr:CreationDateTime>2026-08-06T12:26:14.692376964+00:00</kr:CreationDateTime>
+    <IssueDate>2026-08-06</IssueDate>
+    <ElectionEvent>
+        <EventIdentifier/>
+        <Election>
+            <ElectionIdentifier Id="PS2027_Groningen">
+                <ElectionName>Verkiezing van de provinciale staten van Groningen 2027</ElectionName>
+                <ElectionCategory>PS</ElectionCategory>
+                <kr:ElectionSubcategory>PS1</kr:ElectionSubcategory>
+                <kr:ElectionDate>2027-03-17</kr:ElectionDate>
+                <kr:NominationDate>2027-02-01</kr:NominationDate>
+            </ElectionIdentifier>
+            <Contest>
+                <ContestIdentifier Id="geen"/>
+                <VotingMethod>SPV</VotingMethod>
+                <MaxVotes/>
+            </Contest>
+            <kr:ElectionTree>
+                <kr:Region RegionNumber="1" RegionCategory="PROVINCIE">
+                    <kr:RegionName>Groningen</kr:RegionName>
+                </kr:Region>
+                <kr:Region RegionNumber="1" RegionCategory="KIESKRING" SuperiorRegionNumber="1" SuperiorRegionCategory="PROVINCIE">
+                    <kr:RegionName>Groningen</kr:RegionName>
+                    <kr:Committee CommitteeCategory="CSB"/>
+                    <kr:Committee CommitteeCategory="HSB"/>
+                </kr:Region>
+                <kr:Region RegionNumber="14" RegionCategory="GEMEENTE" SuperiorRegionNumber="1" SuperiorRegionCategory="KIESKRING">
+                    <kr:RegionName>Groningen</kr:RegionName>
+                </kr:Region>
+                <kr:Region RegionNumber="1966" RegionCategory="GEMEENTE" SuperiorRegionNumber="1" SuperiorRegionCategory="KIESKRING">
+                    <kr:RegionName>Het Hogeland</kr:RegionName>
+                </kr:Region>
+                <kr:Region RegionNumber="1979" RegionCategory="GEMEENTE" SuperiorRegionNumber="1" SuperiorRegionCategory="KIESKRING">
+                    <kr:RegionName>Eemsdelta</kr:RegionName>
+                </kr:Region>
+                <kr:Region RegionNumber="1952" RegionCategory="GEMEENTE" SuperiorRegionNumber="1" SuperiorRegionCategory="KIESKRING">
+                    <kr:RegionName>Midden-Groningen</kr:RegionName>
+                </kr:Region>
+                <kr:Region RegionNumber="1895" RegionCategory="GEMEENTE" SuperiorRegionNumber="1" SuperiorRegionCategory="KIESKRING">
+                    <kr:RegionName>Oldambt</kr:RegionName>
+                </kr:Region>
+                <kr:Region RegionNumber="765" RegionCategory="GEMEENTE" SuperiorRegionNumber="1" SuperiorRegionCategory="KIESKRING">
+                    <kr:RegionName>Pekela</kr:RegionName>
+                </kr:Region>
+                <kr:Region RegionNumber="37" RegionCategory="GEMEENTE" SuperiorRegionNumber="1" SuperiorRegionCategory="KIESKRING">
+                    <kr:RegionName>Stadskanaal</kr:RegionName>
+                </kr:Region>
+                <kr:Region RegionNumber="47" RegionCategory="GEMEENTE" SuperiorRegionNumber="1" SuperiorRegionCategory="KIESKRING">
+                    <kr:RegionName>Veendam</kr:RegionName>
+                </kr:Region>
+                <kr:Region RegionNumber="1969" RegionCategory="GEMEENTE" SuperiorRegionNumber="1" SuperiorRegionCategory="KIESKRING">
+                    <kr:RegionName>Westerkwartier</kr:RegionName>
+                </kr:Region>
+                <kr:Region RegionNumber="1950" RegionCategory="GEMEENTE" SuperiorRegionNumber="1" SuperiorRegionCategory="KIESKRING">
+                    <kr:RegionName>Westerwolde</kr:RegionName>
+                </kr:Region>
+            </kr:ElectionTree>
+            <kr:NumberOfSeats>43</kr:NumberOfSeats>
+            <kr:PreferenceThreshold>25</kr:PreferenceThreshold>
+            <kr:RegisteredParties>
+                <kr:RegisteredParty>
+                    <kr:RegisteredAppellation>Kiesraad Demo</kr:RegisteredAppellation>
+                </kr:RegisteredParty>
+                <kr:RegisteredParty>
+                    <kr:RegisteredAppellation>Andere Partij</kr:RegisteredAppellation>
+                </kr:RegisteredParty>
+            </kr:RegisteredParties>
+        </Election>
+    </ElectionEvent>
+</EML>

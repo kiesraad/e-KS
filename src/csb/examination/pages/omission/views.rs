@@ -2,7 +2,7 @@ use askama::Template;
 use axum_extra::routing::TypedPath;
 
 use crate::{
-    AppError, Context, CsbStream, ElectoralDistrict, Locale, Overlay,
+    AppError, Context, CsbStream, ElectoralDistrict, Overlay,
     csb::examination::{OmissionForm, pages::CsbDeleteOmissionPath},
     filters,
     form::FormData,
@@ -121,7 +121,6 @@ fn placeholders_for(target: &OmissionTarget, store: &CsbStream) -> OmissionPlace
 /// lists; when `Some`, returns only lists this candidate appears on.
 pub(super) fn candidate_list_options(
     store: &CsbStream,
-    locale: Locale,
     person_filter: Option<PersonId>,
 ) -> Vec<CandidateListOption> {
     store
@@ -130,7 +129,7 @@ pub(super) fn candidate_list_options(
         .filter(|l| person_filter.is_none_or(|id| l.candidates.contains(&id)))
         .map(|l| CandidateListOption {
             id: l.id,
-            label: l.districts_name(locale.into()),
+            label: l.districts_name(),
         })
         .collect()
 }

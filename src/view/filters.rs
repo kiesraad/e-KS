@@ -96,26 +96,8 @@ pub fn initials_as_printed_on_list(
 }
 
 #[askama::filter_fn]
-pub fn district_title_nl(
-    value: &ElectoralDistrict,
-    _: &dyn askama::Values,
-) -> askama::Result<String> {
-    Ok(value.title(AnyLocale::Nl).to_string())
-}
-
-#[askama::filter_fn]
-pub fn district_name(
-    value: &ElectoralDistrict,
-    values: &dyn askama::Values,
-) -> askama::Result<String> {
-    let locale: &Locale = askama::get_value(values, "locale")?;
-    let any_locale = AnyLocale::from(*locale);
-
-    Ok(format!(
-        "{}. {}",
-        value.region_number(),
-        value.title(any_locale)
-    ))
+pub fn district_name(value: &ElectoralDistrict, _: &dyn askama::Values) -> askama::Result<String> {
+    Ok(format!("{}. {}", value.region_number(), value.title()))
 }
 
 #[askama::filter_fn]
@@ -127,17 +109,6 @@ pub fn election_title(
     let any_locale = AnyLocale::from(*locale);
 
     Ok(value.title(any_locale))
-}
-
-#[askama::filter_fn]
-pub fn region_title(
-    value: &ElectionConfig,
-    values: &dyn askama::Values,
-) -> askama::Result<Option<&'static str>> {
-    let locale: &Locale = askama::get_value(values, "locale")?;
-    let any_locale = AnyLocale::from(*locale);
-
-    Ok(value.region_title(any_locale))
 }
 
 #[askama::filter_fn]

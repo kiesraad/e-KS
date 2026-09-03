@@ -131,8 +131,8 @@ mod tests {
 
         Omission::new(
             OmissionCategory::DeclarationsOfSupport(vec![
-                ElectoralDistrict::GR,
-                ElectoralDistrict::FR,
+                ElectoralDistrict::Groningen,
+                ElectoralDistrict::Fryslan,
             ]),
             "Declarations of support missing".parse().unwrap(),
             "Too few declarations of support were handed in."
