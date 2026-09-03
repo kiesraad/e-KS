@@ -7,7 +7,7 @@ use std::str::FromStr;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    ElectoralDistrict,
+    ElectionConfig, ElectoralDistrict,
     form::ValidationError,
     id_newtype,
     structs::{
@@ -110,6 +110,19 @@ pub enum OmissionCategory {
 }
 
 impl OmissionCategory {
+    /// The same category scoped to `lists`. `None` when it is not scoped to
+    /// candidate lists at all.
+    fn with_candidate_lists(&self, lists: Vec<CandidateListId>) -> Option<Self> {
+        match self {
+            OmissionCategory::CandidateList(_) => Some(OmissionCategory::CandidateList(lists)),
+            OmissionCategory::Candidate { person, .. } => Some(OmissionCategory::Candidate {
+                person: *person,
+                lists,
+            }),
+            OmissionCategory::PoliticalGroup | OmissionCategory::DeclarationsOfSupport(_) => None,
+        }
+    }
+
     /// Build the category for a newly added omission from the parameters of the
     /// "add omission" dialog. For `DeclarationsOfSupport`, construct the category
     /// directly with the selected districts (see `add_omission_submit`).
@@ -153,6 +166,41 @@ impl OmissionStatus {
     pub fn is_not_recovered(&self) -> bool {
         matches!(self, OmissionStatus::NotRecovered)
     }
+}
+
+/// The part of an omission one recovery decision applies to: an electoral
+/// district for the declarations of support, a candidate list for a
+/// candidate's or a list's own omissions.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum OmissionPart {
+    ElectoralDistrict(ElectoralDistrict),
+    CandidateList(CandidateListId),
+}
+
+/// Where a decision on one part of an omission lands.
+#[derive(Debug, PartialEq, Eq)]
+pub enum OmissionDecision {
+    /// The part is all the omission covers, so the decision applies to it as
+    /// a whole.
+    Whole,
+    /// The omission is split, so the other parts keep their own decision.
+    Split {
+        remaining: OmissionCategory,
+        split: OmissionCategory,
+    },
+}
+
+/// How an omission is split in two, so its parts each keep their own decision.
+#[derive(Debug, Serialize, Eq, PartialEq, Deserialize, Clone)]
+pub struct OmissionSplit {
+    /// The category the omission is left with.
+    pub remaining: OmissionCategory,
+    /// Drawn by the caller, so replaying the stream is deterministic.
+    pub split_omission_id: OmissionId,
+    /// The category the split-off omission gets.
+    pub split: OmissionCategory,
+    /// The decision recorded on the split-off omission.
+    pub status: OmissionStatus,
 }
 
 /// An omission ("verzuim") signifies something was wrong with the submitted data
@@ -208,16 +256,96 @@ impl Omission {
         if self.recoverable { "warning" } else { "error" }
     }
 
-    /// The electoral districts this omission is scoped to. Only the
-    /// "ondersteuningsverklaringen" (H 4) are reported per district; every
-    /// other category applies to the political group, a list or a candidate as
-    /// a whole, so it has no districts of its own.
-    pub fn electoral_districts(&self) -> &[ElectoralDistrict] {
+    /// The districts this omission is scoped to. Only the
+    /// "ondersteuningsverklaringen" (H 4) are; no districts means all of them.
+    pub fn electoral_districts(&self, election: &ElectionConfig) -> &[ElectoralDistrict] {
         match &self.category {
+            OmissionCategory::DeclarationsOfSupport(districts) if districts.is_empty() => {
+                election.electoral_districts()
+            }
             OmissionCategory::DeclarationsOfSupport(districts) => districts,
             OmissionCategory::PoliticalGroup
             | OmissionCategory::CandidateList(_)
             | OmissionCategory::Candidate { .. } => &[],
+        }
+    }
+
+    /// The candidate lists this omission is scoped to. Both a candidate's own
+    /// omissions and a list's are reported per list.
+    pub fn candidate_lists(&self) -> &[CandidateListId] {
+        match &self.category {
+            OmissionCategory::CandidateList(lists) | OmissionCategory::Candidate { lists, .. } => {
+                lists
+            }
+            OmissionCategory::PoliticalGroup | OmissionCategory::DeclarationsOfSupport(_) => &[],
+        }
+    }
+
+    /// Whether the CSB decides on this omission part by part, so it can be
+    /// recovered in some parts and not in others.
+    pub fn is_assessed_per_part(&self, election: &ElectionConfig) -> bool {
+        self.is_actionable() && self.decision_count(election) > 1
+    }
+
+    /// The decisions this omission stands for: one per part when assessed part
+    /// by part, one otherwise. Keeps the progress stable across a split.
+    pub fn decision_count(&self, election: &ElectionConfig) -> usize {
+        if !self.is_actionable() {
+            return 1;
+        }
+
+        // A category is scoped to districts or to lists, never to both.
+        self.electoral_districts(election)
+            .len()
+            .max(self.candidate_lists().len())
+            .max(1)
+    }
+
+    /// Where a decision on `part` lands: on the omission as a whole when the
+    /// part is all it covers, or on a split otherwise. `None` when the
+    /// omission does not cover `part`.
+    pub fn decide(
+        &self,
+        election: &ElectionConfig,
+        part: OmissionPart,
+    ) -> Option<OmissionDecision> {
+        match part {
+            OmissionPart::ElectoralDistrict(district) => {
+                let districts = self.electoral_districts(election);
+                if !districts.contains(&district) {
+                    return None;
+                }
+                if districts.len() == 1 {
+                    return Some(OmissionDecision::Whole);
+                }
+
+                Some(OmissionDecision::Split {
+                    remaining: OmissionCategory::DeclarationsOfSupport(
+                        districts
+                            .iter()
+                            .copied()
+                            .filter(|d| *d != district)
+                            .collect(),
+                    ),
+                    split: OmissionCategory::DeclarationsOfSupport(vec![district]),
+                })
+            }
+            OmissionPart::CandidateList(list_id) => {
+                let lists = self.candidate_lists();
+                if !lists.contains(&list_id) {
+                    return None;
+                }
+                if lists.len() == 1 {
+                    return Some(OmissionDecision::Whole);
+                }
+
+                Some(OmissionDecision::Split {
+                    remaining: self.category.with_candidate_lists(
+                        lists.iter().copied().filter(|l| *l != list_id).collect(),
+                    )?,
+                    split: self.category.with_candidate_lists(vec![list_id])?,
+                })
+            }
         }
     }
 

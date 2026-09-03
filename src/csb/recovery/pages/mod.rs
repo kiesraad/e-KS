@@ -343,6 +343,109 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn recovery_candidate_list_page_decides_a_multi_list_omission_per_list() {
+        use crate::ElectoralDistrict;
+
+        let store = CsbStore::new_for_test();
+        let stream_id = store.stream_id;
+
+        let mut lists = Vec::new();
+        for district in [ElectoralDistrict::GR, ElectoralDistrict::UT] {
+            let list_id = CandidateListId::new();
+            let mut list = sample_candidate_list(list_id);
+            list.electoral_districts = vec![district];
+            store.add_candidate_list(list);
+            lists.push(list_id);
+        }
+
+        Omission::new(
+            OmissionCategory::CandidateList(lists.clone()),
+            "Too many candidates".parse().unwrap(),
+            "The list holds more candidates than allowed."
+                .parse()
+                .unwrap(),
+            None,
+        )
+        .create(&store)
+        .await
+        .unwrap();
+
+        let response = candidate_list(
+            CsbRecoveryCandidateListPath {
+                stream_id,
+                list_id: lists[0],
+            },
+            CsbContext::new_test(),
+            store,
+        )
+        .await
+        .unwrap()
+        .into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        assert_eq!(body.matches(r#"name="candidate_list""#).count(), 2);
+        assert!(body.contains(&format!(r#"value="{}""#, lists[1])));
+    }
+
+    #[tokio::test]
+    async fn recovery_candidate_page_decides_a_multi_list_omission_per_list() {
+        use crate::ElectoralDistrict;
+
+        let store = CsbStore::new_for_test();
+        let stream_id = store.stream_id;
+
+        let person = sample_person(PersonId::new());
+        let person_id = person.id;
+        store.add_person(person);
+
+        let mut lists = Vec::new();
+        for district in [ElectoralDistrict::GR, ElectoralDistrict::UT] {
+            let list_id = CandidateListId::new();
+            let mut list = sample_candidate_list(list_id);
+            list.electoral_districts = vec![district];
+            list.candidates = vec![person_id];
+            store.add_candidate_list(list);
+            lists.push(list_id);
+        }
+
+        Omission::new(
+            OmissionCategory::Candidate {
+                person: person_id,
+                lists: lists.clone(),
+            },
+            "Missing consent".parse().unwrap(),
+            "The declaration of consent is missing.".parse().unwrap(),
+            None,
+        )
+        .create(&store)
+        .await
+        .unwrap();
+
+        let response = candidate(
+            CsbRecoveryCandidatePath {
+                stream_id,
+                list_id: lists[0],
+                person_id,
+            },
+            CsbContext::new_test(),
+            store,
+        )
+        .await
+        .unwrap()
+        .into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        // One decision per list, each list named by its districts.
+        assert_eq!(body.matches(r#"name="candidate_list""#).count(), 2);
+        assert!(body.contains(&format!(r#"value="{}""#, lists[0])));
+        assert!(body.contains(&format!(r#"value="{}""#, lists[1])));
+        assert!(body.contains("1. Groningen"));
+        assert!(body.contains("7. Utrecht"));
+    }
+
+    #[tokio::test]
     async fn recovery_general_information_hides_correction_links() {
         let store = CsbStore::new_for_test();
         store.set_political_group(sample_political_group());

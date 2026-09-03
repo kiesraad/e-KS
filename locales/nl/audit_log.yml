@@ -65,6 +65,7 @@ event:
   remove_candidate_from_list: Kandidaat van lijst verwijderd
   set_finished: Afgerond gezet
   set_omission_status: Verzuimstatus vastgelegd
+  split_omission_status: Verzuim gesplitst per kieskring
   update_candidate_list_districts: Kieskringen van lijst bijgewerkt
   update_candidate_list_order: Volgorde van kandidatenlijst bijgewerkt
   update_correction: Correctie bijgewerkt

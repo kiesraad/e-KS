@@ -11,7 +11,10 @@ use crate::{
     },
     projection::WithCorrections,
     store::StoreRegistry,
-    structs::csb::{Omission, OmissionCategory, OmissionStatus},
+    structs::csb::{
+        Omission, OmissionCategory, OmissionDecision, OmissionId, OmissionPart, OmissionSplit,
+        OmissionStatus,
+    },
 };
 
 const ALL_DISTRICTS: &str = "alle kieskringen";
@@ -204,6 +207,42 @@ impl Omission {
                 status,
             })
             .await
+    }
+
+    /// Record the recovery decision for one part of this omission: an
+    /// electoral district, or a candidate list. Splits the omission while it
+    /// still covers other parts, so those keep waiting for their own decision.
+    pub async fn set_part_status(
+        &self,
+        store: &CsbStore,
+        part: OmissionPart,
+        status: OmissionStatus,
+    ) -> Result<(), AppError> {
+        if !self.is_actionable() {
+            return Err(AppError::UserError(
+                "an irreparable omission cannot be assessed".to_string(),
+            ));
+        }
+
+        match self.decide(&store.election, part) {
+            None => Err(AppError::UserError(format!(
+                "the omission was not reported for {part:?}"
+            ))),
+            Some(OmissionDecision::Whole) => self.set_status(store, status).await,
+            Some(OmissionDecision::Split { remaining, split }) => {
+                store
+                    .update(CsbAction::SplitOmissionStatus {
+                        omission_id: self.id,
+                        split: OmissionSplit {
+                            remaining,
+                            split_omission_id: OmissionId::new(),
+                            split,
+                            status,
+                        },
+                    })
+                    .await
+            }
+        }
     }
 }
 

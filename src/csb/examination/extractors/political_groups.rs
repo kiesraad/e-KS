@@ -1,8 +1,13 @@
 use axum::{extract::FromRequestParts, http::request::Parts};
 
+use std::collections::HashMap;
+
 use crate::{
-    AppError, AppRequestState, CsbStream, StreamId,
-    structs::{common::FullName, csb::CsbPhase, political_groups::PoliticalGroup},
+    AppError, AppRequestState, CsbStream, ElectoralDistrict, StreamId,
+    structs::{
+        candidate_lists::CandidateListId, common::FullName, csb::CsbPhase,
+        political_groups::PoliticalGroup,
+    },
 };
 
 pub struct CsbPoliticalGroup {
@@ -18,6 +23,9 @@ pub struct CsbPoliticalGroup {
     pub pending_omission_count: usize,
     pub actionable_omission_count: usize,
     pub first_candidate_name: Option<FullName>,
+    /// The electoral districts of each candidate list, which is how the
+    /// shared templates name a list (see [`Self::candidate_list_districts`]).
+    pub candidate_list_districts: HashMap<CandidateListId, Vec<ElectoralDistrict>>,
 }
 
 impl CsbPoliticalGroup {
@@ -34,12 +42,24 @@ impl CsbPoliticalGroup {
             actionable_omission_count: store.get_actionable_omission_count(),
             first_candidate_name: store
                 .get_first_candidate_name(crate::projection::WithCorrections::All),
+            candidate_list_districts: store
+                .get_candidate_lists(crate::projection::WithCorrections::All)
+                .into_iter()
+                .map(|list| (list.id, list.electoral_districts))
+                .collect(),
         }
     }
 
     pub fn with_mode(mut self, mode: CsbPhase) -> Self {
         self.mode = mode;
         self
+    }
+
+    /// The districts of one candidate list, empty when the list is unknown.
+    pub fn candidate_list_districts(&self, list_id: &CandidateListId) -> &[ElectoralDistrict] {
+        self.candidate_list_districts
+            .get(list_id)
+            .map_or(&[], Vec::as_slice)
     }
 
     /// The number of omissions already assessed in the recovery phase.
@@ -158,6 +178,7 @@ mod tests {
             pending_omission_count: 0,
             actionable_omission_count: 0,
             first_candidate_name: None,
+            candidate_list_districts: HashMap::new(),
         };
 
         assert_eq!(group.csb_appellation(), "Kiesraad Demo");
@@ -183,6 +204,7 @@ mod tests {
                 initials: "A.B.".parse().unwrap(),
                 ..Default::default()
             }),
+            candidate_list_districts: HashMap::new(),
         };
 
         assert_eq!(group.csb_appellation(), "Blanco (Jansen, A.B.)");
@@ -204,6 +226,7 @@ mod tests {
             pending_omission_count: 0,
             actionable_omission_count: 0,
             first_candidate_name: None,
+            candidate_list_districts: HashMap::new(),
         };
 
         assert_eq!(group.csb_appellation(), "Blanco");

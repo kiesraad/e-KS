@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     CsbUser, Event, HasCsbUser, PgEvent, PgStoreData, StreamId,
-    structs::csb::{Correction, Omission, OmissionId, OmissionStatus},
+    structs::csb::{Correction, Omission, OmissionId, OmissionSplit, OmissionStatus},
     trans,
     utils::format_hash,
 };
@@ -92,6 +92,12 @@ pub enum CsbAction {
         omission_id: OmissionId,
         status: OmissionStatus,
     },
+    /// Record the decision for one part of an omission, splitting it in two
+    /// (see [`OmissionSplit`]).
+    SplitOmissionStatus {
+        omission_id: OmissionId,
+        split: OmissionSplit,
+    },
     UpdateCorrection(Correction),
 }
 
@@ -106,7 +112,8 @@ impl CsbAction {
             CsbAction::CreateOmission(_)
             | CsbAction::UpdateOmission(_)
             | CsbAction::DeleteOmission { .. }
-            | CsbAction::SetOmissionStatus { .. } => "omission",
+            | CsbAction::SetOmissionStatus { .. }
+            | CsbAction::SplitOmissionStatus { .. } => "omission",
             CsbAction::UpdateCorrection(_) => "correction",
         }
     }
@@ -122,6 +129,7 @@ impl CsbAction {
             CsbAction::UpdateOmission(_) => "update_omission",
             CsbAction::DeleteOmission { .. } => "delete_omission",
             CsbAction::SetOmissionStatus { .. } => "set_omission_status",
+            CsbAction::SplitOmissionStatus { .. } => "split_omission_status",
             CsbAction::UpdateCorrection(_) => "update_correction",
         }
     }
@@ -138,6 +146,9 @@ impl CsbAction {
             CsbAction::DeleteOmission { .. } => trans!("audit_log.event.delete_omission", locale),
             CsbAction::SetOmissionStatus { .. } => {
                 trans!("audit_log.event.set_omission_status", locale)
+            }
+            CsbAction::SplitOmissionStatus { .. } => {
+                trans!("audit_log.event.split_omission_status", locale)
             }
             CsbAction::UpdateCorrection { .. } => {
                 trans!("audit_log.event.update_correction", locale)
@@ -170,6 +181,15 @@ impl CsbAction {
                 status,
             } => {
                 format!("{omission_id}: {status:?}")
+            }
+            CsbAction::SplitOmissionStatus { omission_id, split } => {
+                let OmissionSplit {
+                    remaining,
+                    split_omission_id,
+                    split,
+                    status,
+                } = split;
+                format!("{omission_id}: {remaining:?}\n{split_omission_id}: {split:?} {status:?}")
             }
             CsbAction::UpdateCorrection(_) => String::new(),
         }

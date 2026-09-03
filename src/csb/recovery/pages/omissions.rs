@@ -143,7 +143,7 @@ mod tests {
         .create(&store)
         .await
         .unwrap();
-        // A political group omission is not district-scoped, so it names none.
+        // Not district-scoped, so it names none.
         sample_omission(OmissionCategory::PoliticalGroup)
             .create(&store)
             .await
@@ -160,11 +160,15 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
-        // Only the districts the omission was reported for are listed.
-        assert_eq!(body.matches("Electoral districts").count(), 1);
+        // Only the reported districts are named, each with its own decision.
         assert!(body.contains("1. Groningen"));
         assert!(body.contains("2. Frysl"));
         assert!(!body.contains("Utrecht"));
+        assert_eq!(
+            body.matches(r#"name="electoral_district""#).count(),
+            2,
+            "one decision per district"
+        );
     }
 
     #[tokio::test]

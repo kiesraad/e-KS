@@ -15,7 +15,10 @@ use crate::{
     store::{StoreData, StoreEvent},
     structs::{
         common::{Appellation, UtcDateTime},
-        csb::{Correction, Omission, OmissionId, PersonCorrection, PersonCorrectionDelta},
+        csb::{
+            Correction, Omission, OmissionId, OmissionSplit, OmissionStatus, PersonCorrection,
+            PersonCorrectionDelta,
+        },
         persons::PersonId,
     },
 };
@@ -53,19 +56,15 @@ impl StoreData for CsbStoreData {
                 snapshot,
                 hash: source_hash,
                 ..
-            } => {
-                self.imported_data = *snapshot;
-                self.paper_corrected_data = self.imported_data.clone();
-
-                // Record the import as event #1 of the corrected projection,
-                // so the paper-corrections audit log starts with it.
-                self.paper_corrected_data.apply(StoreEvent {
+            } => self.apply_import(
+                *snapshot,
+                StoreEvent {
                     event_id,
                     payload: crate::PgEvent::Import { hash: source_hash },
                     created_at,
                     hash,
-                });
-            }
+                },
+            ),
             CsbAction::CreateEmpty => {}
             CsbAction::Delete => self.is_deleted = true,
             CsbAction::PaperCorrectedUpdate(payload) => {
@@ -79,28 +78,17 @@ impl StoreData for CsbStoreData {
                 });
             }
             CsbAction::SetFinished(value) => self.is_examination_finished = value,
-            CsbAction::CreateOmission(mut omission) => {
-                omission.updated_at = event_time;
-                self.omissions.insert(omission.id, omission);
-            }
-            CsbAction::UpdateOmission(mut omission) => {
-                omission.updated_at = event_time;
-                let omission_id = omission.id;
-                self.omissions.entry(omission_id).and_modify(|existing| {
-                    *existing = omission;
-                });
-            }
+            CsbAction::CreateOmission(omission) => self.create_omission(omission, event_time),
+            CsbAction::UpdateOmission(omission) => self.update_omission(omission, event_time),
             CsbAction::DeleteOmission { omission_id } => {
                 self.omissions.remove(&omission_id);
             }
             CsbAction::SetOmissionStatus {
                 omission_id,
                 status,
-            } => {
-                self.omissions.entry(omission_id).and_modify(|omission| {
-                    omission.status = status;
-                    omission.updated_at = event_time;
-                });
+            } => self.set_omission_status(omission_id, status, event_time),
+            CsbAction::SplitOmissionStatus { omission_id, split } => {
+                self.split_omission(omission_id, split, event_time)
             }
             CsbAction::UpdateCorrection(correction) => self.apply_correction(correction),
         }
@@ -116,6 +104,68 @@ impl StoreData for CsbStoreData {
 }
 
 impl CsbStoreData {
+    /// Take over an imported package as both projections. `import` becomes
+    /// event #1 of the corrected one, starting its audit log.
+    fn apply_import(&mut self, snapshot: PgStoreData, import: StoreEvent<crate::PgEvent>) {
+        self.imported_data = snapshot;
+        self.paper_corrected_data = self.imported_data.clone();
+        self.paper_corrected_data.apply(import);
+    }
+
+    fn create_omission(&mut self, mut omission: Omission, event_time: UtcDateTime) {
+        omission.updated_at = event_time;
+        self.omissions.insert(omission.id, omission);
+    }
+
+    fn update_omission(&mut self, mut omission: Omission, event_time: UtcDateTime) {
+        omission.updated_at = event_time;
+        self.omissions
+            .entry(omission.id)
+            .and_modify(|existing| *existing = omission);
+    }
+
+    fn set_omission_status(
+        &mut self,
+        omission_id: OmissionId,
+        status: OmissionStatus,
+        event_time: UtcDateTime,
+    ) {
+        self.omissions.entry(omission_id).and_modify(|omission| {
+            omission.status = status;
+            omission.updated_at = event_time;
+        });
+    }
+
+    /// Split an omission in two. The split-off part is a copy under a new id,
+    /// so the group reads the same omission for each part it applies to; only
+    /// the category and the decision differ.
+    fn split_omission(
+        &mut self,
+        omission_id: OmissionId,
+        split: OmissionSplit,
+        event_time: UtcDateTime,
+    ) {
+        let OmissionSplit {
+            remaining,
+            split_omission_id,
+            split,
+            status,
+        } = split;
+        let Some(original) = self.omissions.get_mut(&omission_id) else {
+            return;
+        };
+
+        let mut split_off = original.clone();
+        original.category = remaining;
+        original.updated_at = event_time;
+
+        split_off.id = split_omission_id;
+        split_off.category = split;
+        split_off.status = status;
+        split_off.updated_at = event_time;
+        self.omissions.insert(split_omission_id, split_off);
+    }
+
     /// Record a CSB correction. Correcting a value back to the one already in
     /// the paper-corrected projection undoes the correction instead.
     fn apply_correction(&mut self, correction: Correction) {
