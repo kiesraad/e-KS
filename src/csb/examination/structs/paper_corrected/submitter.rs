@@ -52,7 +52,7 @@ impl PaperCorrectedSubmitter {
     /// foreign if:
     /// 1. Both imported and corrected aren't [None]
     /// 2. Both are not Dutch addresses
-    /// 
+    ///
     /// In any other case, a submitter is not considered foreign
     fn is_foreign(imported: Option<&ListSubmitter>, corrected: Option<&ListSubmitter>) -> bool {
         let Some(imported) = imported else {

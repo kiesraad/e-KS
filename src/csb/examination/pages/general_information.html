@@ -42,45 +42,58 @@
     <table class="detail-table">
       {{ paper_corrected::columns_head("common.general_information"|trans) }}
       <tbody>
-        <tr class="clickable">
-          <td>{{ "political_group.appellation"|trans }}: {{ paper_corrected::value(group_info.appellation) }}</td>
+        {% if group_info.list_type != crate::structs::list_designation::ListDesignation::Blank %}
+          <tr class="clickable">
+            <td>
+              {% match group_info.list_type %}
+              {% when crate::structs::list_designation::ListDesignation::Standalone %}
+              {{ "political_group.appellation"|trans }}: {{ paper_corrected::value(group_info.appellation) }}
+              {% when crate::structs::list_designation::ListDesignation::Combined %}
+              {{ "political_group.appellation_combined"|trans }}: {{ paper_corrected::value(group_info.appellation) }}
+              {% when crate::structs::list_designation::ListDesignation::Blank %}
+              {# Blank designations don't have an appellation so omit entire row #}
+            {% endmatch %}
+          </td>
           <td></td>
           <td class="actions">
             <a href="{{ political_group.correction_appellation_path() }}"
                aria-label="{{ "action.edit"|trans }}"></a>
           </td>
         </tr>
-        {{ paper_corrected::data_row("political_group.list_type"|trans, group_info.list_type) }}
-        {{ paper_corrected::data_row("problems.no_previous_election_results"|trans, group_info.previous_results) }}
-      </tbody>
-    </table>
-    {% if name_authorisations.is_empty() %}
-      <p class="font-italic">{{ "political_group.no_legal_names"|trans }}</p>
-    {% else %}
-      {% for name_authorisation in name_authorisations %}
-        <table class="detail-table">
-          {{ paper_corrected::columns_head(name_authorisation.heading) }}
-          <tbody>
-            {{ paper_corrected::data_row("political_group.legal_name"|trans, name_authorisation.legal_name) }}
-            {{ paper_corrected::data_row("political_group.authorised_agent"|trans, name_authorisation.authorised_agent) }}
-          </tbody>
-        </table>
-      {% endfor %}
-    {% endif %}
-    <h2>{{ "political_group.list_submitter_data"|trans }}</h2>
-    {% if let Some(submitter) = list_submitter %}
+      {% endif %}
+      {{ paper_corrected::data_row("political_group.list_type"|trans, group_info.list_type_value) }}
+      {{ paper_corrected::data_row("problems.no_previous_election_results"|trans, group_info.previous_results) }}
+    </tbody>
+  </table>
+  {% if group_info.list_type ==  crate::structs::list_designation::ListDesignation::Blank %}
+    {# Blank lists shouldn't show/have any name authorisations #}
+  {% else if name_authorisations.is_empty() %}
+    <p class="font-italic">{{ "political_group.no_legal_names"|trans }}</p>
+  {% else %}
+    {% for name_authorisation in name_authorisations %}
+      <table class="detail-table">
+        {{ paper_corrected::columns_head(name_authorisation.heading) }}
+        <tbody>
+          {{ paper_corrected::data_row("political_group.legal_name"|trans, name_authorisation.legal_name) }}
+          {{ paper_corrected::data_row("political_group.authorised_agent"|trans, name_authorisation.authorised_agent) }}
+        </tbody>
+      </table>
+    {% endfor %}
+  {% endif %}
+  <h2>{{ "political_group.list_submitter_data"|trans }}</h2>
+  {% if let Some(submitter) = list_submitter %}
+    {{ submitter_tables(submitter) }}
+  {% else %}
+    <p class="font-italic">{{ "political_group.no_list_submitter"|trans }}</p>
+  {% endif %}
+  <h2>{{ "political_group.substitute_submitters_data"|trans }}</h2>
+  {% if substitute_submitters.is_empty() %}
+    <p class="font-italic">{{ "political_group.no_substitute_submitters"|trans }}</p>
+  {% else %}
+    {% for submitter in substitute_submitters %}
+      <h3 class="mt-md">{{ submitter.heading }}</h3>
       {{ submitter_tables(submitter) }}
-    {% else %}
-      <p class="font-italic">{{ "political_group.no_list_submitter"|trans }}</p>
-    {% endif %}
-    <h2>{{ "political_group.substitute_submitters_data"|trans }}</h2>
-    {% if substitute_submitters.is_empty() %}
-      <p class="font-italic">{{ "political_group.no_substitute_submitters"|trans }}</p>
-    {% else %}
-      {% for submitter in substitute_submitters %}
-        <h3 class="mt-md">{{ submitter.heading }}</h3>
-        {{ submitter_tables(submitter) }}
-      {% endfor %}
-    {% endif %}
-  </section>
+    {% endfor %}
+  {% endif %}
+</section>
 {% endblock %}

@@ -12,8 +12,9 @@ use crate::{
 /// The political group rows of the general information page.
 pub struct PaperCorrectedPoliticalGroupInfo {
     pub appellation: PaperCorrected,
-    pub list_type: PaperCorrected,
+    pub list_type_value: PaperCorrected,
     pub previous_results: PaperCorrected,
+    pub list_type: ListDesignation,
 }
 
 impl PaperCorrectedPoliticalGroupInfo {
@@ -27,7 +28,7 @@ impl PaperCorrectedPoliticalGroupInfo {
                 store.get_appellation(WithCorrections::Paper),
             )
             .with_csb_correction(Some(store.get_appellation(WithCorrections::All))),
-            list_type: PaperCorrected::new(
+            list_type_value: PaperCorrected::new(
                 list_type_label(&imported_group, locale),
                 list_type_label(&paper_corrected_group, locale),
             ),
@@ -35,6 +36,7 @@ impl PaperCorrectedPoliticalGroupInfo {
                 previous_results_label(&imported_group, locale),
                 previous_results_label(&paper_corrected_group, locale),
             ),
+            list_type: paper_corrected_group.list_designation.unwrap_or_default(),
         }
     }
 }
