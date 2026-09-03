@@ -10,8 +10,7 @@ macro_rules! define_elections {
                     en: $title_en:expr $(,)?
                 },
                 electoral_districts: $electoral_districts:expr,
-                nineteen_or_more_seats: $nineteen_or_more_seats:expr,
-                frisian_export_allowed: $frisian_export_allowed:expr,
+                number_of_seats: $number_of_seats:expr,
                 eligible_date_of_birth: $eligible_date_of_birth:expr,
                 nomination_day_date: $nomination_day_date:expr,
                 document_review_date: $document_review_date:expr,
@@ -56,14 +55,14 @@ macro_rules! define_elections {
             }
 
             /// Returns the region title (province or water council name), if any.
-            pub fn region_title(&self, locale: AnyLocale) -> Option<&'static str> {
+            pub fn region_title(&self) -> Option<&'static str> {
                 #[allow(unused)]
                 match self {
                     $(
                         Self::$name $(($binding))? => {
                             #[allow(unused_mut, unused_assignments)]
                             let mut result: Option<&'static str> = None;
-                            $( result = Some($binding.title(locale)); )?
+                            $( result = Some($binding.title()); )?
                             result
                         },
                     )*
@@ -126,11 +125,11 @@ macro_rules! define_elections {
                 }
             }
 
-            pub fn nineteen_or_more_seats(&self) -> bool {
+            pub fn number_of_seats(&self) -> u64 {
                 #[allow(unused)]
                 match self {
                     $(
-                        Self::$name $(($binding))? => $nineteen_or_more_seats,
+                        Self::$name $(($binding))? => $number_of_seats,
                     )*
                 }
             }
@@ -139,7 +138,12 @@ macro_rules! define_elections {
                 #[allow(unused)]
                 match self {
                     $(
-                        Self::$name $(($binding))? => $frisian_export_allowed,
+                        Self::$name $(($binding))? => {
+                            #[allow(unused_mut, unused_assignments)]
+                            let mut result = false;
+                            $( result = $binding.frisian_export_allowed(); )?
+                            result
+                        },
                     )*
                 }
             }
@@ -188,62 +192,4 @@ macro_rules! define_elections {
     };
 }
 
-/// Macro to define electoral districts with localized titles.
-/// Frisian and English titles are optional, and will default to the Dutch title.
-macro_rules! define_districts {
-    (
-        $(
-            $name:ident ( $region_number:expr, $code:expr, $title_nl:expr
-                $(, fry: $title_fry:expr)?
-                $(, en: $title_en:expr)?
-            )
-        ),* $(,)?
-    ) => {
-        /// Electoral districts used for nomination and submission flows.
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, serde::Serialize, serde::Deserialize)]
-        pub enum ElectoralDistrict {
-            $(
-                $name,
-            )*
-        }
-
-        impl ElectoralDistrict {
-            pub fn title(&self, locale: AnyLocale) -> &'static str {
-                match (self, locale) {
-                    $(
-                        (Self::$name, AnyLocale::Nl) => $title_nl,
-                        (Self::$name, AnyLocale::Fry) => $crate::core::election::define_districts!(@title_or_default $title_nl $(, $title_fry)?),
-                        (Self::$name, AnyLocale::En) => $crate::core::election::define_districts!(@title_or_default $title_nl $(, $title_en)?),
-                    )*
-                }
-            }
-
-            pub fn code(&self) -> &'static str {
-                match self {
-                    $(
-                        Self::$name => $code,
-                    )*
-                }
-            }
-
-            pub fn region_number(&self) -> &'static str {
-                match self {
-                    $(
-                        Self::$name => $region_number,
-                    )*
-                }
-            }
-        }
-    };
-
-    (@title_or_default $default:expr) => {
-        $default
-    };
-
-    (@title_or_default $default:expr, $value:expr) => {
-        $value
-    };
-}
-
-pub(crate) use define_districts;
 pub(crate) use define_elections;

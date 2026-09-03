@@ -136,7 +136,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_load_two_district_election() {
-        let election = ElectionConfig::PS27(Province::GE);
+        let election = ElectionConfig::PS27(Province::Gelderland);
         let store = PgStore::new_for_test_with_election(election);
         crate::fixtures::persons::load(&store).await.unwrap();
         load(&store).await.unwrap();

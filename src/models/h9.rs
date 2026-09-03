@@ -1,6 +1,7 @@
 //! Model H 9: Instemmingsverklaring / Ynstimmingsferklearring. The document
 //! text lives in the `templates/h9.*.md` Markdown templates.
 
+use eks_utils::slugify_teletex;
 use textris_pdf::build::Textris;
 
 use super::{
@@ -12,7 +13,6 @@ use super::{
 use crate::{
     AppError,
     core::{ElectionType, ModelLocale},
-    utils::slugify_teletex,
 };
 
 #[derive(Debug)]

@@ -113,7 +113,7 @@ export const test = base.extend<Fixtures>({
     await page.goto("/dev/login?select_election=true");
     const selectElectionPage = new SelectElectionPage(page);
     await selectElectionPage.dropdownElections.selectOption("PS27");
-    await selectElectionPage.dropdownProvinces.selectOption("NH");
+    await selectElectionPage.dropdownProvinces.selectOption("Noord-Holland");
     await selectElectionPage.checkboxFixtures.check();
     await Promise.all([
       page.waitForURL("/"),
@@ -127,7 +127,7 @@ export const test = base.extend<Fixtures>({
     await page.goto("/dev/login?select_election=true");
     const selectElectionPage = new SelectElectionPage(page);
     await selectElectionPage.dropdownElections.selectOption("PS27");
-    await selectElectionPage.dropdownProvinces.selectOption("FR");
+    await selectElectionPage.dropdownProvinces.selectOption("Fryslân");
     await selectElectionPage.checkboxFixtures.check();
     await Promise.all([
       page.waitForURL("/"),

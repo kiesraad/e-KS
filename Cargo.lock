@@ -1456,7 +1456,9 @@ dependencies = [
  "chrono",
  "chrono-tz",
  "csv",
+ "eks-districts-codegen",
  "eks-locales",
+ "eks-utils",
  "eml-nl",
  "futures-lite",
  "hkdf 0.13.0",
@@ -1514,6 +1516,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "eks-districts-codegen"
+version = "0.1.0"
+dependencies = [
+ "eks-utils",
+ "eml-nl",
+ "prettyplease",
+ "proc-macro2",
+ "quote",
+ "syn 3.0.4",
+ "uuid",
+]
+
+[[package]]
 name = "eks-locales"
 version = "0.1.0"
 dependencies = [
@@ -1521,6 +1536,10 @@ dependencies = [
  "regex",
  "uuid",
 ]
+
+[[package]]
+name = "eks-utils"
+version = "0.1.0"
 
 [[package]]
 name = "elliptic-curve"
@@ -1577,8 +1596,7 @@ checksum = "edd0f118536f44f5ccd48bcb8b111bdc3de888b58c74639dfb034a357d0f206d"
 [[package]]
 name = "eml-nl"
 version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ec2c5df9869b303d13f3d00c070a6415cc60556872e04b76a4d1495908a31939"
+source = "git+https://github.com/kiesraad/rust-eml-nl?rev=e9fcd7e90aebba463a36d7bbf7cd418f2032ed26#e9fcd7e90aebba463a36d7bbf7cd418f2032ed26"
 dependencies = [
  "chrono",
  "quick-xml",
@@ -3270,6 +3288,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "85eae3c4ed2f50dcfe72643da4befc30deadb458a9b590d720cde2f2b1e97da9"
 dependencies = [
  "zerocopy",
+]
+
+[[package]]
+name = "prettyplease"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2bfe0f4c752e450fc2faf62654f1c134747922825d5b04ca717b8874f41a40c0"
+dependencies = [
+ "proc-macro2",
+ "syn 3.0.4",
 ]
 
 [[package]]

@@ -139,7 +139,7 @@ mod test {
         let store = PgStore::new_for_test();
         let context = Context::new_test_without_db();
         let form = CandidateListCreateForm {
-            electoral_districts: vec![ElectoralDistrict::UT],
+            electoral_districts: vec![ElectoralDistrict::Utrecht],
             copy_candidates: false,
         };
 
@@ -206,7 +206,7 @@ mod test {
         list.create(&store).await?;
 
         let form = CandidateListCreateForm {
-            electoral_districts: vec![ElectoralDistrict::DR],
+            electoral_districts: vec![ElectoralDistrict::Drenthe],
             copy_candidates: true,
         };
 
@@ -234,14 +234,14 @@ mod test {
         let none_used = vec![];
         let all_used = all_districts.clone();
         let some_used = vec![
-            ElectoralDistrict::DR,
-            ElectoralDistrict::FL,
-            ElectoralDistrict::FR,
-            ElectoralDistrict::GE,
-            ElectoralDistrict::GR,
-            ElectoralDistrict::LI,
-            ElectoralDistrict::NB,
-            ElectoralDistrict::NH,
+            ElectoralDistrict::Drenthe,
+            ElectoralDistrict::Flevoland,
+            ElectoralDistrict::Fryslan,
+            ElectoralDistrict::Gelderland,
+            ElectoralDistrict::Groningen,
+            ElectoralDistrict::Limburg,
+            ElectoralDistrict::NoordBrabant,
+            ElectoralDistrict::NoordHolland,
         ];
 
         // use sets so we don't need to worry about ordering of the vector
@@ -262,14 +262,14 @@ mod test {
         assert_eq!(BTreeSet::new(), all_used_result);
         assert_eq!(
             BTreeSet::from([
-                ElectoralDistrict::OV,
-                ElectoralDistrict::UT,
-                ElectoralDistrict::ZE,
-                ElectoralDistrict::ZH,
-                ElectoralDistrict::BO,
-                ElectoralDistrict::SE,
-                ElectoralDistrict::SA,
-                ElectoralDistrict::KN,
+                ElectoralDistrict::Overijssel,
+                ElectoralDistrict::Utrecht,
+                ElectoralDistrict::Zeeland,
+                ElectoralDistrict::ZuidHolland,
+                ElectoralDistrict::Bonaire,
+                ElectoralDistrict::SintEustatius,
+                ElectoralDistrict::Saba,
+                ElectoralDistrict::Buitenland,
             ]),
             some_used_result
         );
@@ -298,7 +298,7 @@ mod test {
 
     #[tokio::test]
     async fn create_candidate_list_with_provincial_election_persists() -> Result<(), AppError> {
-        let store = PgStore::new_for_test_with_election(ElectionConfig::PS27(Province::GE));
+        let store = PgStore::new_for_test_with_election(ElectionConfig::PS27(Province::Gelderland));
         let context = Context::new(&store, Session::new_test_with_locale(Locale::En));
         let form = CandidateListCreateForm {
             electoral_districts: vec![ElectoralDistrict::PsNijmegen],
@@ -401,7 +401,7 @@ mod test {
             context,
             store.clone(),
             Form(CandidateListCreateForm {
-                electoral_districts: vec![ElectoralDistrict::WsFryslan, ElectoralDistrict::UT],
+                electoral_districts: vec![ElectoralDistrict::WsFryslan, ElectoralDistrict::Utrecht],
                 copy_candidates: false,
             }),
         )
@@ -414,7 +414,7 @@ mod test {
         assert_eq!(lists.len(), 1);
         let list = &lists[0];
         // WsFryslan got dropped because it's not part of EK27
-        assert_eq!(list.electoral_districts, vec![ElectoralDistrict::UT]);
+        assert_eq!(list.electoral_districts, vec![ElectoralDistrict::Utrecht]);
 
         Ok(())
     }
