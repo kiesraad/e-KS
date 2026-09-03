@@ -67,7 +67,8 @@ impl CsvError {
     }
 }
 
-fn translated_field_name(field_name: &str, locale: Locale) -> String {
+/// The translated label for a person field, used in import error messages.
+pub fn translated_field_name(field_name: &str, locale: Locale) -> String {
     let field_key = format!(
         "person.fields.{}",
         field_name.rsplit('.').next().unwrap_or(field_name)

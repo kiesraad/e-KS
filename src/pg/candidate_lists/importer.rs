@@ -1,7 +1,12 @@
+use eml_nl::{
+    documents::EML,
+    io::{EMLParsingMode, EMLRead},
+};
+
 use crate::{
     AppError, Locale, PgEvent, PgStore,
     candidate_lists::{CSV_HEADERS, CandidateRecord, CandidateRecordCsv},
-    core::{Csv, CsvError},
+    core::{Csv, CsvError, translated_field_name},
     form::FieldErrors,
     structs::{
         candidate_lists::CandidateList,
@@ -29,6 +34,36 @@ struct PreparedPerson {
     exists: bool,
 }
 
+/// Where a failing record sits in the uploaded file. A CSV row is reported by
+/// its line (the header takes line 1), an EML candidate by its position in the
+/// nomination.
+#[derive(Clone, Copy)]
+enum RecordLocation {
+    CsvLine,
+    EmlPosition,
+}
+
+impl RecordLocation {
+    /// Translate one field error for the record with the given zero-based index.
+    fn message(self, index: usize, field_name: String, message: String, locale: Locale) -> String {
+        match self {
+            RecordLocation::CsvLine => CsvError::ParseError {
+                line_number: index + 2,
+                field_name,
+                message,
+            }
+            .message(locale),
+            RecordLocation::EmlPosition => trans!(
+                "candidate_list.import_errors.eml.parse_error",
+                locale,
+                index + 1,
+                translated_field_name(&field_name, locale),
+                message
+            ),
+        }
+    }
+}
+
 pub(crate) async fn import_candidate_list_csv(
     list: &mut CandidateList,
     store: &PgStore,
@@ -38,12 +73,59 @@ pub(crate) async fn import_candidate_list_csv(
     file_size: usize,
 ) -> Result<ImportOutcome, ImportCandidateListError> {
     ensure_expected_headers(csv_data, locale)?;
-    let mut records = parse_records(csv_data, locale)?;
+    let records = parse_records(csv_data, locale)?;
 
+    import_records(
+        list,
+        store,
+        records,
+        RecordLocation::CsvLine,
+        locale,
+        file_name,
+        file_size,
+    )
+    .await
+}
+
+/// Import the candidates of an EML 2.10 nomination document, the same file this
+/// application exports. Only the candidates are read: the affiliation, election
+/// and proposers in the document are ignored, exactly like the CSV import.
+pub(crate) async fn import_candidate_list_eml(
+    list: &mut CandidateList,
+    store: &PgStore,
+    eml_data: &[u8],
+    locale: Locale,
+    file_name: String,
+    file_size: usize,
+) -> Result<ImportOutcome, ImportCandidateListError> {
+    let records = parse_eml_records(eml_data, locale)?;
+
+    import_records(
+        list,
+        store,
+        records,
+        RecordLocation::EmlPosition,
+        locale,
+        file_name,
+        file_size,
+    )
+    .await
+}
+
+/// Validate the parsed records and store them as the list's candidates.
+async fn import_records(
+    list: &mut CandidateList,
+    store: &PgStore,
+    mut records: Vec<CandidateRecord>,
+    location: RecordLocation,
+    locale: Locale,
+    file_name: String,
+    file_size: usize,
+) -> Result<ImportOutcome, ImportCandidateListError> {
     let capped = records.len() > store.candidate_limit();
     records.truncate(store.candidate_limit());
 
-    let persons = collect_persons(records, store.get_persons(), locale)?;
+    let persons = collect_persons(records, store.get_persons(), location, locale)?;
     emit_import_event(list, store, persons, file_name, file_size).await?;
 
     Ok(ImportOutcome { capped })
@@ -85,6 +167,56 @@ fn parse_records(
         .map_err(|errors| ImportCandidateListError::Messages(csv_error_messages(errors, locale)))
 }
 
+/// Read the candidates from an EML 2.10 nomination document.
+///
+/// Values the EML reader cannot parse (a malformed date, say) are kept as raw
+/// strings by [`EMLParsingMode::StrictFallback`], so they end up as ordinary
+/// field errors on the candidate they belong to instead of failing the whole
+/// upload with an XML-level message.
+fn parse_eml_records(
+    data: &[u8],
+    locale: Locale,
+) -> Result<Vec<CandidateRecord>, ImportCandidateListError> {
+    let xml = std::str::from_utf8(data)
+        .map_err(|_| {
+            eml_error(trans!(
+                "candidate_list.import_errors.eml.invalid_encoding",
+                locale
+            ))
+        })?
+        .trim_start_matches('\u{feff}');
+
+    let document = EML::parse_eml(xml, EMLParsingMode::StrictFallback)
+        .ok()
+        .map_err(|error| {
+            eml_error(trans!(
+                "candidate_list.import_errors.eml.invalid_xml",
+                locale,
+                error
+            ))
+        })?;
+
+    let nomination = document.as_nomination_doc().ok_or_else(|| {
+        eml_error(trans!(
+            "candidate_list.import_errors.eml.not_a_nomination",
+            locale,
+            document.to_eml_id()
+        ))
+    })?;
+
+    Ok(nomination
+        .nomination_data
+        .affiliation
+        .candidates
+        .iter()
+        .map(CandidateRecord::from)
+        .collect())
+}
+
+fn eml_error(message: String) -> ImportCandidateListError {
+    ImportCandidateListError::Messages(vec![message])
+}
+
 fn csv_error_messages(errors: Vec<CsvError>, locale: Locale) -> Vec<String> {
     errors
         .into_iter()
@@ -95,14 +227,14 @@ fn csv_error_messages(errors: Vec<CsvError>, locale: Locale) -> Vec<String> {
 fn collect_persons(
     records: Vec<CandidateRecord>,
     existing_persons: Vec<Person>,
+    location: RecordLocation,
     locale: Locale,
 ) -> Result<Vec<PreparedPerson>, ImportCandidateListError> {
     let mut prepared_people = Vec::new();
     let mut errors = Vec::new();
 
     for (index, record) in records.into_iter().enumerate() {
-        let candidate_number = index + 1;
-        match validate_record(record, candidate_number, locale) {
+        match validate_record(record, index, location, locale) {
             Ok(person) => upsert_person(person, &mut prepared_people, &existing_persons),
             Err(ImportCandidateListError::Messages(messages)) => errors.extend(messages),
             Err(error) => return Err(error),
@@ -118,7 +250,8 @@ fn collect_persons(
 
 fn validate_record(
     record: CandidateRecord,
-    candidate_number: usize,
+    index: usize,
+    location: RecordLocation,
     locale: Locale,
 ) -> Result<Person, ImportCandidateListError> {
     record
@@ -126,8 +259,9 @@ fn validate_record(
         .map(refresh_bag_checks)
         .map_err(|error| {
             ImportCandidateListError::Messages(field_error_messages(
-                candidate_number,
+                index,
                 error.errors(),
+                location,
                 locale,
             ))
         })
@@ -215,19 +349,15 @@ fn prepare_person(person: Person, existing_persons: &[Person]) -> PreparedPerson
 }
 
 fn field_error_messages(
-    candidate_number: usize,
+    index: usize,
     errors: FieldErrors,
+    location: RecordLocation,
     locale: Locale,
 ) -> Vec<String> {
     errors
         .into_iter()
         .map(|(field_name, error)| {
-            CsvError::ParseError {
-                line_number: candidate_number + 1,
-                field_name,
-                message: error.message(locale),
-            }
-            .message(locale)
+            location.message(index, field_name, error.message(locale), locale)
         })
         .collect()
 }
@@ -649,6 +779,252 @@ mod tests {
         assert_eq!(store.get_person_count(), 0);
 
         Ok(())
+    }
+
+    /// The EML 2.10 export reads back as the same candidates: the persons are
+    /// matched to the existing ones and the list is filled in the same order.
+    #[tokio::test]
+    async fn imports_the_eml_export_of_a_list() -> Result<(), AppError> {
+        let store = PgStore::new_for_test();
+        let person = sample_person(PersonId::new());
+        person.create(&store).await?;
+
+        let eml = export_eml(&store, person.id).await?;
+
+        let mut list = sample_candidate_list(CandidateListId::new());
+        list.create(&store).await?;
+
+        import_candidate_list_eml(
+            &mut list,
+            &store,
+            &eml,
+            Locale::En,
+            "eml210.eml.xml".to_string(),
+            eml.len(),
+        )
+        .await
+        .expect("import should succeed");
+
+        // The candidate matches the person that was exported, so no second
+        // person is created.
+        assert_eq!(store.get_person_count(), 1);
+        assert_eq!(
+            store.get_candidate_list(list.id)?.candidates,
+            vec![person.id]
+        );
+
+        assert_same_candidate(&store.get_person(person.id)?, &person);
+
+        // EML 210 has no equivalent of the "candidate has no BSN"
+        // confirmation, so that confirmation does not survive the round trip.
+        assert_eq!(
+            person.personal_data.bsn,
+            Some(BsnOrNoneConfirmed::NoneConfirmed)
+        );
+        assert_eq!(store.get_person(person.id)?.personal_data.bsn, None);
+
+        Ok(())
+    }
+
+    /// Export a candidate list holding one person as EML 2.10.
+    async fn export_eml(store: &PgStore, person_id: PersonId) -> Result<Vec<u8>, AppError> {
+        use crate::{
+            ElectionConfig, core::ModelLocale, structs::list_submitters::ListSubmitterId,
+            test_utils::sample_list_submitter,
+        };
+
+        sample_list_submitter(ListSubmitterId::new())
+            .update(store)
+            .await?;
+
+        let mut list = sample_candidate_list(CandidateListId::new());
+        list.candidates.push(person_id);
+        list.create(store).await?;
+
+        crate::models::eml210::eml210(
+            store,
+            &ElectionConfig::EK27,
+            &store.get_political_group(),
+            list.id,
+            ModelLocale::Nl,
+        )
+    }
+
+    /// Everything about a candidate that EML 2.10 carries, compared by value.
+    #[track_caller]
+    fn assert_same_candidate(imported: &Person, expected: &Person) {
+        use crate::test_utils::display_opt;
+
+        assert_eq!(imported.name, expected.name);
+        assert_eq!(
+            imported.personal_data.date_of_birth,
+            expected.personal_data.date_of_birth
+        );
+        assert_eq!(imported.personal_data.gender, expected.personal_data.gender);
+        assert_eq!(
+            display_opt(&imported.personal_data.place_of_residence),
+            display_opt(&expected.personal_data.place_of_residence)
+        );
+        assert_eq!(
+            display_opt(&imported.personal_data.country),
+            display_opt(&expected.personal_data.country)
+        );
+        assert_eq!(
+            display_opt(&imported.address.street_name),
+            display_opt(&expected.address.street_name)
+        );
+        assert_eq!(
+            display_opt(&imported.address.house_number),
+            display_opt(&expected.address.house_number)
+        );
+        assert_eq!(
+            display_opt(&imported.address.house_number_addition),
+            display_opt(&expected.address.house_number_addition)
+        );
+        assert_eq!(
+            display_opt(&imported.address.postal_code),
+            display_opt(&expected.address.postal_code)
+        );
+        assert_eq!(
+            display_opt(&imported.address.locality),
+            display_opt(&expected.address.locality)
+        );
+    }
+
+    #[tokio::test]
+    async fn reports_eml_field_errors_by_candidate_position() -> Result<(), AppError> {
+        let store = PgStore::new_for_test();
+        let mut list = sample_candidate_list(CandidateListId::new());
+        list.create(&store).await?;
+
+        let result = import_candidate_list_eml(
+            &mut list,
+            &store,
+            invalid_eml().as_bytes(),
+            Locale::En,
+            "eml210.eml.xml".to_string(),
+            0,
+        )
+        .await;
+
+        match result {
+            Err(ImportCandidateListError::Messages(messages)) => {
+                assert!(
+                    messages
+                        .iter()
+                        .any(|message| message.contains("position 1")
+                            && message.contains("Initials")),
+                    "{messages:?}"
+                );
+                assert!(
+                    messages.iter().any(|message| message.contains("position 2")
+                        && message.contains("Date of birth")),
+                    "{messages:?}"
+                );
+            }
+            other => panic!("expected validation messages, got {other:?}"),
+        }
+
+        assert_eq!(store.get_person_count(), 0);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn rejects_an_eml_document_that_is_not_a_nomination() -> Result<(), AppError> {
+        let store = PgStore::new_for_test();
+        let mut list = sample_candidate_list(CandidateListId::new());
+        list.create(&store).await?;
+
+        let result = import_candidate_list_eml(
+            &mut list,
+            &store,
+            POLLING_STATIONS.as_bytes(),
+            Locale::En,
+            "eml110b.eml.xml".to_string(),
+            0,
+        )
+        .await;
+
+        match result {
+            Err(ImportCandidateListError::Messages(messages)) => {
+                assert_eq!(messages.len(), 1);
+                assert!(messages[0].contains("not an EML 210"), "{messages:?}");
+                assert!(messages[0].contains("110b"), "{messages:?}");
+            }
+            other => panic!("expected a document type message, got {other:?}"),
+        }
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn rejects_a_file_that_is_not_eml_xml() -> Result<(), AppError> {
+        let store = PgStore::new_for_test();
+        let mut list = sample_candidate_list(CandidateListId::new());
+        list.create(&store).await?;
+
+        let result = import_candidate_list_eml(
+            &mut list,
+            &store,
+            b"not xml at all",
+            Locale::En,
+            "eml210.eml.xml".to_string(),
+            0,
+        )
+        .await;
+
+        match result {
+            Err(ImportCandidateListError::Messages(messages)) => {
+                assert_eq!(messages.len(), 1);
+                assert!(
+                    messages[0].contains("The EML file could not be read"),
+                    "{messages:?}"
+                );
+            }
+            other => panic!("expected a read error message, got {other:?}"),
+        }
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn rejects_an_eml_file_that_is_not_utf8() -> Result<(), AppError> {
+        let store = PgStore::new_for_test();
+        let mut list = sample_candidate_list(CandidateListId::new());
+        list.create(&store).await?;
+
+        let result = import_candidate_list_eml(
+            &mut list,
+            &store,
+            &[0xff, 0xfe, 0x00],
+            Locale::En,
+            "eml210.eml.xml".to_string(),
+            0,
+        )
+        .await;
+
+        match result {
+            Err(ImportCandidateListError::Messages(messages)) => {
+                assert_eq!(messages.len(), 1);
+                assert!(messages[0].contains("UTF-8"), "{messages:?}");
+            }
+            other => panic!("expected an encoding message, got {other:?}"),
+        }
+
+        Ok(())
+    }
+
+    const NOMINATION: &str = include_str!("testdata/nomination.eml.xml");
+    const POLLING_STATIONS: &str = include_str!("testdata/polling_stations.eml.xml");
+
+    /// The first candidate loses its initials, and both candidates get a date
+    /// of birth that is not a date.
+    fn invalid_eml() -> String {
+        NOMINATION.replacen(">H.A.H.A.<", "><", 1).replace(
+            "<DateOfBirth>1990-02-01</DateOfBirth>",
+            "<DateOfBirth>gisteren</DateOfBirth>",
+        )
     }
 
     const CSV_HEADER: &str = include_str!("testdata/csv_header.csv");

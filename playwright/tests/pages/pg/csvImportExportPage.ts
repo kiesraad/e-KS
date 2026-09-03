@@ -17,7 +17,7 @@ export class CsvImportExportPage {
     });
     // The file input's aria-label also has button role, so match the <button>.
     this.buttonUpload = this.page
-      .getByRole("button", { name: "Upload CSV bestand" })
+      .getByRole("button", { name: "Upload bestand" })
       .and(this.page.locator("button"));
     this.buttonDownloadTemplate = this.page.getByRole("button", {
       name: "Download CSV sjabloon",
@@ -35,7 +35,7 @@ export class CsvImportExportPage {
     return this.page.getByText(`Controleer veld ${validationError}`);
   }
 
-  async uploadCsvFile(filePath: string) {
+  async uploadFile(filePath: string) {
     const fileChooserPromise = this.page.waitForEvent("filechooser");
 
     await this.buttonUpload.click();

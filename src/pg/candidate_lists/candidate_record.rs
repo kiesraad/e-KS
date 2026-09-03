@@ -42,22 +42,25 @@ pub(crate) const CSV_HEADERS: [&str; 22] = [
     "gemachtigde_plaats",
 ];
 
+/// One imported candidate, as a form that validates into a [`Person`]. Both the
+/// CSV import (via [`CandidateRecordCsv`]) and the EML 2.10 import (see
+/// [`super::eml_record`]) map onto this record, so they share one validation.
 #[derive(Debug, Serialize, Deserialize, Clone, Default, Validate)]
 #[validate(target = "Person")]
 #[serde(default)]
 pub struct CandidateRecord {
     #[serde(flatten)]
     #[validate(flatten)]
-    name: FullNameForm,
+    pub(crate) name: FullNameForm,
     #[serde(flatten)]
     #[validate(flatten)]
-    personal_data: PersonalDataFieldsForm,
+    pub(crate) personal_data: PersonalDataFieldsForm,
     #[serde(flatten)]
     #[validate(flatten)]
-    address: DutchAddressForm,
+    pub(crate) address: DutchAddressForm,
     #[serde(flatten)]
     #[validate(flatten)]
-    representative: Option<RepresentativeForm>,
+    pub(crate) representative: Option<RepresentativeForm>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]

@@ -102,7 +102,7 @@ test.describe("fix submit warnings", async () => {
     await new EditListDetailsPage(page).addDistricts(["Saba"]);
     await new ManageCandidateListPage(page).buttonCSV.click();
     const csvImportExport = new CsvImportExportPage(page);
-    await csvImportExport.uploadCsvFile("candidate-list-warnings.csv");
+    await csvImportExport.uploadFile("candidate-list-warnings.csv");
     const manageCandidateListPage = new ManageCandidateListPage(page);
     await expect(manageCandidateListPage.headingCandidateList).toBeVisible();
     await expect(

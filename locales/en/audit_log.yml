@@ -58,7 +58,7 @@ event:
   hash: Event hash
   hide_download_warning: Dismissed download warning
   import: Imported political group
-  import_csv: Imported CSV
+  import_csv: Imported candidates
   login: Signed in
   logout: Signed out
   paper_correction: Paper corrections

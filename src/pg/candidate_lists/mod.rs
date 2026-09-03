@@ -4,6 +4,7 @@
 //! their ordering, submitters, and related list summaries.
 mod actions;
 mod candidate_record;
+mod eml_record;
 mod extractors;
 mod forms;
 pub(crate) mod importer;

@@ -9,7 +9,10 @@ use crate::{
     AppError, Context, HtmlTemplate, Locale, Overlay, PgStore,
     candidate_lists::{
         CSV_HEADERS, CandidateRecordCsv,
-        importer::{ImportCandidateListError, import_candidate_list_csv},
+        importer::{
+            ImportCandidateListError, ImportOutcome, import_candidate_list_csv,
+            import_candidate_list_eml,
+        },
         pages::{CandidateListImportPath, CandidateListImportTemplatePath},
     },
     core::Csv,
@@ -18,7 +21,7 @@ use crate::{
     redirect_success, trans,
 };
 
-/// Upload (CSV import) body limit, applied via `DefaultBodyLimit` on the route.
+/// Upload body limit, applied via `DefaultBodyLimit` on the route.
 pub(crate) const MAX_IMPORT_SIZE_BYTES: usize = 5 * 1024 * 1024;
 const MAX_IMPORT_SIZE_MB: usize = MAX_IMPORT_SIZE_BYTES / (1024 * 1024);
 
@@ -74,9 +77,7 @@ pub async fn import_candidate_list(
         },
     };
 
-    if let Some(name) = &import_data.file_name
-        && !has_csv_extension(name)
-    {
+    let Some(format) = ImportFormat::for_upload(import_data.file_name.as_deref()) else {
         return Ok(render_import_export(
             list,
             vec![trans!(
@@ -85,9 +86,9 @@ pub async fn import_candidate_list(
             )],
             context,
         ));
-    }
+    };
 
-    let Some(csv_data) = import_data.file_data else {
+    let Some(file_data) = import_data.file_data else {
         return Ok(render_import_export(
             list.clone(),
             vec![trans!(
@@ -98,18 +99,17 @@ pub async fn import_candidate_list(
         ));
     };
 
-    let file_size = csv_data.len();
-
-    match import_candidate_list_csv(
+    let result = import_file(
         &mut list,
         &store,
-        &csv_data,
+        format,
+        &file_data,
         context.session.locale,
         import_data.file_name.unwrap_or_default(),
-        file_size,
     )
-    .await
-    {
+    .await;
+
+    match result {
         Ok(outcome) if outcome.capped => {
             Ok(Redirect::to(&list.import_capped_path().to_string()).into_response())
         }
@@ -121,12 +121,64 @@ pub async fn import_candidate_list(
     }
 }
 
-/// The upload field's HTML `accept=".csv,text/csv"` hint is browser-side only.
-/// Reject any uploaded file whose name does not end in `.csv` (case-insensitive)
-/// before handing it to the CSV parser.
-fn has_csv_extension(name: &str) -> bool {
-    let lowered = name.to_ascii_lowercase();
-    lowered.ends_with(".csv") && lowered.len() > ".csv".len()
+/// Hand the uploaded bytes to the parser for their format.
+async fn import_file(
+    list: &mut CandidateList,
+    store: &PgStore,
+    format: ImportFormat,
+    file_data: &[u8],
+    locale: Locale,
+    file_name: String,
+) -> Result<ImportOutcome, ImportCandidateListError> {
+    let file_size = file_data.len();
+
+    match format {
+        ImportFormat::Csv => {
+            import_candidate_list_csv(list, store, file_data, locale, file_name, file_size).await
+        }
+        ImportFormat::Eml => {
+            import_candidate_list_eml(list, store, file_data, locale, file_name, file_size).await
+        }
+    }
+}
+
+/// The file format of an upload, picked from its file name.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ImportFormat {
+    Csv,
+    /// An EML 2.10 nomination, the document this application also exports.
+    Eml,
+}
+
+impl ImportFormat {
+    /// The format of an upload. A file without a name is treated as CSV, the
+    /// default format.
+    fn for_upload(file_name: Option<&str>) -> Option<Self> {
+        match file_name {
+            None => Some(ImportFormat::Csv),
+            Some(name) => ImportFormat::from_file_name(name),
+        }
+    }
+
+    /// The upload field's HTML `accept` hint is browser-side only. Pick the
+    /// parser from the extension (case-insensitive) and reject anything that is
+    /// neither a CSV nor an XML file.
+    fn from_file_name(name: &str) -> Option<Self> {
+        let lowered = name.to_ascii_lowercase();
+
+        if has_extension(&lowered, ".csv") {
+            Some(ImportFormat::Csv)
+        } else if has_extension(&lowered, ".xml") {
+            Some(ImportFormat::Eml)
+        } else {
+            None
+        }
+    }
+}
+
+/// A name ends in the extension and is more than the extension alone.
+fn has_extension(lowered_name: &str, extension: &str) -> bool {
+    lowered_name.ends_with(extension) && lowered_name.len() > extension.len()
 }
 
 /// Translate a `FileForm` extraction failure into inline error messages, or
@@ -368,6 +420,8 @@ mod tests {
     }
 
     const CSV_HEADER: &str = include_str!("../testdata/csv_header.csv");
+    const NOMINATION: &str = include_str!("../testdata/nomination.eml.xml");
+    const POLLING_STATIONS: &str = include_str!("../testdata/polling_stations.eml.xml");
 
     fn csv_headers() -> &'static str {
         CSV_HEADER.trim_end_matches('\n').trim_end_matches('\r')
@@ -408,19 +462,92 @@ mod tests {
     }
 
     #[test]
-    fn has_csv_extension_only_accepts_csv() {
-        assert!(has_csv_extension("candidates.csv"));
-        assert!(has_csv_extension("CANDIDATES.CSV"));
-        assert!(has_csv_extension("a.b.csv"));
-        assert!(!has_csv_extension(".csv"));
-        assert!(!has_csv_extension("candidates.txt"));
-        assert!(!has_csv_extension("candidates"));
-        assert!(!has_csv_extension("candidates.csv.exe"));
-        assert!(!has_csv_extension(""));
+    fn import_format_follows_the_file_extension() {
+        assert_eq!(
+            ImportFormat::from_file_name("candidates.csv"),
+            Some(ImportFormat::Csv)
+        );
+        assert_eq!(
+            ImportFormat::from_file_name("CANDIDATES.CSV"),
+            Some(ImportFormat::Csv)
+        );
+        assert_eq!(
+            ImportFormat::from_file_name("a.b.csv"),
+            Some(ImportFormat::Csv)
+        );
+        assert_eq!(
+            ImportFormat::from_file_name("eml210.eml.xml"),
+            Some(ImportFormat::Eml)
+        );
+        assert_eq!(
+            ImportFormat::from_file_name("EML210.EML.XML"),
+            Some(ImportFormat::Eml)
+        );
+        assert_eq!(ImportFormat::from_file_name(".csv"), None);
+        assert_eq!(ImportFormat::from_file_name(".xml"), None);
+        assert_eq!(ImportFormat::from_file_name("candidates.txt"), None);
+        assert_eq!(ImportFormat::from_file_name("candidates"), None);
+        assert_eq!(ImportFormat::from_file_name("candidates.csv.exe"), None);
+        assert_eq!(ImportFormat::from_file_name(""), None);
     }
 
     #[tokio::test]
-    async fn import_candidate_list_rejects_non_csv_extension() -> Result<(), AppError> {
+    async fn import_candidate_list_imports_an_eml_file() -> Result<(), AppError> {
+        let store = PgStore::new_for_test();
+        let list = sample_candidate_list(CandidateListId::new());
+        list.create(&store).await?;
+
+        let context = Context::new_test_without_db();
+
+        let response = import_candidate_list(
+            CandidateListImportPath { list_id: list.id },
+            context,
+            store.clone(),
+            Ok(FileForm {
+                file_name: Some("eml210.eml.xml".to_string()),
+                file_data: Some(Bytes::from_static(NOMINATION.as_bytes())),
+            }),
+        )
+        .await?;
+
+        assert_eq!(response.status(), StatusCode::SEE_OTHER);
+        assert_eq!(store.get_candidate_list(list.id)?.candidates.len(), 2);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn import_candidate_list_rejects_a_non_nomination_eml_file() -> Result<(), AppError> {
+        let store = PgStore::new_for_test();
+        let list = sample_candidate_list(CandidateListId::new());
+        list.create(&store).await?;
+
+        let context = Context::new_test_without_db();
+
+        let response = import_candidate_list(
+            CandidateListImportPath { list_id: list.id },
+            context,
+            store.clone(),
+            Ok(FileForm {
+                file_name: Some("polling-stations.eml.xml".to_string()),
+                file_data: Some(Bytes::from_static(POLLING_STATIONS.as_bytes())),
+            }),
+        )
+        .await?;
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = response_body_string(response).await;
+        assert!(body.contains("Import failed"));
+        assert!(body.contains("not an EML 210 candidate nomination"));
+        assert_eq!(body.matches("alert alert-warning").count(), 1);
+        assert!(store.get_candidate_list(list.id)?.candidates.is_empty());
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn import_candidate_list_rejects_unsupported_extension() -> Result<(), AppError> {
         let store = PgStore::new_for_test();
         let list = sample_candidate_list(CandidateListId::new());
         list.create(&store).await?;
@@ -442,7 +569,7 @@ mod tests {
 
         let body = response_body_string(response).await;
         assert!(body.contains("Import failed"));
-        assert!(body.contains("Only CSV files (.csv) are accepted."));
+        assert!(body.contains("Only CSV files (.csv) and EML files (.xml) are accepted."));
         assert_eq!(body.matches("alert alert-warning").count(), 1);
 
         Ok(())

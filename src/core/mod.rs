@@ -20,7 +20,7 @@ pub use config::AcmeConfig;
 #[cfg(feature = "tls")]
 pub use config::TlsConfig;
 pub use config::{Config, GithubOauthConfig};
-pub use csv::{Csv, CsvError, reader_from_bytes};
+pub use csv::{Csv, CsvError, reader_from_bytes, translated_field_name};
 pub use election::{ElectionConfig, ElectionType, ElectoralDistrict, Province, WaterCouncil};
 pub use github_user_id::GithubUserId;
 pub use locale::Locale;

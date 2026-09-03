@@ -9,8 +9,8 @@
         <input type="file"
                name="file_data"
                id="import_file"
-               accept=".csv,text/csv"
-               aria-label="{{ "candidate_list.actions.import_csv"|trans }}"
+               accept=".csv,text/csv,.xml,text/xml,application/xml"
+               aria-label="{{ "candidate_list.actions.import_file"|trans }}"
                required />
       </p>
       {% if !import_errors.is_empty() %}
@@ -26,7 +26,7 @@
           <button class="button icon-upload open-modal"
                   type="submit"
                   formaction="{{ list.import_path() }}?csrf_token={{ "csrf_token"|str_value }}"
-                  formenctype="multipart/form-data">{{ "candidate_list.actions.import_csv"|trans }}</button>
+                  formenctype="multipart/form-data">{{ "candidate_list.actions.import_file"|trans }}</button>
           <dialog class="modal">
             <button class="close-modal" aria-label="{{ "action.close"|trans }}">
               <span>{{ "action.close"|trans }}</span>
@@ -46,7 +46,7 @@
                   data-import-file-trigger
                   type="submit"
                   formaction="{{ list.import_path() }}?csrf_token={{ "csrf_token"|str_value }}"
-                  formenctype="multipart/form-data">{{ "candidate_list.actions.import_csv"|trans }}</button>
+                  formenctype="multipart/form-data">{{ "candidate_list.actions.import_file"|trans }}</button>
         {% endif %}
         <div class="alert alert-info flow-root mt-xl">
           <h4 class="mb-md font-bold">{{ "candidate_list.import_export.import_instructions_header"|trans }}</h4>

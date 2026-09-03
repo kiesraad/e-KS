@@ -58,7 +58,7 @@ event:
   hash: Event hash
   hide_download_warning: Download\u00ADwaarschuwing gesloten
   import: Politieke groepering geïmporteerd
-  import_csv: CSV geïmporteerd
+  import_csv: Kandidaten geïmporteerd
   login: Ingelogd
   logout: Uitgelogd
   paper_correction: Papieren correcties

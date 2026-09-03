@@ -92,7 +92,7 @@ test.describe("End-to-end", () => {
 
     await manageCandidateListPage.buttonCSV.click();
     const csvImportExport = new CsvImportExportPage(page);
-    await csvImportExport.uploadCsvFile("candidate-list-export-nh-1.csv");
+    await csvImportExport.uploadFile("candidate-list-export-nh-1.csv");
     await expect(manageCandidateListPage.headingCandidateList).toBeVisible();
     await expect(
       await manageCandidateListPage.getCandidateLocator("Groot, de"),
@@ -209,7 +209,7 @@ test.describe("End-to-end", () => {
 
     await manageCandidateListPage.buttonCSV.click();
     const csvImportExport = new CsvImportExportPage(page);
-    await csvImportExport.uploadCsvFile("candidate-list-export-nh.csv");
+    await csvImportExport.uploadFile("candidate-list-export-nh.csv");
     await expect(csvImportExport.textFailure).toBeVisible();
     await csvImportExport.buttonClose.click();
     await expect(manageCandidateListPage.headingCandidateList).toBeVisible();

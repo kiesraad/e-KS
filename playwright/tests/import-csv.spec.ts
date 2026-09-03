@@ -7,7 +7,7 @@ import { CandidateListsOverviewPage } from "./pages/pg/candidateListsOverviewPag
 import { CsvImportExportPage } from "./pages/pg/csvImportExportPage.ts";
 import { ManageCandidateListPage } from "./pages/pg/manageCandidateListPage.ts";
 
-test.describe("import and export candidates with csv file", () => {
+test.describe("import and export candidates with csv or eml file", () => {
   test.beforeEach("navigate to csv page", async ({ login: page }) => {
     await page.goto("/candidate-lists");
     await new CandidateListsOverviewPage(page).linkCandidateList
@@ -18,7 +18,17 @@ test.describe("import and export candidates with csv file", () => {
 
   test("import successful", async ({ login: page }) => {
     const csvImportExport = new CsvImportExportPage(page);
-    await csvImportExport.uploadCsvFile("candidate-list-export-nh-1.csv");
+    await csvImportExport.uploadFile("candidate-list-export-nh-1.csv");
+    const manageCandidateListPage = new ManageCandidateListPage(page);
+    await expect(manageCandidateListPage.headingCandidateList).toBeVisible();
+    await expect(
+      await manageCandidateListPage.getCandidateLocator("Groot, de"),
+    ).toBeVisible();
+  });
+
+  test("import eml 210 successful", async ({ login: page }) => {
+    const csvImportExport = new CsvImportExportPage(page);
+    await csvImportExport.uploadFile("candidate-list-export-nh-1.eml.xml");
     const manageCandidateListPage = new ManageCandidateListPage(page);
     await expect(manageCandidateListPage.headingCandidateList).toBeVisible();
     await expect(
@@ -28,7 +38,7 @@ test.describe("import and export candidates with csv file", () => {
 
   test("import with validation errors", async ({ login: page }) => {
     const csvImportExport = new CsvImportExportPage(page);
-    await csvImportExport.uploadCsvFile("candidate-list-export-nh.csv");
+    await csvImportExport.uploadFile("candidate-list-export-nh.csv");
     await expect(csvImportExport.textFailure).toBeVisible();
 
     const expectedErrors = [
