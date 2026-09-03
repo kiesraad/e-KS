@@ -113,9 +113,7 @@ impl PgStore {
     /// writes: the projection can briefly lag, so a limit may overshoot by the
     /// number of in-flight requests.
     ///
-    /// Session events (login/logout) are exempt from the absolute cap so a
-    /// capped group can still sign in; the self-clearing window limits do
-    /// apply to them.
+    /// Every event counts, session events (login/logout) included.
     fn check_rate_limits(&self, event: &PgEvent) -> Result<(), AppError> {
         let Some(RateLimits {
             downloads,
@@ -130,7 +128,7 @@ impl PgStore {
         let events = data.events();
         let now = Utc::now();
 
-        if events_total > 0 && events.len() >= events_total && !is_session_event(event) {
+        if events_total > 0 && events.len() >= events_total {
             return Err(self.limit_hit(
                 "events_total",
                 AppError::EventLimitReached { max: events_total },
@@ -148,7 +146,7 @@ impl PgStore {
                 "events",
                 AppError::TooManyEvents {
                     max: event_limit.max,
-                    window_secs: event_limit.window_secs,
+                    window: event_limit.window,
                 },
             ));
         }
@@ -163,7 +161,7 @@ impl PgStore {
                     "downloads",
                     AppError::TooManyDownloads {
                         max: downloads.max,
-                        window_secs: downloads.window_secs,
+                        window: downloads.window,
                     },
                 ));
             }
@@ -236,17 +234,6 @@ impl PgStore {
     }
 }
 
-/// Whether this event only records session activity rather than user data.
-///
-/// These are the events the application writes on the user's behalf when a
-/// session starts or ends; see [`PgStore::check_rate_limits`].
-fn is_session_event(event: &PgEvent) -> bool {
-    matches!(
-        event,
-        PgEvent::Login | PgEvent::Logout | PgEvent::DeveloperLogin { .. }
-    )
-}
-
 #[cfg(test)]
 impl PgStore {
     pub fn new_for_test() -> Self {
@@ -311,28 +298,21 @@ mod tests {
         PgEvent::DeleteCandidateList(CandidateListId::new())
     }
 
-    /// The absolute cap stops new data events, but never a read (nothing in
-    /// this module gates reads) and never logging in: a political group whose
-    /// stream is capped must still be able to sign in and look at its data.
+    /// The absolute cap stops every write, session events included, but never
+    /// a read (nothing in this module gates reads): a political group whose
+    /// stream is capped can still look at its data.
     #[tokio::test]
-    async fn absolute_event_cap_stops_data_events_but_not_logging_in() {
-        let limits = RateLimits::new_for_test(0, 0, 3, 60);
+    async fn absolute_event_cap_stops_every_write_but_not_reads() {
+        let limits = RateLimits::new_for_test(0, 0, 3, TimeDelta::minutes(1));
         let store = store_with_events(limits, 3, TimeDelta::days(30));
 
-        let err = store
-            .update(data_event())
-            .await
-            .expect_err("cap must be enforced");
-        assert!(
-            matches!(err, AppError::EventLimitReached { max: 3 }),
-            "got {err:?}"
-        );
-
-        store.update(PgEvent::Login).await.expect("login recorded");
-        store
-            .update(PgEvent::Logout)
-            .await
-            .expect("logout recorded");
+        for event in [data_event(), PgEvent::Login, PgEvent::Logout] {
+            let err = store.update(event).await.expect_err("cap must be enforced");
+            assert!(
+                matches!(err, AppError::EventLimitReached { max: 3 }),
+                "got {err:?}"
+            );
+        }
 
         // Reads never pass through the limit check, so the stream stays
         // viewable while the cap is in force.
@@ -345,7 +325,7 @@ mod tests {
     /// Below the cap, writes go through.
     #[tokio::test]
     async fn absolute_event_cap_allows_writes_below_the_maximum() {
-        let limits = RateLimits::new_for_test(0, 0, 4, 60);
+        let limits = RateLimits::new_for_test(0, 0, 4, TimeDelta::minutes(1));
         let store = store_with_events(limits, 3, TimeDelta::days(30));
 
         store.update(data_event()).await.expect("below the cap");
@@ -354,7 +334,7 @@ mod tests {
     /// The sliding window counts every event, and only the recent ones.
     #[tokio::test]
     async fn event_window_limit_blocks_a_burst_and_expires() {
-        let limits = RateLimits::new_for_test(0, 2, 0, 60);
+        let limits = RateLimits::new_for_test(0, 2, 0, TimeDelta::minutes(1));
 
         let recent = store_with_events(limits, 2, TimeDelta::seconds(30));
         let err = recent
@@ -364,10 +344,7 @@ mod tests {
         assert!(
             matches!(
                 err,
-                AppError::TooManyEvents {
-                    max: 2,
-                    window_secs: 60,
-                }
+                AppError::TooManyEvents { max: 2, window } if window == TimeDelta::minutes(1)
             ),
             "got {err:?}"
         );
@@ -383,7 +360,7 @@ mod tests {
     /// changes keep working while it is in force.
     #[tokio::test]
     async fn download_limit_blocks_only_downloads() {
-        let limits = RateLimits::new_for_test(2, 0, 0, 60);
+        let limits = RateLimits::new_for_test(2, 0, 0, TimeDelta::minutes(1));
         let store = store_with_events(limits, 0, TimeDelta::zero());
 
         store.update(download_event()).await.expect("first");
@@ -421,7 +398,7 @@ mod tests {
     #[tracing_test::traced_test]
     #[tokio::test]
     async fn a_limit_hit_logs_a_monitoring_marker() {
-        let limits = RateLimits::new_for_test(0, 1, 0, 60);
+        let limits = RateLimits::new_for_test(0, 1, 0, TimeDelta::minutes(1));
         let store = store_with_events(limits, 1, TimeDelta::seconds(1));
 
         store.update(data_event()).await.expect_err("limit hit");
@@ -433,7 +410,8 @@ mod tests {
     /// A store built by the middleware carries the configured limits.
     #[tokio::test]
     async fn with_limits_overrides_the_defaults() {
-        let store = PgStore::new_for_test().with_limits(RateLimits::new_for_test(0, 1, 0, 60));
+        let limits = RateLimits::new_for_test(0, 1, 0, TimeDelta::minutes(1));
+        let store = PgStore::new_for_test().with_limits(limits);
 
         store.update(data_event()).await.expect("first");
         assert!(store.update(data_event()).await.is_err());

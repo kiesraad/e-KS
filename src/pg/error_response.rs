@@ -425,7 +425,7 @@ mod tests {
             (
                 AppError::TooManyDownloads {
                     max: 20,
-                    window_secs: 3600,
+                    window: chrono::TimeDelta::hours(1),
                 },
                 Locale::En,
                 "Too many downloads",
@@ -438,7 +438,7 @@ mod tests {
             (
                 AppError::TooManyEvents {
                     max: 20,
-                    window_secs: 3600,
+                    window: chrono::TimeDelta::hours(1),
                 },
                 Locale::Nl,
                 "Te veel wijzigingen",

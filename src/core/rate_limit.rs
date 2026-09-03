@@ -15,21 +15,30 @@ use crate::AppError;
 const DEFAULT_MAX_DOWNLOADS: usize = 60;
 
 /// Events per window; far above manual data entry.
-const DEFAULT_MAX_EVENTS: usize = 2_000;
+const DEFAULT_MAX_EVENTS: usize = 3_000;
 
 /// Absolute cap on the number of events in one stream.
-const DEFAULT_MAX_EVENTS_TOTAL: usize = 20_000;
+const DEFAULT_MAX_EVENTS_TOTAL: usize = 30_000;
 
 /// Default sliding window: one hour.
 const DEFAULT_WINDOW_SECS: u64 = 3_600;
 
-/// A "no more than `max` within `window_secs`" limit over a sliding window.
+/// The sliding window as a duration, saturating rather than panicking on an
+/// absurdly large number of seconds.
+fn window_from_secs(secs: u64) -> TimeDelta {
+    i64::try_from(secs)
+        .ok()
+        .and_then(TimeDelta::try_seconds)
+        .unwrap_or(TimeDelta::MAX)
+}
+
+/// A "no more than `max` within `window`" limit over a sliding window.
 #[derive(Debug, Clone, Copy)]
 pub struct RateLimit {
     /// Maximum number of occurrences within the window. `0` disables the limit.
     pub max: usize,
-    /// Length of the sliding window, in seconds.
-    pub window_secs: u64,
+    /// Length of the sliding window.
+    pub window: TimeDelta,
 }
 
 impl RateLimit {
@@ -42,12 +51,7 @@ impl RateLimit {
     /// Start of the window ending at `now`. An absurdly long window saturates
     /// to "since forever" rather than panicking.
     pub fn window_start(&self, now: DateTime<Utc>) -> DateTime<Utc> {
-        let window = i64::try_from(self.window_secs)
-            .ok()
-            .and_then(TimeDelta::try_seconds)
-            .unwrap_or(TimeDelta::MAX);
-
-        now.checked_sub_signed(window)
+        now.checked_sub_signed(self.window)
             .unwrap_or(DateTime::<Utc>::MIN_UTC)
     }
 }
@@ -68,11 +72,11 @@ impl Default for RateLimits {
         Self {
             downloads: RateLimit {
                 max: DEFAULT_MAX_DOWNLOADS,
-                window_secs: DEFAULT_WINDOW_SECS,
+                window: window_from_secs(DEFAULT_WINDOW_SECS),
             },
             events: RateLimit {
                 max: DEFAULT_MAX_EVENTS,
-                window_secs: DEFAULT_WINDOW_SECS,
+                window: window_from_secs(DEFAULT_WINDOW_SECS),
             },
             events_total: DEFAULT_MAX_EVENTS_TOTAL,
         }
@@ -90,19 +94,11 @@ impl RateLimits {
         Ok(Self {
             downloads: RateLimit {
                 max: number("RATE_LIMIT_DOWNLOADS", defaults.downloads.max, lookup)?,
-                window_secs: number(
-                    "RATE_LIMIT_DOWNLOADS_WINDOW_SECS",
-                    defaults.downloads.window_secs,
-                    lookup,
-                )?,
+                window: window_from_env("RATE_LIMIT_DOWNLOADS_WINDOW_SECS", lookup)?,
             },
             events: RateLimit {
                 max: number("RATE_LIMIT_EVENTS", defaults.events.max, lookup)?,
-                window_secs: number(
-                    "RATE_LIMIT_EVENTS_WINDOW_SECS",
-                    defaults.events.window_secs,
-                    lookup,
-                )?,
+                window: window_from_env("RATE_LIMIT_EVENTS_WINDOW_SECS", lookup)?,
             },
             events_total: number("RATE_LIMIT_EVENTS_TOTAL", defaults.events_total, lookup)?,
         })
@@ -111,25 +107,34 @@ impl RateLimits {
 
 #[cfg(test)]
 impl RateLimits {
-    /// Limits with an explicit maximum per kind, counted over `window_secs`.
+    /// Limits with an explicit maximum per kind, counted over `window`.
     pub fn new_for_test(
         max_downloads: usize,
         max_events: usize,
         events_total: usize,
-        window_secs: u64,
+        window: TimeDelta,
     ) -> Self {
         Self {
             downloads: RateLimit {
                 max: max_downloads,
-                window_secs,
+                window,
             },
             events: RateLimit {
                 max: max_events,
-                window_secs,
+                window,
             },
             events_total,
         }
     }
+}
+
+/// Read a window length from a `*_WINDOW_SECS` environment variable, keeping
+/// [`DEFAULT_WINDOW_SECS`] when it is unset or blank.
+fn window_from_env<F>(name: &'static str, lookup: &mut F) -> Result<TimeDelta, AppError>
+where
+    F: FnMut(&'static str) -> Result<String, env::VarError>,
+{
+    Ok(window_from_secs(number(name, DEFAULT_WINDOW_SECS, lookup)?))
 }
 
 /// Parse a numeric environment variable: unset or blank keeps `default`, a
@@ -174,7 +179,7 @@ mod tests {
     fn limit(max: usize) -> RateLimit {
         RateLimit {
             max,
-            window_secs: 60,
+            window: TimeDelta::minutes(1),
         }
     }
 
@@ -186,8 +191,8 @@ mod tests {
         assert!(!limit(0).is_reached(1_000));
     }
 
-    /// The window start sits `window_secs` before `now`; an out-of-range
-    /// window saturates instead of panicking.
+    /// The window start sits one window before `now`; an out-of-range window
+    /// saturates instead of panicking.
     #[test]
     fn window_start_saturates() {
         let now = Utc::now();
@@ -196,7 +201,7 @@ mod tests {
 
         let absurd = RateLimit {
             max: 1,
-            window_secs: u64::MAX,
+            window: window_from_secs(u64::MAX),
         };
         assert_eq!(absurd.window_start(now), DateTime::<Utc>::MIN_UTC);
     }
@@ -211,7 +216,7 @@ mod tests {
         assert_eq!(limits.downloads.max, defaults.downloads.max);
         assert_eq!(limits.events.max, defaults.events.max);
         assert_eq!(limits.events_total, defaults.events_total);
-        assert_eq!(limits.events.window_secs, DEFAULT_WINDOW_SECS);
+        assert_eq!(limits.events.window, defaults.events.window);
     }
 
     #[test]
@@ -227,9 +232,9 @@ mod tests {
         let limits = RateLimits::from_env_with(&mut lookup).expect("limits");
 
         assert_eq!(limits.downloads.max, 3);
-        assert_eq!(limits.downloads.window_secs, 60);
+        assert_eq!(limits.downloads.window, TimeDelta::seconds(60));
         assert_eq!(limits.events.max, 7);
-        assert_eq!(limits.events.window_secs, 120);
+        assert_eq!(limits.events.window, TimeDelta::seconds(120));
         assert_eq!(limits.events_total, 9);
     }
 

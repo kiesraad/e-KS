@@ -3,6 +3,7 @@ use axum::extract::{
     rejection::{JsonRejection, PathRejection, QueryRejection},
 };
 use axum_extra::extract::FormRejection;
+use chrono::TimeDelta;
 use std::{
     convert::Infallible,
     fmt::{Display, Formatter},
@@ -65,14 +66,14 @@ pub enum AppError {
     /// The download rate limit was reached; clears once the window passes.
     TooManyDownloads {
         max: usize,
-        window_secs: u64,
+        window: TimeDelta,
     },
 
     /// The events-per-window rate limit was reached; clears once the window
     /// passes.
     TooManyEvents {
         max: usize,
-        window_secs: u64,
+        window: TimeDelta,
     },
 
     /// The absolute cap on the number of events in one stream is reached, so
@@ -101,13 +102,15 @@ impl Display for AppError {
                 "Cannot add more than {max} candidates to a candidate list"
             ),
             AppError::AmbiguousHash => write!(f, "Ambiguous hash prefix"),
-            AppError::TooManyDownloads { max, window_secs } => write!(
+            AppError::TooManyDownloads { max, window } => write!(
                 f,
-                "Rate limit reached: at most {max} downloads per {window_secs} seconds"
+                "Rate limit reached: at most {max} downloads per {} seconds",
+                window.num_seconds()
             ),
-            AppError::TooManyEvents { max, window_secs } => write!(
+            AppError::TooManyEvents { max, window } => write!(
                 f,
-                "Rate limit reached: at most {max} changes per {window_secs} seconds"
+                "Rate limit reached: at most {max} changes per {} seconds",
+                window.num_seconds()
             ),
             AppError::EventLimitReached { max } => write!(
                 f,

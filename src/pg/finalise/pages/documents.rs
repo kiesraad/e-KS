@@ -17,6 +17,8 @@ pub async fn gen_documents(
 
 #[cfg(test)]
 mod tests {
+    use chrono::TimeDelta;
+
     use super::*;
     use crate::{
         ElectionConfig,
@@ -190,7 +192,8 @@ mod tests {
     async fn gen_documents_is_rate_limited() -> Result<(), AppError> {
         let (store, _, context) =
             setup_documents_test_state(1, 1, true, true, ElectionConfig::EK27).await?;
-        let store = store.with_limits(crate::RateLimits::new_for_test(1, 0, 0, 60));
+        let limits = crate::RateLimits::new_for_test(1, 0, 0, TimeDelta::minutes(1));
+        let store = store.with_limits(limits);
         let path = || DownloadDocumentsPath {
             locale: ModelLocale::Nl,
         };
