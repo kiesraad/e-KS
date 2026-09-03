@@ -12,7 +12,7 @@ use chrono::{DateTime, TimeDelta, Utc};
 use crate::AppError;
 
 /// Downloads per window; one download renders a PDF per candidate.
-const DEFAULT_MAX_DOWNLOADS: usize = 2;
+const DEFAULT_MAX_DOWNLOADS: usize = 60;
 
 /// Events per window; far above manual data entry.
 const DEFAULT_MAX_EVENTS: usize = 2_000;
