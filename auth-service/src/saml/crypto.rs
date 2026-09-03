@@ -1,0 +1,98 @@
+//! XML-DSig / XML-Enc backend adapter.
+use crate::{
+    error::{AuthError, Result},
+    keys::{CertificatePem, DecryptionKey, PrivateKeyPem},
+};
+use bergshamra_dsig::DsigContext;
+use bergshamra_enc::{EncContext, decrypt::decrypt as backend_decrypt};
+use bergshamra_keys::{KeysManager, loader};
+use tracing::warn;
+
+/// Outcome of verifying an XML signature against a certificate.
+pub enum SignatureVerification {
+    Valid,
+    /// The signature did not validate; carries the backend's reason.
+    Invalid(String),
+}
+
+/// Sign `xml` in place with `private_key`.
+///
+/// `xml` must already contain an inline, unfilled `ds:Signature` template; the
+/// backend computes and fills its `DigestValue` and `SignatureValue`.
+///
+/// Takes a [`PrivateKeyPem`] rather than a `&str`: this is the one place the key
+/// text is exposed, and the type keeps a certificate (or any other PEM blob)
+/// from being passed here by mistake.
+pub fn sign(xml: &str, private_key: &PrivateKeyPem) -> Result<String> {
+    let key = loader::load_rsa_private_pem(private_key.expose_pem().as_bytes())
+        .map_err(|e| AuthError::Crypto(format!("Failed to load signing key: {e}")))?;
+    let mut mgr = KeysManager::new();
+    mgr.add_key(key);
+    let ctx = DsigContext::new(mgr);
+    bergshamra_dsig::sign::sign(&ctx, xml)
+        .map_err(|e| AuthError::Crypto(format!("XML signing failed: {e}")))
+}
+
+/// Verify the signature anchored by `xml` against `cert`, which is used as the
+/// sole trusted key. `Err` indicates a cert-load or backend error; a failed
+/// signature match is `Ok(Invalid)`.
+pub fn verify_signature(xml: &str, cert: &CertificatePem) -> Result<SignatureVerification> {
+    let key = loader::load_x509_cert_pem(cert.as_str().as_bytes())
+        .map_err(|e| AuthError::Crypto(format!("Failed to load verification cert: {e}")))?;
+    let mut mgr = KeysManager::new();
+    mgr.add_key(key);
+    // All three are already `DsigContext::new` defaults, pinned so the floor
+    // survives a backend default change (as with `min_tls_version` in
+    // `bindings::soap`): only `cert` may verify, reference targets must sit in
+    // an expected position relative to the `<Signature>` (a second XSW check
+    // beside `signature_covers_root`), and every Reference digest must be
+    // verified locally.
+    let ctx = DsigContext::new(mgr)
+        .with_trusted_keys_only(true)
+        .with_strict_verification(true)
+        .with_require_reference_digests(true);
+    match bergshamra_dsig::verify::verify(&ctx, xml) {
+        Ok(bergshamra_dsig::VerifyResult::Valid { .. }) => Ok(SignatureVerification::Valid),
+        Ok(bergshamra_dsig::VerifyResult::Invalid { reason }) => {
+            Ok(SignatureVerification::Invalid(reason))
+        }
+        Err(e) => Err(AuthError::Crypto(format!(
+            "Signature verification error: {e}"
+        ))),
+    }
+}
+
+/// Decrypt an XML-Enc fragment, trying each key in turn and returning the first
+/// success.
+///
+/// Key transport is crypto-bound to the keypair (the backend unwraps the
+/// `EncryptedKey` with the RSA private key, not by matching `<KeyName>`), so
+/// trying each key in turn decrypts a blob wrapped to any configured key and
+/// keeps cert rollover working regardless of list order. `key_name` is for
+/// diagnostics only; keys that fail to load are skipped.
+pub fn decrypt(encrypted_xml: &str, keys: &[DecryptionKey<'_>]) -> Result<String> {
+    let mut last_err: Option<String> = None;
+    for key in keys {
+        // SECURITY: never log the private key; key_name is a thumbprint of the
+        // public cert.
+        let key_name = key.key_name;
+        let bkey = match loader::load_rsa_private_pem(key.key_pem.expose_pem().as_bytes()) {
+            Ok(bkey) => bkey.with_name(key_name.as_str()),
+            Err(e) => {
+                warn!("[crypto] failed to load decryption key {key_name}: {e}");
+                continue;
+            }
+        };
+        let mut mgr = KeysManager::new();
+        mgr.add_key(bkey);
+        let ctx = EncContext::new(mgr);
+        match backend_decrypt(&ctx, encrypted_xml) {
+            Ok(xml) => return Ok(xml),
+            Err(e) => last_err = Some(e.to_string()),
+        }
+    }
+    Err(AuthError::Crypto(format!(
+        "decryption failed: {}",
+        last_err.unwrap_or_else(|| "no usable decryption key".to_string())
+    )))
+}
