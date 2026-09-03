@@ -113,8 +113,9 @@ Each configuration carries:
 ### Crates
 
 e-KS is a Cargo workspace: a single Rust binary (`eks`, the root crate) plus
-the member crates `validate`, `auth-service`, `development` and `tools/locales`,
-sharing one `Cargo.lock` and a workspace-level dependency list.
+the member crates `validate`, `auth-service`, `development`, `tools/locales`,
+`tools/utils` and `tools/districts-codegen`, sharing one `Cargo.lock` and a
+workspace-level dependency list.
 
 - **`eks`** (root, `Cargo.toml` + `src/`): the application itself: an Axum web
   server with Askama HTML templates and an event-sourced domain model. The
@@ -137,9 +138,11 @@ sharing one `Cargo.lock` and a workspace-level dependency list.
 - **`tools/locales/`** (`eks-locales`): shared locale tooling, used by the `eks`
   build script (locale codegen), the `eks` test suite (used-key scanning) and
   the `update_locales` binary.
-- **`tools/utils/`** (`eks-utils`): other shared tooling, used by the `eks`
-  build script (e.g. election tree codegen) and the e-KS itself (e.g. the 
-  `slugify_teletex` function).
+- **`tools/utils/`** (`eks-utils`): small runtime helpers with no heavyweight
+  dependencies (e.g. the `slugify_teletex` function), so they can be used in
+  the main `eks` crate as well as in other build-time tooling.
+- **`tools/districts-codegen/`** (`eks-districts-codegen`): generates the
+  districts and regions enums from `MasterElectionTree.xml`.
 
 Document generation is done in-process with the
 [`textris-pdf`](https://github.com/tweedegolf/textris-pdf) library: the PDF

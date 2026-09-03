@@ -1456,6 +1456,7 @@ dependencies = [
  "chrono",
  "chrono-tz",
  "csv",
+ "eks-districts-codegen",
  "eks-locales",
  "eks-utils",
  "eml-nl",
@@ -1515,6 +1516,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "eks-districts-codegen"
+version = "0.1.0"
+dependencies = [
+ "eks-utils",
+ "eml-nl",
+ "prettyplease",
+ "proc-macro2",
+ "quote",
+ "syn 3.0.4",
+ "uuid",
+]
+
+[[package]]
 name = "eks-locales"
 version = "0.1.0"
 dependencies = [
@@ -1526,15 +1540,6 @@ dependencies = [
 [[package]]
 name = "eks-utils"
 version = "0.1.0"
-dependencies = [
- "eml-nl",
- "prettyplease",
- "proc-macro2",
- "quote",
- "regex",
- "syn 3.0.4",
- "uuid",
-]
 
 [[package]]
 name = "elliptic-curve"

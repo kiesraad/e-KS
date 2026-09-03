@@ -1,5 +1,5 @@
 [workspace]
-members = ["validate", "auth-service", "development", "tools/locales", "tools/utils"]
+members = ["validate", "auth-service", "development", "tools/locales", "tools/utils", "tools/districts-codegen"]
 resolver = "3"
 
 # Fields shared by every crate in the workspace. Individual crates inherit these
@@ -201,13 +201,12 @@ x509-parser = { workspace = true, optional = true }
 zeroize = { workspace = true }
 
 [build-dependencies]
+eks-districts-codegen = { path = "tools/districts-codegen" }
 eks-locales = { path = "tools/locales" }
-eks-utils = { path = "tools/utils" }
 memory-serve = { workspace = true, optional = true }
 
 [dev-dependencies]
 eks-locales = { path = "tools/locales" }
-eks-utils = { path = "tools/utils" }
 futures-lite = { workspace = true }
 tower = { workspace = true }
 tracing-test = { workspace = true }

@@ -9,5 +9,5 @@ fn main() {
     memory_serve::load_directory("./frontend/static");
 
     eks_locales::load_locales(out_dir, std::path::Path::new("./locales"));
-    eks_utils::generate_election_tree(out_dir);
+    eks_districts_codegen::generate_election_tree(out_dir);
 }

@@ -1,7 +1,10 @@
+//! Generates the `ElectoralDistrict`, `Province` and `WaterCouncil` enums from
+//! `MasterElectionTree.xml`, for use by the `eks` build script.
 #![allow(clippy::too_many_lines, clippy::cognitive_complexity)]
 
 use std::path::Path;
 
+use eks_utils::slugify_teletex;
 use eml_nl::{
     documents::master_election_tree::{MasterElectionTree, MetRegion},
     io::EMLRead,
@@ -9,8 +12,6 @@ use eml_nl::{
 };
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
-
-use crate::slugify_teletex;
 
 /// Convert a region name to a valid PascalCase Rust identifier
 fn to_ident(name: &str) -> String {
