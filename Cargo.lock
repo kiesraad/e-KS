@@ -1591,7 +1591,7 @@ checksum = "edd0f118536f44f5ccd48bcb8b111bdc3de888b58c74639dfb034a357d0f206d"
 [[package]]
 name = "eml-nl"
 version = "0.7.0"
-source = "git+https://github.com/kiesraad/rust-eml-nl?branch=master-election-tree#0f8218865d2716c6ebd23b1b1522d4216393e8fb"
+source = "git+https://github.com/kiesraad/rust-eml-nl?rev=e9fcd7e90aebba463a36d7bbf7cd418f2032ed26#e9fcd7e90aebba463a36d7bbf7cd418f2032ed26"
 dependencies = [
  "chrono",
  "quick-xml",
