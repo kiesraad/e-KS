@@ -23,7 +23,7 @@ hearing:
   open_to_public: You may attend the session.
   title: Public session
 print:
-  eml: "Foreach candidate list, an EML file of the candidate list is also included. EML is a file format that is processable with software. It is not required to submit this document."
+  eml: "For each candidate list, an EML file of the candidate list is also included. EML is a file format that is processable with software. It is not required to submit this document."
   eml_title: EML210 Candidate list
   errors_warning: "Before you can print the documents, you must first resolve all errors in step 1."
   h1_description: "With the H 1, as the submitter of the list of candidates, you nominate candidates for an election."

@@ -17,6 +17,7 @@ fn h9_resident_candidate() -> DetailedCandidate {
         initials_no_gender: "M. (Maria)".to_string(),
         bsn: Some("999999321".to_string()),
         representative: None,
+        needs_representative: false,
         postal_address: Some(postal_address("Molenweg 37", "1111AA", "Ede")),
     }
 }
@@ -54,6 +55,7 @@ pub fn h9_example_2() -> H9 {
                 initials: "T.J.".to_string(),
                 postal_address: postal_address("Molenweg 37", "1111AA", "Ede"),
             }),
+            needs_representative: true,
             postal_address: None,
         },
     }
