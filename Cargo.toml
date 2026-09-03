@@ -71,7 +71,7 @@ reqwest = { version = "0.13.4", default-features = false, features = ["json", "s
 
 # well maintained + many downloads
 askama = { version = "0.16.0", default-features = false, features = ["config", "derive", "std"] } # 38M downloads (Dirkjan Ochtman)
-async_zip = { version = "0.0.18", features = ["tokio", "deflate"] } # 5M downloads (Harry Majored)
+async_zip = { version = "0.0.19", features = ["tokio", "deflate"] } # 5M downloads (Harry Majored)
 chrono-tz = "0.10.4" # 125M downloads (Dirkjan Ochtman)
 csv = "1.4.0" # 203M downloads (Andrew Gallant)
 phf = { version = "0.14.0", default-features = false } # 411M downloads (Steven Fackler)
