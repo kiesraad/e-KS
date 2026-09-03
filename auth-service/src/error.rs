@@ -10,10 +10,37 @@ pub enum AuthError {
     Crypto(String),
     #[error("HTTP error: {0}")]
     Http(String),
-    #[error("IO error: {0}")]
-    Io(#[from] std::io::Error),
     #[error("Config error: {0}")]
     Config(String),
+    #[error("Template error: {0}")]
+    Template(String),
+}
+
+impl From<askama::Error> for AuthError {
+    fn from(e: askama::Error) -> Self {
+        AuthError::Template(e.to_string())
+    }
+}
+
+impl From<crate::saml::xml_parser::XmlError> for AuthError {
+    fn from(e: crate::saml::xml_parser::XmlError) -> Self {
+        AuthError::Xml(e.to_string())
+    }
+}
+
+impl From<reqwest::Error> for AuthError {
+    fn from(e: reqwest::Error) -> Self {
+        AuthError::Http(e.to_string())
+    }
+}
+
+/// A value (e.g. a metadata-derived URL) is not representable in an HTTP
+/// header. `Config` rather than `Http`: it means the loaded metadata/config is
+/// bad, not that a transient transport failure occurred.
+impl From<axum::http::header::InvalidHeaderValue> for AuthError {
+    fn from(e: axum::http::header::InvalidHeaderValue) -> Self {
+        AuthError::Config(format!("value is not representable in an HTTP header: {e}"))
+    }
 }
 
 #[cfg(test)]
@@ -42,13 +69,5 @@ mod tests {
     fn display_config_error() {
         let err = AuthError::Config("missing var".to_string());
         assert_eq!(format!("{err}"), "Config error: missing var");
-    }
-
-    #[test]
-    fn from_io_error() {
-        let io_err = std::io::Error::new(std::io::ErrorKind::NotFound, "gone");
-        let err: AuthError = io_err.into();
-        assert!(matches!(err, AuthError::Io(_)));
-        assert!(format!("{err}").contains("gone"));
     }
 }

@@ -3,13 +3,15 @@
 //! [`AuthState`] hooks the auth-service invokes on login and logout.
 
 use askama::Template;
-use auth_service::{AuthFailure, AuthState, handle_logout};
+use auth_service::{AuthFailure, AuthServiceState, AuthState, RedirectTarget, handle_logout};
 use axum::{
-    extract::State,
+    extract::{FromRef, State},
     http::{HeaderMap, HeaderName, HeaderValue},
     response::{IntoResponse, Response},
 };
 use axum_extra::extract::CookieJar;
+
+use axum_extra::routing::TypedPath;
 
 use super::{LoggedOutPath, LogoutPath};
 use crate::{
@@ -64,14 +66,19 @@ pub async fn logout(_: LogoutPath, session: Session) -> Response {
     .into_response()
 }
 
+/// Where the auth-service sends the browser once logout completes. Built from
+/// [`LoggedOutPath`]'s own `PATH`, so the redirect and the route that serves it
+/// cannot drift.
+const LOGGED_OUT: RedirectTarget = RedirectTarget::from_static(LoggedOutPath::PATH);
+
 /// POST `/logout`: starts SP-initiated logout (eID §7.7.1); the session
 /// middleware has already verified the CSRF token.
-pub async fn logout_submit<S: AppRequestState + AuthState>(
-    _: LogoutPath,
-    State(state): State<S>,
-    jar: CookieJar,
-) -> Response {
-    handle_logout(&state, jar, &LoggedOutPath.to_string()).await
+pub async fn logout_submit<S>(_: LogoutPath, State(state): State<S>, jar: CookieJar) -> Response
+where
+    S: AppRequestState + AuthState,
+    AuthServiceState: FromRef<S>,
+{
+    handle_logout(&state, jar, &LOGGED_OUT).await
 }
 
 /// GET `/logged-out`: post-logout confirmation page (TVS T7, also the SLO
@@ -110,7 +117,7 @@ pub fn auth_failure_response(failure: AuthFailure, locale: Locale) -> Response {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use auth_service::SubjectId;
+    use auth_service::{LoggedOutSession, NameId, SubjectId};
     use axum::{
         body::Body,
         http::{Request, StatusCode, header},
@@ -248,7 +255,7 @@ mod tests {
         let response = state
             .on_authenticated(
                 subject("999999990"),
-                "name-id-xyz".to_string(),
+                NameId::parse("name-id-xyz").unwrap(),
                 CookieJar::new(),
                 &HeaderMap::new(),
             )
@@ -279,7 +286,7 @@ mod tests {
         let response = state
             .on_authenticated(
                 subject("999999990"),
-                "name-id-xyz".to_string(),
+                NameId::parse("name-id-xyz").unwrap(),
                 CookieJar::new(),
                 &HeaderMap::new(),
             )
@@ -313,7 +320,7 @@ mod tests {
         let response = state
             .on_authenticated(
                 subject("999999990"),
-                "name-id-xyz".to_string(),
+                NameId::parse("name-id-xyz").unwrap(),
                 CookieJar::new(),
                 &HeaderMap::new(),
             )
@@ -343,19 +350,19 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn logout_session_without_cookie_has_no_name_id() {
+    async fn logout_session_without_cookie_reports_no_session() {
         // Nothing to clear when the request carried no session cookie.
         let state = crate::AppState::new_for_tests().await;
-        let (_jar, name_id) = state.logout_session(CookieJar::new()).await;
-        assert!(name_id.is_none());
+        let (_jar, ended) = state.logout_session(CookieJar::new()).await;
+        assert_eq!(ended, LoggedOutSession::None);
     }
 
     #[tokio::test]
-    async fn logout_session_unknown_session_clears_and_has_no_name_id() {
+    async fn logout_session_unknown_session_clears_and_reports_no_session() {
         let state = crate::AppState::new_for_tests().await;
         let jar = jar_with_session_cookie("no-such-token");
-        let (jar, name_id) = state.logout_session(jar).await;
-        assert!(name_id.is_none());
+        let (jar, ended) = state.logout_session(jar).await;
+        assert_eq!(ended, LoggedOutSession::None);
         assert!(clears_session_cookie(jar));
     }
 
@@ -372,8 +379,11 @@ mod tests {
         state.sessions().insert(session).await;
 
         let jar = jar_with_session_cookie(&token);
-        let (jar, name_id) = state.logout_session(jar).await;
-        assert_eq!(name_id.as_deref(), Some("name-id-xyz"));
+        let (jar, ended) = state.logout_session(jar).await;
+        assert_eq!(
+            ended,
+            LoggedOutSession::WithSamlSubject(NameId::parse("name-id-xyz").unwrap())
+        );
         assert!(clears_session_cookie(jar));
         assert!(
             state
@@ -387,15 +397,17 @@ mod tests {
 
     #[tokio::test]
     async fn logout_session_with_empty_name_id_still_clears_and_ends_session() {
-        // An empty NameID must still clear the cookie and end the session.
+        // A session with no SAML NameID (the dev-login bypass) must still clear
+        // the cookie and end the session, but has no RD session to log out: no
+        // LogoutRequest is built for it.
         let state = crate::AppState::new_for_tests().await;
         let session = Session::new_test(); // saml_name_id defaults to ""
         let token = session.token_string();
         state.sessions().insert(session).await;
 
         let jar = jar_with_session_cookie(&token);
-        let (jar, name_id) = state.logout_session(jar).await;
-        assert_eq!(name_id.as_deref(), Some(""));
+        let (jar, ended) = state.logout_session(jar).await;
+        assert_eq!(ended, LoggedOutSession::WithoutSamlSubject);
         assert!(clears_session_cookie(jar));
         assert!(
             state
@@ -419,7 +431,7 @@ mod tests {
         let _ = state
             .on_authenticated(
                 subject("999999990"),
-                "name-id-xyz".to_string(),
+                NameId::parse("name-id-xyz").unwrap(),
                 jar,
                 &HeaderMap::new(),
             )

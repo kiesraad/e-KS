@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head><title>Inloggen</title></head>
+<body>
+  <form id="saml" method="POST" action="{{ destination }}">
+    <input type="hidden" name="{{ param_name }}" value="{{ encoded }}" />
+    <noscript><button type="submit">Doorgaan</button></noscript>
+  </form>
+  <script src="{{ autosubmit_js_path }}"></script>
+</body>
+</html>

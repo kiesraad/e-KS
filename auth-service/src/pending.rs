@@ -1,40 +1,95 @@
 //! In-memory store of outstanding AuthnRequest IDs for the `InResponseTo`
-//! replay check (eID §7.6.3.5 rule 4 / §9.7). Process-local: multi-instance
-//! deployments should back this with shared storage (e.g. the database).
+//! replay check (eID §7.6.3.5 rule 4 / §9.7).
+//!
+//! Default process-local implementation an embedding application can use for
+//! [`AuthState::consume_if_pending`](crate::AuthState) and
+//! [`register_pending_request`](crate::AuthState::register_pending_request)
+//! when IDs need not be shared across instances. Deployments running more than
+//! one application server should back the storage with something shared (e.g.
+//! the database), because a login started on one server may have its ACS
+//! callback handled by another.
 
+use parking_lot::Mutex;
 use std::{
     collections::HashMap,
-    sync::{Arc, Mutex},
+    sync::Arc,
     time::{SystemTime, UNIX_EPOCH},
 };
 
-/// Retention window for outstanding AuthnRequest IDs (eID §9.7). Matches the
-/// 15-minute artifact validity (eID §7.1/§7.5); expired entries are swept.
+/// Retention window for an outstanding AuthnRequest ID used in the
+/// `InResponseTo` replay check (eID §9.7). The correlated artifact is valid for
+/// at most 15 minutes (eID §7.1/§7.5), so a legitimate flow always completes
+/// within this window. Older entries are swept, bounding memory and the
+/// replay-acceptance window for abandoned flows (cancellations/errors leave no
+/// assertion to correlate, so they can only be reclaimed by age).
 pub const PENDING_REQUEST_TTL: std::time::Duration = std::time::Duration::from_secs(15 * 60);
 
 const PENDING_REQUEST_TTL_MS: u64 = PENDING_REQUEST_TTL.as_secs() * 1000;
 
+/// Map size above which a housekeeping sweep runs. Chosen so a normal working
+/// set (outstanding logins within the 15-minute TTL) never triggers one, while
+/// abandoned flows still cannot grow the map without bound: the sweep is O(n)
+/// but amortised over at least this many inserts, so the per-request cost stays
+/// O(1).
+const SWEEP_THRESHOLD: usize = 1024;
+
+/// Sweep entries that have outlived [`PENDING_REQUEST_TTL`] so abandoned flows
+/// cannot accumulate.
+///
+/// Housekeeping only: expiry itself is enforced per-entry at lookup time (see
+/// [`PendingRequests::consume_if_pending`]), so *when* this runs never affects
+/// whether an expired ID can match. That is what lets it be skipped on most
+/// calls.
+fn sweep(pending: &mut HashMap<String, u64>, now: u64) {
+    pending.retain(|_, &mut created| !is_expired(created, now));
+}
+
+/// Whether an entry registered at `created` has outlived the TTL as of `now`.
+fn is_expired(created: u64, now: u64) -> bool {
+    now.saturating_sub(created) >= PENDING_REQUEST_TTL_MS
+}
+
+/// Sweep only once the map has grown past [`SWEEP_THRESHOLD`], keeping the
+/// common path a single hash operation.
+fn sweep_if_large(pending: &mut HashMap<String, u64>, now: u64) {
+    if pending.len() >= SWEEP_THRESHOLD {
+        sweep(pending, now);
+    }
+}
+
+/// Process-local, in-memory set of outstanding AuthnRequest IDs with creation
+/// timestamps. Cheap to clone (internally reference-counted), so it can be
+/// stored on an application's shared state.
 #[derive(Clone, Default)]
 pub struct PendingRequests {
     inner: Arc<Mutex<HashMap<String, u64>>>,
 }
 
 impl PendingRequests {
-    /// Record an outgoing AuthnRequest ID, sweeping expired entries first.
+    /// Record an outgoing AuthnRequest ID.
     pub fn register(&self, id: String) {
         let now = unix_ms();
-        let mut pending = self.inner.lock().unwrap();
-        pending.retain(|_, &mut created| now.saturating_sub(created) < PENDING_REQUEST_TTL_MS);
+        let mut pending = self.inner.lock();
+        sweep_if_large(&mut pending, now);
         pending.insert(id, now);
     }
 
-    /// Consume a pending request ID (eID §7.6.3.5 rule 4 / §9.7), sweeping expired
-    /// entries first. Returns `false` for unknown, expired, or already-consumed IDs.
+    /// Atomically check whether `id` is a still-valid outstanding request and,
+    /// if so, consume it so it can never be matched again (eID §7.6.3.5 rule 4 /
+    /// §9.7). Returns `false` for an unknown, expired, or already-consumed ID.
+    ///
+    /// An ID older than [`PENDING_REQUEST_TTL`] is rejected on its own timestamp,
+    /// so expiry does not depend on a sweep having run. The entry is removed
+    /// either way: an expired ID is consumed as it is refused, so a replay of it
+    /// cannot even reach the age check twice.
     pub fn consume_if_pending(&self, id: &str) -> bool {
         let now = unix_ms();
-        let mut pending = self.inner.lock().unwrap();
-        pending.retain(|_, &mut created| now.saturating_sub(created) < PENDING_REQUEST_TTL_MS);
-        pending.remove(id).is_some()
+        let mut pending = self.inner.lock();
+        sweep_if_large(&mut pending, now);
+        match pending.remove(id) {
+            Some(created) => !is_expired(created, now),
+            None => false,
+        }
     }
 }
 
@@ -55,9 +110,12 @@ mod tests {
         pending.register("abc".into());
         pending.register("def".into());
 
+        // A registered ID matches exactly once...
         assert!(pending.consume_if_pending("abc"));
-        assert!(!pending.consume_if_pending("abc")); // replay rejected
-        assert!(pending.consume_if_pending("def")); // other IDs are unaffected
+        // ...and a replay of the same ID is rejected.
+        assert!(!pending.consume_if_pending("abc"));
+        // Other registered IDs are unaffected.
+        assert!(pending.consume_if_pending("def"));
     }
 
     #[test]
@@ -69,13 +127,16 @@ mod tests {
     #[test]
     fn expired_pending_requests_are_rejected_and_swept() {
         let pending = PendingRequests::default();
+        // Inject a stale entry whose timestamp is well past the TTL.
         pending
             .inner
             .lock()
-            .unwrap()
             .insert("stale".into(), unix_ms() - PENDING_REQUEST_TTL_MS - 1);
 
-        assert!(!pending.consume_if_pending("stale")); // expired -> rejected (eID §9.7)
-        assert!(pending.inner.lock().unwrap().is_empty()); // swept in same call
+        // An expired ID no longer matches (so a stale InResponseTo is rejected,
+        // eID §9.7)...
+        assert!(!pending.consume_if_pending("stale"));
+        // ...and the stale entry has been physically swept in the same call.
+        assert!(pending.inner.lock().is_empty());
     }
 }
