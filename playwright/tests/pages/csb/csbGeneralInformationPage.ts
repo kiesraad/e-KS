@@ -4,8 +4,10 @@ export class CsbGeneralInformationPage {
   readonly headerGeneralInformation: Locator;
   readonly linkAddOmission: Locator;
   readonly linkManageOmissions: Locator;
-  readonly linkRegisteredDesignation: Locator;
-  readonly textCorrectedName: Locator;
+  readonly linkRegisteredDesignationStandalone: Locator;
+  readonly linkRegisteredDesignationCombined: Locator;
+  readonly textCorrectedNameStandalone: Locator;
+  readonly textCorrectedNameCombined: Locator;
   readonly textCorrectedType: Locator;
   readonly linkBack: Locator;
 
@@ -20,11 +22,17 @@ export class CsbGeneralInformationPage {
     this.linkManageOmissions = this.page.getByRole("link", {
       name: "Overzicht",
     });
-    this.linkRegisteredDesignation = this.page.getByRole("cell", {
+    this.linkRegisteredDesignationStandalone = this.page.getByRole("cell", {
       name: "Geregistreerde aanduiding",
     });
-    this.textCorrectedName = this.page
+    this.linkRegisteredDesignationCombined = this.page.getByRole("cell", {
+      name: "Samengevoegde aanduiding",
+    });
+    this.textCorrectedNameStandalone = this.page
       .getByRole("row", { name: "Geregistreerde aanduiding:" })
+      .getByRole("strong");
+    this.textCorrectedNameCombined = this.page
+      .getByRole("row", { name: "Samengevoegde aanduiding:" })
       .getByRole("strong");
     this.textCorrectedType = this.page
       .getByRole("row", { name: "Type lijstaanduiding:" })
