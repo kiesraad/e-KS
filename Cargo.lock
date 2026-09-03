@@ -962,6 +962,7 @@ dependencies = [
  "csv",
  "eks-locales",
  "eml-nl",
+ "futures-lite",
  "hkdf",
  "http-body-util",
  "hyper-util",

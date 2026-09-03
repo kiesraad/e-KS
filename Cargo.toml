@@ -97,6 +97,7 @@ bagatel = "0.8.3"
 eml-nl = "0.7.0"
 
 # dev-dependencies
+futures-lite = { version = "2.1.0", default-features = false, features = ["std"] }
 http-body-util = "0.1"
 tower = "0.5"
 tracing-test = "0.2.6"
@@ -198,6 +199,7 @@ memory-serve = { workspace = true, optional = true }
 
 [dev-dependencies]
 eks-locales = { path = "tools/locales" }
+futures-lite = { workspace = true }
 tower = { workspace = true }
 tracing-test = { workspace = true }
 tokio = { workspace = true, features = ["test-util"] }
