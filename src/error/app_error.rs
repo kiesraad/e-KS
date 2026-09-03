@@ -3,6 +3,7 @@ use axum::extract::{
     rejection::{JsonRejection, PathRejection, QueryRejection},
 };
 use axum_extra::extract::FormRejection;
+use chrono::TimeDelta;
 use std::{
     convert::Infallible,
     fmt::{Display, Formatter},
@@ -62,6 +63,26 @@ pub enum AppError {
     /// A hash prefix matched more than one event; the user must supply a longer prefix.
     AmbiguousHash,
 
+    /// The download rate limit was reached; clears once the window passes.
+    TooManyDownloads {
+        max: usize,
+        window: TimeDelta,
+    },
+
+    /// The events-per-window rate limit was reached; clears once the window
+    /// passes.
+    TooManyEvents {
+        max: usize,
+        window: TimeDelta,
+    },
+
+    /// The absolute cap on the number of events in one stream is reached, so
+    /// no new event is accepted. Reads are unaffected: the stream stays
+    /// viewable.
+    EventLimitReached {
+        max: usize,
+    },
+
     /// A persisted event could not be decrypted or deserialized.
     /// Indicates tampering, a wrong key, or a corrupt/unsupported frame.
     EventDecodeError(String),
@@ -81,6 +102,20 @@ impl Display for AppError {
                 "Cannot add more than {max} candidates to a candidate list"
             ),
             AppError::AmbiguousHash => write!(f, "Ambiguous hash prefix"),
+            AppError::TooManyDownloads { max, window } => write!(
+                f,
+                "Rate limit reached: at most {max} downloads per {} seconds",
+                window.num_seconds()
+            ),
+            AppError::TooManyEvents { max, window } => write!(
+                f,
+                "Rate limit reached: at most {max} changes per {} seconds",
+                window.num_seconds()
+            ),
+            AppError::EventLimitReached { max } => write!(
+                f,
+                "Maximum of {max} recorded changes for this account reached"
+            ),
             AppError::InternalServerError => write!(f, "Internal server error"),
             AppError::JsonRejection(err) => write!(f, "JSON error: {err}"),
             AppError::MissingEnvVar(var) => write!(f, "Missing environment variable: {var}"),

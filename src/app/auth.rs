@@ -33,7 +33,10 @@ impl AppState {
             return Ok(None);
         };
         let store = self.store_for_stream(stream_id, election, false).await?;
-        PgStore::own(store).update(PgEvent::Login).await?;
+        PgStore::own(store)
+            .with_limits(self.config.rate_limits)
+            .update(PgEvent::Login)
+            .await?;
         Ok(Some(election))
     }
 
@@ -54,7 +57,12 @@ impl AppState {
                 election: Some(election),
                 ..
             } => match self.store_for_stream(*stream_id, *election, false).await {
-                Ok(store) => PgStore::own(store).update(PgEvent::Logout).await,
+                Ok(store) => {
+                    PgStore::own(store)
+                        .with_limits(self.config.rate_limits)
+                        .update(PgEvent::Logout)
+                        .await
+                }
                 Err(err) => Err(err),
             },
             SessionUser::PoliticalGroup { election: None, .. } => return,

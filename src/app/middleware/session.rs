@@ -143,7 +143,11 @@ pub async fn store_middleware(
             };
 
             let resolved = state.store_for_stream(*stream_id, election, false).await;
-            inject_loaded_store(&state, resolved, request, next, PgStore::own).await
+            let limits = state.config.rate_limits;
+            inject_loaded_store(&state, resolved, request, next, move |store| {
+                PgStore::own(store).with_limits(limits)
+            })
+            .await
         }
     }
 }
