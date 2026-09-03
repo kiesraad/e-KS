@@ -22,5 +22,9 @@ cargo build \
 
 pushd playwright
     docker compose build --quiet
+    docker compose run application || {
+        docker compose logs application
+        exit 1
+    }
     docker compose run --rm --quiet-pull --quiet-build playwright
 popd

@@ -12,7 +12,7 @@ services:
     depends_on:
       - application
     networks: [pw_network]
-    
+
   application:
     build:
       dockerfile: docker/application.Dockerfile
