@@ -55,6 +55,7 @@ mod tests {
 
     use crate::{
         StreamId,
+        csb::examination::structs::BrpCheckState,
         test_utils::{response_body_string, sample_political_group},
     };
 
@@ -63,6 +64,7 @@ mod tests {
         let groups = CsbPoliticalGroups(vec![CsbPoliticalGroup {
             political_group: sample_political_group(),
             stream_id: StreamId::new(),
+            brp: BrpCheckState::NotChecked,
             is_examination_finished: false,
             is_deleted: false,
             restoration_count: 0,
@@ -86,10 +88,67 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn the_brp_column_follows_the_group_rather_than_always_reading_correct() {
+        let groups = CsbPoliticalGroups(vec![CsbPoliticalGroup {
+            political_group: sample_political_group(),
+            stream_id: StreamId::new(),
+            brp: BrpCheckState::Errors { errors: 2 },
+            is_examination_finished: false,
+            is_deleted: false,
+            restoration_count: 0,
+            omission_count: 0,
+            first_candidate_name: None,
+        }]);
+
+        let response = overview(
+            CsbExaminationOverviewPath {},
+            CsbContext::new_test(),
+            groups,
+        )
+        .await
+        .unwrap()
+        .into_response();
+
+        let body = response_body_string(response).await;
+        assert!(body.contains("Errors"), "{body}");
+        assert!(!body.contains("Correct"));
+    }
+
+    #[tokio::test]
+    async fn a_check_that_did_not_finish_is_not_reported_as_a_verdict() {
+        let groups = CsbPoliticalGroups(vec![CsbPoliticalGroup {
+            political_group: sample_political_group(),
+            stream_id: StreamId::new(),
+            brp: BrpCheckState::Incomplete { errors: 2 },
+            is_examination_finished: false,
+            is_deleted: false,
+            restoration_count: 0,
+            omission_count: 0,
+            first_candidate_name: None,
+        }]);
+
+        let response = overview(
+            CsbExaminationOverviewPath {},
+            CsbContext::new_test(),
+            groups,
+        )
+        .await
+        .unwrap()
+        .into_response();
+
+        // What it found so far is on the group page; one tag must not pass for
+        // a verdict the check never reached.
+        let body = response_body_string(response).await;
+        assert!(body.contains("Check not finished"), "{body}");
+        assert!(!body.contains(">Errors<"));
+    }
+
+    #[tokio::test]
     async fn overview_skips_deleted_political_group_names() {
         let groups = CsbPoliticalGroups(vec![CsbPoliticalGroup {
             political_group: sample_political_group(),
             stream_id: StreamId::new(),
+            brp: BrpCheckState::NotChecked,
             is_examination_finished: false,
             is_deleted: true,
             restoration_count: 0,
@@ -117,6 +176,7 @@ mod tests {
         let groups = CsbPoliticalGroups(vec![CsbPoliticalGroup {
             political_group: sample_political_group(),
             stream_id: StreamId::new(),
+            brp: BrpCheckState::NotChecked,
             is_examination_finished: false,
             is_deleted: false,
             restoration_count: 0, /* omission count should be used and > 0 */

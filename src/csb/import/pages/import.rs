@@ -1,4 +1,8 @@
-use std::time::Duration;
+use std::{
+    collections::HashSet,
+    sync::{LazyLock, Mutex},
+    time::Duration,
+};
 
 use askama::Template;
 use axum::{
@@ -15,7 +19,7 @@ use crate::{
     projection::WithCorrections,
     redirect_success,
     structs::{
-        brp::{BrpClient, BrpStatus},
+        brp::{BRP_BSN_BATCH_SIZE, BrpClient, BrpStatus},
         persons::Person,
     },
     trans,
@@ -205,21 +209,85 @@ pub async fn create_empty<S: AppRequestState>(
     }))
 }
 
-/// Verifies every candidate against the BRP in a background task. Returns
-/// immediately after spawning it instead of waiting for it to finish.
+/// The streams this process is sweeping right now.
+///
+/// [`BrpStatus::InProgress`] only records that a sweep was started, and a
+/// process that stopped halfway through leaves that behind for good.
+static RUNNING_SWEEPS: LazyLock<Mutex<HashSet<StreamId>>> =
+    LazyLock::new(|| Mutex::new(HashSet::new()));
+
+/// Whether a BRP sweep over this stream is running right now.
+pub fn brp_sweep_running(stream_id: StreamId) -> bool {
+    RUNNING_SWEEPS
+        .lock()
+        .expect("running sweeps")
+        .contains(&stream_id)
+}
+
+/// One stream claimed for one sweep, released on drop so that a sweep ending
+/// without recording its outcome still frees the stream.
+struct SweepClaim(StreamId);
+
+impl SweepClaim {
+    /// `None` when this stream is already being swept.
+    fn claim(stream_id: StreamId) -> Option<Self> {
+        // The guard has to be released before the claim exists: dropping one
+        // takes the same lock.
+        let claimed = RUNNING_SWEEPS
+            .lock()
+            .expect("running sweeps")
+            .insert(stream_id);
+
+        claimed.then(|| Self(stream_id))
+    }
+}
+
+impl Drop for SweepClaim {
+    fn drop(&mut self) {
+        RUNNING_SWEEPS
+            .lock()
+            .expect("running sweeps")
+            .remove(&self.0);
+    }
+}
+
+/// Claim a stream, so a test can render what a running sweep looks like.
+/// Released when the returned value is dropped.
+#[cfg(test)]
+pub fn claim_sweep_for_test(stream_id: StreamId) -> impl Drop {
+    SweepClaim::claim(stream_id).expect("stream is already being swept")
+}
+
+/// Start the BRP check for every candidate on `store` in a background task,
+/// returning as soon as it is spawned. A sweep that is already running is left
+/// alone rather than joined by a second one.
 pub async fn do_brp_verification(store: &CsbStore, brp_client: &BrpClient) -> Result<(), AppError> {
+    // Claimed first, so two concurrent requests cannot both get past here.
+    let Some(claim) = SweepClaim::claim(store.stream_id) else {
+        tracing::info!(
+            "BRP check for stream {} is already running; not starting another",
+            store.stream_id
+        );
+        return Ok(());
+    };
+
     store
-        .update(CsbAction::SetBrpStatus(BrpStatus::InProgress))
+        .update(CsbAction::SetBrpStatus(BrpStatus::in_progress()))
         .await?;
 
-    // Spawned and intentionally not awaited here: verifying every candidate is
-    // slow, and this must not block the request that triggered it.
-    tokio::task::spawn(monitor_verification(store.clone(), brp_client.clone()));
+    tokio::task::spawn(monitor_verification(
+        store.clone(),
+        brp_client.clone(),
+        claim,
+    ));
 
     Ok(())
 }
 
-async fn monitor_verification(store: CsbStore, brp_client: BrpClient) {
+/// Run the sweep and record how it ended. Anything that stops it early leaves
+/// the stream [`BrpStatus::Aborted`]: "finished" has to mean every candidate
+/// was actually checked. `_claim` is released once the outcome is recorded.
+async fn monitor_verification(store: CsbStore, brp_client: BrpClient, _claim: SweepClaim) {
     let outcome = tokio::task::spawn(verify_candidates(store.clone(), brp_client)).await;
 
     let error = match outcome {
@@ -227,6 +295,8 @@ async fn monitor_verification(store: CsbStore, brp_client: BrpClient) {
         Ok(Err(err)) => err.to_string(),
         Err(join_err) => join_err.to_string(),
     };
+
+    tracing::error!("BRP check for stream {} aborted: {error}", store.stream_id);
 
     if let Err(err) = store
         .update(CsbAction::SetBrpStatus(BrpStatus::Aborted(error)))
@@ -236,26 +306,34 @@ async fn monitor_verification(store: CsbStore, brp_client: BrpClient) {
     }
 }
 
-/// Check every candidate on `store` not already covered by
-/// `CsbStoreData::brp_validations` against the BRP, waiting
-/// `BRP_COURTESY_TIMEOUT` between checks. A single candidate's failure is
-/// logged and does not stop the rest of the sweep; only a failure to record
-/// the final status is propagated to the caller.
+/// Check every candidate not covered by `CsbStoreData::brp_findings` yet,
+/// [`BRP_BSN_BATCH_SIZE`] per request with `BRP_COURTESY_TIMEOUT` in between.
+///
+/// The corrected data is checked, since that is what the committee examines.
+/// Errors propagate: the BRP being unreachable must not record the remaining
+/// candidates as clean.
 async fn verify_candidates(store: CsbStore, brp_client: BrpClient) -> Result<(), AppError> {
-    let already_validated = store.get_brp_validations();
-    let unvalidated = store
+    let already_checked = store.get_brp_findings();
+    let unchecked: Vec<Person> = store
         .get_persons(WithCorrections::All)
         .into_iter()
-        .filter(|person| !already_validated.contains_key(&person.id));
+        .filter(|person| !already_checked.contains_key(&person.id))
+        .collect();
 
     let mut ticker = tokio::time::interval(BRP_COURTESY_TIMEOUT);
-    for person in unvalidated {
+    for batch in unchecked.chunks(BRP_BSN_BATCH_SIZE) {
         ticker.tick().await;
-        check_candidate(&store, &brp_client, &person).await;
+
+        for (person, findings) in brp_client.verify_batch(batch).await? {
+            store
+                .update(CsbAction::BrpPersonChecked { person, findings })
+                .await?;
+        }
     }
 
     tracing::info!(
-        "Finished checking candidates on list {}",
+        "Finished checking {} candidates on list {}",
+        unchecked.len(),
         store
             .get_political_group(WithCorrections::All)
             .appellation
@@ -264,45 +342,6 @@ async fn verify_candidates(store: CsbStore, brp_client: BrpClient) -> Result<(),
 
     store
         .update(CsbAction::SetBrpStatus(BrpStatus::Finished))
-        .await
-}
-
-/// Verify a single candidate, logging (rather than propagating) a failure so
-/// it does not stop the rest of the sweep in [`verify_candidates`].
-async fn check_candidate(store: &CsbStore, brp_client: &BrpClient, person: &Person) {
-    match verify_candidate(store, brp_client, person).await {
-        Err(err) => tracing::error!("{}", err),
-        Ok(()) => tracing::info!("Checked person {} against the brp", person.id),
-    }
-}
-
-/// Verify this candidate against the BRP, creating omissions that contain the
-/// lists this candidate is on. Finally, the store is updated with a
-/// `BrpPersonValidated` event.
-async fn verify_candidate(
-    store: &CsbStore,
-    brp_client: &BrpClient,
-    person: &Person,
-) -> Result<(), AppError> {
-    let candidate_lists = store
-        .get_candidate_lists(WithCorrections::None)
-        .iter()
-        .filter(|cl| cl.candidates.contains(&person.id))
-        .map(|cl| cl.id)
-        .collect();
-
-    let omissions = brp_client.verify(person, candidate_lists).await?;
-    let valid = omissions.is_empty();
-
-    for omission in omissions {
-        omission.create(store).await?;
-    }
-
-    store
-        .update(CsbAction::BrpPersonValidated {
-            person: person.id,
-            valid,
-        })
         .await
 }
 
@@ -315,6 +354,8 @@ mod tests {
         AppState,
         CsbAction::Delete,
         CsbContext, ElectionConfig, PgEvent,
+        brp_stub::{BrpStub, matching_record},
+        structs::brp::{BrpFinding, BrpValue},
         test_utils::{response_body_string, sample_person_from_brp},
         utils::format_hash,
     };
@@ -330,18 +371,6 @@ mod tests {
 
         let hash = source_store.data.read().events[0].hash;
         Ok((source_stream, format_hash(&hash, false)))
-    }
-
-    /// Poll briefly for the background BRP check to finish, instead of
-    /// sleeping for the full courtesy timeout between candidates.
-    async fn wait_for_brp_status_finished(store: &CsbStore) {
-        for _ in 0..100 {
-            if matches!(store.data.read().brp_validation_status, BrpStatus::Finished) {
-                return;
-            }
-            tokio::time::sleep(Duration::from_millis(20)).await;
-        }
-        panic!("BRP verification did not finish in time");
     }
 
     /// Submit the import form against a fresh test context.
@@ -528,30 +557,118 @@ mod tests {
         Ok(())
     }
 
-    #[tokio::test]
-    async fn brp_verification_records_an_omission_for_a_mismatched_person() -> Result<(), AppError>
-    {
-        let state = AppState::new_for_tests().await;
+    /// Poll for the background check to reach `status`, rather than sleeping
+    /// out the full courtesy timeout.
+    async fn wait_for_brp_status(store: &CsbStore, expected: fn(&BrpStatus) -> bool) -> BrpStatus {
+        for _ in 0..200 {
+            let status = store.get_brp_status();
+            if expected(&status) {
+                return status;
+            }
+            tokio::time::sleep(Duration::from_millis(20)).await;
+        }
+        panic!(
+            "BRP verification did not reach the expected status in time, stuck at {:?}",
+            store.get_brp_status()
+        );
+    }
+
+    /// The candidate's burgerservicenummer, to serve a record under.
+    fn exposed_bsn(person: &Person) -> String {
+        person
+            .personal_data
+            .bsn
+            .as_ref()
+            .expect("the fixture has a BSN")
+            .to_exposed_string()
+    }
+
+    /// A store holding `person`, ready for a sweep.
+    async fn store_with_candidate(state: &AppState, person: Person) -> Result<CsbStore, AppError> {
         let csb_store = state
             .csb_store_for_stream(StreamId::new(), ElectionConfig::EK27)
             .await?
             .acting_as_test_user();
-
-        // This person matches a record in the local BRP mock exactly, except for
-        // the tampered field below, so the check should find one mismatch.
-        let mut person = sample_person_from_brp();
-        person.address.house_number_addition = Some("nope".parse().unwrap());
         csb_store.add_person(person);
+        Ok(csb_store)
+    }
 
-        let brp_client = BrpClient::new_for_test();
-        do_brp_verification(&csb_store, &brp_client).await?;
+    #[tokio::test]
+    async fn brp_verification_records_a_finding_for_a_mismatched_candidate() -> Result<(), AppError>
+    {
+        let state = AppState::new_for_tests().await;
+        let person = sample_person_from_brp();
+        let person_id = person.id;
+        let bsn = person
+            .personal_data
+            .bsn
+            .as_ref()
+            .expect("the fixture has a BSN")
+            .to_exposed_string();
+        let csb_store = store_with_candidate(&state, person).await?;
 
-        wait_for_brp_status_finished(&csb_store).await;
-        let omission = csb_store.get_omission_for_test();
+        // The BRP agrees on everything except the place of residence.
+        let mut record = matching_record(&bsn);
+        record["verblijfplaats"]["verblijfadres"]["woonplaats"] = serde_json::json!("Amsterdam");
+        let stub = BrpStub::serving(vec![record]).await;
+
+        do_brp_verification(&csb_store, &stub.client).await?;
+        wait_for_brp_status(&csb_store, |status| matches!(status, BrpStatus::Finished)).await;
+
         assert_eq!(
-            omission.description.as_str(),
-            "De huisnummertoevoeging komt niet overeen met de BRP"
+            csb_store.get_brp_findings_for_person(person_id),
+            vec![BrpFinding::Mismatch {
+                brp_value: BrpValue::PlaceOfResidence("Amsterdam".parse().unwrap()),
+            }]
         );
+        // A BRP difference is for the committee to weigh, not a verzuim.
+        assert!(csb_store.data.read().omissions.is_empty());
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn a_matching_candidate_is_recorded_as_checked_with_nothing_found() -> Result<(), AppError>
+    {
+        let state = AppState::new_for_tests().await;
+        let person = sample_person_from_brp();
+        let person_id = person.id;
+        let bsn = person
+            .personal_data
+            .bsn
+            .as_ref()
+            .expect("the fixture has a BSN")
+            .to_exposed_string();
+        let csb_store = store_with_candidate(&state, person).await?;
+
+        let stub = BrpStub::serving(vec![matching_record(&bsn)]).await;
+
+        do_brp_verification(&csb_store, &stub.client).await?;
+        wait_for_brp_status(&csb_store, |status| matches!(status, BrpStatus::Finished)).await;
+
+        // Present in the map with no findings: checked, and nothing found.
+        let findings = csb_store.get_brp_findings();
+        assert_eq!(findings.get(&person_id), Some(&Vec::new()));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn an_unreachable_brp_aborts_the_sweep_instead_of_finishing_it() -> Result<(), AppError> {
+        let state = AppState::new_for_tests().await;
+        let csb_store = store_with_candidate(&state, sample_person_from_brp()).await?;
+
+        // Port 1 on loopback refuses connections.
+        let brp_client = BrpClient::new_for_test("http://127.0.0.1:1");
+
+        do_brp_verification(&csb_store, &brp_client).await?;
+        let status =
+            wait_for_brp_status(&csb_store, |status| matches!(status, BrpStatus::Aborted(_))).await;
+
+        // A BRP outage must not leave an empty findings list that reads as
+        // "the BRP agreed on everything".
+        assert!(matches!(status, BrpStatus::Aborted(_)), "{status:?}");
+        assert!(csb_store.get_brp_findings().is_empty());
 
         Ok(())
     }
@@ -565,54 +682,159 @@ mod tests {
             .await?
             .acting_as_test_user();
 
-        // Two candidates requires one BRP_COURTESY_TIMEOUT (1s) tick.
-        // do_brp_verification should return well before that.
-        csb_store.add_person(sample_person_from_brp());
-        csb_store.add_person(sample_person_from_brp());
+        // Two batches means one BRP_COURTESY_TIMEOUT tick; the call should
+        // return well before that.
+        for _ in 0..=BRP_BSN_BATCH_SIZE {
+            csb_store.add_person(sample_person_from_brp());
+        }
 
-        let brp_client = BrpClient::new_for_test();
+        let stub = BrpStub::serving(Vec::new()).await;
 
         let start = tokio::time::Instant::now();
-        do_brp_verification(&csb_store, &brp_client).await?;
+        do_brp_verification(&csb_store, &stub.client).await?;
         let elapsed = start.elapsed();
         assert!(
             elapsed < BRP_COURTESY_TIMEOUT,
             "do_brp_verification should return immediately instead of waiting for the background check, took {elapsed:?}"
         );
 
-        wait_for_brp_status_finished(&csb_store).await;
+        wait_for_brp_status(&csb_store, |status| matches!(status, BrpStatus::Finished)).await;
 
         Ok(())
     }
 
     #[tokio::test]
-    async fn do_brp_verification_skips_already_validated_persons_on_a_later_call()
-    -> Result<(), AppError> {
+    async fn candidates_are_looked_up_in_batches() -> Result<(), AppError> {
         let state = AppState::new_for_tests().await;
         let csb_store = state
             .csb_store_for_stream(StreamId::new(), ElectionConfig::EK27)
             .await?
             .acting_as_test_user();
 
-        let mut person = sample_person_from_brp();
-        person.address.house_number_addition = Some("nope".parse().unwrap());
-        csb_store.add_person(person);
+        for _ in 0..BRP_BSN_BATCH_SIZE {
+            csb_store.add_person(sample_person_from_brp());
+        }
 
-        let brp_client = BrpClient::new_for_test();
+        let stub = BrpStub::serving(Vec::new()).await;
+        do_brp_verification(&csb_store, &stub.client).await?;
+        wait_for_brp_status(&csb_store, |status| matches!(status, BrpStatus::Finished)).await;
 
-        do_brp_verification(&csb_store, &brp_client).await?;
-        wait_for_brp_status_finished(&csb_store).await;
-        assert_eq!(csb_store.data.read().omissions.len(), 1);
-        assert_eq!(csb_store.data.read().brp_validations.len(), 1);
+        // They share one burgerservicenummer, so one lookup covers them.
+        let lookups = stub.queries_of_type("RaadpleegMetBurgerservicenummer");
+        assert_eq!(lookups.len(), 1);
+        assert_eq!(
+            lookups[0]["burgerservicenummer"].as_array().map(Vec::len),
+            Some(BRP_BSN_BATCH_SIZE)
+        );
 
-        // Re-running verification should skip the already-validated candidate
-        // rather than re-checking them and recording a duplicate omission. With
-        // no candidate left to check, the background task has nothing to wait
-        // on, so a short fixed delay is enough instead of polling for
-        // `Finished` (which the first run has already left behind).
-        do_brp_verification(&csb_store, &brp_client).await?;
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn do_brp_verification_skips_already_checked_candidates_on_a_later_call()
+    -> Result<(), AppError> {
+        let state = AppState::new_for_tests().await;
+        let person = sample_person_from_brp();
+        let bsn = person
+            .personal_data
+            .bsn
+            .as_ref()
+            .expect("the fixture has a BSN")
+            .to_exposed_string();
+        let csb_store = store_with_candidate(&state, person).await?;
+
+        let stub = BrpStub::serving(vec![matching_record(&bsn)]).await;
+
+        do_brp_verification(&csb_store, &stub.client).await?;
+        wait_for_brp_status(&csb_store, |status| matches!(status, BrpStatus::Finished)).await;
+        assert_eq!(stub.query_count(), 1);
+
+        // Nothing is left to check, so there is no status to wait for.
+        do_brp_verification(&csb_store, &stub.client).await?;
         tokio::time::sleep(Duration::from_millis(100)).await;
-        assert_eq!(csb_store.data.read().omissions.len(), 1);
+        assert_eq!(stub.query_count(), 1);
+
+        Ok(())
+    }
+
+    /// The case that used to be unrecoverable: nothing records how the sweep
+    /// ended, leaving an `InProgress` status with no sweep behind it.
+    #[tokio::test]
+    async fn a_sweep_whose_process_went_away_does_not_block_the_next_one() -> Result<(), AppError> {
+        let state = AppState::new_for_tests().await;
+        let person = sample_person_from_brp();
+        let bsn = exposed_bsn(&person);
+        let csb_store = store_with_candidate(&state, person).await?;
+
+        // What a restart leaves behind.
+        csb_store
+            .update(CsbAction::SetBrpStatus(BrpStatus::in_progress()))
+            .await?;
+        assert!(!brp_sweep_running(csb_store.stream_id));
+
+        let stub = BrpStub::serving(vec![matching_record(&bsn)]).await;
+        do_brp_verification(&csb_store, &stub.client).await?;
+
+        wait_for_brp_status(&csb_store, |status| matches!(status, BrpStatus::Finished)).await;
+        assert_eq!(
+            stub.query_count(),
+            1,
+            "the candidate should have been checked"
+        );
+
+        Ok(())
+    }
+
+    /// The claim has to be released too, or one sweep per stream would be all
+    /// this process ever ran.
+    #[tokio::test]
+    async fn a_finished_sweep_leaves_the_stream_free_for_the_next_one() -> Result<(), AppError> {
+        let state = AppState::new_for_tests().await;
+        let person = sample_person_from_brp();
+        let bsn = exposed_bsn(&person);
+        let csb_store = store_with_candidate(&state, person).await?;
+
+        let stub = BrpStub::serving(vec![matching_record(&bsn)]).await;
+        do_brp_verification(&csb_store, &stub.client).await?;
+        wait_for_brp_status(&csb_store, |status| matches!(status, BrpStatus::Finished)).await;
+
+        assert!(
+            !brp_sweep_running(csb_store.stream_id),
+            "a sweep that ended has to release the stream"
+        );
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn a_running_sweep_is_not_joined_by_a_second_one() -> Result<(), AppError> {
+        let state = AppState::new_for_tests().await;
+        let csb_store = state
+            .csb_store_for_stream(StreamId::new(), ElectionConfig::EK27)
+            .await?
+            .acting_as_test_user();
+
+        // Two batches, so the first sweep is still waiting out the courtesy
+        // timeout when the second call arrives.
+        for _ in 0..=BRP_BSN_BATCH_SIZE {
+            csb_store.add_person(sample_person_from_brp());
+        }
+
+        let stub = BrpStub::serving(Vec::new()).await;
+        do_brp_verification(&csb_store, &stub.client).await?;
+        assert!(brp_sweep_running(csb_store.stream_id));
+
+        // A second sweep would take the same snapshot and ask twice.
+        do_brp_verification(&csb_store, &stub.client).await?;
+        assert!(brp_sweep_running(csb_store.stream_id));
+
+        wait_for_brp_status(&csb_store, |status| matches!(status, BrpStatus::Finished)).await;
+        assert_eq!(
+            stub.queries_of_type("RaadpleegMetBurgerservicenummer")
+                .len(),
+            2,
+            "one lookup per batch, and no batch asked about twice"
+        );
 
         Ok(())
     }

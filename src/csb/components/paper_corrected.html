@@ -49,3 +49,28 @@
     </td>
   </tr>
 {% endmacro %}
+{% macro brp_findings(findings) %}
+  {% if !findings.is_empty() %}
+    <ul class="restoration-tags">
+      {% for finding in findings %}
+        <li class="restoration-tag restoration-tag-error">{{ finding }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+{% endmacro %}
+{% macro brp_data_row(label, value, findings) %}
+  <tr>
+    <td>{{ label }}: {{ value(value) }}</td>
+    <td>{{ brp_findings(findings) }}</td>
+    <td></td>
+  </tr>
+{% endmacro %}
+{% macro brp_editable_data_row(label, value, findings, edit_url) %}
+  <tr class="clickable">
+    <td>{{ label }}: {{ value(value) }}</td>
+    <td>{{ brp_findings(findings) }}</td>
+    <td class="actions">
+      <a href="{{ edit_url }}" aria-label="{{ "action.edit"|trans }}"></a>
+    </td>
+  </tr>
+{% endmacro %}

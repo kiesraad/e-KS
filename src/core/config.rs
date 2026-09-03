@@ -53,7 +53,8 @@ pub struct TlsConfig {
 #[derive(Debug, Clone)]
 pub struct BrpConfig {
     pub base_url: String,
-    pub api_key: String,
+    /// Held as a secret so it cannot reach a log through `Debug`.
+    pub api_key: SecretString,
     pub persons_endpoint: String,
     pub timeout: Duration,
 }
@@ -322,7 +323,7 @@ impl Config {
         });
 
         let base_url = get_env_with("BRP_BASE_URL", &mut lookup)?;
-        let api_key = get_env_with("BRP_API_KEY", &mut lookup)?;
+        let api_key = SecretString::from(get_env_with("BRP_API_KEY", &mut lookup)?);
 
         let timeout: u64 = lookup("BRP_TIMEOUT")
             .unwrap_or(BRP_TIMEOUT.to_string())
@@ -369,7 +370,7 @@ impl Config {
             disable_auth_service: false,
             brp_client: BrpConfig {
                 base_url: "http://localhost:5010".to_string(),
-                api_key: "".to_string(),
+                api_key: SecretString::from(""),
                 persons_endpoint: constants::BRP_PERSONS_ENDPOINT.to_string(),
                 timeout: Duration::from_secs(5),
             },

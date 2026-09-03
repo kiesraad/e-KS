@@ -135,7 +135,7 @@ impl AppState {
 
         let brp_client = BrpClient::new(
             &config.brp_client.base_url,
-            &config.brp_client.api_key,
+            config.brp_client.api_key.clone(),
             &config.brp_client.persons_endpoint,
             config.brp_client.timeout,
         );
@@ -246,7 +246,7 @@ impl AppState {
 
         let brp_client = BrpClient::new(
             &config.brp_client.base_url,
-            &config.brp_client.api_key,
+            config.brp_client.api_key.clone(),
             &config.brp_client.persons_endpoint,
             config.brp_client.timeout,
         );

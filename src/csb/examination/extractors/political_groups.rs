@@ -2,12 +2,14 @@ use axum::{extract::FromRequestParts, http::request::Parts};
 
 use crate::{
     AppError, AppRequestState, CsbStream, StreamId,
+    csb::examination::structs::BrpCheckState,
     structs::{common::FullName, political_groups::PoliticalGroup},
 };
 
 pub struct CsbPoliticalGroup {
     pub political_group: PoliticalGroup,
     pub stream_id: StreamId,
+    pub brp: BrpCheckState,
     pub is_examination_finished: bool,
     pub is_deleted: bool,
     pub restoration_count: usize,
@@ -20,6 +22,7 @@ impl CsbPoliticalGroup {
         Self {
             political_group: store.get_political_group(crate::projection::WithCorrections::All),
             stream_id: store.stream_id,
+            brp: BrpCheckState::for_political_group(store),
             is_examination_finished: store.is_examination_finished(),
             is_deleted: store.is_deleted(),
             restoration_count: store.get_restoration_count(),
@@ -132,6 +135,7 @@ mod tests {
                 ..Default::default()
             },
             stream_id: StreamId::new(),
+            brp: BrpCheckState::NotChecked,
             is_examination_finished: false,
             is_deleted: false,
             restoration_count: 0,
@@ -150,6 +154,7 @@ mod tests {
                 ..Default::default()
             },
             stream_id: StreamId::new(),
+            brp: BrpCheckState::NotChecked,
             is_examination_finished: false,
             is_deleted: false,
             restoration_count: 0,
@@ -172,6 +177,7 @@ mod tests {
                 ..Default::default()
             },
             stream_id: StreamId::new(),
+            brp: BrpCheckState::NotChecked,
             is_examination_finished: false,
             is_deleted: false,
             restoration_count: 0,

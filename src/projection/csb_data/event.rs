@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     CsbUser, Event, HasCsbUser, PgEvent, PgStoreData, StreamId,
     structs::{
-        brp::BrpStatus,
+        brp::{BrpFinding, BrpStatus},
         csb::{Correction, Omission, OmissionId},
         persons::PersonId,
     },
@@ -91,9 +91,10 @@ pub enum CsbAction {
         omission_id: OmissionId,
     },
     UpdateCorrection(Correction),
-    BrpPersonValidated {
+    /// Empty `findings` means checked, with the BRP agreeing on every field.
+    BrpPersonChecked {
         person: PersonId,
-        valid: bool,
+        findings: Vec<BrpFinding>,
     },
     SetBrpStatus(BrpStatus),
 }
@@ -110,7 +111,7 @@ impl CsbAction {
             | CsbAction::UpdateOmission(_)
             | CsbAction::DeleteOmission { .. } => "omission",
             CsbAction::UpdateCorrection(_) => "correction",
-            CsbAction::BrpPersonValidated { .. } | CsbAction::SetBrpStatus(_) => "brp_validation",
+            CsbAction::BrpPersonChecked { .. } | CsbAction::SetBrpStatus(_) => "brp_validation",
         }
     }
 
@@ -125,7 +126,7 @@ impl CsbAction {
             CsbAction::UpdateOmission(_) => "update_omission",
             CsbAction::DeleteOmission { .. } => "delete_omission",
             CsbAction::UpdateCorrection(_) => "update_correction",
-            CsbAction::BrpPersonValidated { .. } => "brp_person_validated",
+            CsbAction::BrpPersonChecked { .. } => "brp_person_checked",
             CsbAction::SetBrpStatus(_) => "brp_validation",
         }
     }
@@ -143,7 +144,7 @@ impl CsbAction {
             CsbAction::UpdateCorrection { .. } => {
                 trans!("audit_log.event.update_correction", locale)
             }
-            CsbAction::BrpPersonValidated { .. } => {
+            CsbAction::BrpPersonChecked { .. } => {
                 trans!("audit_log.event.brp_validation", locale)
             }
             CsbAction::SetBrpStatus(_) => {
@@ -173,7 +174,7 @@ impl CsbAction {
             }
             CsbAction::DeleteOmission { omission_id } => omission_id.to_string(),
             CsbAction::UpdateCorrection(_) => String::new(),
-            CsbAction::BrpPersonValidated { person, .. } => person.to_string(),
+            CsbAction::BrpPersonChecked { person, .. } => person.to_string(),
             CsbAction::SetBrpStatus(value) => value.to_string(),
         }
     }

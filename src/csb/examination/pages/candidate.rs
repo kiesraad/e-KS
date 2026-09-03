@@ -1,15 +1,26 @@
 use askama::Template;
-use axum::response::{IntoResponse, Response};
+use axum::{
+    extract::State,
+    response::{IntoResponse, Response},
+};
 
 use crate::{
-    AppError, Context, CsbContext, CsbStore, ElectoralDistrict, HtmlTemplate,
-    csb::examination::{
-        extractors::CsbPoliticalGroup,
-        pages::CsbCandidatePath,
-        structs::{PaperCorrected, PaperCorrectedPersonDetails},
+    AppError, AppRequestState, Context, CsbAction, CsbContext, CsbStore, ElectoralDistrict,
+    HtmlTemplate,
+    csb::{
+        examination::{
+            extractors::CsbPoliticalGroup,
+            pages::{CsbCandidateBrpCheckPath, CsbCandidatePath},
+            structs::{
+                BrpCheckState, CandidateBrpFindings, PaperCorrected, PaperCorrectedPersonDetails,
+                brp_incomplete_reason,
+            },
+        },
+        import::brp_sweep_running,
     },
     filters,
     projection::WithCorrections,
+    redirect_success,
     structs::{candidate_lists::CandidateListId, csb::Omission, persons::Person},
 };
 
@@ -23,6 +34,16 @@ struct CsbCandidateTemplate {
     details: PaperCorrectedPersonDetails,
     position: PaperCorrected,
     candidate_omissions: Vec<Omission>,
+    /// What the BRP check found, per row of the details table.
+    brp: CandidateBrpFindings,
+    /// Whether this candidate has been checked at all, which is what decides
+    /// whether a re-check is offered.
+    brp_state: BrpCheckState,
+    /// Whether a sweep is under way. While it is, the candidate is waiting for
+    /// its turn rather than for a check of their own.
+    brp_running: bool,
+    /// Why the BRP data may be incomplete, if the check did not finish.
+    brp_incomplete: Option<String>,
 }
 
 pub async fn overview(
@@ -63,6 +84,15 @@ pub async fn overview(
         .map(|list| list.electoral_districts)
         .ok_or(AppError::GenericNotFound)?;
     let candidate_omissions = store.get_candidate_omissions(person_id);
+    let brp = CandidateBrpFindings::new(
+        &store.get_brp_findings_for_person(person_id),
+        context.session.locale,
+    );
+    let brp_state = BrpCheckState::for_candidate(&store, person_id);
+    let brp_status = store.get_brp_status();
+    let brp_running = brp_sweep_running(store.stream_id);
+    let brp_incomplete =
+        brp_incomplete_reason(&brp_status, &brp_state, brp_running, context.session.locale);
 
     Ok(HtmlTemplate(
         CsbCandidateTemplate {
@@ -73,10 +103,45 @@ pub async fn overview(
             details,
             position,
             candidate_omissions,
+            brp,
+            brp_state,
+            brp_running,
+            brp_incomplete,
         },
         context,
     )
     .into_response())
+}
+
+/// Check this one candidate against the BRP, for a candidate whose findings a
+/// correction dropped or whom the sweep never reached.
+///
+/// A single lookup, so it answers within the request instead of running in the
+/// background like the sweep over a whole list does.
+pub async fn check_against_brp<S: AppRequestState>(
+    path: CsbCandidateBrpCheckPath,
+    State(state): State<S>,
+    store: CsbStore,
+) -> Result<Response, AppError> {
+    let candidate = store
+        .get_person(path.person_id, WithCorrections::All)
+        .ok_or(AppError::GenericNotFound)?;
+
+    for (person, findings) in state
+        .brp_client()
+        .verify_batch(std::slice::from_ref(&candidate))
+        .await?
+    {
+        store
+            .update(CsbAction::BrpPersonChecked { person, findings })
+            .await?;
+    }
+
+    Ok(redirect_success(CsbCandidatePath {
+        stream_id: path.stream_id,
+        list_id: path.list_id,
+        person_id: path.person_id,
+    }))
 }
 
 #[cfg(test)]
@@ -86,9 +151,211 @@ mod tests {
     use axum::http::StatusCode;
 
     use crate::{
-        structs::{csb::OmissionCategory, persons::PersonId},
+        csb::import::claim_sweep_for_test,
+        structs::{
+            brp::{BrpFinding, BrpStatus},
+            csb::OmissionCategory,
+            persons::PersonId,
+        },
         test_utils::{response_body_string, sample_candidate_list, sample_person},
     };
+
+    /// A store holding one candidate on one list.
+    fn store_with_candidate() -> (CsbStore, CandidateListId, PersonId) {
+        let store = CsbStore::new_for_test();
+        let person = sample_person(PersonId::new());
+        let person_id = person.id;
+        let list_id = CandidateListId::new();
+        let mut list = sample_candidate_list(list_id);
+        list.candidates = vec![person_id];
+        store.add_person(person);
+        store.add_candidate_list(list);
+        (store, list_id, person_id)
+    }
+
+    async fn render(store: CsbStore, list_id: CandidateListId, person_id: PersonId) -> String {
+        let stream_id = store.stream_id;
+        let response = overview(
+            CsbCandidatePath {
+                stream_id,
+                list_id,
+                person_id,
+            },
+            CsbContext::new_test(),
+            store,
+        )
+        .await
+        .unwrap()
+        .into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        response_body_string(response).await
+    }
+
+    #[tokio::test]
+    async fn checking_one_candidate_records_what_the_brp_answered() {
+        use crate::brp_stub::{BrpStub, matching_record};
+
+        let store = CsbStore::new_for_test();
+        let mut person = crate::test_utils::sample_person_from_brp();
+        let person_id = person.id;
+        // The BRP disagrees on the place of residence.
+        person.personal_data.place_of_residence = Some("Amsterdam".parse().unwrap());
+        let bsn = match &person.personal_data.bsn {
+            Some(crate::structs::common::BsnOrNoneConfirmed::Bsn(bsn)) => bsn.to_exposed_string(),
+            _ => panic!("the fixture has a BSN"),
+        };
+        let list_id = CandidateListId::new();
+        let mut list = sample_candidate_list(list_id);
+        list.candidates = vec![person_id];
+        store.add_person(person);
+        store.add_candidate_list(list);
+        let stream_id = store.stream_id;
+
+        let stub = BrpStub::serving(vec![matching_record(&bsn)]).await;
+        let mut state = crate::AppState::new_for_tests().await;
+        state.brp_client = stub.client.clone();
+
+        let response = check_against_brp(
+            CsbCandidateBrpCheckPath {
+                stream_id,
+                list_id,
+                person_id,
+            },
+            axum::extract::State(state),
+            store.clone(),
+        )
+        .await
+        .unwrap();
+
+        assert!(
+            response.status().is_redirection(),
+            "{:?}",
+            response.status()
+        );
+        assert!(store.is_brp_checked(person_id));
+        assert_eq!(
+            store.get_brp_findings_for_person(person_id),
+            vec![crate::structs::brp::BrpFinding::Mismatch {
+                brp_value: crate::structs::brp::BrpValue::PlaceOfResidence(
+                    "Utrecht".parse().unwrap()
+                ),
+            }]
+        );
+    }
+
+    #[tokio::test]
+    async fn an_unchecked_candidate_is_offered_a_check_of_their_own() {
+        let (store, list_id, person_id) = store_with_candidate();
+        let stream_id = store.stream_id;
+
+        let body = render(store, list_id, person_id).await;
+
+        assert!(body.contains(&format!(
+            "/csb/examination/{stream_id}/list/{list_id}/candidate/{person_id}/brp-check"
+        )));
+        assert!(body.contains("Check this candidate against the BRP"));
+    }
+
+    #[tokio::test]
+    async fn a_candidate_waiting_for_a_running_sweep_is_offered_a_refresh_instead() {
+        let (store, list_id, person_id) = store_with_candidate();
+        let stream_id = store.stream_id;
+        store
+            .update(CsbAction::SetBrpStatus(BrpStatus::in_progress()))
+            .await
+            .unwrap();
+        let _sweep = claim_sweep_for_test(stream_id);
+
+        let body = render(store, list_id, person_id).await;
+
+        assert!(body.contains("Refresh this page"), "{body}");
+        // A check of their own would only ask the BRP the same thing twice.
+        assert!(!body.contains(&format!(
+            "/csb/examination/{stream_id}/list/{list_id}/candidate/{person_id}/brp-check"
+        )));
+    }
+
+    /// The sweep that never came back: its status is still `InProgress`, but
+    /// nothing is running, so waiting for it is pointless.
+    #[tokio::test]
+    async fn a_candidate_left_behind_by_an_abandoned_sweep_is_offered_a_check() {
+        let (store, list_id, person_id) = store_with_candidate();
+        let stream_id = store.stream_id;
+        store
+            .update(CsbAction::SetBrpStatus(BrpStatus::in_progress()))
+            .await
+            .unwrap();
+
+        let body = render(store, list_id, person_id).await;
+
+        assert!(!body.contains("Refresh this page"), "{body}");
+        assert!(!body.contains("still running"), "{body}");
+        assert!(
+            body.contains("Check this candidate against the BRP"),
+            "{body}"
+        );
+        assert!(body.contains(&format!(
+            "/csb/examination/{stream_id}/list/{list_id}/candidate/{person_id}/brp-check"
+        )));
+    }
+
+    #[tokio::test]
+    async fn a_candidate_the_brp_already_answered_for_is_not_offered_another_check() {
+        let (store, list_id, person_id) = store_with_candidate();
+        let stream_id = store.stream_id;
+        store
+            .update(CsbAction::BrpPersonChecked {
+                person: person_id,
+                findings: vec![BrpFinding::NotDutch],
+            })
+            .await
+            .unwrap();
+
+        let body = render(store, list_id, person_id).await;
+
+        assert!(!body.contains(&format!(
+            "/csb/examination/{stream_id}/list/{list_id}/candidate/{person_id}/brp-check"
+        )));
+    }
+
+    #[tokio::test]
+    async fn a_candidate_corrected_after_the_check_is_told_why_they_are_unchecked() {
+        let (store, list_id, person_id) = store_with_candidate();
+        store
+            .update(CsbAction::BrpPersonChecked {
+                person: person_id,
+                findings: Vec::new(),
+            })
+            .await
+            .unwrap();
+        store
+            .update(CsbAction::SetBrpStatus(
+                crate::structs::brp::BrpStatus::Finished,
+            ))
+            .await
+            .unwrap();
+        // Correcting the candidate drops what the BRP said about the old value.
+        store
+            .update(CsbAction::UpdateCorrection(
+                crate::structs::csb::Correction::Person(
+                    person_id,
+                    crate::structs::csb::PersonCorrection::LastName(
+                        "Gecorrigeerd".parse().unwrap(),
+                    ),
+                ),
+            ))
+            .await
+            .unwrap();
+
+        let body = render(store, list_id, person_id).await;
+
+        assert!(
+            body.contains("changed after the check against the BRP"),
+            "{body}"
+        );
+        assert!(body.contains("Check this candidate against the BRP"));
+    }
 
     #[tokio::test]
     async fn renders_candidate_details_and_add_omission_buttons() {

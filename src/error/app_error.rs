@@ -66,7 +66,9 @@ pub enum AppError {
     /// Indicates tampering, a wrong key, or a corrupt/unsupported frame.
     EventDecodeError(String),
 
-    /// A person was queried against the BRP but this person could not be found
+    /// The BRP could not be consulted. Never a statement about a person: what
+    /// the BRP says about a candidate is a
+    /// [`crate::structs::brp::BrpFinding`], not an error.
     BrpError(String),
 }
 
