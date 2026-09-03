@@ -45,10 +45,15 @@ pub async fn overview(
     let political_group = CsbPoliticalGroup::new_from_csb_store(&store);
 
     let imported_lists = store.get_candidate_lists(crate::projection::WithCorrections::None);
+    let brp_findings = store.get_brp_findings();
     let mut candidate_lists = Vec::new();
     for list in store.get_candidate_lists(crate::projection::WithCorrections::All) {
-        // TODO: This is a placeholder value, the real value should be calculated based on the candidate list data.
-        let brp_error_count = (list.id.uuid().as_u128() % 3) as usize;
+        let brp_error_count = list
+            .candidates
+            .iter()
+            .filter_map(|person_id| brp_findings.get(person_id))
+            .map(Vec::len)
+            .sum();
 
         let from_original_import = imported_lists.iter().any(|l| l.id == list.id);
         candidate_lists.push(CsbCandidateList {
@@ -59,10 +64,9 @@ pub async fn overview(
         });
     }
 
-    let all_brp_error_count = candidate_lists
-        .iter()
-        .map(|cl| cl.brp_error_count)
-        .sum::<usize>();
+    // Counted per candidate rather than by summing the lists, so a candidate
+    // who stands on more than one list is not counted twice.
+    let all_brp_error_count = brp_findings.values().map(Vec::len).sum::<usize>();
     let political_group_status = RestorationStatus::for_political_group(&store);
 
     Ok(HtmlTemplate(

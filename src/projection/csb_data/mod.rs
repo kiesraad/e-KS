@@ -14,7 +14,7 @@ use crate::{
     PgStoreData, Scope,
     store::{StoreData, StoreEvent},
     structs::{
-        brp::BrpStatus,
+        brp::{BrpFinding, BrpStatus},
         common::{Appellation, UtcDateTime},
         csb::{Correction, Omission, OmissionId, PersonCorrection, PersonCorrectionDelta},
         persons::PersonId,
@@ -31,7 +31,10 @@ pub struct CsbStoreData {
     pub(crate) is_examination_finished: bool,
     pub(crate) is_deleted: bool,
     pub(crate) omissions: HashMap<OmissionId, Omission>,
-    pub(crate) brp_validations: HashMap<PersonId, bool>,
+    /// What the BRP check found per candidate. A candidate is present with an
+    /// empty list once they have been checked and nothing was found, which is
+    /// what keeps a repeated sweep from checking them again.
+    pub(crate) brp_findings: HashMap<PersonId, Vec<BrpFinding>>,
     pub(crate) brp_validation_status: BrpStatus,
     pub(crate) csb_corrected_persons: HashMap<PersonId, PersonCorrectionDelta>,
     pub(crate) csb_corrected_appellation: Option<Appellation>,
@@ -97,8 +100,8 @@ impl StoreData for CsbStoreData {
                 self.omissions.remove(&omission_id);
             }
             CsbAction::UpdateCorrection(correction) => self.apply_correction(correction),
-            CsbAction::BrpPersonValidated { person, valid } => {
-                self.brp_validations.insert(person, valid);
+            CsbAction::BrpPersonChecked { person, findings } => {
+                self.brp_findings.insert(person, findings);
             }
             CsbAction::SetBrpStatus(value) => self.brp_validation_status = value,
         }

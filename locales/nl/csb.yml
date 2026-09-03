@@ -21,6 +21,27 @@ auth:
 brp:
   correct: Correct
   errors: Fouten
+  finding:
+    age_unknown: "De BRP bevat geen volledige geboortedatum, waardoor de leeftijd van de kandidaat niet is vast te stellen."
+    bsn_missing: "Er is geen burgerservicenummer vastgelegd, waardoor deze kandidaat niet in de BRP is op te zoeken."
+    bsn_none_confirmed: "Van deze kandidaat is vastgelegd dat die geen burgerservicenummer heeft, waardoor deze niet in de BRP is op te zoeken."
+    bsn_not_unique: Er is meer dan één persoon in de BRP met dit burgerservicenummer.
+    bsn_unknown: Er is geen persoon in de BRP met dit burgerservicenummer.
+    deceased: "Volgens de BRP is deze kandidaat overleden op {}."
+    excluded_from_suffrage: Volgens de BRP is deze kandidaat uitgesloten van het kiesrecht.
+    mismatch: "{} wijkt af van de BRP, waarin staat: {}"
+    missing_in_brp: "De BRP bevat geen {} voor deze kandidaat."
+    not_dutch: Volgens de BRP heeft deze kandidaat niet de Nederlandse nationaliteit.
+    residence_abroad: "Deze kandidaat woont in het buitenland, waardoor de BRP geen woonplaats bevat."
+    residence_unknown: De verblijfplaats van deze kandidaat is onbekend in de BRP.
+    residence_without_address: "Deze kandidaat heeft geen woonadres in de BRP (bijvoorbeeld een briefadres), waardoor de BRP geen woonplaats bevat."
+    underage: "Volgens de BRP is deze kandidaat geboren op {} en daarmee niet oud genoeg om gekozen te worden."
+    unparsable: "De waarde uit de BRP voor {} is niet te interpreteren en is daarom niet vergeleken: {}"
+  not_checked: Niet gecontroleerd
+  status:
+    aborted: "De controle tegen de BRP is voortijdig gestopt, waardoor niet alle kandidaten zijn gecontroleerd: {}"
+    in_progress: "De controle tegen de BRP loopt nog, waardoor nog niet alle kandidaten zijn gecontroleerd."
+    not_started: De kandidaten zijn nog niet tegen de BRP gecontroleerd.
 candidate:
   add_candidate_text: Voeg verzuimen toe voor deze kandidaat
   personal_details: Persoonsgegevens

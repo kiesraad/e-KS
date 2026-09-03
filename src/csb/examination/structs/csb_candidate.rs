@@ -1,5 +1,3 @@
-use rand::{RngExt, rng};
-
 use crate::{
     AnyLocale, CsbStream,
     csb::examination::structs::RestorationStatus,
@@ -11,14 +9,18 @@ use super::paper_corrected::PaperCorrected;
 
 /// A candidate row on the CSB candidate list examination page: the person
 /// (imported, or added by the paper corrections), their position, name and
-/// place of residence diffed against the corrections, and a placeholder count
-/// of BRP errors until the real BRP checks are wired up.
+/// place of residence diffed against the corrections, and how many things the
+/// BRP check found for them.
 pub struct CsbCandidate {
     pub person: Person,
     pub position: PaperCorrected,
     pub name: PaperCorrected,
     pub residence: PaperCorrected,
     pub brp_error_count: usize,
+    /// Whether this candidate has been checked against the BRP at all. Without
+    /// it a candidate nobody checked is indistinguishable from one the BRP
+    /// agreed with, since both have no findings.
+    pub brp_checked: bool,
     pub restoration_status: RestorationStatus,
 }
 
@@ -78,8 +80,9 @@ fn imported_rows(
                     )
                     .with_csb_correction(csb_corrected.as_ref().map(residence_string)),
                     restoration_status: RestorationStatus::for_candidate(store, person.id, list.id),
+                    brp_error_count: store.get_brp_findings_for_person(person.id).len(),
+                    brp_checked: store.is_brp_checked(person.id),
                     person,
-                    brp_error_count: rng().random_range(0..=2),
                 },
             ))
         })
@@ -115,7 +118,8 @@ fn corrected_only_rows(
                         ),
                     residence: PaperCorrected::new(String::new(), residence_string(&person))
                         .with_csb_correction(csb_corrected.as_ref().map(residence_string)),
-                    brp_error_count: 0,
+                    brp_error_count: store.get_brp_findings_for_person(person.id).len(),
+                    brp_checked: store.is_brp_checked(person.id),
                     restoration_status: RestorationStatus::for_candidate(store, person.id, list.id),
                     person,
                 },

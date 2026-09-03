@@ -1,5 +1,6 @@
 mod all_csb_corrections;
 mod all_omissions;
+mod candidate_brp_findings;
 mod correction_field;
 mod csb_candidate;
 mod csb_candidate_list;
@@ -8,6 +9,7 @@ mod restoration_status;
 
 pub use all_csb_corrections::AllCsbCorrections;
 pub use all_omissions::AllOmissions;
+pub use candidate_brp_findings::{CandidateBrpFindings, brp_incomplete_reason};
 pub use correction_field::CandidateCorrectionField;
 pub use csb_candidate::CsbCandidate;
 pub use csb_candidate_list::CsbCandidateList;

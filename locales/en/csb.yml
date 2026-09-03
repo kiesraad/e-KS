@@ -21,6 +21,27 @@ auth:
 brp:
   correct: Correct
   errors: Errors
+  finding:
+    age_unknown: "The BRP holds no complete date of birth, so the candidate's age could not be established."
+    bsn_missing: "No citizen service number was recorded, so this candidate could not be looked up in the BRP."
+    bsn_none_confirmed: "This candidate is recorded as having no citizen service number, so they could not be looked up in the BRP."
+    bsn_not_unique: More than one person in the BRP has this citizen service number.
+    bsn_unknown: No person in the BRP has this citizen service number.
+    deceased: "The BRP records this candidate as deceased on {}."
+    excluded_from_suffrage: The BRP records this candidate as excluded from the right to vote.
+    mismatch: "{} differs from the BRP, which holds: {}"
+    missing_in_brp: "The BRP holds no {} for this candidate."
+    not_dutch: The BRP records no Dutch nationality for this candidate.
+    residence_abroad: "This candidate lives abroad, so the BRP holds no place of residence."
+    residence_unknown: "This candidate's residence is unknown in the BRP."
+    residence_without_address: "This candidate has no residential address in the BRP (a correspondence address, for instance), so the BRP holds no place of residence."
+    underage: "The BRP gives this candidate's date of birth as {}, which is not old enough to be elected."
+    unparsable: "The BRP value for {} could not be interpreted, so it was not compared: {}"
+  not_checked: Not checked
+  status:
+    aborted: "The check against the BRP stopped before it finished, so not every candidate was checked: {}"
+    in_progress: "The check against the BRP is still running, so not every candidate has been checked yet."
+    not_started: The candidates have not been checked against the BRP yet.
 candidate:
   add_candidate_text: Add omissions for this candidate
   personal_details: Personal details

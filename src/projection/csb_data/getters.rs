@@ -8,6 +8,7 @@ use parking_lot::{
 use crate::{
     AppError, CsbStream, Locale, PgStoreData,
     structs::{
+        brp::{BrpFinding, BrpStatus},
         candidate_lists::{CandidateList, CandidateListId},
         csb::{Omission, OmissionCategory, OmissionId},
         list_submitters::ListSubmitter,
@@ -357,12 +358,49 @@ impl CsbStream {
             .collect()
     }
 
+    /// Every candidate, with the corrections `corrections` asks for.
+    ///
+    /// Routed through [`Self::get_person`] rather than reading the projection
+    /// directly, because the committee's own ("ambtshalve") corrections are not
+    /// in the projection -- they are a delta the singular getter applies on top
+    /// for [`WithCorrections::All`].
     pub fn get_persons(&self, corrections: WithCorrections) -> Vec<Person> {
-        self.read(corrections).persons.values().cloned().collect()
+        // The read guard is dropped at the end of this statement, before
+        // `get_person` takes it again.
+        let ids: Vec<PersonId> = self.read(corrections).persons.keys().copied().collect();
+
+        ids.into_iter()
+            .filter_map(|id| self.get_person(id, corrections))
+            .collect()
     }
 
-    pub fn get_brp_validations(&self) -> HashMap<PersonId, bool> {
-        self.data.read().brp_validations.clone()
+    /// The BRP findings per candidate, for the candidates that have been
+    /// checked. Candidates absent from the map were not checked (yet).
+    pub fn get_brp_findings(&self) -> HashMap<PersonId, Vec<BrpFinding>> {
+        self.data.read().brp_findings.clone()
+    }
+
+    /// The BRP findings for one candidate. An empty list covers both "checked,
+    /// nothing found" and "not checked"; use [`Self::get_brp_findings`] when
+    /// the difference matters.
+    pub fn get_brp_findings_for_person(&self, person_id: PersonId) -> Vec<BrpFinding> {
+        self.data
+            .read()
+            .brp_findings
+            .get(&person_id)
+            .cloned()
+            .unwrap_or_default()
+    }
+
+    /// Whether this candidate has been checked against the BRP, regardless of
+    /// whether anything was found.
+    pub fn is_brp_checked(&self, person_id: PersonId) -> bool {
+        self.data.read().brp_findings.contains_key(&person_id)
+    }
+
+    /// How far the BRP sweep for this stream got.
+    pub fn get_brp_status(&self) -> BrpStatus {
+        self.data.read().brp_validation_status.clone()
     }
 
     /// Return the single stored omission. Test-only helper for asserting on
@@ -386,10 +424,10 @@ mod tests {
         CsbStore, CsbStream, ElectoralDistrict,
         structs::{
             candidate_lists::CandidateList,
-            csb::{OmissionCategory, sample_omission},
+            csb::{OmissionCategory, PersonCorrection, PersonCorrectionDelta, sample_omission},
             list_designation::ListDesignation,
         },
-        test_utils::{sample_candidate_list, sample_person_with},
+        test_utils::{sample_candidate_list, sample_person, sample_person_with},
     };
 
     fn insert(store: &CsbStream, category: OmissionCategory) {
@@ -640,5 +678,32 @@ mod tests {
         });
 
         assert_eq!(store.get_appellation(WithCorrections::All), "Blanco");
+    }
+
+    #[test]
+    fn get_persons_applies_the_committees_own_corrections() {
+        let store = CsbStore::new_for_test();
+        let person = sample_person(PersonId::new());
+        let person_id = person.id;
+        store.add_person(person);
+
+        // An ambtshalve correction lives as a delta beside the projection, so a
+        // getter that reads the projection directly would miss it. The BRP check
+        // examines the corrected data, which makes that difference matter.
+        let mut delta = PersonCorrectionDelta::default();
+        delta.add_correction(PersonCorrection::LastName("Gecorrigeerd".parse().unwrap()));
+        store
+            .data
+            .write()
+            .csb_corrected_persons
+            .insert(person_id, delta);
+
+        let corrected = store.get_persons(WithCorrections::All);
+        assert_eq!(corrected.len(), 1);
+        assert_eq!(corrected[0].name.last_name.to_string(), "Gecorrigeerd");
+
+        // The imported data is untouched.
+        let imported = store.get_persons(WithCorrections::None);
+        assert_eq!(imported[0].name.last_name.to_string(), "Jansen");
     }
 }

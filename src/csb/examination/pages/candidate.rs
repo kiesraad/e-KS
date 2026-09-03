@@ -6,7 +6,10 @@ use crate::{
     csb::examination::{
         extractors::CsbPoliticalGroup,
         pages::CsbCandidatePath,
-        structs::{PaperCorrected, PaperCorrectedPersonDetails},
+        structs::{
+            CandidateBrpFindings, PaperCorrected, PaperCorrectedPersonDetails,
+            brp_incomplete_reason,
+        },
     },
     filters,
     projection::WithCorrections,
@@ -23,6 +26,12 @@ struct CsbCandidateTemplate {
     details: PaperCorrectedPersonDetails,
     position: PaperCorrected,
     candidate_omissions: Vec<Omission>,
+    /// What the BRP check found for this candidate, per row of the details
+    /// table.
+    brp: CandidateBrpFindings,
+    /// Why the BRP data may be incomplete, when the check did not run to
+    /// completion.
+    brp_incomplete: Option<String>,
 }
 
 pub async fn overview(
@@ -63,6 +72,11 @@ pub async fn overview(
         .map(|list| list.electoral_districts)
         .ok_or(AppError::GenericNotFound)?;
     let candidate_omissions = store.get_candidate_omissions(person_id);
+    let brp = CandidateBrpFindings::new(
+        &store.get_brp_findings_for_person(person_id),
+        context.session.locale,
+    );
+    let brp_incomplete = brp_incomplete_reason(&store.get_brp_status(), context.session.locale);
 
     Ok(HtmlTemplate(
         CsbCandidateTemplate {
@@ -73,6 +87,8 @@ pub async fn overview(
             details,
             position,
             candidate_omissions,
+            brp,
+            brp_incomplete,
         },
         context,
     )

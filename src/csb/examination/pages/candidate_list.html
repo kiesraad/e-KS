@@ -73,13 +73,18 @@
               </td>
               <td>
                 <ul class="tags-list">
-                  {% if candidate.brp_error_count == 0 %}
+                  {% let candidate_url = political_group.candidate_path(list_id, candidate.person.id) %}
+                  {% if !candidate.brp_checked %}
                     <li class="tag link width-md">
-                      <a class="ok" href="#">{{ "csb.brp.correct"|trans }}</a>
+                      <a class="unclickable">{{ "csb.brp.not_checked"|trans }}</a>
+                    </li>
+                  {% else if candidate.brp_error_count == 0 %}
+                    <li class="tag link width-md">
+                      <a class="ok" href="{{ candidate_url }}">{{ "csb.brp.correct"|trans }}</a>
                     </li>
                   {% else %}
                     <li class="tag link">
-                      <a class="error" href="#">{{ "csb.brp.errors"|trans }}</a>
+                      <a class="error" href="{{ candidate_url }}">{{ "csb.brp.errors"|trans }}</a>
                     </li>
                   {% endif %}
                 </ul>
