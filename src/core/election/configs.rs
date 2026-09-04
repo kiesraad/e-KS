@@ -8,7 +8,6 @@ use crate::{
     },
 };
 
-/// A date from constant values; invalid dates fail to compile in `const` blocks.
 const fn date(year: i32, month: u32, day: u32) -> NaiveDate {
     match NaiveDate::from_ymd_opt(year, month, day) {
         Some(date) => date,
@@ -16,7 +15,6 @@ const fn date(year: i32, month: u32, day: u32) -> NaiveDate {
     }
 }
 
-/// A time of day on `date`; invalid times fail to compile in `const` blocks.
 const fn at(date: NaiveDate, hour: u32, minute: u32) -> NaiveDateTime {
     match NaiveTime::from_hms_opt(hour, minute, 0) {
         Some(time) => NaiveDateTime::new(date, time),
@@ -32,9 +30,8 @@ super::define_elections! {
             fry: "Earste Keamerferkiezings fan de Steaten-Generaal 2027",
             en: "Election of the Senate of the States General 2027",
         },
-        electoral_districts: ElectoralDistrict::ek27(),
-        nineteen_or_more_seats: true,
-        frisian_export_allowed: false,
+        electoral_districts: ElectoralDistrict::ek_districts(),
+        number_of_seats: 75,
         eligible_date_of_birth: const { date(2014, 4, 20) }, // TODO: determine definitive date
         nomination_day_date: const { date(2027, 4, 20) },
         // Estimated from EK 2023 planning (official 2027 planning not yet published)
@@ -56,22 +53,21 @@ super::define_elections! {
             fry: "Provinsjale Steateferkiezings 2027",
             en: "Elections of the Provincial Council 2027",
         },
-        electoral_districts: match province {
-            Province::GR => &[ElectoralDistrict::PsGroningen],
-            Province::FR => &[ElectoralDistrict::PsLeeuwarden],
-            Province::DR => &[ElectoralDistrict::PsAssen],
-            Province::OV => &[ElectoralDistrict::PsZwolle],
-            Province::FL => &[ElectoralDistrict::PsLelystad],
-            Province::GE => &[ElectoralDistrict::PsNijmegen, ElectoralDistrict::PsArnhem],
-            Province::UT => &[ElectoralDistrict::PsUtrecht],
-            Province::NH => &[ElectoralDistrict::PsAmsterdam, ElectoralDistrict::PsHaarlem, ElectoralDistrict::PsDenHelder],
-            Province::ZH => &[ElectoralDistrict::PsDenHaag, ElectoralDistrict::PsRotterdam, ElectoralDistrict::PsDordrecht, ElectoralDistrict::PsLeiden],
-            Province::ZE => &[ElectoralDistrict::PsMiddelburg],
-            Province::NB => &[ElectoralDistrict::PsTilburg, ElectoralDistrict::PsDenBosch],
-            Province::LI => &[ElectoralDistrict::PsMaastricht, ElectoralDistrict::PsVenlo],
+        electoral_districts: province.ps_districts(),
+        number_of_seats: match province {
+            Province::Groningen => 43,
+            Province::Fryslan => 43,
+            Province::Drenthe => 43,
+            Province::Overijssel => 47,
+            Province::Flevoland => 41,
+            Province::Gelderland => 55,
+            Province::Utrecht => 49,
+            Province::NoordHolland => 55,
+            Province::ZuidHolland => 55,
+            Province::Zeeland => 39,
+            Province::NoordBrabant => 55,
+            Province::Limburg => 47,
         },
-        nineteen_or_more_seats: true, // for this election, all provinces have >= 19 seats
-        frisian_export_allowed: matches!(province, Province::FR),
         eligible_date_of_birth: const { date(2014, 2, 1) }, // TODO: determine definitive date
         nomination_day_date: const { date(2027, 2, 1) },
         document_review_date: const { date(2027, 2, 2) },
@@ -92,31 +88,30 @@ super::define_elections! {
             fry: "Wetterskipsferkiezings 2027",
             en: "Elections of the Water Authority 2027",
         },
-        electoral_districts: match water_council {
-            WaterCouncil::Noorderzijlvest => &[ElectoralDistrict::WsNoorderzijlvest],
-            WaterCouncil::Fryslan => &[ElectoralDistrict::WsFryslan],
-            WaterCouncil::HunzeEnAas => &[ElectoralDistrict::WsHunzeEnAas],
-            WaterCouncil::DrentsOverijsselseDelta => &[ElectoralDistrict::WsDrentsOverijsselseDelta],
-            WaterCouncil::Vechtstromen => &[ElectoralDistrict::WsVechtstromen],
-            WaterCouncil::ValleiEnVeluwe => &[ElectoralDistrict::WsValleiEnVeluwe],
-            WaterCouncil::RijnEnIJssel => &[ElectoralDistrict::WsRijnEnIJssel],
-            WaterCouncil::DeStichtseRijnlanden => &[ElectoralDistrict::WsDeStichtseRijnlanden],
-            WaterCouncil::AmstelGooiEnVecht => &[ElectoralDistrict::WsAmstelGooiEnVecht],
-            WaterCouncil::HollandsNoorderkwartier => &[ElectoralDistrict::WsHollandsNoorderkwartier],
-            WaterCouncil::Rijnland => &[ElectoralDistrict::WsRijnland],
-            WaterCouncil::Delfland => &[ElectoralDistrict::WsDelfland],
-            WaterCouncil::SchielandEnDeKrimpenerwaard => &[ElectoralDistrict::WsSchielandEnDeKrimpenerwaard],
-            WaterCouncil::Rivierenland => &[ElectoralDistrict::WsRivierenland],
-            WaterCouncil::HollandseDelta => &[ElectoralDistrict::WsHollandseDelta],
-            WaterCouncil::Scheldestromen => &[ElectoralDistrict::WsScheldestromen],
-            WaterCouncil::BrabantseDelta => &[ElectoralDistrict::WsBrabantseDelta],
-            WaterCouncil::DeDommel => &[ElectoralDistrict::WsDeDommel],
-            WaterCouncil::AaEnMaas => &[ElectoralDistrict::WsAaEnMaas],
-            WaterCouncil::Limburg => &[ElectoralDistrict::WsLimburg],
-            WaterCouncil::Zuiderzeeland => &[ElectoralDistrict::WsZuiderzeeland],
+        electoral_districts: water_council.ws_districts(),
+        number_of_seats: match water_council {
+            WaterCouncil::AaEnMaas => 26,
+            WaterCouncil::AmstelGooiEnVecht => 26,
+            WaterCouncil::BrabantseDelta => 26,
+            WaterCouncil::DeDommel => 26,
+            WaterCouncil::DeStichtseRijnlanden => 26,
+            WaterCouncil::Delfland => 26,
+            WaterCouncil::DrentsOverijsselseDelta => 25,
+            WaterCouncil::HollandseDelta => 26,
+            WaterCouncil::HollandsNoorderkwartier => 26,
+            WaterCouncil::HunzeEnAas => 19,
+            WaterCouncil::Fryslan => 21,
+            WaterCouncil::Limburg => 26,
+            WaterCouncil::Noorderzijlvest => 19,
+            WaterCouncil::RijnEnIJssel => 30,
+            WaterCouncil::Rijnland => 26,
+            WaterCouncil::Rivierenland => 26,
+            WaterCouncil::SchielandEnDeKrimpenerwaard => 26,
+            WaterCouncil::Scheldestromen => 26,
+            WaterCouncil::ValleiEnVeluwe => 26,
+            WaterCouncil::Vechtstromen => 23,
+            WaterCouncil::Zuiderzeeland => 21,
         },
-        nineteen_or_more_seats: true, // for this election, all councils have >= 19 seats
-        frisian_export_allowed: matches!(water_council, WaterCouncil::Fryslan),
         eligible_date_of_birth: const { date(2014, 2, 1) }, // TODO: determine definitive date
         nomination_day_date: const { date(2027, 2, 1) },
         document_review_date: const { date(2027, 2, 2) },
@@ -143,8 +138,8 @@ impl ElectionConfig {
         }
     }
 
-    /// Parse a [`Self::stable_id`] string (e.g. `"EK27"`, `"PS27:GR"`) back to
-    /// an election configuration.
+    /// Parse a [`Self::stable_id`] string (e.g. `"EK27"`, `"PS27:prov1"`)
+    /// back to an election configuration.
     pub fn from_stable_id(value: &str) -> Option<Self> {
         let (code, region) = match value.split_once(':') {
             Some((code, region)) => (code, Some(region)),
@@ -158,7 +153,7 @@ impl ElectionConfig {
     /// Specifies the region, but not the year of the election.
     pub fn formal_title(&self, locale: ModelLocale) -> String {
         let region = || {
-            self.region_title(AnyLocale::from(locale))
+            self.region_title()
                 .expect("region title required for this election type")
         };
 
@@ -255,6 +250,10 @@ impl ElectionConfig {
     pub fn has_only_one_district(&self) -> bool {
         self.electoral_districts().len() == 1
     }
+
+    pub fn nineteen_or_more_seats(&self) -> bool {
+        self.number_of_seats() >= 19
+    }
 }
 
 #[cfg(test)]
@@ -274,9 +273,9 @@ mod tests {
     #[test]
     fn election_config_exposes_districts() {
         let districts = ElectionConfig::EK27.electoral_districts();
-        assert!(districts.contains(&ElectoralDistrict::NH));
+        assert!(districts.contains(&ElectoralDistrict::NoordHolland));
 
-        let districts = ElectionConfig::PS27(Province::GE).electoral_districts();
+        let districts = ElectionConfig::PS27(Province::Gelderland).electoral_districts();
         assert!(districts.contains(&ElectoralDistrict::PsNijmegen));
 
         let districts = ElectionConfig::WS27(WaterCouncil::AaEnMaas).electoral_districts();
@@ -289,8 +288,8 @@ mod tests {
 
     #[test]
     fn has_only_district() {
-        assert!(ElectionConfig::PS27(Province::DR).has_only_one_district());
-        assert!(!ElectionConfig::PS27(Province::GE).has_only_one_district());
+        assert!(ElectionConfig::PS27(Province::Drenthe).has_only_one_district());
+        assert!(!ElectionConfig::PS27(Province::Gelderland).has_only_one_district());
     }
 
     #[test]
@@ -327,15 +326,15 @@ mod tests {
     #[test]
     fn from_code_and_region_resolves_ps27_with_valid_province() {
         assert_eq!(
-            ElectionConfig::from_code_and_region("PS27", Some("GR")),
-            Some(ElectionConfig::PS27(Province::GR))
+            ElectionConfig::from_code_and_region("PS27", Some("prov1")),
+            Some(ElectionConfig::PS27(Province::Groningen))
         );
     }
 
     #[test]
     fn from_code_and_region_resolves_ws27_with_valid_water_council() {
         assert_eq!(
-            ElectionConfig::from_code_and_region("WS27", Some("WS-FRY")),
+            ElectionConfig::from_code_and_region("WS27", Some("ws2")),
             Some(ElectionConfig::WS27(WaterCouncil::Fryslan))
         );
     }
@@ -387,11 +386,11 @@ mod tests {
         );
 
         assert_eq!(
-            ElectionConfig::PS27(Province::DR).formal_title(ModelLocale::Nl),
+            ElectionConfig::PS27(Province::Drenthe).formal_title(ModelLocale::Nl),
             "de provinciale staten van Drenthe"
         );
         assert_eq!(
-            ElectionConfig::PS27(Province::DR).full_formal_title(ModelLocale::Nl),
+            ElectionConfig::PS27(Province::Drenthe).full_formal_title(ModelLocale::Nl),
             "Verkiezing van de provinciale staten van Drenthe 2027"
         );
 

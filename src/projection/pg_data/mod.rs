@@ -556,7 +556,7 @@ mod tests {
         let base_time = Utc::now();
 
         let mut list = sample_candidate_list(list_id);
-        list.electoral_districts = vec![ElectoralDistrict::UT];
+        list.electoral_districts = vec![ElectoralDistrict::Utrecht];
 
         data.apply(StoreEvent::new_at(
             1,
@@ -565,7 +565,10 @@ mod tests {
         ));
 
         let updated_at = base_time - Duration::seconds(15);
-        let districts = vec![ElectoralDistrict::NH, ElectoralDistrict::ZH];
+        let districts = vec![
+            ElectoralDistrict::NoordHolland,
+            ElectoralDistrict::ZuidHolland,
+        ];
         data.apply(StoreEvent::new_at(
             2,
             PgEvent::UpdateCandidateListDistricts {
@@ -874,7 +877,7 @@ mod tests {
             let committee = StreamId::new();
             let group = StreamId::new();
             let ek27 = ElectionConfig::EK27;
-            let ps27 = ElectionConfig::PS27(Province::GE);
+            let ps27 = ElectionConfig::PS27(Province::Gelderland);
 
             // The committee stream joins two elections; each row is created with the
             // committee scope. The political group joins one.

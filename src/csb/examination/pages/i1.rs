@@ -114,7 +114,7 @@ mod tests {
         };
         snapshot.persons.insert(person.id, person.clone());
         let list = CandidateList {
-            electoral_districts: vec![crate::ElectoralDistrict::GR],
+            electoral_districts: vec![crate::ElectoralDistrict::Groningen],
             candidates: vec![person.id],
             ..Default::default()
         };

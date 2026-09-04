@@ -16,7 +16,7 @@ use tokio::{
 /// `GITHUB_CLIENT_SECRET`, `GITHUB_ALLOWED_USER_IDS`).
 ///
 /// A variable already set in the caller's own environment is skipped, so
-/// `DEFAULT_ELECTION=PS27:GR bin/dev` still wins over the file.
+/// `DEFAULT_ELECTION=PS27:prov1 bin/dev` still wins over the file.
 pub fn dotenv_variables() -> Result<Vec<(String, String)>> {
     let mut variables = BTreeMap::new();
 

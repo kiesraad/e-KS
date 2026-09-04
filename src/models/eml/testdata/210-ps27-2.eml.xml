@@ -7,16 +7,16 @@
         <kr:CreatedByAuthority Id="0000">De politieke partij</kr:CreatedByAuthority>
     </ManagingAuthority>
     <IssueDate>2026-04-16</IssueDate>
-    <kr:CreationDateTime>2026-04-16T13:59:22.044497154+00:00</kr:CreationDateTime>
+    <kr:CreationDateTime>2026-04-16T13:57:58.475049893+00:00</kr:CreationDateTime>
     <Nomination>
-        <ElectionIdentifier Id="AB2027_Fryslan">
-            <ElectionName>Verkiezing van het algemeen bestuur van het waterschap Fryslân 2027</ElectionName>
-            <ElectionCategory>AB</ElectionCategory>
-            <kr:ElectionSubcategory>AB2</kr:ElectionSubcategory>
+        <ElectionIdentifier Id="PS2027_Limburg">
+            <ElectionName>Verkiezing van de provinciale staten van Limburg 2027</ElectionName>
+            <ElectionCategory>PS</ElectionCategory>
+            <kr:ElectionSubcategory>PS2</kr:ElectionSubcategory>
             <kr:ElectionDate>2027-03-17</kr:ElectionDate>
             <kr:NominationDate>2027-02-01</kr:NominationDate>
         </ElectionIdentifier>
-        <ContestIdentifier Id="geen">
+        <ContestIdentifier Id="alle">
             <ContestName></ContestName>
         </ContestIdentifier>
         <Affiliation>
@@ -24,9 +24,10 @@
                 <RegisteredName>Kiesraad Demo</RegisteredName>
             </AffiliationIdentifier>
             <Type>op zichzelf staande lijst</Type>
-            <kr:ListData PublishGender="true" PublicationLanguage="fy">
+            <kr:ListData PublishGender="true" PublicationLanguage="nl">
                 <kr:Contests>
-                    <kr:Contest Id="2">Fryslân</kr:Contest>
+                    <kr:Contest Id="1">Maastricht</kr:Contest>
+                    <kr:Contest Id="2">Venlo</kr:Contest>
                 </kr:Contests>
             </kr:ListData>
             <Candidate>

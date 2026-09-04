@@ -5,6 +5,7 @@ mod github_user_id;
 pub mod election;
 mod locale;
 mod model_locale;
+mod rate_limit;
 mod scope;
 mod templates;
 mod zip;
@@ -25,6 +26,7 @@ pub use election::{ElectionConfig, ElectionType, ElectoralDistrict, Province, Wa
 pub use github_user_id::GithubUserId;
 pub use locale::Locale;
 pub use model_locale::{AnyLocale, ModelLocale};
+pub use rate_limit::{RateLimit, RateLimits};
 pub use scope::Scope;
 pub use templates::{HtmlTemplate, LocaleValues, SessionPageValues};
 pub use zip::ZipResponseWriter;

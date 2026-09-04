@@ -5,6 +5,7 @@ use std::{env, path::PathBuf, time::Duration};
 
 use secrecy::SecretString;
 
+use super::rate_limit::RateLimits;
 use crate::{
     AppError, ElectionConfig, GithubUserId,
     constants::{BRP_PERSONS_ENDPOINT, BRP_TIMEOUT},
@@ -119,8 +120,11 @@ pub struct Config {
     /// Election a login lands on when the flow has no election selection of
     /// its own (CSB logins, dev logins). Set via `DEFAULT_ELECTION` as the
     /// election code, with the region appended after a colon where the type
-    /// needs one (e.g. `EK27`, `PS27:GR`).
+    /// needs one (e.g. `EK27`, `PS27:prov1`).
     pub default_election: ElectionConfig,
+    /// Per-stream rate limits guarding against denial of service through the
+    /// regular interface; see [`RateLimits`].
+    pub rate_limits: RateLimits,
 }
 
 fn get_env_with<F>(name: &'static str, lookup: &mut F) -> Result<String, AppError>
@@ -228,7 +232,7 @@ where
 }
 
 /// Parses `DEFAULT_ELECTION`: the election code, with the region appended
-/// after a colon where the election type needs one (e.g. `EK27`, `PS27:GR`).
+/// after a colon where the election type needs one (e.g. `EK27`, `PS27:prov1`).
 fn parse_default_election(raw: &str) -> Result<ElectionConfig, AppError> {
     let (code, region) = match raw.split_once(':') {
         Some((code, region)) => (code, Some(region)),
@@ -236,7 +240,7 @@ fn parse_default_election(raw: &str) -> Result<ElectionConfig, AppError> {
     };
     ElectionConfig::from_code_and_region(code.trim(), region.map(str::trim)).ok_or_else(|| {
         AppError::ConfigLoadError(format!(
-            "DEFAULT_ELECTION {raw:?} is not a known election (expected e.g. EK27 or PS27:GR)"
+            "DEFAULT_ELECTION {raw:?} is not a known election (expected e.g. EK27 or PS27:prov1)"
         ))
     })
 }
@@ -340,6 +344,8 @@ impl Config {
             timeout: Duration::from_secs(timeout),
         };
 
+        let rate_limits = RateLimits::from_env_with(&mut lookup)?;
+
         Ok(Self {
             storage_url: SecretString::from(storage_url),
             id_derivation_key,
@@ -352,6 +358,7 @@ impl Config {
             brp_client,
             github_oauth,
             default_election,
+            rate_limits,
         })
     }
 
@@ -376,6 +383,7 @@ impl Config {
             },
             github_oauth: None,
             default_election: ElectionConfig::EK27,
+            rate_limits: RateLimits::default(),
         }
     }
 }
@@ -684,14 +692,14 @@ mod tests {
             ElectionConfig::EK27
         );
         assert_eq!(
-            parse_default_election("PS27:GR").expect("PS27:GR"),
-            ElectionConfig::PS27(crate::Province::GR)
+            parse_default_election("PS27:prov1").expect("PS27:prov1"),
+            ElectionConfig::PS27(crate::Province::Groningen)
         );
     }
 
     #[test]
     fn parse_default_election_rejects_unknown_values() {
-        for raw in ["", "EK99", "PS27", "PS27:XX"] {
+        for raw in ["", "EK99", "PS27", "PS27:prov37"] {
             assert!(
                 matches!(
                     parse_default_election(raw),

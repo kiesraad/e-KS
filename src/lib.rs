@@ -137,7 +137,8 @@ pub(crate) use auth::{
 pub(crate) use core::TlsConfig;
 pub(crate) use core::{
     AnyLocale, ElectionConfig, ElectionType, ElectoralDistrict, GithubOauthConfig, GithubUserId,
-    HtmlTemplate, Locale, LocaleValues, Province, Scope, SessionPageValues, WaterCouncil,
+    HtmlTemplate, Locale, LocaleValues, Province, RateLimit, RateLimits, Scope, SessionPageValues,
+    WaterCouncil,
     constants::{self, MAX_CANDIDATES},
     http_trace, translate,
 };

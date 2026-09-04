@@ -387,7 +387,7 @@ fn key_path(dir: &Path, stream_id: StreamId, election: ElectionConfig) -> PathBu
 }
 
 fn stream_file(dir: &Path, stream_id: StreamId, election: ElectionConfig, ext: &str) -> PathBuf {
-    // Election identifiers can contain ':' (e.g. `PS27:GR`); replace with '_'
+    // Election identifiers can contain ':' (e.g. `PS27:prov1`); replace with '_'
     // so the filename stays portable on all filesystems.
     let election_segment = election.stable_id().replace(':', "_");
     dir.join(format!("{stream_id}_{election_segment}.{ext}"))

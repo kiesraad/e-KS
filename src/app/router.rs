@@ -172,9 +172,10 @@ const PERMISSIONS_POLICY: &str = concat!(
 /// so a change to a browser's fallback chain cannot widen the policy. Trusted
 /// Types is enforced because the bundle assigns to no injection sink.
 ///
-/// `form-action 'self'` holds for every page with no exception: the one flow
-/// that leaves the origin, the CSB GitHub login, starts from a link rather
-/// than a form, so it is an ordinary navigation this directive never governs.
+/// `form-action 'self'` holds for every page but one: the SAML auto-submit
+/// page POSTs to the IdP endpoint from the verified RD metadata, so it sets
+/// its own policy (`auth_service::bindings::http_post::autosubmit_csp`) that
+/// widens `form-action` by exactly that URL.
 const CONTENT_SECURITY_POLICY: &str = concat!(
     "default-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'; ",
     "script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src 'self'; ",
@@ -186,8 +187,7 @@ const CONTENT_SECURITY_POLICY: &str = concat!(
 /// Static security response headers shared by every response. HSTS is added
 /// separately on the TLS listener (see `core::server`), only over https.
 fn apply_security_headers(mut router: Router<AppState>) -> Router<AppState> {
-    let headers: [(HeaderName, &'static str); 10] = [
-        (header::CONTENT_SECURITY_POLICY, CONTENT_SECURITY_POLICY),
+    let headers: [(HeaderName, &'static str); 9] = [
         (header::X_FRAME_OPTIONS, "DENY"),
         (header::X_CONTENT_TYPE_OPTIONS, "nosniff"),
         // Not `no-referrer`: the language switch and the download-warning
@@ -225,7 +225,11 @@ fn apply_security_headers(mut router: Router<AppState>) -> Router<AppState> {
             HeaderValue::from_static(value),
         ));
     }
-    router
+
+    router.layer(SetResponseHeaderLayer::if_not_present(
+        header::CONTENT_SECURITY_POLICY,
+        HeaderValue::from_static(CONTENT_SECURITY_POLICY),
+    ))
 }
 
 /// `Cache-Control: no-store` for every dynamic response: pages carry personal
@@ -376,6 +380,52 @@ mod tests {
                 );
             }
         }
+    }
+
+    #[tokio::test]
+    async fn autosubmit_response_keeps_its_own_csp() {
+        use auth_service::{EndpointUrl, bindings::http_post::autosubmit_post_response};
+
+        const IDP_URL: &str = "https://tvs-mock.example/kvs/rd/request_authentication";
+
+        let state = AppState::new_for_tests().await;
+        let router: Router<AppState> = apply_security_headers(Router::new().route(
+            "/autosubmit-test",
+            axum::routing::get(async || {
+                autosubmit_post_response(
+                    &EndpointUrl::from_metadata(IDP_URL, "SSO").unwrap(),
+                    "<samlp:AuthnRequest/>",
+                    "SAMLRequest",
+                )
+                .unwrap()
+            }),
+        ));
+        let app: Router = router.with_state(state);
+
+        let request = Request::builder()
+            .uri("/autosubmit-test")
+            .body(Body::empty())
+            .unwrap();
+        let response = app.oneshot(request).await.expect("response");
+
+        let csp = response
+            .headers()
+            .get(header::CONTENT_SECURITY_POLICY)
+            .expect("csp")
+            .to_str()
+            .unwrap();
+        assert!(
+            csp.contains(&format!("form-action 'self' {IDP_URL}")),
+            "the per-response CSP must survive the global layer: {csp}"
+        );
+        // The rest of the security headers still come from the global layer.
+        assert_eq!(
+            response
+                .headers()
+                .get("cross-origin-opener-policy")
+                .unwrap(),
+            "same-origin"
+        );
     }
 
     /// Pins the values of the headers that are easy to weaken by accident: the

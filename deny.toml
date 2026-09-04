@@ -37,7 +37,9 @@ deny = [
 multiple-versions = "allow"
 
 [advisories]
-ignore = []
+ignore = [
+    { id = "RUSTSEC-2023-0071", reason = "rsa 0.9 pulled transitively by bergshamra-crypto (XML-DSig/XML-Enc); no patched release available upstream (rsa 0.10 is still a release candidate). The only private-key operation is RSA-OAEP unwrapping of an EncryptedID, which is reached only after the RD signature on the ArtifactResponse has been verified, so a chosen-ciphertext timing oracle is not reachable. Revisit when bergshamra publishes a release on a constant-time rsa." },
+]
 
 [sources]
 allow-git = []

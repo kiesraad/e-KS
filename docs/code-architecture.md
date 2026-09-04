@@ -113,8 +113,9 @@ Each configuration carries:
 ### Crates
 
 e-KS is a Cargo workspace: a single Rust binary (`eks`, the root crate) plus
-the member crates `validate`, `auth-service`, `development` and `tools/locales`,
-sharing one `Cargo.lock` and a workspace-level dependency list.
+the member crates `validate`, `auth-service`, `development`, `tools/locales`,
+`tools/utils` and `tools/districts-codegen`, sharing one `Cargo.lock` and a
+workspace-level dependency list.
 
 - **`eks`** (root, `Cargo.toml` + `src/`): the application itself: an Axum web
   server with Askama HTML templates and an event-sourced domain model. The
@@ -137,6 +138,11 @@ sharing one `Cargo.lock` and a workspace-level dependency list.
 - **`tools/locales/`** (`eks-locales`): shared locale tooling, used by the `eks`
   build script (locale codegen), the `eks` test suite (used-key scanning) and
   the `update_locales` binary.
+- **`tools/utils/`** (`eks-utils`): small runtime helpers with no heavyweight
+  dependencies (e.g. the `slugify_teletex` function), so they can be used in
+  the main `eks` crate as well as in other build-time tooling.
+- **`tools/districts-codegen/`** (`eks-districts-codegen`): generates the
+  districts and regions enums from `MasterElectionTree.xml`.
 
 Document generation is done in-process with the
 [`textris-pdf`](https://github.com/tweedegolf/textris-pdf) library: the PDF
@@ -502,8 +508,11 @@ Runtime configuration is read from environment variables once at startup into a
 | `SERVER_NAME` | Short server identifier shown in the page footer. |
 | `EKS_KEY` | Optional shared secret for the `x-eks-key` request gate. |
 | `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` / `GITHUB_ALLOWED_USER_IDS` | Enable the CSB GitHub OAuth login (`/csb/login`): the GitHub OAuth app's credentials and the comma-separated numeric GitHub account ids allowed to log in; all three or none. The client secret is a secret like the master keys. |
-| `DEFAULT_ELECTION` | Election a login lands on when the flow has no election selection of its own (CSB logins, dev logins): the election code, with the region appended after a colon where the type needs one (e.g. `EK27`, `PS27:GR`). Dev builds default to `EK27`. |
+| `DEFAULT_ELECTION` | Election a login lands on when the flow has no election selection of its own (CSB logins, dev logins): the election code, with the region appended after a colon where the type needs one (e.g. `EK27`, `PS27:prov1`). Dev builds default to `EK27`. |
 | `BIND_ADDRESS` | Address the server binds to (also accepted as a CLI argument). |
+| `RATE_LIMIT_DOWNLOADS` / `RATE_LIMIT_DOWNLOADS_WINDOW_SECS` | Document downloads allowed per stream per window (default 60 per 3600s). |
+| `RATE_LIMIT_EVENTS` / `RATE_LIMIT_EVENTS_WINDOW_SECS` | Events one stream may record per window (default 2000 per 3600s). |
+| `RATE_LIMIT_EVENTS_TOTAL` | Absolute cap on the number of events in one stream (default 20000). |
 
 The binary itself only reads `env::var`, but the deployment can supply these
 variables from a file (e.g. systemd `EnvironmentFile=`, Docker `--env-file`,
@@ -527,6 +536,25 @@ GITHUB_CLIENT_ID=Ov23li...
 GITHUB_CLIENT_SECRET=...
 GITHUB_ALLOWED_USER_IDS=1234567
 ```
+
+### Rate limiting
+
+Three per-stream limits (`src/core/rate_limit.rs`, the `RATE_LIMIT_*` variables
+above) guard against denial of service through the regular interface: document
+downloads per window, events per window, and an absolute cap on the number of
+events in one stream. A limit set to `0` is off.
+
+They are enforced on writes in `PgStore::update`, counted from the stream's own
+event log, so there is no extra state and the counts survive restarts. Every
+refusal is a `429`; window limits clear by themselves. The absolute cap exempts
+session events (login/logout), and reads are never blocked, so a capped stream
+stays fully viewable. The download event is recorded before the zip is
+streamed, so a refused download renders no PDF. The CSB side, including paper
+corrections, is not rate limited.
+
+Every refused write logs a warning with `event="rate_limit.hit"`, the limit
+name (`downloads`, `events`, `events_total`) and the stream id; monitoring
+alerts on that marker.
 
 ### Cargo features
 

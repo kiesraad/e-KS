@@ -17,7 +17,7 @@
           {% for e in existing_elections %}
             <tr class="{% if *e == current_election %}highlighted{% else %}clickable{% endif %}">
               <td>{{ e.title(*title_locale) }}</td>
-              <td>{{ e.region_title(*title_locale).unwrap_or("") }}</td>
+              <td>{{ e.region_title().unwrap_or("") }}</td>
               <td>
                 {% if *e != current_election %}
                   <form method="post"
@@ -70,7 +70,7 @@
         {% for p in provinces %}
           <option value="{{ p.code() }}"
                   {% if let Some(sel) = selected_region && *sel == p.code() %}selected{% endif %}>
-            {{ p.title(*title_locale) }}
+            {{ p.title() }}
           </option>
         {% endfor %}
       </select>
@@ -83,7 +83,7 @@
         {% for wc in water_councils %}
           <option value="{{ wc.code() }}"
                   {% if let Some(sel) = selected_region && *sel == wc.code() %}selected{% endif %}>
-            {{ wc.title(*title_locale) }}
+            {{ wc.title() }}
           </option>
         {% endfor %}
       </select>
