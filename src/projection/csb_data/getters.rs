@@ -519,7 +519,7 @@ mod tests {
         CsbStore, CsbStream, ElectoralDistrict,
         structs::{
             candidate_lists::CandidateList,
-            csb::{OmissionCategory, sample_omission},
+            csb::{OmissionCategory, OmissionStatus, sample_omission},
             list_designation::ListDesignation,
         },
         test_utils::{sample_candidate_list, sample_person_with},
@@ -564,8 +564,6 @@ mod tests {
 
     #[test]
     fn pending_and_actionable_counts_skip_irreparable_omissions() {
-        use crate::structs::csb::OmissionStatus;
-
         let store = CsbStore::new_for_test();
         insert(&store, OmissionCategory::PoliticalGroup);
         insert_with_status(
@@ -588,8 +586,6 @@ mod tests {
 
     #[test]
     fn is_candidate_scrapped_only_for_unresolved_omissions_on_that_list() {
-        use crate::structs::csb::OmissionStatus;
-
         let person = PersonId::new();
         let list_a = CandidateListId::new();
         let list_b = CandidateListId::new();
@@ -623,8 +619,6 @@ mod tests {
 
     #[test]
     fn get_recovery_position_renumbers_around_scrapped_candidates() {
-        use crate::structs::csb::OmissionStatus;
-
         let store = CsbStore::new_for_test();
         let list_id = CandidateListId::new();
         let (first, scrapped, last) = (PersonId::new(), PersonId::new(), PersonId::new());
@@ -656,8 +650,6 @@ mod tests {
 
     #[test]
     fn candidate_list_is_scrapped_once_all_its_districts_are_scrapped() {
-        use crate::structs::csb::OmissionStatus;
-
         let store = CsbStore::new_for_test();
         let list_id = CandidateListId::new();
         insert_list(
@@ -696,8 +688,6 @@ mod tests {
 
     #[test]
     fn is_candidate_scrapped_by_an_irreparable_omission() {
-        use crate::structs::csb::OmissionStatus;
-
         let person = PersonId::new();
         let list = CandidateListId::new();
         let store = CsbStore::new_for_test();
@@ -716,8 +706,6 @@ mod tests {
 
     #[test]
     fn is_candidate_list_scrapped_ignores_recovered_and_candidate_omissions() {
-        use crate::structs::csb::OmissionStatus;
-
         let list_id = CandidateListId::new();
         let store = CsbStore::new_for_test();
         insert_list(&store, list_id, vec![ElectoralDistrict::GR]);
@@ -757,8 +745,6 @@ mod tests {
 
     #[test]
     fn get_scrapped_districts_sorts_and_expands_empty_to_all() {
-        use crate::structs::csb::OmissionStatus;
-
         let store = CsbStore::new_for_test();
         insert_with_status(
             &store,

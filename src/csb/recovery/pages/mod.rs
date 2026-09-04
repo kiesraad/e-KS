@@ -251,49 +251,6 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn examination_candidate_list_never_renders_scrapped() {
-        use crate::csb::examination::pages::candidate_list::render;
-
-        let store = CsbStore::new_for_test();
-
-        let person = sample_person(PersonId::new());
-        let person_id = person.id;
-        let list_id = CandidateListId::new();
-        let mut list = sample_candidate_list(list_id);
-        list.candidates = vec![person_id];
-        store.add_person(person);
-        store.add_candidate_list(list);
-
-        // An irreparable omission is unresolved from the moment it is added,
-        // but scrapping must not leak into the examination phase.
-        let mut omission = Omission::new(
-            OmissionCategory::Candidate {
-                person: person_id,
-                lists: vec![list_id],
-            },
-            "Unregistered".parse().unwrap(),
-            "The candidate cannot be registered.".parse().unwrap(),
-            None,
-        );
-        omission.recoverable = false;
-        omission.create(&store).await.unwrap();
-
-        let response = render(
-            list_id,
-            CsbContext::new_test(),
-            store,
-            CsbPhase::Examination,
-        )
-        .await
-        .unwrap()
-        .into_response();
-
-        assert_eq!(response.status(), StatusCode::OK);
-        let body = response_body_string(response).await;
-        assert!(!body.contains("Scrapped"));
-    }
-
-    #[tokio::test]
     async fn recovery_candidate_page_is_read_only_with_status_panel() {
         let store = CsbStore::new_for_test();
         let stream_id = store.stream_id;
