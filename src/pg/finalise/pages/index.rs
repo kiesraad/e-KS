@@ -113,8 +113,8 @@ mod tests {
     async fn index_shows_nl_and_fry_downloads_when_needed() -> Result<(), AppError> {
         for (election, district) in [
             (
-                ElectionConfig::PS27(crate::Province::FR),
-                ElectoralDistrict::FR,
+                ElectionConfig::PS27(crate::Province::Fryslan),
+                ElectoralDistrict::Fryslan,
             ),
             (
                 ElectionConfig::WS27(crate::WaterCouncil::Fryslan),
@@ -172,10 +172,10 @@ mod tests {
     #[tokio::test]
     async fn index_shows_only_nl_when_needed() -> Result<(), AppError> {
         for (election, district) in [
-            (ElectionConfig::EK27, ElectoralDistrict::FR),
+            (ElectionConfig::EK27, ElectoralDistrict::Fryslan),
             (
-                ElectionConfig::PS27(crate::Province::GR),
-                ElectoralDistrict::GR,
+                ElectionConfig::PS27(crate::Province::Groningen),
+                ElectoralDistrict::Groningen,
             ),
             (
                 ElectionConfig::WS27(crate::WaterCouncil::Noorderzijlvest),

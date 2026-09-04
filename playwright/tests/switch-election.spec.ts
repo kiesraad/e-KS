@@ -36,7 +36,7 @@ test.describe("switch election", () => {
     await new EditListDetailsPage(page).addDistricts(["Venlo"]);
 
     await expect(
-      page.locator("//li/a[normalize-space()='20. Venlo']"),
+      page.locator("//li/a[normalize-space()='2. Venlo']"),
     ).toBeVisible();
   });
 

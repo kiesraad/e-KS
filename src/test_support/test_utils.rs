@@ -149,7 +149,7 @@ fn sample_dutch_address_form(
 pub fn sample_candidate_list(id: CandidateListId) -> CandidateList {
     CandidateList {
         id,
-        electoral_districts: vec![ElectoralDistrict::UT],
+        electoral_districts: vec![ElectoralDistrict::Utrecht],
         ..Default::default()
     }
 }
@@ -382,18 +382,16 @@ pub fn assert_zip_response_headers(headers: &axum::http::HeaderMap) {
 }
 
 pub async fn zip_entry_names(response: axum::response::Response) -> Vec<String> {
-    use async_zip::base::read::mem::ZipFileReader;
+    use async_zip::base::read1::seek::ZipArchiveReader;
+    use futures_lite::io::Cursor;
 
-    let zip = ZipFileReader::new(response_body(response).await.to_vec())
-        .await
-        .expect("zip body");
+    let body = Cursor::new(response_body(response).await.to_vec());
+    let zip = ZipArchiveReader::open(body).await.expect("zip body");
 
-    zip.file()
-        .entries()
+    zip.cdrs()
         .iter()
-        .map(|entry| {
-            entry
-                .filename()
+        .map(|cdr| {
+            cdr.insecure_file_name
                 .as_str()
                 .expect("utf-8 zip entry name")
                 .to_string()

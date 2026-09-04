@@ -64,17 +64,20 @@ export default function omissionPreset() {
 
         const districts = selectedDistrictNames();
         let desc = button.dataset.description ?? "";
+        let help = button.dataset.helpText ?? "";
         if (districts.length === 1) {
           desc = desc.replace("{district}", districts[0]);
+          help = help.replace("{district}", districts[0]);
         } else if (districts.length > 1) {
           const last = districts.at(-1);
           const rest = districts.slice(0, -1);
           desc = desc.replace("{districts}", `${rest.join(", ")} en ${last}`);
+          help = help.replace("{districts}", `${rest.join(", ")} en ${last}`);
         }
 
         setValue(description, desc);
         updatePlaceholderWarning(description, warning);
-        setValue(helpText, button.dataset.helpText);
+        setValue(helpText, help);
         if (recoverable) {
           recoverable.checked = button.dataset.recoverable !== "false";
         }

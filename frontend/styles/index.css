@@ -17,6 +17,7 @@
 @import "checkbox.css" layer(components);
 @import "paper-corrected.css" layer(components);
 @import "digid.css" layer(components);
+@import "error-page.css" layer(components);
 @import "form.css" layer(components);
 @import "header.css" layer(components);
 @import "layout.css" layer(components);

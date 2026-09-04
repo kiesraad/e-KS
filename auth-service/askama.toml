@@ -1,0 +1,5 @@
+[general]
+# SAML/XML and HTML templates live here. Both `.xml` and `.html` are escaped by
+# askama's default HTML escaper; raw embedded XML (e.g. the SOAP body) is
+# emitted with `|safe`.
+dirs = ["templates"]

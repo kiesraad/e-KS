@@ -45,16 +45,16 @@ mod tests {
 
     #[test]
     fn ps27_uses_region_province() {
-        let form = parse("election=PS27&region_province=GR");
+        let form = parse("election=PS27&region_province=prov1");
         assert_eq!(
             form.into_election_config(),
-            Some(ElectionConfig::PS27(Province::GR))
+            Some(ElectionConfig::PS27(Province::Groningen))
         );
     }
 
     #[test]
     fn ws27_uses_region_water_council() {
-        let form = parse("election=WS27&region_water_council=WS-FRY");
+        let form = parse("election=WS27&region_water_council=ws2");
         assert_eq!(
             form.into_election_config(),
             Some(ElectionConfig::WS27(WaterCouncil::Fryslan))
@@ -65,7 +65,7 @@ mod tests {
     fn ek27_ignores_submitted_region_fields() {
         // When JS is disabled, every region picker submits a value. The form
         // should still resolve to EK27 because EK27 has no region.
-        let form = parse("election=EK27&region_province=GR&region_water_council=WS-FRY");
+        let form = parse("election=EK27&region_province=prov1&region_water_council=ws2");
         assert_eq!(form.into_election_config(), Some(ElectionConfig::EK27));
     }
 
@@ -73,7 +73,7 @@ mod tests {
     fn ps27_ignores_unrelated_water_council_field() {
         // The province field is empty (placeholder option) but the water
         // council field is filled — it must not satisfy a PS27 election.
-        let form = parse("election=PS27&region_province=&region_water_council=WS-FRY");
+        let form = parse("election=PS27&region_province=&region_water_council=ws2");
         assert_eq!(form.into_election_config(), None);
     }
 
@@ -97,7 +97,7 @@ mod tests {
 
     #[test]
     fn unknown_election_code_returns_none() {
-        let form = parse("election=ZZ99&region_province=GR");
+        let form = parse("election=ZZ99&region_province=prov1");
         assert_eq!(form.into_election_config(), None);
     }
 }

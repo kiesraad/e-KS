@@ -625,7 +625,7 @@ mod tests {
         store.add_candidate_list(CandidateList {
             id: list_id,
             candidates: vec![first, scrapped, last],
-            electoral_districts: vec![ElectoralDistrict::GR],
+            electoral_districts: vec![ElectoralDistrict::Groningen],
             ..Default::default()
         });
 
@@ -655,33 +655,33 @@ mod tests {
         insert_list(
             &store,
             list_id,
-            vec![ElectoralDistrict::GR, ElectoralDistrict::DR],
+            vec![ElectoralDistrict::Groningen, ElectoralDistrict::Drenthe],
         );
 
         insert_with_status(
             &store,
-            OmissionCategory::DeclarationsOfSupport(vec![ElectoralDistrict::GR]),
+            OmissionCategory::DeclarationsOfSupport(vec![ElectoralDistrict::Groningen]),
             true,
             OmissionStatus::NotRecovered,
         );
 
         assert_eq!(
             store.get_candidate_list_scrapped_districts(list_id),
-            vec![ElectoralDistrict::GR]
+            vec![ElectoralDistrict::Groningen]
         );
         // One of the two districts is gone, the list itself is not.
         assert!(!store.is_candidate_list_scrapped(list_id).unwrap());
 
         insert_with_status(
             &store,
-            OmissionCategory::DeclarationsOfSupport(vec![ElectoralDistrict::DR]),
+            OmissionCategory::DeclarationsOfSupport(vec![ElectoralDistrict::Drenthe]),
             true,
             OmissionStatus::NotRecovered,
         );
 
         assert_eq!(
             store.get_candidate_list_scrapped_districts(list_id),
-            vec![ElectoralDistrict::GR, ElectoralDistrict::DR]
+            vec![ElectoralDistrict::Groningen, ElectoralDistrict::Drenthe]
         );
         assert!(store.is_candidate_list_scrapped(list_id).unwrap());
     }
@@ -708,7 +708,7 @@ mod tests {
     fn is_candidate_list_scrapped_ignores_recovered_and_candidate_omissions() {
         let list_id = CandidateListId::new();
         let store = CsbStore::new_for_test();
-        insert_list(&store, list_id, vec![ElectoralDistrict::GR]);
+        insert_list(&store, list_id, vec![ElectoralDistrict::Groningen]);
 
         insert_with_status(
             &store,
@@ -749,8 +749,8 @@ mod tests {
         insert_with_status(
             &store,
             OmissionCategory::DeclarationsOfSupport(vec![
-                ElectoralDistrict::DR,
-                ElectoralDistrict::GR,
+                ElectoralDistrict::Drenthe,
+                ElectoralDistrict::Groningen,
             ]),
             true,
             OmissionStatus::NotRecovered,
@@ -758,18 +758,18 @@ mod tests {
         // Recovered and pending omissions scrap nothing.
         insert_with_status(
             &store,
-            OmissionCategory::DeclarationsOfSupport(vec![ElectoralDistrict::BO]),
+            OmissionCategory::DeclarationsOfSupport(vec![ElectoralDistrict::Bonaire]),
             true,
             OmissionStatus::Recovered,
         );
         insert(
             &store,
-            OmissionCategory::DeclarationsOfSupport(vec![ElectoralDistrict::UT]),
+            OmissionCategory::DeclarationsOfSupport(vec![ElectoralDistrict::Utrecht]),
         );
 
         assert_eq!(
             store.get_scrapped_districts(),
-            vec![ElectoralDistrict::GR, ElectoralDistrict::DR]
+            vec![ElectoralDistrict::Groningen, ElectoralDistrict::Drenthe]
         );
 
         // An unresolved omission without districts covers all districts.
@@ -862,8 +862,8 @@ mod tests {
         let list_a = CandidateListId::new();
         let list_b = CandidateListId::new();
         let store = CsbStore::new_for_test();
-        insert_list(&store, list_a, vec![ElectoralDistrict::GR]);
-        insert_list(&store, list_b, vec![ElectoralDistrict::DR]);
+        insert_list(&store, list_a, vec![ElectoralDistrict::Groningen]);
+        insert_list(&store, list_b, vec![ElectoralDistrict::Drenthe]);
         insert(&store, OmissionCategory::CandidateList(vec![list_a]));
         insert(&store, OmissionCategory::CandidateList(vec![list_b]));
         insert(&store, OmissionCategory::PoliticalGroup);
@@ -885,21 +885,21 @@ mod tests {
     fn get_candidate_list_prefers_the_paper_corrected_version() {
         let list_id = CandidateListId::new();
         let store = CsbStore::new_for_test();
-        insert_list(&store, list_id, vec![ElectoralDistrict::UT]);
+        insert_list(&store, list_id, vec![ElectoralDistrict::Utrecht]);
         store.set_paper_corrected_candidate_list(CandidateList {
             id: list_id,
-            electoral_districts: vec![ElectoralDistrict::GR],
+            electoral_districts: vec![ElectoralDistrict::Groningen],
             ..Default::default()
         });
 
         let list = store
             .get_candidate_list(list_id, WithCorrections::None)
             .unwrap();
-        assert_eq!(list.electoral_districts, vec![ElectoralDistrict::UT]);
+        assert_eq!(list.electoral_districts, vec![ElectoralDistrict::Utrecht]);
         let list = store
             .get_candidate_list(list_id, WithCorrections::Paper)
             .unwrap();
-        assert_eq!(list.electoral_districts, vec![ElectoralDistrict::GR]);
+        assert_eq!(list.electoral_districts, vec![ElectoralDistrict::Groningen]);
     }
 
     #[test]

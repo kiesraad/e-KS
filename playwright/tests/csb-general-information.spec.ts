@@ -22,10 +22,12 @@ test.describe("check general information and add corrections and omissions", asy
     await politicalGroupPage.linkGeneralInformation.click();
 
     await expect(generalInformationPage.headerGeneralInformation).toBeVisible();
-    await generalInformationPage.linkRegisteredDesignation.click();
+    await generalInformationPage.linkRegisteredDesignationStandalone.click();
 
     await correctionsPage.addCorrection("KDP");
-    await expect(generalInformationPage.textCorrectedName).toHaveText("KDP");
+    await expect(generalInformationPage.textCorrectedNameStandalone).toHaveText(
+      "KDP",
+    );
     // Add each type of omission, verify and then remove
     const omissions = [
       {
@@ -134,7 +136,9 @@ test.describe("check general information and add corrections and omissions", asy
     // exit paper corrections mode and verify changes
     await politicalGroupPage.linkGeneralInformation.click();
     await expect(generalInformationPage.headerGeneralInformation).toBeVisible();
-    await expect(generalInformationPage.textCorrectedName).toHaveText("TP/TP2");
+    await expect(generalInformationPage.textCorrectedNameCombined).toHaveText(
+      "TP/TP2",
+    );
     await expect(generalInformationPage.textCorrectedType).toHaveText(
       "Combinatie van meerdere geregistreerde namen",
     );

@@ -698,7 +698,8 @@ mod tests {
         let store = PgStore::new_for_test();
         for _ in 0..10 {
             let mut list1 = sample_candidate_list(CandidateListId::new());
-            list1.electoral_districts = vec![ElectoralDistrict::UT, ElectoralDistrict::GR];
+            list1.electoral_districts =
+                vec![ElectoralDistrict::Utrecht, ElectoralDistrict::Groningen];
             list1.create(&store).await?;
         }
 

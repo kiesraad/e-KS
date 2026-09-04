@@ -1,0 +1,16 @@
+.error-card {
+  --card-gap: var(--space-6);
+  max-width: 40rem;
+}
+
+.error-card-footer {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.error-code {
+  color: var(--color-help-text);
+  font-family: var(--font-number);
+  font-size: var(--font-size-sm);
+}

@@ -206,25 +206,25 @@ test.describe("add candidate list", async () => {
 
     await new EditListDetailsPage(page).addDistricts(["Haarlem", "Den Helder"]);
     await expect(
-      page.locator("//li/a[normalize-space()='10. Haarlem']"),
+      page.locator("//li/a[normalize-space()='3. Haarlem']"),
     ).toBeVisible();
     await expect(
-      page.locator("//li/a[normalize-space()='11. Den Helder']"),
+      page.locator("//li/a[normalize-space()='2. Den Helder']"),
     ).toBeVisible();
     await expect(
-      page.locator("//li/a[normalize-space()='9. Amsterdam']"),
+      page.locator("//li/a[normalize-space()='1. Amsterdam']"),
     ).not.toBeVisible();
     const manageCandidateListPage = new ManageCandidateListPage(page);
     await manageCandidateListPage.removeDistricts(["Haarlem"]);
     await manageCandidateListPage.addDistricts(["Amsterdam"]);
     await expect(
-      page.locator("//li/a[normalize-space()='10. Haarlem']"),
+      page.locator("//li/a[normalize-space()='3. Haarlem']"),
     ).not.toBeVisible();
     await expect(
-      page.locator("//li/a[normalize-space()='11. Den Helder']"),
+      page.locator("//li/a[normalize-space()='2. Den Helder']"),
     ).toBeVisible();
     await expect(
-      page.locator("//li/a[normalize-space()='9. Amsterdam']"),
+      page.locator("//li/a[normalize-space()='1. Amsterdam']"),
     ).toBeVisible();
   });
 });

@@ -615,7 +615,7 @@ mod tests {
     fn compute_array_of_scalars_diff_is_single_csv_row() {
         let list_id = CandidateListId::new();
         let mut list = sample_candidate_list(list_id);
-        list.electoral_districts = vec![ElectoralDistrict::GR];
+        list.electoral_districts = vec![ElectoralDistrict::Groningen];
 
         let events = vec![
             StoreEvent::new(1, PgEvent::CreateCandidateList(list)),
@@ -623,7 +623,10 @@ mod tests {
                 2,
                 PgEvent::UpdateCandidateListDistricts {
                     list_id,
-                    electoral_districts: vec![ElectoralDistrict::GR, ElectoralDistrict::FR],
+                    electoral_districts: vec![
+                        ElectoralDistrict::Groningen,
+                        ElectoralDistrict::Fryslan,
+                    ],
                 },
             ),
         ];
@@ -636,8 +639,8 @@ mod tests {
             .collect();
 
         assert_eq!(districts.len(), 1);
-        assert_eq!(districts[0].old_value(), "GR");
-        assert_eq!(districts[0].new_value(), "GR, FR");
+        assert_eq!(districts[0].old_value(), "Groningen");
+        assert_eq!(districts[0].new_value(), "Groningen, Fryslan");
     }
 
     #[test]

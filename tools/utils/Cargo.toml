@@ -1,0 +1,10 @@
+[package]
+name = "eks-utils"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Shared utilities for the eks crate and its build-time tooling"
+
+[lints]
+workspace = true

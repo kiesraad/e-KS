@@ -1,6 +1,6 @@
 //! The `AuthState` hooks the auth-service invokes on login and logout.
 
-use auth_service::{AuthFailure, AuthState, SubjectId};
+use auth_service::{AuthFailure, AuthState, LoggedOutSession, MessageId, NameId, SubjectId};
 use axum::{
     http::HeaderMap,
     response::{IntoResponse, Redirect, Response},
@@ -33,7 +33,10 @@ impl AppState {
             return Ok(None);
         };
         let store = self.store_for_stream(stream_id, election, false).await?;
-        PgStore::own(store).update(PgEvent::Login).await?;
+        PgStore::own(store)
+            .with_limits(self.config.rate_limits)
+            .update(PgEvent::Login)
+            .await?;
         Ok(Some(election))
     }
 
@@ -54,7 +57,12 @@ impl AppState {
                 election: Some(election),
                 ..
             } => match self.store_for_stream(*stream_id, *election, false).await {
-                Ok(store) => PgStore::own(store).update(PgEvent::Logout).await,
+                Ok(store) => {
+                    PgStore::own(store)
+                        .with_limits(self.config.rate_limits)
+                        .update(PgEvent::Logout)
+                        .await
+                }
                 Err(err) => Err(err),
             },
             SessionUser::PoliticalGroup { election: None, .. } => return,
@@ -80,7 +88,7 @@ impl AuthState for AppState {
     async fn on_authenticated(
         &self,
         subject_id: SubjectId,
-        name_id: String,
+        name_id: NameId,
         jar: CookieJar,
         headers: &HeaderMap,
     ) -> Response {
@@ -95,7 +103,7 @@ impl AuthState for AppState {
 
         let mut session = Session::for_political_group(
             stream_id,
-            name_id,
+            name_id.into_string(),
             election,
             Locale::from_headers(headers),
         );
@@ -115,10 +123,9 @@ impl AuthState for AppState {
             .into_response()
     }
 
-    async fn logout_session(&self, jar: CookieJar) -> (CookieJar, Option<String>) {
-        // Drop the session (if any) and always clear the cookie; `Some` means
-        // a session was active.
-        let name_id = match jar.get(SESSION_COOKIE_NAME).map(|c| c.value().to_string()) {
+    async fn logout_session(&self, jar: CookieJar) -> (CookieJar, LoggedOutSession) {
+        // Drop the session (if any) and always clear the cookie.
+        let ended = match jar.get(SESSION_COOKIE_NAME).map(|c| c.value().to_string()) {
             Some(token) => match self.sessions.remove(&token).await {
                 Some(session) => {
                     self.record_logout(&session).await;
@@ -127,19 +134,13 @@ impl AuthState for AppState {
                         user = ?session.user,
                         "user signed out"
                     );
-                    // Only political-group sessions took part in SAML; a
-                    // committee logout hands back no NameID (empty keeps the
-                    // `Some` == session-was-active contract).
-                    Some(match session.user {
-                        SessionUser::PoliticalGroup { saml_name_id, .. } => saml_name_id,
-                        SessionUser::CentralElectoralCommittee { .. } => String::new(),
-                    })
+                    ended_session(session.user)
                 }
-                None => None,
+                None => LoggedOutSession::None,
             },
-            None => None,
+            None => LoggedOutSession::None,
         };
-        (jar.remove(build_removal_cookie()), name_id)
+        (jar.remove(build_removal_cookie()), ended)
     }
 
     async fn on_authentication_failed(
@@ -163,11 +164,26 @@ impl AuthState for AppState {
         (jar, auth_failure_response(failure, locale)).into_response()
     }
 
-    async fn register_pending_request(&self, id: String) {
-        self.pending_requests.register(id).await;
+    async fn register_pending_request(&self, id: MessageId) {
+        self.pending_requests.register(id.into_string()).await;
     }
 
-    async fn consume_if_pending(&self, id: String) -> bool {
-        self.pending_requests.consume_if_pending(&id).await
+    async fn consume_if_pending(&self, id: MessageId) -> bool {
+        self.pending_requests.consume_if_pending(id.as_str()).await
+    }
+}
+
+/// Whether the ended session had a SAML identity to log out at the RD.
+///
+/// Only political-group sessions take part in SAML, and even one of those has no
+/// NameID when it came from the dev-login bypass: both end locally without an
+/// SLO round-trip.
+fn ended_session(user: SessionUser) -> LoggedOutSession {
+    match user {
+        SessionUser::PoliticalGroup { saml_name_id, .. } => match NameId::parse(saml_name_id) {
+            Ok(name_id) => LoggedOutSession::WithSamlSubject(name_id),
+            Err(_) => LoggedOutSession::WithoutSamlSubject,
+        },
+        SessionUser::CentralElectoralCommittee { .. } => LoggedOutSession::WithoutSamlSubject,
     }
 }
