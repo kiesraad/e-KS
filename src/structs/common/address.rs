@@ -349,6 +349,7 @@ impl Address {
             _ => None,
         }
     }
+
     pub fn is_dutch(&self) -> bool {
         matches!(self, Self::Dutch(_))
     }

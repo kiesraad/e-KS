@@ -5,7 +5,6 @@ export class CsbGeneralInformationPage {
   readonly linkAddOmission: Locator;
   readonly linkManageOmissions: Locator;
   readonly linkRegisteredDesignationStandalone: Locator;
-  readonly linkRegisteredDesignationCombined: Locator;
   readonly textCorrectedNameStandalone: Locator;
   readonly textCorrectedNameCombined: Locator;
   readonly textCorrectedType: Locator;
@@ -24,9 +23,6 @@ export class CsbGeneralInformationPage {
     });
     this.linkRegisteredDesignationStandalone = this.page.getByRole("cell", {
       name: "Geregistreerde aanduiding",
-    });
-    this.linkRegisteredDesignationCombined = this.page.getByRole("cell", {
-      name: "Samengevoegde aanduiding",
     });
     this.textCorrectedNameStandalone = this.page
       .getByRole("row", { name: "Geregistreerde aanduiding:" })

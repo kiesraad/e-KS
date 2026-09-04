@@ -11,10 +11,14 @@ use crate::{
 
 /// The political group rows of the general information page.
 pub struct PaperCorrectedPoliticalGroupInfo {
+    /// Label of the appellation row, or `None` for blank designations, which
+    /// have no appellation and so omit the row entirely.
+    pub appellation_label: Option<String>,
     pub appellation: PaperCorrected,
-    pub list_type_value: PaperCorrected,
+    pub list_type: PaperCorrected,
     pub previous_results: PaperCorrected,
-    pub list_type: ListDesignation,
+    /// Blank lists have no name authorisations.
+    pub is_blank: bool,
 }
 
 impl PaperCorrectedPoliticalGroupInfo {
@@ -22,13 +26,16 @@ impl PaperCorrectedPoliticalGroupInfo {
         let imported_group = store.get_political_group(WithCorrections::None);
         let paper_corrected_group = store.get_political_group(WithCorrections::Paper);
 
+        let designation = paper_corrected_group.list_designation.unwrap_or_default();
+
         Self {
+            appellation_label: appellation_label(designation, locale),
             appellation: PaperCorrected::new(
                 store.get_appellation(WithCorrections::None),
                 store.get_appellation(WithCorrections::Paper),
             )
             .with_csb_correction(Some(store.get_appellation(WithCorrections::All))),
-            list_type_value: PaperCorrected::new(
+            list_type: PaperCorrected::new(
                 list_type_label(&imported_group, locale),
                 list_type_label(&paper_corrected_group, locale),
             ),
@@ -36,8 +43,16 @@ impl PaperCorrectedPoliticalGroupInfo {
                 previous_results_label(&imported_group, locale),
                 previous_results_label(&paper_corrected_group, locale),
             ),
-            list_type: paper_corrected_group.list_designation.unwrap_or_default(),
+            is_blank: designation == ListDesignation::Blank,
         }
+    }
+}
+
+fn appellation_label(designation: ListDesignation, locale: Locale) -> Option<String> {
+    match designation {
+        ListDesignation::Standalone => Some(trans!("political_group.appellation", locale)),
+        ListDesignation::Combined => Some(trans!("political_group.appellation_combined", locale)),
+        ListDesignation::Blank => None,
     }
 }
 

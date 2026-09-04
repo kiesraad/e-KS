@@ -49,19 +49,15 @@ impl PaperCorrectedSubmitter {
             is_foreign: Self::is_foreign(imported, corrected),
         }
     }
-    /// foreign if:
-    /// 1. Both imported and corrected aren't [None]
-    /// 2. Both are not Dutch addresses
-    ///
-    /// In any other case, a submitter is not considered foreign
+
+    /// Whether either version of the submitter has a non-Dutch address, so the
+    /// state/province and country rows are shown when at least one of them has
+    /// a value to display.
     fn is_foreign(imported: Option<&ListSubmitter>, corrected: Option<&ListSubmitter>) -> bool {
-        let Some(imported) = imported else {
-            return false;
-        };
-        let Some(corrected) = corrected else {
-            return false;
-        };
-        !imported.address.is_dutch() || !corrected.address.is_dutch()
+        [imported, corrected]
+            .into_iter()
+            .flatten()
+            .any(|submitter| !submitter.address.is_dutch())
     }
 }
 
@@ -115,10 +111,7 @@ mod tests {
     use crate::{
         CsbStore,
         structs::{
-            common::{
-                Address::{self},
-                DutchAddress, InternationalAddress,
-            },
+            common::{Address, DutchAddress, InternationalAddress},
             list_submitters::ListSubmitterId,
         },
         test_utils::sample_list_submitter,
@@ -149,8 +142,6 @@ mod tests {
 
     #[test]
     fn submitter_country_correction_is_shown() {
-        use crate::structs::common::{Address, InternationalAddress};
-
         let store = CsbStore::new_for_test();
         let submitter = sample_list_submitter(ListSubmitterId::new());
         let mut corrected = submitter.clone();
@@ -207,16 +198,37 @@ mod tests {
         assert!(PaperCorrectedSubmitter::is_foreign(Some(&s1), Some(&s2)));
         assert!(PaperCorrectedSubmitter::is_foreign(Some(&s2), Some(&s1)));
 
-        assert!(!PaperCorrectedSubmitter::is_foreign(None, Some(&s2)));
-        assert!(!PaperCorrectedSubmitter::is_foreign(Some(&s2), None));
+        // A submitter that only exists on one side is foreign when that side is.
+        assert!(PaperCorrectedSubmitter::is_foreign(None, Some(&s2)));
+        assert!(PaperCorrectedSubmitter::is_foreign(Some(&s2), None));
+        assert!(!PaperCorrectedSubmitter::is_foreign(None, Some(&s1)));
+        assert!(!PaperCorrectedSubmitter::is_foreign(Some(&s1), None));
 
         s2.address = dutch.clone();
         assert!(!PaperCorrectedSubmitter::is_foreign(Some(&s1), Some(&s2)));
         assert!(!PaperCorrectedSubmitter::is_foreign(Some(&s2), Some(&s1)));
 
-        assert!(!PaperCorrectedSubmitter::is_foreign(None, Some(&s2)));
-        assert!(!PaperCorrectedSubmitter::is_foreign(Some(&s2), None));
-
         assert!(!PaperCorrectedSubmitter::is_foreign(None, None));
+    }
+
+    /// A submitter added by the paper corrections has no imported counterpart,
+    /// but its country still has to be shown.
+    #[test]
+    fn foreign_submitter_added_by_the_corrections_shows_country() {
+        let store = CsbStore::new_for_test();
+        let mut added = sample_list_submitter(ListSubmitterId::new());
+        added.address = Address::International(InternationalAddress {
+            country: Some("BE".parse().unwrap()),
+            state_or_province: Some("Antwerpen".parse().unwrap()),
+            ..Default::default()
+        });
+        {
+            let mut data = store.data.write();
+            data.paper_corrected_data.list_submitter = added.clone();
+            data.paper_corrected_data.substitute_submitters = vec![added];
+        }
+
+        assert!(paper_corrected_list_submitter(&store).unwrap().is_foreign);
+        assert!(paper_corrected_substitute_submitters(&store)[0].is_foreign);
     }
 }
