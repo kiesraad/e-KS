@@ -40,19 +40,20 @@ impl PoliticalGroup {
 
     /// Appellation for use in the UI of the CSB module and the I-models
     pub fn csb_appellation(&self, first_candidate_name: Option<&FullName>) -> String {
-        if let Some(name) = &self.appellation
-            && self.list_designation != Some(ListDesignation::Blank)
-        {
-            return name.to_string();
+        if self.list_designation == Some(ListDesignation::Blank) {
+            return match first_candidate_name {
+                Some(name) => format!(
+                    "Blanco ({}, {})",
+                    name.last_name_with_prefix(),
+                    name.initials
+                ),
+                None => "Blanco".to_string(),
+            };
         }
-
-        match first_candidate_name {
-            Some(name) => format!(
-                "Blanco ({}, {})",
-                name.last_name_with_prefix(),
-                name.initials
-            ),
-            None => "Blanco".to_string(),
+        if let Some(name) = &self.appellation {
+            name.to_string()
+        } else {
+            "???".to_string()
         }
     }
 
@@ -85,7 +86,10 @@ impl PoliticalGroup {
 
 #[cfg(test)]
 mod tests {
-    use crate::structs::common::{InfoProblems, PotentialProblems};
+    use crate::{
+        structs::common::{InfoProblems, Initials, LastName, PotentialProblems},
+        test_utils::sample_political_group,
+    };
 
     use super::*;
 
@@ -161,5 +165,66 @@ mod tests {
         assert_eq!(group.pg_appellation().unwrap(), "");
         assert_eq!(group.get_max_candidates(), 50);
         assert!(!group.was_previously_seated());
+    }
+
+    #[test]
+    fn csb_appellation() {
+        let mut pg = sample_political_group();
+        let first_candidate_name = FullName {
+            first_name: None,
+            last_name: LastName::from_str("Nagelhout").unwrap(),
+            last_name_prefix: None,
+            initials: Initials::from_str("A.B.").unwrap(),
+        };
+        let cases = [
+            (None, "Test Partij", "Test Partij", "???", "???"),
+            (
+                Some(ListDesignation::Blank),
+                "Blanco (Nagelhout, A.B.)",
+                "Blanco",
+                "Blanco (Nagelhout, A.B.)",
+                "Blanco",
+            ),
+            (
+                Some(ListDesignation::Combined),
+                "Test Partij",
+                "Test Partij",
+                "???",
+                "???",
+            ),
+            (
+                Some(ListDesignation::Standalone),
+                "Test Partij",
+                "Test Partij",
+                "???",
+                "???",
+            ),
+        ];
+        for (
+            designation,
+            expected_with_candidate,
+            expected_without_candidate,
+            expected_with_candidate_no_appellation,
+            expected_without_candidate_no_appellation,
+        ) in cases
+        {
+            pg.appellation = Appellation::from_str("Test Partij").ok();
+            pg.list_designation = designation;
+            assert_eq!(
+                expected_with_candidate,
+                pg.csb_appellation(Some(&first_candidate_name))
+            );
+            assert_eq!(expected_without_candidate, pg.csb_appellation(None));
+
+            pg.appellation = None;
+            assert_eq!(
+                expected_with_candidate_no_appellation,
+                pg.csb_appellation(Some(&first_candidate_name))
+            );
+            assert_eq!(
+                expected_without_candidate_no_appellation,
+                pg.csb_appellation(None)
+            );
+        }
     }
 }

@@ -154,7 +154,7 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
-        assert!(body.contains("Blanco"));
+        assert!(body.contains("???"));
     }
 
     #[tokio::test]
