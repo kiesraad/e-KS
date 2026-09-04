@@ -49,7 +49,7 @@
           <p>{{ "csb.paper_corrections.instruction"|trans }}</p>
         </div>
         {{ macros::csrf_field() }}
-        <button type="submit" class="button secondary">{{ "csb.paper_corrections.start"|trans }}</button>
+        <button type="submit" class="button secondary icon-chevron-end">{{ "csb.paper_corrections.start"|trans }}</button>
       </div>
       <div class="restoration-strip {% if has_paper_corrections %}restoration-strip-correction{% endif %}">
         {% if has_paper_corrections %}
@@ -69,7 +69,7 @@
           <h2 class="h3">{{ "csb.declarations_of_support.title"|trans }}</h2>
           <p>{{ "csb.declarations_of_support.instruction"|trans }}</p>
         </div>
-        <a class="button tertiary icon-plus-end"
+        <a class="button secondary icon-plus-end"
            href="{{ political_group.add_declarations_of_support_omission_path() }}">{{ "csb.omission.action.add"|trans }}</a>
       </div>
       {{ restorations::omission_strip(political_group.manage_declarations_of_support_omissions_path() , declarations_of_support_omissions.as_slice()) }}

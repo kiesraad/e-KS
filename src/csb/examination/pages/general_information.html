@@ -28,8 +28,10 @@
       {{ paper_corrected::data_row("person.fields.house_number"|trans, submitter.house_number) }}
       {{ paper_corrected::data_row("person.fields.street_name"|trans, submitter.street_name) }}
       {{ paper_corrected::data_row("person.fields.locality"|trans, submitter.locality) }}
-      {{ paper_corrected::data_row("person.fields.state_or_province"|trans, submitter.state_or_province) }}
-      {{ paper_corrected::data_row("person.fields.country"|trans, submitter.country) }}
+      {% if submitter.is_foreign %}
+        {{ paper_corrected::data_row("person.fields.state_or_province"|trans, submitter.state_or_province) }}
+        {{ paper_corrected::data_row("person.fields.country"|trans, submitter.country) }}
+      {% endif %}
     </tbody>
   </table>
 {% endmacro %}
@@ -40,19 +42,23 @@
     <table class="detail-table">
       {{ paper_corrected::columns_head("common.general_information"|trans) }}
       <tbody>
-        <tr class="clickable">
-          <td>{{ "political_group.appellation"|trans }}: {{ paper_corrected::value(group_info.appellation) }}</td>
-          <td></td>
-          <td class="actions">
-            <a href="{{ political_group.correction_appellation_path() }}"
-               aria-label="{{ "action.edit"|trans }}"></a>
-          </td>
-        </tr>
+        {% if let Some(appellation_label) = group_info.appellation_label %}
+          <tr class="clickable">
+            <td>{{ appellation_label }}: {{ paper_corrected::value(group_info.appellation) }}</td>
+            <td></td>
+            <td class="actions">
+              <a href="{{ political_group.correction_appellation_path() }}"
+                 aria-label="{{ "action.edit"|trans }}"></a>
+            </td>
+          </tr>
+        {% endif %}
         {{ paper_corrected::data_row("political_group.list_type"|trans, group_info.list_type) }}
         {{ paper_corrected::data_row("problems.no_previous_election_results"|trans, group_info.previous_results) }}
       </tbody>
     </table>
-    {% if name_authorisations.is_empty() %}
+    {% if group_info.is_blank %}
+      {# Blank lists shouldn't show/have any name authorisations #}
+    {% else if name_authorisations.is_empty() %}
       <p class="font-italic">{{ "political_group.no_legal_names"|trans }}</p>
     {% else %}
       {% for name_authorisation in name_authorisations %}

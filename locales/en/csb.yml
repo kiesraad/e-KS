@@ -91,7 +91,7 @@ index:
   go_to_examination: Go to examination
   phase: "Phase {}"
   phase_1:
-    title: Pre-examination
+    title: Pre-submission
   phase_2:
     title: Examination
   phase_3:

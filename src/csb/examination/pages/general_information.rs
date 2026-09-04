@@ -55,7 +55,7 @@ mod tests {
     use axum::http::StatusCode;
 
     use crate::{
-        structs::csb::OmissionCategory,
+        structs::{csb::OmissionCategory, list_designation::ListDesignation},
         test_utils::{response_body_string, sample_political_group},
     };
 
@@ -241,5 +241,42 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
         assert!(body.contains("restoration-tag-unrecoverable"));
+    }
+
+    #[tokio::test]
+    async fn appellation_labels_for_designation_type() {
+        let store = CsbStore::new_for_test();
+        let stream_id = store.stream_id;
+
+        let single_label = "Appellation:";
+        let combined_label = "Combined appellation:";
+
+        let cases = [
+            (None, Some(single_label)),
+            (Some(ListDesignation::Blank), None),
+            (Some(ListDesignation::Combined), Some(combined_label)),
+            (Some(ListDesignation::Standalone), Some(single_label)),
+        ];
+        for (designation, expected_label) in cases {
+            let mut pg = sample_political_group();
+            pg.list_designation = designation;
+            store.set_political_group(pg);
+
+            let response = overview(
+                CsbGeneralInformationPath { stream_id },
+                CsbContext::new_test(),
+                store.clone(),
+            )
+            .await
+            .unwrap()
+            .into_response();
+
+            let body = response_body_string(response).await;
+
+            match expected_label {
+                Some(label) => assert!(body.contains(label)),
+                None => assert!(!body.contains(single_label) && !body.contains(combined_label)),
+            }
+        }
     }
 }
