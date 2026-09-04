@@ -28,7 +28,7 @@ pub async fn delete(
     store: CsbStore,
 ) -> Result<Response, AppError> {
     let political_group = CsbPoliticalGroup::new_from_csb_store(&store);
-    let close_action = political_group.examination_path().to_string();
+    let close_action = political_group.group_path().to_string();
     Ok(HtmlTemplate(
         CsbPoliticalGroupDeleteTemplate {
             close_action,

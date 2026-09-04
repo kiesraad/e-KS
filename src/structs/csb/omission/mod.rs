@@ -145,6 +145,16 @@ pub enum OmissionStatus {
     NotRecovered,
 }
 
+impl OmissionStatus {
+    pub fn is_recovered(&self) -> bool {
+        matches!(self, OmissionStatus::Recovered)
+    }
+
+    pub fn is_not_recovered(&self) -> bool {
+        matches!(self, OmissionStatus::NotRecovered)
+    }
+}
+
 /// An omission ("verzuim") signifies something was wrong with the submitted data
 #[derive(Default, Debug, Serialize, Eq, PartialEq, Deserialize, Clone)]
 pub struct Omission {
@@ -196,6 +206,38 @@ impl Omission {
 
     pub fn class(&self) -> &str {
         if self.recoverable { "warning" } else { "error" }
+    }
+
+    /// The electoral districts this omission is scoped to. Only the
+    /// "ondersteuningsverklaringen" (H 4) are reported per district; every
+    /// other category applies to the political group, a list or a candidate as
+    /// a whole, so it has no districts of its own.
+    pub fn electoral_districts(&self) -> &[ElectoralDistrict] {
+        match &self.category {
+            OmissionCategory::DeclarationsOfSupport(districts) => districts,
+            OmissionCategory::PoliticalGroup
+            | OmissionCategory::CandidateList(_)
+            | OmissionCategory::Candidate { .. } => &[],
+        }
+    }
+
+    /// Whether the CSB can mark this omission as recovered or not recovered in
+    /// the "Herstelde lijsten" phase. Irreparable omissions were never in the
+    /// omission letter, so there is nothing to assess.
+    pub fn is_actionable(&self) -> bool {
+        self.recoverable
+    }
+
+    /// Whether this omission still needs a recovered / not-recovered decision.
+    pub fn is_pending(&self) -> bool {
+        self.recoverable && self.status == OmissionStatus::Pending
+    }
+
+    /// Whether this omission remains after the recovery window: irreparable, or
+    /// explicitly marked as not recovered. Unresolved omissions scrap the
+    /// candidate, list or district they apply to.
+    pub fn is_unresolved(&self) -> bool {
+        !self.recoverable || self.status == OmissionStatus::NotRecovered
     }
 }
 
@@ -260,6 +302,55 @@ pub mod tests {
 
         let updated = store.get_omission(omission.id)?;
         assert_eq!(updated.description.to_string(), "Updated description");
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn set_status_records_the_decision() -> Result<(), AppError> {
+        let store = CsbStore::new_for_test();
+        let omission = sample_omission(OmissionCategory::PoliticalGroup);
+
+        omission.create(&store).await?;
+        omission
+            .set_status(&store, OmissionStatus::Recovered)
+            .await?;
+
+        let updated = store.get_omission(omission.id)?;
+        assert_eq!(updated.status, OmissionStatus::Recovered);
+        assert!(!updated.is_pending());
+        assert!(!updated.is_unresolved());
+
+        omission
+            .set_status(&store, OmissionStatus::NotRecovered)
+            .await?;
+        assert!(store.get_omission(omission.id)?.is_unresolved());
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn set_status_rejects_irreparable_omissions() -> Result<(), AppError> {
+        let store = CsbStore::new_for_test();
+        let mut omission = sample_omission(OmissionCategory::PoliticalGroup);
+        omission.recoverable = false;
+
+        omission.create(&store).await?;
+
+        assert!(!omission.is_actionable());
+        // Irreparable omissions count as unresolved without a decision.
+        assert!(omission.is_unresolved());
+        assert!(!omission.is_pending());
+        assert!(
+            omission
+                .set_status(&store, OmissionStatus::Recovered)
+                .await
+                .is_err()
+        );
+        assert_eq!(
+            store.get_omission(omission.id)?.status,
+            OmissionStatus::Pending
+        );
 
         Ok(())
     }

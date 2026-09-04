@@ -12,17 +12,17 @@ use super::paths::{
 };
 
 mod all_restorations;
-mod candidate;
-mod candidate_list;
+pub(in crate::csb) mod candidate;
+pub(in crate::csb) mod candidate_list;
 mod correction;
 mod delete;
-mod general_information;
+pub(in crate::csb) mod general_information;
 mod i1;
 mod i4;
 mod omission;
 mod overview;
 mod paper_corrections;
-mod political_group;
+pub(in crate::csb) mod political_group;
 
 pub fn router<S: AppRequestState>() -> Router<S> {
     Router::new()

@@ -10,7 +10,7 @@ use crate::{
     },
     projection::WithCorrections,
     store::StoreRegistry,
-    structs::csb::{Omission, OmissionCategory},
+    structs::csb::{Omission, OmissionCategory, OmissionStatus},
 };
 
 const ALL_DISTRICTS: &str = "alle kieskringen";
@@ -180,6 +180,27 @@ impl Omission {
         store
             .update(CsbAction::DeleteOmission {
                 omission_id: self.id,
+            })
+            .await
+    }
+
+    /// Record whether this omission was recovered during the "Herstelde
+    /// lijsten" phase. Irreparable omissions cannot be assessed.
+    pub async fn set_status(
+        &self,
+        store: &CsbStore,
+        status: OmissionStatus,
+    ) -> Result<(), AppError> {
+        if !self.is_actionable() {
+            return Err(AppError::UserError(
+                "an irreparable omission cannot be assessed".to_string(),
+            ));
+        }
+
+        store
+            .update(CsbAction::SetOmissionStatus {
+                omission_id: self.id,
+                status,
             })
             .await
     }

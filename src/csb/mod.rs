@@ -10,6 +10,7 @@ pub mod import;
 pub mod index;
 pub mod login;
 pub mod monitoring;
+pub mod recovery;
 
 mod context;
 

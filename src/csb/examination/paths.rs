@@ -7,10 +7,17 @@ use uuid::Uuid;
 
 use crate::{
     AppError, QueryParamState, StreamId,
-    csb::examination::{extractors::CsbPoliticalGroup, structs::CandidateCorrectionField},
+    csb::{
+        examination::{extractors::CsbPoliticalGroup, structs::CandidateCorrectionField},
+        recovery::paths::{
+            CsbRecoveryCandidateListPath, CsbRecoveryCandidatePath,
+            CsbRecoveryGeneralInformationPath, CsbRecoveryOmissionsPath, CsbRecoveryOverviewPath,
+            CsbRecoveryPoliticalGroupPath,
+        },
+    },
     structs::{
         candidate_lists::CandidateListId,
-        csb::{OmissionId, OmissionType},
+        csb::{CsbPhase, OmissionId, OmissionType},
         persons::PersonId,
     },
 };
@@ -158,10 +165,39 @@ pub struct OmissionListQuery {
     pub list: Option<CandidateListId>,
 }
 
+/// The navigation helpers below dispatch on the group's [`CsbPhase`] mode, so
+/// the shared examination templates link within the phase they render for.
+/// Helpers for examination-only actions (omissions, corrections, paper
+/// corrections, delete, toggle-finish) stay single-phase: templates only call
+/// them from examination-mode branches.
 impl CsbPoliticalGroup {
-    pub fn examination_path(&self) -> impl TypedPath {
-        CsbPoliticalGroupPath {
-            stream_id: self.stream_id,
+    /// Translation key naming the phase, for the overview breadcrumb.
+    pub fn overview_title_key(&self) -> &'static str {
+        match self.mode {
+            CsbPhase::Examination => "csb.examination",
+            CsbPhase::Recovery => "csb.recovery.title",
+        }
+    }
+
+    /// Path to the phase's overview page listing all political groups.
+    pub fn overview_path(&self) -> String {
+        match self.mode {
+            CsbPhase::Examination => CsbExaminationOverviewPath.to_string(),
+            CsbPhase::Recovery => CsbRecoveryOverviewPath.to_string(),
+        }
+    }
+
+    /// Path to this group's detail page within the phase.
+    pub fn group_path(&self) -> String {
+        match self.mode {
+            CsbPhase::Examination => CsbPoliticalGroupPath {
+                stream_id: self.stream_id,
+            }
+            .to_string(),
+            CsbPhase::Recovery => CsbRecoveryPoliticalGroupPath {
+                stream_id: self.stream_id,
+            }
+            .to_string(),
         }
     }
 
@@ -181,9 +217,16 @@ impl CsbPoliticalGroup {
         .with_query_params(QueryParamState::redirect_to(redirect_to.to_string()))
     }
 
-    pub fn general_information_path(&self) -> impl TypedPath {
-        CsbGeneralInformationPath {
-            stream_id: self.stream_id,
+    pub fn general_information_path(&self) -> String {
+        match self.mode {
+            CsbPhase::Examination => CsbGeneralInformationPath {
+                stream_id: self.stream_id,
+            }
+            .to_string(),
+            CsbPhase::Recovery => CsbRecoveryGeneralInformationPath {
+                stream_id: self.stream_id,
+            }
+            .to_string(),
         }
     }
 
@@ -250,20 +293,37 @@ impl CsbPoliticalGroup {
         }
     }
 
-    /// Path to the candidate list examination page for a specific list.
-    pub fn candidate_list_path(&self, list: &CandidateListId) -> impl TypedPath {
-        CsbCandidateListPath {
-            stream_id: self.stream_id,
-            list_id: *list,
+    /// Path to the candidate list page for a specific list.
+    pub fn candidate_list_path(&self, list: &CandidateListId) -> String {
+        match self.mode {
+            CsbPhase::Examination => CsbCandidateListPath {
+                stream_id: self.stream_id,
+                list_id: *list,
+            }
+            .to_string(),
+            CsbPhase::Recovery => CsbRecoveryCandidateListPath {
+                stream_id: self.stream_id,
+                list_id: *list,
+            }
+            .to_string(),
         }
     }
 
-    /// Path to the detail page of a candidate examined on a specific list.
-    pub fn candidate_path(&self, list: &CandidateListId, person: &PersonId) -> impl TypedPath {
-        CsbCandidatePath {
-            stream_id: self.stream_id,
-            list_id: *list,
-            person_id: *person,
+    /// Path to the detail page of a candidate on a specific list.
+    pub fn candidate_path(&self, list: &CandidateListId, person: &PersonId) -> String {
+        match self.mode {
+            CsbPhase::Examination => CsbCandidatePath {
+                stream_id: self.stream_id,
+                list_id: *list,
+                person_id: *person,
+            }
+            .to_string(),
+            CsbPhase::Recovery => CsbRecoveryCandidatePath {
+                stream_id: self.stream_id,
+                list_id: *list,
+                person_id: *person,
+            }
+            .to_string(),
         }
     }
 
@@ -299,10 +359,35 @@ impl CsbPoliticalGroup {
         .with_query_params(OmissionListQuery { list: Some(*list) })
     }
 
-    pub fn all_restorations_path(&self) -> impl TypedPath {
-        CsbAllRestorationsPath {
-            stream_id: self.stream_id,
+    /// Path to the page listing all omissions and corrections of this group:
+    /// the "Alle verzuimen" page during examination, the recovery todo page in
+    /// the "Herstelde lijsten" phase.
+    pub fn all_restorations_path(&self) -> String {
+        match self.mode {
+            CsbPhase::Examination => CsbAllRestorationsPath {
+                stream_id: self.stream_id,
+            }
+            .to_string(),
+            CsbPhase::Recovery => CsbRecoveryOmissionsPath {
+                stream_id: self.stream_id,
+            }
+            .to_string(),
         }
+    }
+
+    /// Path recording the recovered / not-recovered decision for an omission
+    /// in the recovery phase, returning to the page the control was on.
+    pub fn set_omission_status_path(
+        &self,
+        omission_id: &OmissionId,
+        redirect_to: impl std::fmt::Display,
+    ) -> String {
+        crate::csb::recovery::paths::CsbSetOmissionStatusPath {
+            stream_id: self.stream_id,
+            omission_id: *omission_id,
+        }
+        .with_query_params(QueryParamState::redirect_to(redirect_to.to_string()))
+        .to_string()
     }
 
     /// Path to the correction overlay for the political group appellation.

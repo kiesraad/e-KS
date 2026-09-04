@@ -131,7 +131,7 @@
   align-items: center;
   background-color: var(--restoration-tag-bg);
   border: 1px solid var(--restoration-tag-color);
-  border-radius: var(--rounded-xl);
+  border-radius: var(--rounded-lg);
   color: var(--restoration-tag-color);
   display: inline-flex;
   font-size: var(--font-size-sm);
@@ -159,7 +159,8 @@
 }
 
 /* Non-recoverable ("onherstelbaar") omissions are highlighted as errors. */
-.restoration-tag-unrecoverable {
+.restoration-tag-unrecoverable,
+.restoration-tag-scrapped {
   --restoration-tag-color: var(--red-700);
   --restoration-tag-bg: var(--red-100);
 }
@@ -244,14 +245,56 @@
 /* The electoral districts of a candidate list, read as one line. */
 .card-districts {
   color: var(--gray-500);
+}
 
-  .card-districts-separator {
-    color: var(--gray-300);
-    padding-inline: var(--space-1);
-  }
+.districts-separator {
+  color: var(--gray-300);
+  padding-inline: var(--space-1);
 }
 
 .examination-panel .cards-candidate-lists {
   --card-padding: var(--space-8);
   --card-min-height: 16.5rem;
+}
+
+.omission-status-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  list-style: none;
+  margin: 0 0 var(--space-5);
+  padding: 0;
+}
+
+.omission-status-row {
+  align-items: center;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--rounded-xs);
+  display: flex;
+  gap: var(--space-6);
+  justify-content: space-between;
+  padding: var(--space-4) var(--space-5);
+
+  .omission-status-text {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+
+    .restoration-tag {
+      align-self: flex-start;
+    }
+
+    p {
+      color: var(--gray-600);
+      font-size: var(--font-size-sm);
+      line-height: var(--leading-sm);
+      margin: 0;
+    }
+  }
+}
+
+.omission-status-control {
+  display: flex;
+  flex-shrink: 0;
+  gap: var(--space-2);
 }

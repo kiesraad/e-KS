@@ -14,7 +14,7 @@ use crate::{
         structs::{CsbCandidateList, RestorationStatus},
     },
     filters,
-    structs::csb::Omission,
+    structs::csb::{CsbPhase, Omission},
 };
 
 #[derive(Template)]
@@ -26,6 +26,7 @@ struct CsbPoliticalGroupTemplate {
     political_group_status: RestorationStatus,
     declarations_of_support_omissions: Vec<Omission>,
     has_paper_corrections: bool,
+    scrapped_districts: Vec<crate::ElectoralDistrict>,
 }
 
 #[derive(Template)]
@@ -42,7 +43,17 @@ pub async fn overview(
     context: CsbContext,
     store: CsbStore,
 ) -> Result<Response, AppError> {
-    let political_group = CsbPoliticalGroup::new_from_csb_store(&store);
+    render(context, store, CsbPhase::Examination).await
+}
+
+/// The political group page, shared between the examination and the recovery
+/// ("Herstelde lijsten") phase.
+pub(in crate::csb) async fn render(
+    context: CsbContext,
+    store: CsbStore,
+    mode: CsbPhase,
+) -> Result<Response, AppError> {
+    let political_group = CsbPoliticalGroup::new_from_csb_store(&store).with_mode(mode);
 
     let imported_lists = store.get_candidate_lists(crate::projection::WithCorrections::None);
     let mut candidate_lists = Vec::new();
@@ -53,6 +64,8 @@ pub async fn overview(
         let from_original_import = imported_lists.iter().any(|l| l.id == list.id);
         candidate_lists.push(CsbCandidateList {
             restoration_status: RestorationStatus::for_candidate_list(&store, list.id)?,
+            is_scrapped: store.is_candidate_list_scrapped(list.id)?,
+            scrapped_districts: store.get_candidate_list_scrapped_districts(list.id),
             list,
             brp_error_count,
             is_paper_added: !from_original_import,
@@ -73,6 +86,7 @@ pub async fn overview(
             political_group_status,
             declarations_of_support_omissions: store.get_all_declarations_of_support_omissions(),
             has_paper_corrections: store.has_paper_corrections(),
+            scrapped_districts: store.get_scrapped_districts(),
         },
         context,
     )
@@ -86,7 +100,7 @@ pub async fn toggle_examination_finish(
 ) -> Result<Response, AppError> {
     let finished = store.is_examination_finished();
     store.update(CsbAction::SetFinished(!finished)).await?;
-    Ok(query.redirect_or(CsbPoliticalGroup::new_from_csb_store(&store).examination_path()))
+    Ok(query.redirect_or(CsbPoliticalGroup::new_from_csb_store(&store).group_path()))
 }
 
 #[cfg(test)]
@@ -287,6 +301,79 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
         assert!(body.contains("Omissions added"));
+    }
+
+    #[tokio::test]
+    async fn recovery_mode_hides_the_brp_errors() {
+        use crate::{structs::candidate_lists::CandidateListId, test_utils::sample_candidate_list};
+
+        let store = CsbStore::new_for_test();
+        store.set_political_group(sample_political_group());
+        store.add_candidate_list(sample_candidate_list(CandidateListId::new()));
+
+        let response = render(CsbContext::new_test(), store, CsbPhase::Recovery)
+            .await
+            .unwrap()
+            .into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        // The BRP check belongs to the examination, so neither the panel
+        // counting its errors nor the per-list error tag renders here.
+        assert!(!body.contains("BRP"));
+        assert!(!body.contains("restoration-tag-error"));
+    }
+
+    #[tokio::test]
+    async fn examination_mode_shows_the_brp_errors_panel() {
+        let store = CsbStore::new_for_test();
+        let stream_id = store.stream_id;
+        store.set_political_group(sample_political_group());
+
+        let response = overview(
+            CsbPoliticalGroupPath { stream_id },
+            CsbContext::new_test(),
+            store,
+        )
+        .await
+        .unwrap()
+        .into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        assert!(body.contains("BRP"));
+    }
+
+    #[tokio::test]
+    async fn recovery_mode_lists_the_districts_of_a_declarations_of_support_omission() {
+        use crate::ElectoralDistrict;
+
+        let store = CsbStore::new_for_test();
+        store.set_political_group(sample_political_group());
+        Omission::new(
+            OmissionCategory::DeclarationsOfSupport(vec![
+                ElectoralDistrict::Groningen,
+                ElectoralDistrict::Fryslan,
+            ]),
+            "Declarations of support missing".parse().unwrap(),
+            "Too few declarations of support were handed in."
+                .parse()
+                .unwrap(),
+            None,
+        )
+        .create(&store)
+        .await
+        .unwrap();
+
+        let response = render(CsbContext::new_test(), store, CsbPhase::Recovery)
+            .await
+            .unwrap()
+            .into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        assert!(body.contains("Groningen"));
+        assert!(body.contains("Frysl"));
     }
 
     #[tokio::test]

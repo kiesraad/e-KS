@@ -86,9 +86,11 @@ index:
     add_omissions: Verzuimen en correcties toevoegen
     create_i1_letters: I 1 en verzuimbrieven aanmaken
     create_i4: I 4 aanmaken
+    recover_omissions: Verzuimen herstellen
     report_errors: Fouten doorgeven
     view_candidate_lists: Inzage kandidatenlijsten
   go_to_examination: Ga naar onderzoek
+  go_to_recovery: Ga naar herstelde lijsten
   phase: "Fase {}"
   phase_1:
     title: Voorinlevering
@@ -152,6 +154,18 @@ paper_corrections:
   stop: Terug naar onderzoek
   title: Papieren correcties
 progress: Voortgang
+recovery:
+  assess: Beoordelen
+  assessed: Beoordeeld
+  assessed_count: "{} van {} beoordeeld"
+  explanation: "Leg per verzuim vast of het is hersteld. Kandidaten, lijsten en kieskringen met een niet hersteld verzuim worden geschrapt."
+  no_omissions: Geen verzuimen
+  not_recovered: Niet hersteld
+  omissions_explanation: Leg per verzuim vast of het is hersteld.
+  omissions_title: Verzuimen herstellen
+  recovered: Hersteld
+  scrapped: Geschrapt
+  title: Herstelde lijsten
 status:
   approved: Goedgekeurd
   correction: Ambtshalve correcties toegevoegd

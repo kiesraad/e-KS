@@ -24,6 +24,9 @@
     {% endif %}
   {% endif %}
 {% endmacro %}
+{% macro position_number(value, class) %}
+  <span class="badge position-badge {{ class }}">{{ value }}</span>
+{% endmacro %}
 {% macro columns_head(label) %}
   <thead>
     <tr>
@@ -48,4 +51,11 @@
       <a href="{{ edit_url }}" aria-label="{{ "action.edit"|trans }}"></a>
     </td>
   </tr>
+{% endmacro %}
+{% macro maybe_editable_data_row(label, value, edit_url, editable) %}
+  {% if editable %}
+    {{ editable_data_row(label, value, edit_url) }}
+  {% else %}
+    {{ data_row(label, value) }}
+  {% endif %}
 {% endmacro %}

@@ -13,7 +13,7 @@ use crate::{
         },
     },
     filters,
-    structs::csb::Omission,
+    structs::csb::{CsbPhase, Omission},
 };
 
 #[derive(Template)]
@@ -34,9 +34,19 @@ pub async fn overview(
     context: CsbContext,
     store: CsbStore,
 ) -> Result<Response, AppError> {
+    render(context, store, CsbPhase::Examination).await
+}
+
+/// The general information page, shared between the examination and the
+/// recovery ("Herstelde lijsten") phase.
+pub(in crate::csb) async fn render(
+    context: CsbContext,
+    store: CsbStore,
+    mode: CsbPhase,
+) -> Result<Response, AppError> {
     Ok(HtmlTemplate(
         CsbGeneralInformationTemplate {
-            political_group: CsbPoliticalGroup::new_from_csb_store(&store),
+            political_group: CsbPoliticalGroup::new_from_csb_store(&store).with_mode(mode),
             group_info: PaperCorrectedPoliticalGroupInfo::new(&store, context.session.locale),
             name_authorisations: paper_corrected_name_authorisations(&store),
             list_submitter: paper_corrected_list_submitter(&store),

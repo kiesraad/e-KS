@@ -2,15 +2,15 @@
 {% import "csb/components/paper_corrected.html" as paper_corrected %}
 {% import "csb/components/restorations.html" as restorations %}
 {% block breadcrumbs %}
-  {{ breadcrumb(crate::csb::examination::CsbExaminationOverviewPath, "csb.examination") }}
-  {{ breadcrumb(political_group.examination_path() , political_group.csb_appellation(), is_translatable=false) }}
+  {{ breadcrumb(political_group.overview_path() , political_group.overview_title_key()) }}
+  {{ breadcrumb(political_group.group_path() , political_group.csb_appellation(), is_translatable=false) }}
   {{ breadcrumb(political_group.general_information_path() , "common.general_information") }}
 {% endblock %}
 {% block page_title %}
   {{ "common.general_information"|trans }}
 {% endblock %}
 {% block header_action %}
-  {% set back_url = political_group.examination_path() %}
+  {% set back_url = political_group.group_path() %}
   {% include "csb/components/header_examination_actions.html" %}
 {% endblock %}
 {% macro submitter_tables(submitter) %}
@@ -37,20 +37,32 @@
 {% endmacro %}
 {% block content %}
   <section class="general-information">
-    {{ restorations::omission_panel("csb.omission.title_for.general"|trans, "csb.general.add_text"|trans, political_group.add_political_group_omission_path() , political_group.manage_political_group_omissions_path() , political_group_omissions.as_slice()) }}
+    {% if political_group.mode.is_examination() %}
+      {{ restorations::omission_panel("csb.omission.title_for.general"|trans, "csb.general.add_text"|trans, political_group.add_political_group_omission_path() , political_group.manage_political_group_omissions_path() , political_group_omissions.as_slice()) }}
+    {% else %}
+      {{ restorations::status_panel(political_group, "csb.omission.title_for.general"|trans, "csb.recovery.omissions_explanation"|trans, political_group_omissions.as_slice() , political_group.general_information_path()) }}
+    {% endif %}
     <h2>{{ "csb.general.group_info"|trans }}</h2>
     <table class="detail-table">
       {{ paper_corrected::columns_head("common.general_information"|trans) }}
       <tbody>
         {% if let Some(appellation_label) = group_info.appellation_label %}
-          <tr class="clickable">
-            <td>{{ appellation_label }}: {{ paper_corrected::value(group_info.appellation) }}</td>
-            <td></td>
-            <td class="actions">
-              <a href="{{ political_group.correction_appellation_path() }}"
-                 aria-label="{{ "action.edit"|trans }}"></a>
-            </td>
-          </tr>
+          {% if political_group.mode.is_examination() %}
+            <tr class="clickable">
+              <td>{{ appellation_label }}: {{ paper_corrected::value(group_info.appellation) }}</td>
+              <td></td>
+              <td class="actions">
+                <a href="{{ political_group.correction_appellation_path() }}"
+                   aria-label="{{ "action.edit"|trans }}"></a>
+              </td>
+            </tr>
+          {% else %}
+            <tr>
+              <td>{{ appellation_label }}: {{ paper_corrected::value(group_info.appellation) }}</td>
+              <td></td>
+              <td></td>
+            </tr>
+          {% endif %}
         {% endif %}
         {{ paper_corrected::data_row("political_group.list_type"|trans, group_info.list_type) }}
         {{ paper_corrected::data_row("problems.no_previous_election_results"|trans, group_info.previous_results) }}

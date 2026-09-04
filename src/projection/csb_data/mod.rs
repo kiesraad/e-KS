@@ -93,6 +93,15 @@ impl StoreData for CsbStoreData {
             CsbAction::DeleteOmission { omission_id } => {
                 self.omissions.remove(&omission_id);
             }
+            CsbAction::SetOmissionStatus {
+                omission_id,
+                status,
+            } => {
+                self.omissions.entry(omission_id).and_modify(|omission| {
+                    omission.status = status;
+                    omission.updated_at = event_time;
+                });
+            }
             CsbAction::UpdateCorrection(correction) => self.apply_correction(correction),
         }
     }
@@ -342,6 +351,50 @@ mod tests {
             .by(CsbUser::new_test()),
         ));
         assert_eq!(data.csb_corrected_persons.len(), 0);
+    }
+
+    #[test]
+    fn set_omission_status_updates_the_status_and_timestamp() {
+        use crate::structs::csb::{OmissionCategory, OmissionStatus, sample_omission};
+
+        let mut data = CsbStoreData::default();
+        let omission = sample_omission(OmissionCategory::PoliticalGroup);
+        data.apply(StoreEvent::new(
+            1,
+            CsbAction::CreateOmission(omission.clone()).by(CsbUser::new_test()),
+        ));
+
+        data.apply(StoreEvent::new(
+            2,
+            CsbAction::SetOmissionStatus {
+                omission_id: omission.id,
+                status: OmissionStatus::Recovered,
+            }
+            .by(CsbUser::new_test()),
+        ));
+
+        let stored = data.omissions.get(&omission.id).unwrap();
+        assert_eq!(stored.status, OmissionStatus::Recovered);
+        assert_eq!(stored.updated_at, data.events[1].created_at.into());
+        // The rest of the omission is untouched.
+        assert_eq!(stored.description, omission.description);
+    }
+
+    #[test]
+    fn set_omission_status_for_an_unknown_omission_is_a_no_op() {
+        use crate::structs::csb::{OmissionId, OmissionStatus};
+
+        let mut data = CsbStoreData::default();
+        data.apply(StoreEvent::new(
+            1,
+            CsbAction::SetOmissionStatus {
+                omission_id: OmissionId::new(),
+                status: OmissionStatus::NotRecovered,
+            }
+            .by(CsbUser::new_test()),
+        ));
+
+        assert!(data.omissions.is_empty());
     }
 
     #[test]
