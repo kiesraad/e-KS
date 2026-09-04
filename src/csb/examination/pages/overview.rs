@@ -65,10 +65,13 @@ mod tests {
             political_group: sample_political_group(),
             stream_id: StreamId::new(),
             brp: BrpCheckState::NotChecked,
+            mode: crate::structs::csb::CsbPhase::Examination,
             is_examination_finished: false,
             is_deleted: false,
             restoration_count: 0,
             omission_count: 0,
+            pending_omission_count: 0,
+            actionable_omission_count: 0,
             first_candidate_name: None,
         }]);
 
@@ -93,10 +96,13 @@ mod tests {
             political_group: sample_political_group(),
             stream_id: StreamId::new(),
             brp: BrpCheckState::Errors { errors: 2 },
+            mode: crate::structs::csb::CsbPhase::Examination,
             is_examination_finished: false,
             is_deleted: false,
             restoration_count: 0,
             omission_count: 0,
+            pending_omission_count: 0,
+            actionable_omission_count: 0,
             first_candidate_name: None,
         }]);
 
@@ -120,10 +126,13 @@ mod tests {
             political_group: sample_political_group(),
             stream_id: StreamId::new(),
             brp: BrpCheckState::Incomplete { errors: 2 },
+            mode: crate::structs::csb::CsbPhase::Examination,
             is_examination_finished: false,
             is_deleted: false,
             restoration_count: 0,
             omission_count: 0,
+            pending_omission_count: 0,
+            actionable_omission_count: 0,
             first_candidate_name: None,
         }]);
 
@@ -149,6 +158,9 @@ mod tests {
             political_group: sample_political_group(),
             stream_id: StreamId::new(),
             brp: BrpCheckState::NotChecked,
+            mode: crate::structs::csb::CsbPhase::Examination,
+            pending_omission_count: 0,
+            actionable_omission_count: 0,
             is_examination_finished: false,
             is_deleted: true,
             restoration_count: 0,
@@ -177,6 +189,9 @@ mod tests {
             political_group: sample_political_group(),
             stream_id: StreamId::new(),
             brp: BrpCheckState::NotChecked,
+            mode: crate::structs::csb::CsbPhase::Examination,
+            pending_omission_count: 0,
+            actionable_omission_count: 0,
             is_examination_finished: false,
             is_deleted: false,
             restoration_count: 0, /* omission count should be used and > 0 */

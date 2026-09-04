@@ -9,7 +9,7 @@ use crate::{
     filters,
     structs::{
         candidate_lists::{CandidateList, CandidateListId},
-        csb::Omission,
+        csb::{CsbPhase, Omission},
     },
 };
 
@@ -21,6 +21,9 @@ struct CsbCandidateListTemplate {
     electoral_districts: Vec<ElectoralDistrict>,
     candidates: Vec<CsbCandidate>,
     omissions: Vec<Omission>,
+    is_scrapped: bool,
+    scrapped_districts: Vec<ElectoralDistrict>,
+    all_districts_scrapped: bool,
 }
 
 pub async fn overview(
@@ -28,7 +31,18 @@ pub async fn overview(
     context: CsbContext,
     store: CsbStore,
 ) -> Result<Response, AppError> {
-    let political_group = CsbPoliticalGroup::new_from_csb_store(&store);
+    render(list_id, context, store, CsbPhase::Examination).await
+}
+
+/// The candidate list page, shared between the examination and the recovery
+/// ("Herstelde lijsten") phase.
+pub(in crate::csb) async fn render(
+    list_id: CandidateListId,
+    context: CsbContext,
+    store: CsbStore,
+    mode: CsbPhase,
+) -> Result<Response, AppError> {
+    let political_group = CsbPoliticalGroup::new_from_csb_store(&store).with_mode(mode);
     let corrected_list = store.get_candidate_list(list_id, crate::projection::WithCorrections::All);
     // For paper-added lists there is no imported side; use an empty-candidate
     // placeholder so all candidates render as paper-corrected additions.
@@ -55,6 +69,10 @@ pub async fn overview(
         .map(|corrected| corrected.electoral_districts)
         .unwrap_or(imported_list.electoral_districts);
 
+    let scrapped_districts = store.get_candidate_list_scrapped_districts(list_id);
+    let all_districts_scrapped =
+        !electoral_districts.is_empty() && scrapped_districts.len() == electoral_districts.len();
+
     Ok(HtmlTemplate(
         CsbCandidateListTemplate {
             political_group,
@@ -62,6 +80,9 @@ pub async fn overview(
             electoral_districts,
             candidates,
             omissions,
+            is_scrapped: store.is_candidate_list_scrapped(list_id)?,
+            scrapped_districts,
+            all_districts_scrapped,
         },
         context,
     )
@@ -214,6 +235,30 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn recovery_mode_hides_the_brp_column() {
+        let store = CsbStore::new_for_test();
+        let list_id = CandidateListId::new();
+
+        let person = sample_person(PersonId::new());
+        let person_id = person.id;
+        let mut list = sample_candidate_list(list_id);
+        list.candidates = vec![person_id];
+        store.add_person(person);
+        store.add_candidate_list(list);
+
+        let response = render(list_id, CsbContext::new_test(), store, CsbPhase::Recovery)
+            .await
+            .unwrap()
+            .into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        // The candidates still render, but the BRP check is examination-only.
+        assert!(body.contains("Jansen"));
+        assert!(!body.contains("BRP"));
+    }
+
+    #[tokio::test]
     async fn returns_not_found_for_unknown_list() {
         let store = CsbStore::new_for_test();
         let stream_id = store.stream_id;
@@ -229,5 +274,48 @@ mod tests {
         .await;
 
         assert!(matches!(result, Err(AppError::GenericNotFound)));
+    }
+
+    #[tokio::test]
+    async fn examination_candidate_list_never_renders_scrapped() {
+        use crate::csb::examination::pages::candidate_list::render;
+
+        let store = CsbStore::new_for_test();
+
+        let person = sample_person(PersonId::new());
+        let person_id = person.id;
+        let list_id = CandidateListId::new();
+        let mut list = sample_candidate_list(list_id);
+        list.candidates = vec![person_id];
+        store.add_person(person);
+        store.add_candidate_list(list);
+
+        // An irreparable omission is unresolved from the moment it is added,
+        // but scrapping must not leak into the examination phase.
+        let mut omission = Omission::new(
+            OmissionCategory::Candidate {
+                person: person_id,
+                lists: vec![list_id],
+            },
+            "Unregistered".parse().unwrap(),
+            "The candidate cannot be registered.".parse().unwrap(),
+            None,
+        );
+        omission.recoverable = false;
+        omission.create(&store).await.unwrap();
+
+        let response = render(
+            list_id,
+            CsbContext::new_test(),
+            store,
+            CsbPhase::Examination,
+        )
+        .await
+        .unwrap()
+        .into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        assert!(!body.contains("Scrapped"));
     }
 }

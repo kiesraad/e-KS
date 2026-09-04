@@ -1,14 +1,39 @@
 use askama::Template;
 use axum::response::{IntoResponse, Response};
+use chrono::NaiveDate;
 
-use crate::{AppError, Context, CsbContext, HtmlTemplate, csb::index::CsbIndexPath, filters};
+use crate::{
+    AppError, Context, CsbContext, ElectionConfig, HtmlTemplate, csb::index::CsbIndexPath, filters,
+};
 
 #[derive(Template)]
 #[template(path = "csb/index/pages/index.html")]
-struct CsbIndexTemplate;
+struct CsbIndexTemplate {
+    /// The phase whose date window covers today; the homepage highlights its
+    /// card and mutes the others. Every implemented phase stays reachable
+    /// regardless of the date.
+    current_phase: u8,
+}
+
+/// The phase whose window covers `today`, by the closing dates shown on the
+/// phase cards.
+fn current_phase(election: &ElectionConfig, today: NaiveDate) -> u8 {
+    if today <= election.nomination_day_date() {
+        1
+    } else if today <= election.document_review_date() {
+        2
+    } else if today <= election.public_session().datetime.date() {
+        3
+    } else if today <= election.election_date() {
+        4
+    } else {
+        5
+    }
+}
 
 pub async fn index(_: CsbIndexPath, context: CsbContext) -> Result<Response, AppError> {
-    Ok(HtmlTemplate(CsbIndexTemplate, context).into_response())
+    let current_phase = current_phase(&context.election, chrono::Utc::now().date_naive());
+    Ok(HtmlTemplate(CsbIndexTemplate { current_phase }, context).into_response())
 }
 
 #[cfg(test)]
@@ -27,7 +52,7 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
-        assert!(body.contains("Pre-examination"));
+        assert!(body.contains("Pre-submission"));
         assert!(body.contains("Examination"));
         assert!(body.contains("Rectified lists"));
         assert!(body.contains("List numbering"));
@@ -35,14 +60,54 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn index_links_active_phase_to_examination() {
+    async fn index_links_examination_and_recovery_phases() {
         let response = index(CsbIndexPath {}, CsbContext::new_test())
             .await
             .unwrap()
             .into_response();
 
         let body = response_body_string(response).await;
+        // Both implemented phases are always reachable from the homepage,
+        // regardless of the current date.
         assert!(body.contains("href=\"/csb/examination\""));
         assert!(body.contains("Go to examination"));
+        assert!(body.contains("href=\"/csb/recovery\""));
+    }
+
+    #[test]
+    fn current_phase_follows_the_election_dates() {
+        let election = ElectionConfig::EK27;
+        let day_before = |date: NaiveDate| date.pred_opt().unwrap();
+        let day_after = |date: NaiveDate| date.succ_opt().unwrap();
+
+        assert_eq!(
+            current_phase(&election, day_before(election.nomination_day_date())),
+            1
+        );
+        assert_eq!(current_phase(&election, election.nomination_day_date()), 1);
+        assert_eq!(
+            current_phase(&election, day_after(election.nomination_day_date())),
+            2
+        );
+        assert_eq!(current_phase(&election, election.document_review_date()), 2);
+        assert_eq!(
+            current_phase(&election, day_after(election.document_review_date())),
+            3
+        );
+        assert_eq!(
+            current_phase(&election, election.public_session().datetime.date()),
+            3
+        );
+        assert_eq!(
+            current_phase(
+                &election,
+                day_after(election.public_session().datetime.date())
+            ),
+            4
+        );
+        assert_eq!(
+            current_phase(&election, day_after(election.election_date())),
+            5
+        );
     }
 }

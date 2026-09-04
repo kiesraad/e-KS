@@ -16,7 +16,10 @@ use crate::{
     structs::{
         brp::{BrpFinding, BrpStatus},
         common::{Appellation, UtcDateTime},
-        csb::{Correction, Omission, OmissionId, PersonCorrection, PersonCorrectionDelta},
+        csb::{
+            Correction, Omission, OmissionId, OmissionStatus, PersonCorrection,
+            PersonCorrectionDelta,
+        },
         persons::PersonId,
     },
 };
@@ -80,20 +83,15 @@ impl StoreData for CsbStoreData {
                 hash,
             }),
             CsbAction::SetFinished(value) => self.is_examination_finished = value,
-            CsbAction::CreateOmission(mut omission) => {
-                omission.updated_at = event_time;
-                self.omissions.insert(omission.id, omission);
-            }
-            CsbAction::UpdateOmission(mut omission) => {
-                omission.updated_at = event_time;
-                let omission_id = omission.id;
-                self.omissions.entry(omission_id).and_modify(|existing| {
-                    *existing = omission;
-                });
-            }
+            CsbAction::CreateOmission(omission) => self.create_omission(omission, event_time),
+            CsbAction::UpdateOmission(omission) => self.update_omission(omission, event_time),
             CsbAction::DeleteOmission { omission_id } => {
                 self.omissions.remove(&omission_id);
             }
+            CsbAction::SetOmissionStatus {
+                omission_id,
+                status,
+            } => self.set_omission_status(omission_id, status, event_time),
             CsbAction::UpdateCorrection(correction) => {
                 if let Correction::Person(person_id, _) = &correction {
                     self.forget_brp_check(*person_id);
@@ -127,6 +125,31 @@ impl CsbStoreData {
     /// sweep got, not whether its outcome still holds.
     fn forget_brp_check(&mut self, person_id: PersonId) {
         self.brp_findings.remove(&person_id);
+    }
+
+    fn create_omission(&mut self, mut omission: Omission, event_time: UtcDateTime) {
+        omission.updated_at = event_time;
+        self.omissions.insert(omission.id, omission);
+    }
+
+    fn update_omission(&mut self, mut omission: Omission, event_time: UtcDateTime) {
+        omission.updated_at = event_time;
+        let omission_id = omission.id;
+        self.omissions.entry(omission_id).and_modify(|existing| {
+            *existing = omission;
+        });
+    }
+
+    fn set_omission_status(
+        &mut self,
+        omission_id: OmissionId,
+        status: OmissionStatus,
+        event_time: UtcDateTime,
+    ) {
+        self.omissions.entry(omission_id).and_modify(|omission| {
+            omission.status = status;
+            omission.updated_at = event_time;
+        });
     }
 
     /// Replay an app event onto the corrected projection, keeping the CSB
@@ -389,6 +412,50 @@ mod tests {
             .by(CsbUser::new_test()),
         ));
         assert_eq!(data.csb_corrected_persons.len(), 0);
+    }
+
+    #[test]
+    fn set_omission_status_updates_the_status_and_timestamp() {
+        use crate::structs::csb::{OmissionCategory, OmissionStatus, sample_omission};
+
+        let mut data = CsbStoreData::default();
+        let omission = sample_omission(OmissionCategory::PoliticalGroup);
+        data.apply(StoreEvent::new(
+            1,
+            CsbAction::CreateOmission(omission.clone()).by(CsbUser::new_test()),
+        ));
+
+        data.apply(StoreEvent::new(
+            2,
+            CsbAction::SetOmissionStatus {
+                omission_id: omission.id,
+                status: OmissionStatus::Recovered,
+            }
+            .by(CsbUser::new_test()),
+        ));
+
+        let stored = data.omissions.get(&omission.id).unwrap();
+        assert_eq!(stored.status, OmissionStatus::Recovered);
+        assert_eq!(stored.updated_at, data.events[1].created_at.into());
+        // The rest of the omission is untouched.
+        assert_eq!(stored.description, omission.description);
+    }
+
+    #[test]
+    fn set_omission_status_for_an_unknown_omission_is_a_no_op() {
+        use crate::structs::csb::{OmissionId, OmissionStatus};
+
+        let mut data = CsbStoreData::default();
+        data.apply(StoreEvent::new(
+            1,
+            CsbAction::SetOmissionStatus {
+                omission_id: OmissionId::new(),
+                status: OmissionStatus::NotRecovered,
+            }
+            .by(CsbUser::new_test()),
+        ));
+
+        assert!(data.omissions.is_empty());
     }
 
     #[test]

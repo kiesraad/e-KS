@@ -1,9 +1,9 @@
 mod actions;
-mod extractors;
+pub(in crate::csb) mod extractors;
 mod forms;
-mod pages;
+pub(in crate::csb) mod pages;
 mod paths;
-mod structs;
+pub(in crate::csb) mod structs;
 
 pub use forms::OmissionForm;
 pub use pages::router;

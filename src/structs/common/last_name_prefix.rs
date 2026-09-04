@@ -27,6 +27,7 @@ pub(crate) fn is_last_name_prefix(value: &str) -> bool {
 /// Split a written-out last name into its prefix and the name itself, taking
 /// the longest prefix from the table that the value starts with (prefixes such
 /// as "voor in 't" span several words).
+#[cfg(any(feature = "fixtures", test))]
 pub fn split_last_name_prefix(value: &str) -> (Option<&str>, &str) {
     let value = value.trim();
     let split = value

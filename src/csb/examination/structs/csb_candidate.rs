@@ -15,6 +15,13 @@ pub struct CsbCandidate {
     pub residence: PaperCorrected,
     pub brp: BrpCheckState,
     pub restoration_status: RestorationStatus,
+    /// Whether an unresolved omission scraps this candidate from the list.
+    /// Only rendered in the recovery ("Herstelde lijsten") phase.
+    pub is_scrapped: bool,
+    /// The candidate's number in the recovery ("Herstelde lijsten") phase,
+    /// which runs over the candidates that are not scrapped. `None` for a
+    /// scrapped candidate: it is still listed, without a number.
+    pub recovery_position: Option<usize>,
 }
 
 impl CsbCandidate {
@@ -74,6 +81,8 @@ fn imported_rows(
                     .with_csb_correction(csb_corrected.as_ref().map(residence_string)),
                     restoration_status: RestorationStatus::for_candidate(store, person.id, list.id),
                     brp: BrpCheckState::for_candidate(store, person.id),
+                    is_scrapped: store.is_candidate_scrapped(person.id, list.id),
+                    recovery_position: store.get_recovery_position(list.id, person.id),
                     person,
                 },
             ))
@@ -112,6 +121,8 @@ fn corrected_only_rows(
                         .with_csb_correction(csb_corrected.as_ref().map(residence_string)),
                     brp: BrpCheckState::for_candidate(store, person.id),
                     restoration_status: RestorationStatus::for_candidate(store, person.id, list.id),
+                    is_scrapped: store.is_candidate_scrapped(person.id, list.id),
+                    recovery_position: store.get_recovery_position(list.id, person.id),
                     person,
                 },
             ))

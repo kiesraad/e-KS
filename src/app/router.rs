@@ -39,18 +39,7 @@ pub fn create(state: AppState) -> Router<AppState> {
             store_middleware,
         ));
 
-    // CSB routes need the session plus their own (CSB) store middleware, which
-    // also gates them to committee-scoped sessions. They must NOT get the app
-    // `store_middleware`, so they are merged here rather than above.
-    let csb_router = csb::index::router()
-        .merge(csb::audit_log::router())
-        .merge(csb::examination::router())
-        .merge(csb::import::router())
-        .merge(csb::monitoring::router())
-        .layer(middleware::from_fn_with_state(
-            state.clone(),
-            csb_store_middleware,
-        ));
+    let csb_router = csb_router(&state);
 
     // These routes need a session but NOT store middleware: select-election runs
     // before a stream_id is chosen, and /language must stay reachable for CSB
@@ -131,6 +120,22 @@ fn public_router() -> Router<AppState> {
 /// The application's feature routes (everything that sits behind the session
 /// and store middleware). Kept separate from [`create`] so the wiring of
 /// global layers stays readable.
+/// CSB routes need the session plus their own (CSB) store middleware, which
+/// also gates them to committee-scoped sessions. They must NOT get the app
+/// `store_middleware`, so they are merged into the session layer separately.
+fn csb_router(state: &AppState) -> Router<AppState> {
+    csb::index::router()
+        .merge(csb::audit_log::router())
+        .merge(csb::examination::router())
+        .merge(csb::recovery::router())
+        .merge(csb::import::router())
+        .merge(csb::monitoring::router())
+        .layer(middleware::from_fn_with_state(
+            state.clone(),
+            csb_store_middleware,
+        ))
+}
+
 fn app_feature_router() -> Router<AppState> {
     Router::new()
         .merge(audit_log::router())

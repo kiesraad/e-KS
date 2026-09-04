@@ -43,7 +43,7 @@ fn return_path(
         Some(list_id) => political_group
             .candidate_path(&list_id, &person_id)
             .to_string(),
-        None => political_group.examination_path().to_string(),
+        None => political_group.group_path().to_string(),
     }
 }
 

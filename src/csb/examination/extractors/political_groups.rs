@@ -3,17 +3,22 @@ use axum::{extract::FromRequestParts, http::request::Parts};
 use crate::{
     AppError, AppRequestState, CsbStream, StreamId,
     csb::examination::structs::BrpCheckState,
-    structs::{common::FullName, political_groups::PoliticalGroup},
+    structs::{common::FullName, csb::CsbPhase, political_groups::PoliticalGroup},
 };
 
 pub struct CsbPoliticalGroup {
     pub political_group: PoliticalGroup,
     pub stream_id: StreamId,
     pub brp: BrpCheckState,
+    /// The phase the group is rendered for; drives which links and actions the
+    /// shared examination templates render (see the path helpers in `paths.rs`).
+    pub mode: CsbPhase,
     pub is_examination_finished: bool,
     pub is_deleted: bool,
     pub restoration_count: usize,
     pub omission_count: usize,
+    pub pending_omission_count: usize,
+    pub actionable_omission_count: usize,
     pub first_candidate_name: Option<FullName>,
 }
 
@@ -23,13 +28,26 @@ impl CsbPoliticalGroup {
             political_group: store.get_political_group(crate::projection::WithCorrections::All),
             stream_id: store.stream_id,
             brp: BrpCheckState::for_political_group(store),
+            mode: CsbPhase::Examination,
             is_examination_finished: store.is_examination_finished(),
             is_deleted: store.is_deleted(),
             restoration_count: store.get_restoration_count(),
             omission_count: store.get_omission_count(),
+            pending_omission_count: store.get_pending_omission_count(),
+            actionable_omission_count: store.get_actionable_omission_count(),
             first_candidate_name: store
                 .get_first_candidate_name(crate::projection::WithCorrections::All),
         }
+    }
+
+    pub fn with_mode(mut self, mode: CsbPhase) -> Self {
+        self.mode = mode;
+        self
+    }
+
+    /// The number of omissions already assessed in the recovery phase.
+    pub fn decided_omission_count(&self) -> usize {
+        self.actionable_omission_count - self.pending_omission_count
     }
 
     pub fn csb_appellation(&self) -> String {
@@ -136,10 +154,13 @@ mod tests {
             },
             stream_id: StreamId::new(),
             brp: BrpCheckState::NotChecked,
+            mode: CsbPhase::Examination,
             is_examination_finished: false,
             is_deleted: false,
             restoration_count: 0,
             omission_count: 0,
+            pending_omission_count: 0,
+            actionable_omission_count: 0,
             first_candidate_name: None,
         };
 
@@ -155,10 +176,13 @@ mod tests {
             },
             stream_id: StreamId::new(),
             brp: BrpCheckState::NotChecked,
+            mode: CsbPhase::Examination,
             is_examination_finished: false,
             is_deleted: false,
             restoration_count: 0,
             omission_count: 0,
+            pending_omission_count: 0,
+            actionable_omission_count: 0,
             first_candidate_name: Some(FullName {
                 last_name: "Jansen".parse().unwrap(),
                 initials: "A.B.".parse().unwrap(),
@@ -178,10 +202,13 @@ mod tests {
             },
             stream_id: StreamId::new(),
             brp: BrpCheckState::NotChecked,
+            mode: CsbPhase::Examination,
             is_examination_finished: false,
             is_deleted: false,
             restoration_count: 0,
             omission_count: 0,
+            pending_omission_count: 0,
+            actionable_omission_count: 0,
             first_candidate_name: None,
         };
 

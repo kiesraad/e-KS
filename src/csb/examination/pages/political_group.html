@@ -2,77 +2,110 @@
 {% import "pg/common/components/macros.html" as macros %}
 {% import "csb/components/restorations.html" as restorations %}
 {% block breadcrumbs %}
-  {{ breadcrumb(crate::csb::examination::CsbExaminationOverviewPath, "csb.examination") }}
-  {{ breadcrumb(political_group.examination_path() , political_group.csb_appellation(), is_translatable=false) }}
+  {{ breadcrumb(political_group.overview_path() , political_group.overview_title_key()) }}
+  {{ breadcrumb(political_group.group_path() , political_group.csb_appellation(), is_translatable=false) }}
 {% endblock %}
 {% block page_title %}
   {{ political_group.csb_appellation() }}
 {% endblock %}
 {% block header_action %}
-  {% set back_url = crate::csb::examination::CsbExaminationOverviewPath %}
+  {% set back_url = political_group.overview_path() %}
   {% include "csb/components/header_examination_actions.html" %}
 {% endblock %}
 {% block content %}
   {% let election = "election"|election_value %}
-  {% set toggle_redirect_url = political_group.examination_path() %}
-  {% set include_delete = true %}
-  {% include "csb/components/examination_controls.html" %}
-  <div class="examination-panels {% if political_group.is_examination_finished %}disabled{% endif %}">
-    <div class="examination-panel">
-      <div class="examination-panel-header">
-        <div>
-          <h2 class="h3">{{ "csb.group.discovered_errors"|trans }}</h2>
-          <p>{{ "csb.group.discovered_errors_note"|trans }}</p>
+  {% if political_group.mode.is_examination() %}
+    {% set toggle_redirect_url = political_group.group_path() %}
+    {% set include_delete = true %}
+    {% include "csb/components/examination_controls.html" %}
+  {% endif %}
+  <div class="examination-panels {% if political_group.mode.is_examination() && political_group.is_examination_finished %}disabled{% endif %}">
+    {% if political_group.mode.is_examination() %}
+      <div class="examination-panel">
+        <div class="examination-panel-header">
+          <div>
+            <h2 class="h3">{{ "csb.group.discovered_errors"|trans }}</h2>
+            <p>{{ "csb.group.discovered_errors_note"|trans }}</p>
+          </div>
+          <div class="examination-panel-actions">
+            {% if brp_running %}
+              <a class="button secondary" href="{{ political_group.group_path() }}">{{ "csb.brp.refresh"|trans }}</a>
+            {% else if brp_incomplete.is_some() %}
+              <form method="post" action="{{ political_group.start_brp_check_path() }}">
+                {{ macros::csrf_field() }}
+                <button type="submit" class="button secondary">{{ "csb.brp.start_check"|trans }}</button>
+              </form>
+            {% endif %}
+            <a class="button secondary icon-chevron-end"
+               href="{{ political_group.all_brp_findings_path() }}">{{ "csb.group.examine_all"|trans }}</a>
+          </div>
         </div>
-        <div class="examination-panel-actions">
-          {% if brp_running %}
-            <a class="button secondary"
-               href="{{ political_group.examination_path() }}">{{ "csb.brp.refresh"|trans }}</a>
-          {% else if brp_incomplete.is_some() %}
-            <form method="post" action="{{ political_group.start_brp_check_path() }}">
-              {{ macros::csrf_field() }}
-              <button type="submit" class="button secondary">{{ "csb.brp.start_check"|trans }}</button>
-            </form>
+        {{ restorations::brp_strip(brp, brp_incomplete.as_deref() ) }}
+      </div>
+      <form method="post"
+            class="examination-panel"
+            action="{{ political_group.start_paper_corrections_path() }}">
+        <div class="examination-panel-header">
+          <div>
+            <h2 class="h3">{{ "csb.paper_corrections.title"|trans }}</h2>
+            <p>{{ "csb.paper_corrections.instruction"|trans }}</p>
+          </div>
+          {{ macros::csrf_field() }}
+          <button type="submit" class="button secondary icon-chevron-end">{{ "csb.paper_corrections.start"|trans }}</button>
+        </div>
+        <div class="restoration-strip {% if has_paper_corrections %}restoration-strip-correction{% endif %}">
+          {% if has_paper_corrections %}
+            <ul class="restoration-tags">
+              <li>
+                <span class="restoration-tag restoration-tag-paper">{{ "csb.paper_corrections.added"|trans }}</span>
+              </li>
+            </ul>
+          {% else %}
+            <span class="restoration-strip-empty">{{ "csb.paper_corrections.none"|trans }}</span>
           {% endif %}
-          <a class="button secondary icon-chevron-end"
-             href="{{ political_group.all_brp_findings_path() }}">{{ "csb.group.examine_all"|trans }}</a>
         </div>
-      </div>
-      {{ restorations::brp_strip(brp, brp_incomplete.as_deref() ) }}
-    </div>
-    <form method="post"
-          class="examination-panel"
-          action="{{ political_group.start_paper_corrections_path() }}">
-      <div class="examination-panel-header">
-        <div>
-          <h2 class="h3">{{ "csb.paper_corrections.title"|trans }}</h2>
-          <p>{{ "csb.paper_corrections.instruction"|trans }}</p>
-        </div>
-        {{ macros::csrf_field() }}
-        <button type="submit" class="button secondary">{{ "csb.paper_corrections.start"|trans }}</button>
-      </div>
-      <div class="restoration-strip {% if has_paper_corrections %}restoration-strip-correction{% endif %}">
-        {% if has_paper_corrections %}
-          <ul class="restoration-tags">
-            <li>
-              <span class="restoration-tag restoration-tag-paper">{{ "csb.paper_corrections.added"|trans }}</span>
-            </li>
-          </ul>
-        {% else %}
-          <span class="restoration-strip-empty">{{ "csb.paper_corrections.none"|trans }}</span>
-        {% endif %}
-      </div>
-    </form>
+      </form>
+    {% endif %}
     <div class="examination-panel">
       <div class="examination-panel-header">
         <div>
           <h2 class="h3">{{ "csb.declarations_of_support.title"|trans }}</h2>
           <p>{{ "csb.declarations_of_support.instruction"|trans }}</p>
         </div>
-        <a class="button tertiary icon-plus-end"
-           href="{{ political_group.add_declarations_of_support_omission_path() }}">{{ "csb.omission.action.add"|trans }}</a>
+        {% if political_group.mode.is_examination() %}
+          <a class="button secondary icon-plus-end"
+             href="{{ political_group.add_declarations_of_support_omission_path() }}">{{ "csb.omission.action.add"|trans }}</a>
+        {% endif %}
       </div>
-      {{ restorations::omission_strip(political_group.manage_declarations_of_support_omissions_path() , declarations_of_support_omissions.as_slice()) }}
+      {% if political_group.mode.is_examination() %}
+        {{ restorations::omission_strip(political_group.manage_declarations_of_support_omissions_path() , declarations_of_support_omissions.as_slice()) }}
+      {% else %}
+        {% if declarations_of_support_omissions.is_empty() %}
+          <div class="restoration-strip restoration-strip-omission">
+            <span class="restoration-strip-empty">{{ "csb.omission.overview.no_omissions"|trans }}</span>
+          </div>
+        {% else %}
+          <ul class="omission-status-list">
+            {% for omission in declarations_of_support_omissions %}
+              {{ restorations::status_row(political_group, omission, "", political_group.group_path() ) }}
+            {% endfor %}
+          </ul>
+        {% endif %}
+        {% if !scrapped_districts.is_empty() %}
+          <div class="examination-panel-header">
+            <h3>{{ "csb.recovery.scrapped"|trans }}</h3>
+          </div>
+          <div class="restoration-strip restoration-strip-error">
+            <ul class="restoration-tags">
+              {% for district in scrapped_districts %}
+                <li>
+                  <span class="restoration-tag restoration-tag-scrapped">{{ district|district_name }}</span>
+                </li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% endif %}
+      {% endif %}
     </div>
     <div class="examination-panel">
       <h2 class="h3">{{ "csb.examination"|trans }}</h2>
@@ -114,34 +147,55 @@
                 <p class="card-districts">
                   <strong>{{ "common.electoral_districts"|trans }}:</strong>
                   {% if candidate_list.list.electoral_districts.len() == election.electoral_districts().len() %}
-                    {{ "candidate_list.districts.all"|trans }}
+                    {% if political_group.mode.is_recovery() && candidate_list.all_districts_scrapped() %}
+                      <s class="imported-value">{{ "candidate_list.districts.all"|trans }}</s>
+                    {% else %}
+                      {{ "candidate_list.districts.all"|trans }}
+                    {% endif %}
                   {% else %}
                     {% for district in candidate_list.list.electoral_districts %}
-                      {% if !loop.first %}<span class="card-districts-separator" aria-hidden="true">|</span>{% endif %}
-                      {{ district|district_name }}
+                      {% if !loop.first %}<span class="districts-separator" aria-hidden="true">|</span>{% endif %}
+                      {% if political_group.mode.is_recovery() && candidate_list.is_district_scrapped(district) %}
+                        <s class="imported-value">{{ district|district_name }}</s>
+                      {% else %}
+                        {{ district|district_name }}
+                      {% endif %}
                     {% endfor %}
                   {% endif %}
                 </p>
               {% endif %}
               <p>{{ "csb.group.candidate_count"|trans(&candidate_list.list.candidates.len().to_string())|safe }}</p>
-              {% if !candidate_list.brp.is_correct() || candidate_list.restoration_status.has_changes() %}
-                <div class="restoration-strip {% if candidate_list.brp.has_errors() %}restoration-strip-error{% endif %}">
-                  <ul class="restoration-tags">
-                    {% if candidate_list.brp.has_errors() %}
-                      <li>
-                        <span class="restoration-tag restoration-tag-error">{{ "csb.brp.errors"|trans }}</span>
-                      </li>
-                    {% else if candidate_list.brp.is_not_checked() %}
-                      <li>
-                        <span class="restoration-tag restoration-tag-pending">{{ "csb.brp.not_checked"|trans }}</span>
-                      </li>
-                    {% else if candidate_list.brp.is_incomplete() %}
-                      <li>
-                        <span class="restoration-tag restoration-tag-pending">{{ "csb.brp.incomplete"|trans }}</span>
-                      </li>
-                    {% endif %}
-                  </ul>
-                  {{ omission_badge(candidate_list.restoration_status) }}
+              {% let show_brp = political_group.mode.is_examination() && !candidate_list.brp.is_correct() %}
+              {% let is_scrapped = political_group.mode.is_recovery() && candidate_list.is_scrapped %}
+              {% if show_brp || is_scrapped || candidate_list.restoration_status.has_changes() %}
+                <div class="restoration-strip {% if political_group.mode.is_examination() && candidate_list.brp.has_errors() %}restoration-strip-error{% endif %}">
+                  {% if show_brp || is_scrapped %}
+                    <ul class="restoration-tags">
+                      {% if show_brp %}
+                        {% if candidate_list.brp.has_errors() %}
+                          <li>
+                            <span class="restoration-tag restoration-tag-error">{{ "csb.brp.errors"|trans }}</span>
+                          </li>
+                        {% else if candidate_list.brp.is_not_checked() %}
+                          <li>
+                            <span class="restoration-tag restoration-tag-pending">{{ "csb.brp.not_checked"|trans }}</span>
+                          </li>
+                        {% else if candidate_list.brp.is_incomplete() %}
+                          <li>
+                            <span class="restoration-tag restoration-tag-pending">{{ "csb.brp.incomplete"|trans }}</span>
+                          </li>
+                        {% endif %}
+                      {% endif %}
+                      {% if is_scrapped %}
+                        <li>
+                          <span class="restoration-tag restoration-tag-scrapped">{{ "csb.recovery.scrapped"|trans }}</span>
+                        </li>
+                      {% endif %}
+                    </ul>
+                  {% endif %}
+                  {% if !candidate_list.is_scrapped %}
+                    {{ omission_badge(candidate_list.restoration_status) }}
+                  {% endif %}
                 </div>
               {% endif %}
             </div>

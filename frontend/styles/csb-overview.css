@@ -559,3 +559,7 @@
   height: var(--space-5);
   mask-image: url("../icons/correction.svg");
 }
+
+.csb-phase-muted > * {
+  opacity: 0.4;
+}

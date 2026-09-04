@@ -21,7 +21,11 @@ use crate::{
     filters,
     projection::WithCorrections,
     redirect_success,
-    structs::{candidate_lists::CandidateListId, csb::Omission, persons::Person},
+    structs::{
+        candidate_lists::CandidateListId,
+        csb::{CsbPhase, Omission},
+        persons::{Person, PersonId},
+    },
 };
 
 #[derive(Template)]
@@ -44,6 +48,35 @@ struct CsbCandidateTemplate {
     brp_running: bool,
     /// Why the BRP data may be incomplete, if the check did not finish.
     brp_incomplete: Option<String>,
+    is_scrapped: bool,
+    recovery_position: Option<usize>,
+    scrapped_districts: Vec<ElectoralDistrict>,
+    all_districts_scrapped: bool,
+}
+
+/// What the candidate page shows about the BRP check.
+struct CandidateBrp {
+    findings: CandidateBrpFindings,
+    state: BrpCheckState,
+    running: bool,
+    incomplete: Option<String>,
+}
+
+impl CandidateBrp {
+    fn for_candidate(store: &CsbStore, person_id: PersonId, locale: crate::Locale) -> Self {
+        let state = BrpCheckState::for_candidate(store, person_id);
+        let running = brp_sweep_running(store.stream_id);
+
+        Self {
+            findings: CandidateBrpFindings::new(
+                &store.get_brp_findings_for_person(person_id),
+                locale,
+            ),
+            incomplete: brp_incomplete_reason(&store.get_brp_status(), &state, running, locale),
+            state,
+            running,
+        }
+    }
 }
 
 pub async fn overview(
@@ -53,7 +86,19 @@ pub async fn overview(
     context: CsbContext,
     store: CsbStore,
 ) -> Result<Response, AppError> {
-    let political_group = CsbPoliticalGroup::new_from_csb_store(&store);
+    render(list_id, person_id, context, store, CsbPhase::Examination).await
+}
+
+/// The candidate detail page, shared between the examination and the recovery
+/// ("Herstelde lijsten") phase.
+pub(in crate::csb) async fn render(
+    list_id: CandidateListId,
+    person_id: PersonId,
+    context: CsbContext,
+    store: CsbStore,
+    mode: CsbPhase,
+) -> Result<Response, AppError> {
+    let political_group = CsbPoliticalGroup::new_from_csb_store(&store).with_mode(mode);
 
     let imported = store.get_person(person_id, WithCorrections::None);
     let corrected = store.get_person(person_id, WithCorrections::Paper);
@@ -84,15 +129,10 @@ pub async fn overview(
         .map(|list| list.electoral_districts)
         .ok_or(AppError::GenericNotFound)?;
     let candidate_omissions = store.get_candidate_omissions(person_id);
-    let brp = CandidateBrpFindings::new(
-        &store.get_brp_findings_for_person(person_id),
-        context.session.locale,
-    );
-    let brp_state = BrpCheckState::for_candidate(&store, person_id);
-    let brp_status = store.get_brp_status();
-    let brp_running = brp_sweep_running(store.stream_id);
-    let brp_incomplete =
-        brp_incomplete_reason(&brp_status, &brp_state, brp_running, context.session.locale);
+    let brp = CandidateBrp::for_candidate(&store, person_id, context.session.locale);
+    let scrapped_districts = store.get_candidate_list_scrapped_districts(list_id);
+    let all_districts_scrapped =
+        !electoral_districts.is_empty() && scrapped_districts.len() == electoral_districts.len();
 
     Ok(HtmlTemplate(
         CsbCandidateTemplate {
@@ -103,10 +143,14 @@ pub async fn overview(
             details,
             position,
             candidate_omissions,
-            brp,
-            brp_state,
-            brp_running,
-            brp_incomplete,
+            brp: brp.findings,
+            brp_state: brp.state,
+            brp_running: brp.running,
+            brp_incomplete: brp.incomplete,
+            is_scrapped: store.is_candidate_scrapped(person_id, list_id),
+            recovery_position: store.get_recovery_position(list_id, person_id),
+            scrapped_districts,
+            all_districts_scrapped,
         },
         context,
     )
@@ -173,7 +217,12 @@ mod tests {
         (store, list_id, person_id)
     }
 
-    async fn render(store: CsbStore, list_id: CandidateListId, person_id: PersonId) -> String {
+    /// The examination page's body, for asserting on what it renders.
+    async fn examination_body(
+        store: CsbStore,
+        list_id: CandidateListId,
+        person_id: PersonId,
+    ) -> String {
         let stream_id = store.stream_id;
         let response = overview(
             CsbCandidatePath {
@@ -249,7 +298,7 @@ mod tests {
         let (store, list_id, person_id) = store_with_candidate();
         let stream_id = store.stream_id;
 
-        let body = render(store, list_id, person_id).await;
+        let body = examination_body(store, list_id, person_id).await;
 
         assert!(body.contains(&format!(
             "/csb/examination/{stream_id}/list/{list_id}/candidate/{person_id}/brp-check"
@@ -267,13 +316,43 @@ mod tests {
             .unwrap();
         let _sweep = claim_sweep_for_test(stream_id);
 
-        let body = render(store, list_id, person_id).await;
+        let body = examination_body(store, list_id, person_id).await;
 
         assert!(body.contains("Refresh this page"), "{body}");
         // A check of their own would only ask the BRP the same thing twice.
         assert!(!body.contains(&format!(
             "/csb/examination/{stream_id}/list/{list_id}/candidate/{person_id}/brp-check"
         )));
+    }
+
+    /// The BRP check belongs to the examination, so the recovery phase shows
+    /// the candidate's data without it.
+    #[tokio::test]
+    async fn recovery_mode_leaves_the_brp_out_of_the_candidate_page() {
+        let (store, list_id, person_id) = store_with_candidate();
+        store
+            .update(CsbAction::BrpPersonChecked {
+                person: person_id,
+                findings: vec![BrpFinding::NotDutch],
+            })
+            .await
+            .unwrap();
+
+        let response = render(
+            list_id,
+            person_id,
+            CsbContext::new_test(),
+            store,
+            CsbPhase::Recovery,
+        )
+        .await
+        .unwrap()
+        .into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        assert!(!body.contains("BRP"), "{body}");
+        assert!(!body.contains("brp-check"), "{body}");
     }
 
     /// The sweep that never came back: its status is still `InProgress`, but
@@ -287,7 +366,7 @@ mod tests {
             .await
             .unwrap();
 
-        let body = render(store, list_id, person_id).await;
+        let body = examination_body(store, list_id, person_id).await;
 
         assert!(!body.contains("Refresh this page"), "{body}");
         assert!(!body.contains("still running"), "{body}");
@@ -312,7 +391,7 @@ mod tests {
             .await
             .unwrap();
 
-        let body = render(store, list_id, person_id).await;
+        let body = examination_body(store, list_id, person_id).await;
 
         assert!(!body.contains(&format!(
             "/csb/examination/{stream_id}/list/{list_id}/candidate/{person_id}/brp-check"
@@ -348,7 +427,7 @@ mod tests {
             .await
             .unwrap();
 
-        let body = render(store, list_id, person_id).await;
+        let body = examination_body(store, list_id, person_id).await;
 
         assert!(
             body.contains("changed after the check against the BRP"),
